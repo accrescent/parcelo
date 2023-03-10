@@ -4,9 +4,11 @@ import com.android.apksig.ApkVerifier
 import com.android.apksig.apk.ApkFormatException
 import com.android.apksig.apk.ApkUtils
 import com.android.apksig.util.DataSources
+import com.android.bundle.Commands.BuildApksResult
 import com.android.ide.common.xml.AndroidManifestParser
 import com.android.io.IAbstractFile
 import com.android.tools.apk.analyzer.BinaryXmlParser
+import com.google.protobuf.InvalidProtocolBufferException
 import io.ktor.util.moveToByteArray
 import org.xml.sax.SAXException
 import java.io.InputStream
@@ -15,7 +17,12 @@ import java.security.MessageDigest
 import java.security.cert.X509Certificate
 import java.util.zip.ZipInputStream
 
-data class ApkSetMetadata(val appId: String, val versionCode: Int, val versionName: String)
+data class ApkSetMetadata(
+    val appId: String,
+    val versionCode: Int,
+    val versionName: String,
+    var bundletoolVersion: String,
+)
 
 const val ANDROID_MANIFEST = "AndroidManifest.xml"
 
@@ -41,18 +48,29 @@ const val ANDROID_MANIFEST = "AndroidManifest.xml"
  * @throws InvalidApkSetException the APK set is invalid
  */
 fun parseApkSet(file: InputStream): ApkSetMetadata {
+    var bundletoolVersion: String? = null
     var metadata: ApkSetMetadata? = null
     var pinnedCertHashes = emptyList<String>()
 
     ZipInputStream(file).use { zip ->
         generateSequence { zip.nextEntry }.filterNot { it.isDirectory }.forEach { entry ->
-            // Ignore metadata
-            if (entry.name == "toc.pb") return@forEach
+            val entryBytes = zip.readAllBytes()
+            val entryDataSource = DataSources.asDataSource(ByteBuffer.wrap(entryBytes))
 
-            val apk = DataSources.asDataSource(ByteBuffer.wrap(zip.readAllBytes()))
+            // Parse metadata
+            if (entry.name == "toc.pb") {
+                val bundletoolMetadata = try {
+                    BuildApksResult.newBuilder().mergeFrom(entryBytes).build()
+                } catch (e: InvalidProtocolBufferException) {
+                    throw InvalidApkSetException("bundletool metadata not valid")
+                }
+                bundletoolVersion = bundletoolMetadata.bundletool.version
+                return@forEach
+            }
 
+            // Everything else is an APK. Start by finding and verifying its signature.
             val sigCheckResult = try {
-                ApkVerifier.Builder(apk).build().verify()
+                ApkVerifier.Builder(entryDataSource).build().verify()
             } catch (e: ApkFormatException) {
                 throw InvalidApkSetException("an APK is malformed")
             }
@@ -79,7 +97,7 @@ fun parseApkSet(file: InputStream): ApkSetMetadata {
 
             // Parse the Android manifest
             val manifest = try {
-                val manifestBytes = ApkUtils.getAndroidManifest(apk).moveToByteArray()
+                val manifestBytes = ApkUtils.getAndroidManifest(entryDataSource).moveToByteArray()
                 BinaryXmlParser.decodeXml(ANDROID_MANIFEST, manifestBytes).inputStream()
                     .use { AndroidManifestParser.parse(it.toIAbstractFile(), true, null) }
             } catch (e: ApkFormatException) {
@@ -96,7 +114,7 @@ fun parseApkSet(file: InputStream): ApkSetMetadata {
             // through all the APKs. There's no reason to pin it since it has no effect on
             // installation.
             if (metadata == null) {
-                metadata = ApkSetMetadata(manifest.`package`, manifest.versionCode, "")
+                metadata = ApkSetMetadata(manifest.`package`, manifest.versionCode, "", "")
             } else {
                 // Check that the metadata is the same as that previously pinned (sans the version
                 // name for reasons described above).
@@ -113,6 +131,12 @@ fun parseApkSet(file: InputStream): ApkSetMetadata {
                 }
             }
         }
+    }
+
+    if (bundletoolVersion != null) {
+        metadata = metadata?.copy(bundletoolVersion = bundletoolVersion!!)
+    } else {
+        throw InvalidApkSetException("no bundletool version found")
     }
 
     // If nothing set the version name, freak out
