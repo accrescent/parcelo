@@ -1,4 +1,4 @@
-package app.accrescent.validation
+package app.accrescent.parcelo.validation
 
 import com.android.apksig.ApkVerifier
 import com.android.apksig.apk.ApkFormatException

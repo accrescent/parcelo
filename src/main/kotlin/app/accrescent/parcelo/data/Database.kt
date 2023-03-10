@@ -1,4 +1,4 @@
-package app.accrescent.data
+package app.accrescent.parcelo.data
 
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils

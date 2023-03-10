@@ -1,4 +1,4 @@
-package app.accrescent.data
+package app.accrescent.parcelo.data
 
 import org.jetbrains.exposed.dao.Entity
 import org.jetbrains.exposed.dao.EntityClass

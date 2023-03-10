@@ -1,4 +1,4 @@
-package app.accrescent.data.net
+package app.accrescent.parcelo.data.net
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable

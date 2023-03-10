@@ -1,7 +1,7 @@
-package app.accrescent
+package app.accrescent.parcelo
 
-import app.accrescent.data.configureDatabase
-import app.accrescent.plugins.configureRouting
+import app.accrescent.parcelo.data.configureDatabase
+import app.accrescent.parcelo.plugins.configureRouting
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
