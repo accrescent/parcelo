@@ -11,6 +11,8 @@ import io.ktor.util.moveToByteArray
 import org.xml.sax.SAXException
 import java.io.InputStream
 import java.nio.ByteBuffer
+import java.security.MessageDigest
+import java.security.cert.X509Certificate
 import java.util.zip.ZipInputStream
 
 data class ApkSetMetadata(val appId: String, val versionCode: Int, val versionName: String)
@@ -31,6 +33,7 @@ const val ANDROID_MANIFEST = "AndroidManifest.xml"
  *   - a valid Android manifest at the expected path
  * - all non-directory entries in said ZIP except for "toc.pb" are valid APKs
  * - the input ZIP contains at least one APK
+ * - all APKs have the same signing certificates
  * - all APKs have the same app ID and version code
  * - at least one APK specifies a version name
  *
@@ -39,6 +42,7 @@ const val ANDROID_MANIFEST = "AndroidManifest.xml"
  */
 fun parseApkSet(file: InputStream): ApkSetMetadata {
     var metadata: ApkSetMetadata? = null
+    var pinnedCertHashes = emptyList<String>()
 
     ZipInputStream(file).use { zip ->
         generateSequence { zip.nextEntry }.filterNot { it.isDirectory }.forEach { entry ->
@@ -59,6 +63,18 @@ fun parseApkSet(file: InputStream): ApkSetMetadata {
                 }
             } else {
                 throw InvalidApkSetException("APK signature doesn't verify")
+            }
+
+            // Pin the APK signing certificates on the first APK encountered to ensure split APKs
+            // can actually be installed.
+            if (pinnedCertHashes.isEmpty()) {
+                pinnedCertHashes = sigCheckResult.signerCertificates.map { it.fingerprint() }
+            } else {
+                // Check against pinned certificates
+                val theseCertHashes = sigCheckResult.signerCertificates.map { it.fingerprint() }
+                if (theseCertHashes != pinnedCertHashes) {
+                    throw InvalidApkSetException("APK signing certificates don't match each other")
+                }
             }
 
             // Parse the Android manifest
@@ -105,6 +121,16 @@ fun parseApkSet(file: InputStream): ApkSetMetadata {
     }
 
     return metadata ?: throw InvalidApkSetException("no APKs found")
+}
+
+/**
+ * Gets the certificate's SHA256 fingerprint
+ */
+private fun X509Certificate.fingerprint(): String {
+    return MessageDigest
+        .getInstance("SHA-256")
+        .digest(this.encoded)
+        .joinToString("") { "%02x".format(it) }
 }
 
 /**
