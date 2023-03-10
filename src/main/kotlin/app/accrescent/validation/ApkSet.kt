@@ -29,8 +29,8 @@ const val ANDROID_MANIFEST = "AndroidManifest.xml"
  *
  * - the input file is a valid ZIP
  * - a valid APK is a ZIP with each of the following:
- *   - a v2 or v3 APK signature which passes verification
- *   - a valid Android manifest at the expected path
+ *     - a v2 or v3 APK signature which passes verification
+ *     - a valid Android manifest at the expected path
  * - all non-directory entries in said ZIP except for "toc.pb" are valid APKs
  * - the input ZIP contains at least one APK
  * - all APKs have the same signing certificates
