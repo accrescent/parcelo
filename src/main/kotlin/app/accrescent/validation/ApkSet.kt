@@ -1,5 +1,6 @@
 package app.accrescent.validation
 
+import com.android.apksig.ApkVerifier
 import com.android.apksig.apk.ApkFormatException
 import com.android.apksig.apk.ApkUtils
 import com.android.apksig.util.DataSources
@@ -25,7 +26,9 @@ const val ANDROID_MANIFEST = "AndroidManifest.xml"
  * to the following criteria:
  *
  * - the input file is a valid ZIP
- * - a valid APK is a ZIP with a valid Android manifest at the expected path
+ * - a valid APK is a ZIP with each of the following:
+ *   - an APK signature which passes verification
+ *   - a valid Android manifest at the expected path
  * - all non-directory entries in said ZIP except for "toc.pb" are valid APKs
  * - the input ZIP contains at least one APK
  * - all APKs have the same app ID and version code
@@ -43,6 +46,16 @@ fun parseApkSet(file: InputStream): ApkSetMetadata {
             if (entry.name == "toc.pb") return@forEach
 
             val apk = DataSources.asDataSource(ByteBuffer.wrap(zip.readAllBytes()))
+
+            val sigCheckResult = try {
+                ApkVerifier.Builder(apk).build().verify()
+            } catch (e: ApkFormatException) {
+                throw InvalidApkSetException("an APK is malformed")
+            }
+
+            if (!sigCheckResult.isVerified) {
+                throw InvalidApkSetException("APK signature doesn't verify")
+            }
 
             // Parse the Android manifest
             val manifest = try {
