@@ -27,7 +27,7 @@ const val ANDROID_MANIFEST = "AndroidManifest.xml"
  *
  * - the input file is a valid ZIP
  * - a valid APK is a ZIP with each of the following:
- *   - an APK signature which passes verification
+ *   - a v2 or v3 APK signature which passes verification
  *   - a valid Android manifest at the expected path
  * - all non-directory entries in said ZIP except for "toc.pb" are valid APKs
  * - the input ZIP contains at least one APK
@@ -53,7 +53,11 @@ fun parseApkSet(file: InputStream): ApkSetMetadata {
                 throw InvalidApkSetException("an APK is malformed")
             }
 
-            if (!sigCheckResult.isVerified) {
+            if (sigCheckResult.isVerified) {
+                if (!(sigCheckResult.isVerifiedUsingV2Scheme || sigCheckResult.isVerifiedUsingV3Scheme)) {
+                    throw InvalidApkSetException("APK signature isn't at least v2 or v3")
+                }
+            } else {
                 throw InvalidApkSetException("APK signature doesn't verify")
             }
 
