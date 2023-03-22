@@ -1,24 +1,22 @@
 package app.accrescent.parcelo.routes
 
 import app.accrescent.parcelo.data.App as AppDao
+import app.accrescent.parcelo.data.Draft
 import app.accrescent.parcelo.data.net.App
-import app.accrescent.parcelo.validation.ApkSetMetadata
-import app.accrescent.parcelo.validation.InvalidApkSetException
-import app.accrescent.parcelo.validation.parseApkSet
 import io.ktor.http.HttpStatusCode
-import io.ktor.http.content.PartData
-import io.ktor.http.content.readAllParts
-import io.ktor.http.content.streamProvider
 import io.ktor.resources.Resource
 import io.ktor.server.application.call
-import io.ktor.server.request.receiveMultipart
+import io.ktor.server.request.receive
 import io.ktor.server.resources.get
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.post
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import org.h2.api.ErrorCode
 import org.jetbrains.exposed.exceptions.ExposedSQLException
 import org.jetbrains.exposed.sql.transactions.transaction
+import java.util.UUID
 
 @Resource("/apps")
 class Apps
@@ -28,53 +26,46 @@ fun Route.appRoutes() {
     getAppsRoute()
 }
 
+@Serializable
+data class CreateAppRequest(@SerialName("draft_id") val draftId: String)
+
 fun Route.createAppRoute() {
     post("/apps") {
-        var apkSetMetadata: ApkSetMetadata? = null
-        var label: String? = null
-
-        val multipart = call.receiveMultipart().readAllParts()
-        for (part in multipart) {
-            if (part is PartData.FileItem && part.name == "apk_set") {
-                apkSetMetadata = try {
-                    part.streamProvider().use { parseApkSet(it) }
-                } catch (e: InvalidApkSetException) {
-                    call.respond(HttpStatusCode.BadRequest)
-                    return@post
-                } finally {
-                    part.dispose()
-                }
-            } else if (part is PartData.FormItem && part.name == "label") {
-                label = part.value
-            }
+        val request = call.receive<CreateAppRequest>()
+        val draftId = try {
+            UUID.fromString(request.draftId)
+        } catch (e: IllegalArgumentException) {
+            // The draft ID isn't a valid UUID
+            call.respond(HttpStatusCode.BadRequest)
+            return@post
         }
+        val draft = transaction { Draft.findById(draftId) }
 
-        if (apkSetMetadata != null && label != null) {
-            try {
+        if (draft != null) {
+            // A draft with this ID exists, so transform it into a published app
+            val appEntry = try {
                 transaction {
-                    AppDao.new(apkSetMetadata.appId) {
-                        this.label = label
-                        versionCode = apkSetMetadata.versionCode
-                        versionName = apkSetMetadata.versionName
+                    draft.delete()
+                    AppDao.new(draft.appId) {
+                        label = draft.label
+                        versionCode = draft.versionCode
+                        versionName = draft.versionName
                     }
                 }
             } catch (e: ExposedSQLException) {
                 if (e.errorCode == ErrorCode.DUPLICATE_KEY_1) {
                     call.respond(HttpStatusCode.Conflict)
+                    return@post
                 } else {
                     throw e
                 }
             }
-
-            val app = App(
-                id = apkSetMetadata.appId,
-                label = label,
-                versionCode = apkSetMetadata.versionCode,
-                versionName = apkSetMetadata.versionName,
-            )
+            val app =
+                App(appEntry.id.value, appEntry.label, appEntry.versionCode, appEntry.versionName)
             call.respond(app)
         } else {
-            call.respond(HttpStatusCode.BadRequest)
+            // No draft with this ID exists
+            call.respond(HttpStatusCode.NotFound)
         }
     }
 }

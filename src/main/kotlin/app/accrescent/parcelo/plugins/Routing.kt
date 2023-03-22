@@ -1,6 +1,7 @@
 package app.accrescent.parcelo.plugins
 
 import app.accrescent.parcelo.routes.appRoutes
+import app.accrescent.parcelo.routes.draftRoutes
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
 import io.ktor.server.resources.Resources
@@ -11,5 +12,6 @@ fun Application.configureRouting() {
 
     routing {
         appRoutes()
+        draftRoutes()
     }
 }
