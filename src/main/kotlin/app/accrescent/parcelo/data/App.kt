@@ -11,6 +11,7 @@ object Apps : IdTable<String>() {
     val label = text("label")
     val versionCode = integer("version_code")
     val versionName = text("version_name")
+    val iconHash = text("icon_hash")
     override val primaryKey = PrimaryKey(id)
 }
 
@@ -20,8 +21,9 @@ class App(id: EntityID<String>) : Entity<String>(id), ToSerializable<Serializabl
     var label by Apps.label
     var versionCode by Apps.versionCode
     var versionName by Apps.versionName
+    var iconHash by Apps.iconHash
 
     override fun serializable(): SerializableApp {
-        return SerializableApp(id.value, label, versionCode, versionName)
+        return SerializableApp(id.value, label, versionCode, versionName, iconHash)
     }
 }

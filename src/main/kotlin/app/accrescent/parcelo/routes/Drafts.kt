@@ -19,7 +19,9 @@ import io.ktor.server.routing.post
 import org.h2.api.ErrorCode
 import org.jetbrains.exposed.exceptions.ExposedSQLException
 import org.jetbrains.exposed.sql.transactions.transaction
+import java.security.MessageDigest
 import java.util.UUID
+import javax.imageio.ImageIO
 
 @Resource("/drafts")
 class Drafts {
@@ -38,6 +40,7 @@ fun Route.createDraftRoute() {
     post("/drafts") {
         var apkSetMetadata: ApkSetMetadata? = null
         var label: String? = null
+        var iconHash: String? = null
 
         val multipart = call.receiveMultipart().readAllParts()
         for (part in multipart) {
@@ -50,12 +53,26 @@ fun Route.createDraftRoute() {
                 } finally {
                     part.dispose()
                 }
+            } else if (part is PartData.FileItem && part.name == "icon") {
+                val iconData = part.streamProvider().use { it.readAllBytes() }
+
+                // Icon must be a 512 x 512 PNG
+                val image = iconData.inputStream().use { ImageIO.read(it) }
+                if (image.width != 512 || image.height != 512) {
+                    call.respond(HttpStatusCode.BadRequest)
+                    return@post
+                }
+
+                iconHash = MessageDigest
+                    .getInstance("SHA-256")
+                    .digest(iconData)
+                    .joinToString("") { "%02x".format(it) }
             } else if (part is PartData.FormItem && part.name == "label") {
                 label = part.value
             }
         }
 
-        if (apkSetMetadata != null && label != null) {
+        if (apkSetMetadata != null && label != null && iconHash != null) {
             try {
                 val draft = transaction {
                     DraftDao.new {
@@ -63,6 +80,7 @@ fun Route.createDraftRoute() {
                         appId = apkSetMetadata.appId
                         versionCode = apkSetMetadata.versionCode
                         versionName = apkSetMetadata.versionName
+                        this.iconHash = iconHash
                     }.serializable()
                 }
 

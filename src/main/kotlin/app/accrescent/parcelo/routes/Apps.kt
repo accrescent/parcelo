@@ -49,6 +49,7 @@ fun Route.createAppRoute() {
                         label = draft.label
                         versionCode = draft.versionCode
                         versionName = draft.versionName
+                        iconHash = draft.iconHash
                     }
                 }
             } catch (e: ExposedSQLException) {

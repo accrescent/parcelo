@@ -14,6 +14,7 @@ object Drafts : UUIDTable() {
     val label = text("label")
     val versionCode = integer("version_code")
     val versionName = text("version_name")
+    val iconHash = text("icon_hash")
 }
 
 class Draft(id: EntityID<UUID>) : UUIDEntity(id), ToSerializable<SerializableDraft> {
@@ -23,8 +24,16 @@ class Draft(id: EntityID<UUID>) : UUIDEntity(id), ToSerializable<SerializableDra
     var label by Drafts.label
     var versionCode by Drafts.versionCode
     var versionName by Drafts.versionName
+    var iconHash by Drafts.iconHash
 
     override fun serializable(): SerializableDraft {
-        return SerializableDraft(id.value.toString(), appId, label, versionCode, versionName)
+        return SerializableDraft(
+            id.value.toString(),
+            appId,
+            label,
+            versionCode,
+            versionName,
+            iconHash,
+        )
     }
 }

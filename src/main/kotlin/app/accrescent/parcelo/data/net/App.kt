@@ -11,4 +11,6 @@ data class App(
     val versionCode: Int,
     @SerialName("version_name")
     val versionName: String,
+    @SerialName("icon_hash")
+    val iconHash: String,
 )
