@@ -12,6 +12,7 @@ import io.ktor.http.content.streamProvider
 import io.ktor.resources.Resource
 import io.ktor.server.application.call
 import io.ktor.server.request.receiveMultipart
+import io.ktor.server.resources.delete
 import io.ktor.server.resources.get
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
@@ -19,12 +20,17 @@ import io.ktor.server.routing.post
 import org.h2.api.ErrorCode
 import org.jetbrains.exposed.exceptions.ExposedSQLException
 import org.jetbrains.exposed.sql.transactions.transaction
+import java.util.UUID
 
 @Resource("/drafts")
-class Drafts
+class Drafts {
+    @Resource("{id}")
+    class Id(val parent: Drafts = Drafts(), val id: String)
+}
 
 fun Route.draftRoutes() {
     createDraftRoute()
+    deleteDraftRoute()
     getDraftsRoute()
 }
 
@@ -77,6 +83,25 @@ fun Route.createDraftRoute() {
             }
         } else {
             call.respond(HttpStatusCode.BadRequest)
+        }
+    }
+}
+
+fun Route.deleteDraftRoute() {
+    delete<Drafts.Id> {
+        val draftId = try {
+            UUID.fromString(it.id)
+        } catch (e: IllegalArgumentException) {
+            call.respond(HttpStatusCode.BadRequest)
+            return@delete
+        }
+
+        val draft = transaction { DraftDao.findById(draftId) }
+        if (draft == null) {
+            call.respond(HttpStatusCode.NotFound)
+        } else {
+            transaction { draft.delete() }
+            call.respond(HttpStatusCode.OK)
         }
     }
 }
