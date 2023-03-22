@@ -32,6 +32,7 @@ fun Route.draftRoutes() {
     createDraftRoute()
     deleteDraftRoute()
     getDraftsRoute()
+    getDraftRoute()
 }
 
 fun Route.createDraftRoute() {
@@ -115,5 +116,30 @@ fun Route.getDraftsRoute() {
         }
 
         call.respond(drafts)
+    }
+}
+
+fun Route.getDraftRoute() {
+    get<Drafts.Id> {
+        val draftId = try {
+            UUID.fromString(it.id)
+        } catch (e: IllegalArgumentException) {
+            call.respond(HttpStatusCode.BadRequest)
+            return@get
+        }
+
+        val draftEntry = transaction { DraftDao.findById(draftId) }
+        if (draftEntry == null) {
+            call.respond(HttpStatusCode.NotFound)
+        } else {
+            val draft = Draft(
+                draftEntry.id.value.toString(),
+                draftEntry.appId,
+                draftEntry.label,
+                draftEntry.versionCode,
+                draftEntry.versionName,
+            )
+            call.respond(draft)
+        }
     }
 }
