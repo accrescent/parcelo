@@ -2,7 +2,6 @@ package app.accrescent.parcelo.routes
 
 import app.accrescent.parcelo.data.App as AppDao
 import app.accrescent.parcelo.data.Draft
-import app.accrescent.parcelo.data.net.App
 import io.ktor.http.HttpStatusCode
 import io.ktor.resources.Resource
 import io.ktor.server.application.call
@@ -43,7 +42,7 @@ fun Route.createAppRoute() {
 
         if (draft != null) {
             // A draft with this ID exists, so transform it into a published app
-            val appEntry = try {
+            val app = try {
                 transaction {
                     draft.delete()
                     AppDao.new(draft.appId) {
@@ -59,9 +58,8 @@ fun Route.createAppRoute() {
                 } else {
                     throw e
                 }
-            }
-            val app =
-                App(appEntry.id.value, appEntry.label, appEntry.versionCode, appEntry.versionName)
+            }.serializable()
+
             call.respond(app)
         } else {
             // No draft with this ID exists
@@ -72,9 +70,7 @@ fun Route.createAppRoute() {
 
 fun Route.getAppsRoute() {
     get<Apps> {
-        val apps = transaction {
-            AppDao.all().map { App(it.id.value, it.label, it.versionCode, it.versionName) }
-        }
+        val apps = transaction { AppDao.all().map { it.serializable() } }
 
         call.respond(apps)
     }

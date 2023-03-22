@@ -1,7 +1,6 @@
 package app.accrescent.parcelo.routes
 
 import app.accrescent.parcelo.data.Draft as DraftDao
-import app.accrescent.parcelo.data.net.Draft
 import app.accrescent.parcelo.validation.ApkSetMetadata
 import app.accrescent.parcelo.validation.InvalidApkSetException
 import app.accrescent.parcelo.validation.parseApkSet
@@ -59,21 +58,14 @@ fun Route.createDraftRoute() {
         if (apkSetMetadata != null && label != null) {
             try {
                 val draft = transaction {
-                    val draftEntry = DraftDao.new {
+                    DraftDao.new {
                         this.label = label
                         appId = apkSetMetadata.appId
                         versionCode = apkSetMetadata.versionCode
                         versionName = apkSetMetadata.versionName
-                    }
-
-                    Draft(
-                        id = draftEntry.id.value.toString(),
-                        appId = draftEntry.appId,
-                        label = draftEntry.label,
-                        versionCode = draftEntry.versionCode,
-                        versionName = draftEntry.versionName,
-                    )
+                    }.serializable()
                 }
+
                 call.respond(draft)
             } catch (e: ExposedSQLException) {
                 if (e.errorCode == ErrorCode.DUPLICATE_KEY_1) {
@@ -109,11 +101,7 @@ fun Route.deleteDraftRoute() {
 
 fun Route.getDraftsRoute() {
     get<Drafts> {
-        val drafts = transaction {
-            DraftDao.all().map {
-                Draft(it.id.value.toString(), it.appId, it.label, it.versionCode, it.versionName)
-            }
-        }
+        val drafts = transaction { DraftDao.all().map { it.serializable() } }
 
         call.respond(drafts)
     }
@@ -128,17 +116,10 @@ fun Route.getDraftRoute() {
             return@get
         }
 
-        val draftEntry = transaction { DraftDao.findById(draftId) }
-        if (draftEntry == null) {
+        val draft = transaction { DraftDao.findById(draftId) }?.serializable()
+        if (draft == null) {
             call.respond(HttpStatusCode.NotFound)
         } else {
-            val draft = Draft(
-                draftEntry.id.value.toString(),
-                draftEntry.appId,
-                draftEntry.label,
-                draftEntry.versionCode,
-                draftEntry.versionName,
-            )
             call.respond(draft)
         }
     }
