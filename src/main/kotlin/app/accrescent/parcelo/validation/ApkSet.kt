@@ -40,6 +40,7 @@ const val ANDROID_MANIFEST = "AndroidManifest.xml"
  *     certificate
  *     - a valid Android manifest at the expected path
  * - all non-directory entries in said ZIP except for "toc.pb" are valid APKs
+ * - "toc.pb" is a valid BuildApksResult protocol buffer
  * - the input ZIP contains at least one APK
  * - all APKs have the same signing certificates
  * - all APKs have the same app ID and version code
