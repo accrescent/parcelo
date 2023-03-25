@@ -42,6 +42,7 @@ const val ANDROID_MANIFEST = "AndroidManifest.xml"
  * - all non-directory entries in said ZIP except for "toc.pb" are valid APKs
  * - "toc.pb" is a valid BuildApksResult protocol buffer
  * - the input ZIP contains at least one APK
+ * - all APKs must not be debuggable
  * - all APKs have the same signing certificates
  * - all APKs have the same app ID and version code
  * - at least one APK specifies a version name
@@ -108,6 +109,10 @@ fun parseApkSet(file: InputStream): ApkSetMetadata {
                 throw InvalidApkSetException("an APK is malformed")
             } catch (e: SAXException) {
                 throw InvalidApkSetException("invalid Android manifest")
+            }
+
+            if (manifest.debuggable == true) {
+                throw InvalidApkSetException("application is debuggable")
             }
 
             // Pin the app metadata on the first manifest parsed to ensure all split APKs have the
