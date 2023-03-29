@@ -18,10 +18,14 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import java.util.UUID
 
 @Resource("/apps")
-class Apps
+class Apps {
+    @Resource("{id}")
+    class Id(val parent: Apps = Apps(), val id: String)
+}
 
 fun Route.appRoutes() {
     createAppRoute()
+    getAppRoute()
     getAppsRoute()
 }
 
@@ -65,6 +69,17 @@ fun Route.createAppRoute() {
         } else {
             // No draft with this ID exists
             call.respond(HttpStatusCode.NotFound)
+        }
+    }
+}
+
+fun Route.getAppRoute() {
+    get<Apps.Id> {
+        val app = transaction { AppDao.findById(it.id) }?.serializable()
+        if (app == null) {
+            call.respond(HttpStatusCode.NotFound)
+        } else {
+            call.respond(app)
         }
     }
 }
