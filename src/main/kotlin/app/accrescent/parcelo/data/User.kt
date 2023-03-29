@@ -9,12 +9,14 @@ import java.util.UUID
 
 object Users : UUIDTable() {
     val githubUserId = long("gh_id").uniqueIndex()
+    val email = text("email")
 }
 
 class User(id: EntityID<UUID>) : UUIDEntity(id), ToSerializable<SerializableUser> {
     companion object : UUIDEntityClass<User>(Users)
 
     var githubUserId by Users.githubUserId
+    var email by Users.email
 
-    override fun serializable() = SerializableUser(id.value.toString(), githubUserId)
+    override fun serializable() = SerializableUser(id.value.toString(), githubUserId, email)
 }

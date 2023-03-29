@@ -4,6 +4,7 @@ import app.accrescent.parcelo.data.User
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.http.HttpMethod
+import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.call
 import io.ktor.server.auth.AuthenticationConfig
 import io.ktor.server.auth.OAuthAccessTokenResponse
@@ -11,6 +12,7 @@ import io.ktor.server.auth.OAuthServerSettings
 import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.oauth
 import io.ktor.server.auth.principal
+import io.ktor.server.response.respond
 import io.ktor.server.response.respondRedirect
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.get
@@ -36,6 +38,7 @@ fun AuthenticationConfig.github(
                 requestMethod = HttpMethod.Post,
                 clientId = clientId,
                 clientSecret = clientSecret,
+                defaultScopes = listOf("user:email"),
             )
         }
         client = httpClient
@@ -53,7 +56,20 @@ fun Route.githubRoutes() {
 
                 // Register if not already registered
                 try {
-                    transaction { User.new { githubUserId = githubUser.myself.id } }
+                    val githubUserId = githubUser.myself.id
+                    val email =
+                        githubUser.myself.emails2.find { it.isPrimary && it.isVerified }?.email
+                            ?: run {
+                                call.respond(HttpStatusCode.Forbidden)
+                                return@get
+                            }
+
+                    transaction {
+                        User.new {
+                            this.githubUserId = githubUserId
+                            this.email = email
+                        }
+                    }
                 } catch (e: ExposedSQLException) {
                     if (e.errorCode != ErrorCode.DUPLICATE_KEY_1) {
                         throw e
