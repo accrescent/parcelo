@@ -19,7 +19,7 @@ group = "app.accrescent"
 version = "0.0.0"
 
 application {
-    mainClass.set("app.accrescent.ApplicationKt")
+    mainClass.set("app.accrescent.parcelo.ApplicationKt")
 
     val isDevelopment: Boolean = project.ext.has("development")
     applicationDefaultJvmArgs = listOf("-Dio.ktor.development=$isDevelopment")
