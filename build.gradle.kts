@@ -1,6 +1,7 @@
 val androidToolsVersion: String by project
 val apksigVersion: String by project
 val exposedVersion: String by project
+val githubApiVersion: String by project
 val h2Version: String by project
 val ktorVersion: String by project
 val kotlinVersion: String by project
@@ -36,7 +37,9 @@ dependencies {
     implementation("com.android.tools.build:apksig:$apksigVersion")
     implementation("com.google.protobuf:protobuf-java:$protobufVersion")
     implementation("com.h2database:h2:$h2Version")
+    implementation("io.ktor:ktor-client-cio:$ktorVersion")
     implementation("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
+    implementation("io.ktor:ktor-server-auth:$ktorVersion")
     implementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
     implementation("io.ktor:ktor-server-core-jvm:$ktorVersion")
     implementation("io.ktor:ktor-server-netty-jvm:$ktorVersion")
@@ -45,6 +48,7 @@ dependencies {
     implementation("org.jetbrains.exposed:exposed-core:$exposedVersion")
     implementation("org.jetbrains.exposed:exposed-dao:$exposedVersion")
     implementation("org.jetbrains.exposed:exposed-jdbc:$exposedVersion")
+    implementation("org.kohsuke:github-api:$githubApiVersion")
     testImplementation("io.ktor:ktor-server-tests-jvm:$ktorVersion")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit:$kotlinVersion")
 }

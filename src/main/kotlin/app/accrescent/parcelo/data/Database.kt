@@ -11,6 +11,6 @@ fun configureDatabase() {
     )
 
     transaction {
-        SchemaUtils.create(Apps, Drafts)
+        SchemaUtils.create(Apps, Drafts, Users)
     }
 }
