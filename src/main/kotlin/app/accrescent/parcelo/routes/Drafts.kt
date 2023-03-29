@@ -68,7 +68,13 @@ fun Route.createDraftRoute() {
                     .digest(iconData)
                     .joinToString("") { "%02x".format(it) }
             } else if (part is PartData.FormItem && part.name == "label") {
-                label = part.value
+                // Label must be between 3 and 30 characters in length inclusive
+                if (part.value.length < 3 || part.value.length > 30) {
+                    call.respond(HttpStatusCode.BadRequest)
+                    return@post
+                } else {
+                    label = part.value
+                }
             }
         }
 
