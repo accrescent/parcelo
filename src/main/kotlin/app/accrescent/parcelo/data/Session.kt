@@ -4,10 +4,11 @@ import org.jetbrains.exposed.dao.Entity
 import org.jetbrains.exposed.dao.EntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.IdTable
+import org.jetbrains.exposed.sql.ReferenceOption
 
 object Sessions : IdTable<String>("sessions") {
     override val id = text("id").entityId()
-    val userId = reference("user_id", Users)
+    val userId = reference("user_id", Users, onDelete = ReferenceOption.CASCADE)
     override val primaryKey = PrimaryKey(id)
 }
 
