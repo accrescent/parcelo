@@ -1,7 +1,6 @@
 package app.accrescent.parcelo
 
 import app.accrescent.parcelo.data.configureDatabase
-import app.accrescent.parcelo.plugins.configureRouting
 import app.accrescent.parcelo.routes.auth.configureAuthentication
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO

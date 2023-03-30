@@ -1,4 +1,4 @@
-package app.accrescent.parcelo.plugins
+package app.accrescent.parcelo
 
 import app.accrescent.parcelo.routes.appRoutes
 import app.accrescent.parcelo.routes.auth.authRoutes
