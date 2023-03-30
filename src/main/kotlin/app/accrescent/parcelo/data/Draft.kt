@@ -9,7 +9,7 @@ import java.util.UUID
 
 // This is a UUID table because the ID is exposed to unprivileged API consumers. We don't want to
 // leak e.g. the total number of drafts.
-object Drafts : UUIDTable() {
+object Drafts : UUIDTable("drafts") {
     val appId = text("app_id")
     val label = text("label")
     val versionCode = integer("version_code")

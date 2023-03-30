@@ -6,7 +6,7 @@ import org.jetbrains.exposed.dao.EntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.IdTable
 
-object Apps : IdTable<String>() {
+object Apps : IdTable<String>("apps") {
     override val id = text("id").entityId()
     val label = text("label")
     val versionCode = integer("version_code")

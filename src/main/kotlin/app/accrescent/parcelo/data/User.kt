@@ -7,7 +7,7 @@ import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.UUIDTable
 import java.util.UUID
 
-object Users : UUIDTable() {
+object Users : UUIDTable("users") {
     val githubUserId = long("gh_id").uniqueIndex()
     val email = text("email")
 }
