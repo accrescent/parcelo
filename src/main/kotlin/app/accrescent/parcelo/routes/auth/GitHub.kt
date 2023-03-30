@@ -58,20 +58,27 @@ fun Route.githubRoutes() {
                 val githubUser = GitHubBuilder().withOAuthToken(principal.accessToken).build()
 
                 val githubUserId = githubUser.myself.id
-                val email =
-                    githubUser.myself.emails2.find { it.isPrimary && it.isVerified }?.email ?: run {
-                        call.respond(HttpStatusCode.Forbidden)
-                        return@get
-                    }
 
                 // Register if not already registered
-                val sessionId = transaction {
-                    val user =
-                        User.find { Users.githubUserId eq githubUserId }.firstOrNull() ?: User.new {
+                val user = transaction {
+                    User.find { Users.githubUserId eq githubUserId }.firstOrNull()
+                } ?: run {
+                    val email = githubUser.myself.emails2.find { it.isPrimary && it.isVerified }
+                        ?.email
+                        ?: run {
+                            call.respond(HttpStatusCode.Forbidden)
+                            return@get
+                        }
+
+                    transaction {
+                        User.new {
                             this.githubUserId = githubUserId
                             this.email = email
                         }
+                    }
+                }
 
+                val sessionId = transaction {
                     SessionDao.new(generateSessionId()) {
                         userId = user.id
                         expiryTime =
