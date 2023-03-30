@@ -72,9 +72,12 @@ fun Route.githubRoutes() {
                             this.email = email
                         }
 
-                    SessionDao.new(generateSessionId()) { userId = user.id }.id.value
+                    SessionDao.new(generateSessionId()) {
+                        userId = user.id
+                        expiryTime =
+                            System.currentTimeMillis() + SESSION_LIFETIME.inWholeMilliseconds
+                    }.id.value
                 }
-
 
                 call.sessions.set(Session(sessionId))
 
