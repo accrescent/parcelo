@@ -1,6 +1,8 @@
 package app.accrescent.parcelo.routes.auth
 
+import app.accrescent.parcelo.data.Session as SessionDao
 import app.accrescent.parcelo.data.User
+import app.accrescent.parcelo.data.Users
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.http.HttpMethod
@@ -17,8 +19,9 @@ import io.ktor.server.response.respondRedirect
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.get
 import io.ktor.server.routing.route
-import org.h2.api.ErrorCode
-import org.jetbrains.exposed.exceptions.ExposedSQLException
+import io.ktor.server.sessions.generateSessionId
+import io.ktor.server.sessions.sessions
+import io.ktor.server.sessions.set
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.kohsuke.github.GitHubBuilder
 
@@ -54,27 +57,26 @@ fun Route.githubRoutes() {
                 val principal: OAuthAccessTokenResponse.OAuth2 = call.principal() ?: return@get
                 val githubUser = GitHubBuilder().withOAuthToken(principal.accessToken).build()
 
-                // Register if not already registered
-                try {
-                    val githubUserId = githubUser.myself.id
-                    val email =
-                        githubUser.myself.emails2.find { it.isPrimary && it.isVerified }?.email
-                            ?: run {
-                                call.respond(HttpStatusCode.Forbidden)
-                                return@get
-                            }
+                val githubUserId = githubUser.myself.id
+                val email =
+                    githubUser.myself.emails2.find { it.isPrimary && it.isVerified }?.email ?: run {
+                        call.respond(HttpStatusCode.Forbidden)
+                        return@get
+                    }
 
-                    transaction {
-                        User.new {
+                // Register if not already registered
+                val sessionId = transaction {
+                    val user =
+                        User.find { Users.githubUserId eq githubUserId }.firstOrNull() ?: User.new {
                             this.githubUserId = githubUserId
                             this.email = email
                         }
-                    }
-                } catch (e: ExposedSQLException) {
-                    if (e.errorCode != ErrorCode.DUPLICATE_KEY_1) {
-                        throw e
-                    }
+
+                    SessionDao.new(generateSessionId()) { userId = user.id }.id.value
                 }
+
+
+                call.sessions.set(Session(sessionId))
 
                 call.respondRedirect("/drafts")
             }
