@@ -174,7 +174,7 @@ fun Route.updateDraftRoute() {
                 draft.reviewerId =
                     Reviewers.slice(Reviewers.id).selectAll().limit(1).map { it[Reviewers.id] }[0]
             }
-            call.respond(HttpStatusCode.OK)
+            call.respond(draft.serializable())
         }
     }
 }
