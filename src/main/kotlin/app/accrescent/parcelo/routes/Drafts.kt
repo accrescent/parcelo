@@ -1,6 +1,7 @@
 package app.accrescent.parcelo.routes
 
 import app.accrescent.parcelo.data.Draft as DraftDao
+import app.accrescent.parcelo.data.Reviewers
 import app.accrescent.parcelo.validation.ApkSetMetadata
 import app.accrescent.parcelo.validation.InvalidApkSetException
 import app.accrescent.parcelo.validation.parseApkSet
@@ -13,11 +14,13 @@ import io.ktor.server.application.call
 import io.ktor.server.request.receiveMultipart
 import io.ktor.server.resources.delete
 import io.ktor.server.resources.get
+import io.ktor.server.resources.patch
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.post
 import org.h2.api.ErrorCode
 import org.jetbrains.exposed.exceptions.ExposedSQLException
+import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.security.MessageDigest
 import java.util.UUID
@@ -34,6 +37,7 @@ fun Route.draftRoutes() {
     deleteDraftRoute()
     getDraftsRoute()
     getDraftRoute()
+    updateDraftRoute()
 }
 
 fun Route.createDraftRoute() {
@@ -145,6 +149,32 @@ fun Route.getDraftRoute() {
             call.respond(HttpStatusCode.NotFound)
         } else {
             call.respond(draft)
+        }
+    }
+}
+
+fun Route.updateDraftRoute() {
+    patch<Drafts.Id> { route ->
+        val draftId = try {
+            UUID.fromString(route.id)
+        } catch (e: IllegalArgumentException) {
+            call.respond(HttpStatusCode.BadRequest)
+            return@patch
+        }
+
+        val draft = transaction { DraftDao.findById(draftId) }
+        if (draft == null) {
+            call.respond(HttpStatusCode.NotFound)
+        } else if (draft.reviewerId != null) {
+            // A reviewer is already assigned
+            call.respond(HttpStatusCode.Forbidden)
+        } else {
+            // Submit the draft by assigning a random reviewer
+            transaction {
+                draft.reviewerId =
+                    Reviewers.slice(Reviewers.id).selectAll().limit(1).map { it[Reviewers.id] }[0]
+            }
+            call.respond(HttpStatusCode.OK)
         }
     }
 }
