@@ -36,6 +36,7 @@ class Draft(id: EntityID<UUID>) : UUIDEntity(id), ToSerializable<SerializableDra
             versionCode,
             versionName,
             iconHash,
+            reviewerId != null,
         )
     }
 }
