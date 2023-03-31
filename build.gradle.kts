@@ -9,8 +9,8 @@ val protobufVersion: String by project
 val logbackVersion: String by project
 
 plugins {
-    kotlin("jvm") version "1.8.10"
-    kotlin("plugin.serialization") version "1.8.10"
+    kotlin("jvm") version "1.8.20"
+    kotlin("plugin.serialization") version "1.8.20"
     id("com.google.protobuf") version "0.9.2"
     id("io.ktor.plugin") version "2.2.4"
 }
