@@ -20,6 +20,7 @@ import io.ktor.server.routing.Route
 import io.ktor.server.routing.post
 import org.h2.api.ErrorCode
 import org.jetbrains.exposed.exceptions.ExposedSQLException
+import org.jetbrains.exposed.sql.Random
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.security.MessageDigest
@@ -171,8 +172,12 @@ fun Route.updateDraftRoute() {
         } else {
             // Submit the draft by assigning a random reviewer
             transaction {
-                draft.reviewerId =
-                    Reviewers.slice(Reviewers.id).selectAll().limit(1).single()[Reviewers.id]
+                draft.reviewerId = Reviewers
+                    .slice(Reviewers.id)
+                    .selectAll()
+                    .orderBy(Random())
+                    .limit(1)
+                    .single()[Reviewers.id]
             }
             call.respond(draft.serializable())
         }
