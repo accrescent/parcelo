@@ -172,7 +172,7 @@ fun Route.updateDraftRoute() {
             // Submit the draft by assigning a random reviewer
             transaction {
                 draft.reviewerId =
-                    Reviewers.slice(Reviewers.id).selectAll().limit(1).map { it[Reviewers.id] }[0]
+                    Reviewers.slice(Reviewers.id).selectAll().limit(1).single()[Reviewers.id]
             }
             call.respond(draft.serializable())
         }
