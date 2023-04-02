@@ -57,7 +57,7 @@ fun Application.configureAuthentication(
                     // which happens much less frequently than session validation.
                     DbSessions.deleteWhere { expiryTime less currentTime }
                     SessionDao.findById(session.id)
-                }?.let { Session(it.id.value) }
+                }
             }
 
             challenge("/auth/login")

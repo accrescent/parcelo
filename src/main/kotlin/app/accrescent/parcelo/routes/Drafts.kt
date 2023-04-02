@@ -2,6 +2,7 @@ package app.accrescent.parcelo.routes
 
 import app.accrescent.parcelo.data.Draft as DraftDao
 import app.accrescent.parcelo.data.Reviewers
+import app.accrescent.parcelo.data.Session
 import app.accrescent.parcelo.validation.ApkSetMetadata
 import app.accrescent.parcelo.validation.InvalidApkSetException
 import app.accrescent.parcelo.validation.parseApkSet
@@ -11,6 +12,8 @@ import io.ktor.http.content.readAllParts
 import io.ktor.http.content.streamProvider
 import io.ktor.resources.Resource
 import io.ktor.server.application.call
+import io.ktor.server.auth.authenticate
+import io.ktor.server.auth.principal
 import io.ktor.server.request.receiveMultipart
 import io.ktor.server.resources.delete
 import io.ktor.server.resources.get
@@ -34,7 +37,9 @@ class Drafts {
 }
 
 fun Route.draftRoutes() {
-    createDraftRoute()
+    authenticate("cookie") {
+        createDraftRoute()
+    }
     deleteDraftRoute()
     getDraftsRoute()
     getDraftRoute()
@@ -43,6 +48,8 @@ fun Route.draftRoutes() {
 
 fun Route.createDraftRoute() {
     post("/drafts") {
+        val submitterId = call.principal<Session>()!!.userId
+
         var apkSetMetadata: ApkSetMetadata? = null
         var label: String? = null
         var iconHash: String? = null
@@ -92,6 +99,7 @@ fun Route.createDraftRoute() {
                         versionCode = apkSetMetadata.versionCode
                         versionName = apkSetMetadata.versionName
                         this.iconHash = iconHash
+                        this.submitterId = submitterId
                     }.serializable()
                 }
 

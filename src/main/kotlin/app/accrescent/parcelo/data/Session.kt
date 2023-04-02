@@ -1,5 +1,6 @@
 package app.accrescent.parcelo.data
 
+import io.ktor.server.auth.Principal
 import org.jetbrains.exposed.dao.Entity
 import org.jetbrains.exposed.dao.EntityClass
 import org.jetbrains.exposed.dao.id.EntityID
@@ -13,7 +14,7 @@ object Sessions : IdTable<String>("sessions") {
     override val primaryKey = PrimaryKey(id)
 }
 
-class Session(id: EntityID<String>) : Entity<String>(id) {
+class Session(id: EntityID<String>) : Entity<String>(id), Principal {
     companion object : EntityClass<String, Session>(Sessions)
 
     var userId by Sessions.userId

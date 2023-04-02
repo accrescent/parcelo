@@ -5,6 +5,7 @@ import org.jetbrains.exposed.dao.UUIDEntity
 import org.jetbrains.exposed.dao.UUIDEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.UUIDTable
+import org.jetbrains.exposed.sql.ReferenceOption
 import java.util.UUID
 
 // This is a UUID table because the ID is exposed to unprivileged API consumers. We don't want to
@@ -15,6 +16,7 @@ object Drafts : UUIDTable("drafts") {
     val versionCode = integer("version_code")
     val versionName = text("version_name")
     val iconHash = text("icon_hash")
+    val submitterId = reference("submitter_id", Users, ReferenceOption.CASCADE)
     val reviewerId = reference("reviewer_id", Reviewers).nullable()
 }
 
@@ -26,6 +28,7 @@ class Draft(id: EntityID<UUID>) : UUIDEntity(id), ToSerializable<SerializableDra
     var versionCode by Drafts.versionCode
     var versionName by Drafts.versionName
     var iconHash by Drafts.iconHash
+    var submitterId by Drafts.submitterId
     var reviewerId by Drafts.reviewerId
 
     override fun serializable(): SerializableDraft {
