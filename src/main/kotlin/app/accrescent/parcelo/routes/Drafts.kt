@@ -1,6 +1,7 @@
 package app.accrescent.parcelo.routes
 
 import app.accrescent.parcelo.data.Draft as DraftDao
+import app.accrescent.parcelo.data.Drafts as DbDrafts
 import app.accrescent.parcelo.data.Reviewers
 import app.accrescent.parcelo.data.Session
 import app.accrescent.parcelo.validation.ApkSetMetadata
@@ -24,6 +25,7 @@ import io.ktor.server.routing.post
 import org.h2.api.ErrorCode
 import org.jetbrains.exposed.exceptions.ExposedSQLException
 import org.jetbrains.exposed.sql.Random
+import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.security.MessageDigest
@@ -39,11 +41,11 @@ class Drafts {
 fun Route.draftRoutes() {
     authenticate("cookie") {
         createDraftRoute()
+        deleteDraftRoute()
+        getDraftsRoute()
+        getDraftRoute()
+        updateDraftRoute()
     }
-    deleteDraftRoute()
-    getDraftsRoute()
-    getDraftRoute()
-    updateDraftRoute()
 }
 
 fun Route.createDraftRoute() {
@@ -118,15 +120,20 @@ fun Route.createDraftRoute() {
 }
 
 fun Route.deleteDraftRoute() {
-    delete<Drafts.Id> {
+    delete<Drafts.Id> { route ->
+        val userId = call.principal<Session>()!!.userId
+
         val draftId = try {
-            UUID.fromString(it.id)
+            UUID.fromString(route.id)
         } catch (e: IllegalArgumentException) {
             call.respond(HttpStatusCode.BadRequest)
             return@delete
         }
 
-        val draft = transaction { DraftDao.findById(draftId) }
+        val draft = transaction {
+            DraftDao.find { DbDrafts.id eq draftId and (DbDrafts.submitterId eq userId) }
+                .singleOrNull()
+        }
         if (draft == null) {
             call.respond(HttpStatusCode.NotFound)
         } else {
@@ -138,7 +145,11 @@ fun Route.deleteDraftRoute() {
 
 fun Route.getDraftsRoute() {
     get<Drafts> {
-        val drafts = transaction { DraftDao.all().map { it.serializable() } }
+        val userId = call.principal<Session>()!!.userId
+
+        val drafts = transaction {
+            DraftDao.find { DbDrafts.submitterId eq userId }.map { it.serializable() }
+        }.toList()
 
         call.respond(drafts)
     }
@@ -146,6 +157,8 @@ fun Route.getDraftsRoute() {
 
 fun Route.getDraftRoute() {
     get<Drafts.Id> {
+        val userId = call.principal<Session>()!!.userId
+
         val draftId = try {
             UUID.fromString(it.id)
         } catch (e: IllegalArgumentException) {
@@ -153,7 +166,10 @@ fun Route.getDraftRoute() {
             return@get
         }
 
-        val draft = transaction { DraftDao.findById(draftId) }?.serializable()
+        val draft = transaction {
+            DraftDao.find { DbDrafts.id eq draftId and (DbDrafts.submitterId eq userId) }
+                .singleOrNull()
+        }?.serializable()
         if (draft == null) {
             call.respond(HttpStatusCode.NotFound)
         } else {
@@ -164,6 +180,8 @@ fun Route.getDraftRoute() {
 
 fun Route.updateDraftRoute() {
     patch<Drafts.Id> { route ->
+        val userId = call.principal<Session>()!!.userId
+
         val draftId = try {
             UUID.fromString(route.id)
         } catch (e: IllegalArgumentException) {
@@ -171,7 +189,10 @@ fun Route.updateDraftRoute() {
             return@patch
         }
 
-        val draft = transaction { DraftDao.findById(draftId) }
+        val draft = transaction {
+            DraftDao.find { DbDrafts.id eq draftId and (DbDrafts.submitterId eq userId) }
+                .singleOrNull()
+        }
         if (draft == null) {
             call.respond(HttpStatusCode.NotFound)
         } else if (draft.reviewerId != null) {
