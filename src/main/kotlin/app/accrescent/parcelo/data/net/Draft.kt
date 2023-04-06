@@ -16,4 +16,5 @@ data class Draft(
     @SerialName("icon_hash")
     val iconHash: String,
     val submitted: Boolean,
+    val approved: Boolean,
 )

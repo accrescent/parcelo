@@ -18,6 +18,7 @@ object Drafts : UUIDTable("drafts") {
     val iconHash = text("icon_hash")
     val submitterId = reference("submitter_id", Users, ReferenceOption.CASCADE)
     val reviewerId = reference("reviewer_id", Reviewers).nullable()
+    val approved = bool("approved").default(false)
 }
 
 class Draft(id: EntityID<UUID>) : UUIDEntity(id), ToSerializable<SerializableDraft> {
@@ -30,6 +31,7 @@ class Draft(id: EntityID<UUID>) : UUIDEntity(id), ToSerializable<SerializableDra
     var iconHash by Drafts.iconHash
     var submitterId by Drafts.submitterId
     var reviewerId by Drafts.reviewerId
+    var approved by Drafts.approved
 
     override fun serializable(): SerializableDraft {
         return SerializableDraft(
@@ -40,6 +42,7 @@ class Draft(id: EntityID<UUID>) : UUIDEntity(id), ToSerializable<SerializableDra
             versionName,
             iconHash,
             reviewerId != null,
+            approved,
         )
     }
 }
