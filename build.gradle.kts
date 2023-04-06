@@ -1,3 +1,5 @@
+import com.github.gradle.node.npm.task.NpxTask
+
 val androidToolsVersion: String by project
 val apksigVersion: String by project
 val exposedVersion: String by project
@@ -11,6 +13,7 @@ val logbackVersion: String by project
 plugins {
     kotlin("jvm") version "1.8.20"
     kotlin("plugin.serialization") version "1.8.20"
+    id("com.github.node-gradle.node") version "3.5.1"
     id("com.google.protobuf") version "0.9.2"
     id("io.ktor.plugin") version "2.2.4"
 }
@@ -25,9 +28,45 @@ application {
     applicationDefaultJvmArgs = listOf("-Dio.ktor.development=$isDevelopment")
 }
 
+node {
+    nodeProjectDir.set(file("${project.projectDir}/frontend"))
+}
+
 repositories {
     google()
     mavenCentral()
+}
+
+task("buildFrontendDebug", NpxTask::class) {
+    dependsOn(tasks.npmInstall)
+    command.set("ng")
+    args.set(listOf("build", "--configuration", "development"))
+    inputs.files(
+        "package.json",
+        "package-lock.json",
+        "angular.json",
+        "tsconfig.json",
+        "tsconfig.app.json",
+    )
+    inputs.dir("${project.projectDir}/frontend/src")
+    inputs.dir(fileTree("${project.projectDir}/frontend/node_modules").exclude(".cache"))
+    outputs.dir("dist")
+}
+
+task("buildFrontendRelease", NpxTask::class) {
+    dependsOn(tasks.npmInstall)
+    command.set("ng")
+    args.set(listOf("build"))
+    inputs.files(
+        "package.json",
+        "package-lock.json",
+        "angular.json",
+        "tsconfig.json",
+        "tsconfig.app.json",
+    )
+    inputs.dir("${project.projectDir}/frontend/src")
+    inputs.dir(fileTree("${project.projectDir}/frontend/node_modules").exclude(".cache"))
+    outputs.dir("dist")
 }
 
 dependencies {

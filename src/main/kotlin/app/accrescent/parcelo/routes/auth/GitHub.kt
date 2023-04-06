@@ -88,7 +88,7 @@ fun Route.githubRoutes() {
 
                 call.sessions.set(Session(sessionId))
 
-                call.respondRedirect("/drafts")
+                call.respondRedirect("/dashboard")
             }
         }
     }
