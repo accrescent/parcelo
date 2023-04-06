@@ -3,6 +3,7 @@ package app.accrescent.parcelo
 import app.accrescent.parcelo.routes.appRoutes
 import app.accrescent.parcelo.routes.auth.authRoutes
 import app.accrescent.parcelo.routes.draftRoutes
+import app.accrescent.parcelo.routes.sessionRoutes
 import app.accrescent.parcelo.routes.userRoutes
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
@@ -19,6 +20,8 @@ fun Application.configureRouting() {
         authRoutes()
 
         route("/api") {
+            sessionRoutes()
+
             appRoutes()
             draftRoutes()
             userRoutes()
