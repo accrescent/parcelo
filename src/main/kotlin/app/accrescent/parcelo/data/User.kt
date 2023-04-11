@@ -10,6 +10,7 @@ import java.util.UUID
 object Users : UUIDTable("users") {
     val githubUserId = long("gh_id").uniqueIndex()
     val email = text("email")
+    val publisher = bool("publisher").default(false)
 }
 
 class User(id: EntityID<UUID>) : UUIDEntity(id), ToSerializable<SerializableUser> {
@@ -17,6 +18,7 @@ class User(id: EntityID<UUID>) : UUIDEntity(id), ToSerializable<SerializableUser
 
     var githubUserId by Users.githubUserId
     var email by Users.email
+    var publisher by Users.publisher
 
     override fun serializable() = SerializableUser(id.value.toString(), githubUserId, email)
 }

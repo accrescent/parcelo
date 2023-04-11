@@ -2,9 +2,13 @@ package app.accrescent.parcelo.routes
 
 import app.accrescent.parcelo.data.App as AppDao
 import app.accrescent.parcelo.data.Draft
+import app.accrescent.parcelo.data.Session
+import app.accrescent.parcelo.data.User
 import io.ktor.http.HttpStatusCode
 import io.ktor.resources.Resource
 import io.ktor.server.application.call
+import io.ktor.server.auth.authenticate
+import io.ktor.server.auth.principal
 import io.ktor.server.request.receive
 import io.ktor.server.resources.get
 import io.ktor.server.response.respond
@@ -24,7 +28,9 @@ class Apps {
 }
 
 fun Route.appRoutes() {
-    createAppRoute()
+    authenticate("cookie") {
+        createAppRoute()
+    }
     getAppRoute()
     getAppsRoute()
 }
@@ -34,6 +40,15 @@ data class CreateAppRequest(@SerialName("draft_id") val draftId: String)
 
 fun Route.createAppRoute() {
     post("/apps") {
+        val userId = call.principal<Session>()!!.userId
+
+        // Only allow publishers to publish apps
+        val isPublisher = transaction { User.findById(userId)?.publisher }
+        if (isPublisher != true) {
+            call.respond(HttpStatusCode.Forbidden)
+            return@post
+        }
+
         val request = call.receive<CreateAppRequest>()
         val draftId = try {
             UUID.fromString(request.draftId)

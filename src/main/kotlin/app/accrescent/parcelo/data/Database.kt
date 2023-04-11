@@ -14,11 +14,12 @@ fun Application.configureDatabase() {
     transaction {
         SchemaUtils.create(Apps, Drafts, Sessions, Reviewers, Users)
 
-        // If this is a development run, create a default reviewer
+        // If this is a development run, create a default superuser
         if (environment.developmentMode) {
             val user = User.new {
                 githubUserId = System.getenv("DEBUG_USER_GITHUB_ID").toLong()
                 email = System.getenv("DEBUG_USER_EMAIL")
+                publisher = true
             }
             Reviewer.new {
                 userId = user.id
