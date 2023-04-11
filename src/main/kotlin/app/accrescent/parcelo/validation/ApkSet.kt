@@ -21,7 +21,7 @@ data class ApkSetMetadata(
     val appId: String,
     val versionCode: Int,
     val versionName: String,
-    var bundletoolVersion: String,
+    val bundletoolVersion: String,
 )
 
 const val ANDROID_MANIFEST = "AndroidManifest.xml"
