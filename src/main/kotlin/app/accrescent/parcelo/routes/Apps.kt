@@ -2,6 +2,7 @@ package app.accrescent.parcelo.routes
 
 import app.accrescent.parcelo.data.App as AppDao
 import app.accrescent.parcelo.data.Draft
+import app.accrescent.parcelo.data.Drafts
 import app.accrescent.parcelo.data.Session
 import app.accrescent.parcelo.data.User
 import io.ktor.http.HttpStatusCode
@@ -18,6 +19,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import org.h2.api.ErrorCode
 import org.jetbrains.exposed.exceptions.ExposedSQLException
+import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.util.UUID
 
@@ -57,7 +59,10 @@ fun Route.createAppRoute() {
             call.respond(HttpStatusCode.BadRequest)
             return@post
         }
-        val draft = transaction { Draft.findById(draftId) }
+
+        // Only allow publishing of approved apps
+        val draft =
+            transaction { Draft.find { Drafts.id eq draftId and Drafts.approved }.singleOrNull() }
 
         if (draft != null) {
             // A draft with this ID exists, so transform it into a published app
