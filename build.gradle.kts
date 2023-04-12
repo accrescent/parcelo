@@ -6,6 +6,7 @@ val exposedVersion: String by project
 val githubApiVersion: String by project
 val h2Version: String by project
 val jacksonVersion: String by project
+val koinVersion: String by project
 val ktorVersion: String by project
 val kotlinVersion: String by project
 val protobufVersion: String by project
@@ -77,6 +78,8 @@ dependencies {
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion")
     implementation("com.google.protobuf:protobuf-java:$protobufVersion")
     implementation("com.h2database:h2:$h2Version")
+    implementation("io.insert-koin:koin-ktor:$koinVersion")
+    implementation("io.insert-koin:koin-logger-slf4j:$koinVersion")
     implementation("io.ktor:ktor-client-cio:$ktorVersion")
     implementation("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
     implementation("io.ktor:ktor-server-auth:$ktorVersion")

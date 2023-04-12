@@ -6,12 +6,10 @@ import com.android.apksig.apk.ApkUtils
 import com.android.apksig.util.DataSources
 import com.android.bundle.Commands.BuildApksResult
 import com.android.tools.apk.analyzer.BinaryXmlParser
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.dataformat.xml.XmlMapper
-import com.fasterxml.jackson.module.kotlin.readValue
-import com.fasterxml.jackson.module.kotlin.registerKotlinModule
+import com.fasterxml.jackson.databind.ObjectReader
 import com.google.protobuf.InvalidProtocolBufferException
 import io.ktor.util.moveToByteArray
+import org.koin.java.KoinJavaComponent.inject
 import java.io.InputStream
 import java.nio.ByteBuffer
 import java.security.MessageDigest
@@ -52,6 +50,8 @@ const val ANDROID_MANIFEST = "AndroidManifest.xml"
  * @throws InvalidApkSetException the APK set is invalid
  */
 fun parseApkSet(file: InputStream): ApkSetMetadata {
+    val manifestReader by inject<ObjectReader>(ObjectReader::class.java)
+
     var bundletoolVersion: String? = null
     var metadata: ApkSetMetadata? = null
     var pinnedCertHashes = emptyList<String>()
@@ -105,9 +105,7 @@ fun parseApkSet(file: InputStream): ApkSetMetadata {
             val manifest = try {
                 val manifestBytes = ApkUtils.getAndroidManifest(entryDataSource).moveToByteArray()
                 val decodedManifest = BinaryXmlParser.decodeXml(ANDROID_MANIFEST, manifestBytes)
-                XmlMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-                    .registerKotlinModule()
-                    .readValue<AndroidManifest>(decodedManifest)
+                manifestReader.readValue<AndroidManifest>(decodedManifest)
             } catch (e: ApkFormatException) {
                 throw InvalidApkSetException("an APK is malformed")
             }
