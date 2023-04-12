@@ -24,6 +24,7 @@ val PERMISSION_REVIEW_BLACKLIST = setOf(
     "android.permission.RECEIVE_SMS",
     "android.permission.RECEIVE_WAP_PUSH",
     "android.permission.RECORD_AUDIO",
+    "android.permission.REQUEST_DELETE_PACKAGES",
     "android.permission.REQUEST_INSTALL_PACKAGES",
     "android.permission.SEND_SMS",
     "android.permission.WRITE_CALL_LOG",
