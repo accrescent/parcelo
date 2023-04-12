@@ -5,12 +5,13 @@ import com.android.apksig.apk.ApkFormatException
 import com.android.apksig.apk.ApkUtils
 import com.android.apksig.util.DataSources
 import com.android.bundle.Commands.BuildApksResult
-import com.android.ide.common.xml.AndroidManifestParser
-import com.android.io.IAbstractFile
 import com.android.tools.apk.analyzer.BinaryXmlParser
+import com.fasterxml.jackson.databind.DeserializationFeature
+import com.fasterxml.jackson.dataformat.xml.XmlMapper
+import com.fasterxml.jackson.module.kotlin.readValue
+import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import com.google.protobuf.InvalidProtocolBufferException
 import io.ktor.util.moveToByteArray
-import org.xml.sax.SAXException
 import java.io.InputStream
 import java.nio.ByteBuffer
 import java.security.MessageDigest
@@ -103,15 +104,15 @@ fun parseApkSet(file: InputStream): ApkSetMetadata {
             // Parse the Android manifest
             val manifest = try {
                 val manifestBytes = ApkUtils.getAndroidManifest(entryDataSource).moveToByteArray()
-                BinaryXmlParser.decodeXml(ANDROID_MANIFEST, manifestBytes).inputStream()
-                    .use { AndroidManifestParser.parse(it.toIAbstractFile(), true, null) }
+                val decodedManifest = BinaryXmlParser.decodeXml(ANDROID_MANIFEST, manifestBytes)
+                XmlMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+                    .registerKotlinModule()
+                    .readValue<AndroidManifest>(decodedManifest)
             } catch (e: ApkFormatException) {
                 throw InvalidApkSetException("an APK is malformed")
-            } catch (e: SAXException) {
-                throw InvalidApkSetException("invalid Android manifest")
             }
 
-            if (manifest.debuggable == true) {
+            if (manifest.application.debuggable == true) {
                 throw InvalidApkSetException("application is debuggable")
             }
 
@@ -171,29 +172,6 @@ private fun X509Certificate.fingerprint(): String {
         .getInstance("SHA-256")
         .digest(this.encoded)
         .joinToString("") { "%02x".format(it) }
-}
-
-/**
- * Hack utility method to convert an InputStream to an IAbstractFile
- *
- * This is a hack to satisfy the API contract of AndroidManifestParser.parse(), which requires an
- * IAbstractFile as a parameter. In reality, it uses none of that interface's methods besides
- * getContents() to get the underlying InputStream. Thus, we can convert an InputStream into an
- * IAbstractFile as long as we don't care that the rest of the interface isn't properly
- * implemented. Of course, this means that the IAbstractFile returned by this function shouldn't
- * be used for anything which _actually_ needs it, but only for that which needs the underlying
- * InputStream.
- */
-private fun InputStream.toIAbstractFile(): IAbstractFile {
-    val inputStream = this
-
-    return object : IAbstractFile {
-        override fun getOsLocation() = ""
-        override fun exists() = true
-        override fun getContents() = inputStream
-        override fun setContents(source: InputStream) {}
-        override fun getOutputStream() = null
-    }
 }
 
 class InvalidApkSetException(message: String) : Exception(message)

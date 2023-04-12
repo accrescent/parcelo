@@ -5,6 +5,7 @@ val apksigVersion: String by project
 val exposedVersion: String by project
 val githubApiVersion: String by project
 val h2Version: String by project
+val jacksonVersion: String by project
 val ktorVersion: String by project
 val kotlinVersion: String by project
 val protobufVersion: String by project
@@ -71,9 +72,9 @@ task("buildFrontendRelease", NpxTask::class) {
 
 dependencies {
     implementation("com.android.tools.apkparser:apkanalyzer:$androidToolsVersion")
-    implementation("com.android.tools:common:$androidToolsVersion")
-    implementation("com.android.tools:sdk-common:$androidToolsVersion")
     implementation("com.android.tools.build:apksig:$apksigVersion")
+    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-xml:$jacksonVersion")
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion")
     implementation("com.google.protobuf:protobuf-java:$protobufVersion")
     implementation("com.h2database:h2:$h2Version")
     implementation("io.ktor:ktor-client-cio:$ktorVersion")
