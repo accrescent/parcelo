@@ -45,8 +45,8 @@ const val ANDROID_MANIFEST = "AndroidManifest.xml"
  * - all APKs have the same signing certificates
  * - all APKs have the same app ID and version code
  * - all APKs have unique split names
- * - at most one APK has an empty split name
- * - at least one APK specifies a version name
+ * - exactly one APK is a base APK (i.e., has an empty split name)
+ * - the base APK specifies a version name
  *
  * @return metadata describing the APK set and the app it represents
  * @throws InvalidApkSetException the APK set is invalid
@@ -123,11 +123,6 @@ fun parseApkSet(file: InputStream): ApkSetMetadata {
 
             // Pin the app metadata on the first manifest parsed to ensure all split APKs have the
             // same app ID and version code.
-            //
-            // Since the version name is only included in the base APK, we update it
-            // opportunistically and freak out if it's still empty by the time we're done going
-            // through all the APKs. There's no reason to pin it since it has no effect on
-            // installation.
             if (metadata == null) {
                 metadata = ApkSetMetadata(manifest.`package`, manifest.versionCode, "", "")
             } else {
@@ -139,10 +134,14 @@ fun parseApkSet(file: InputStream): ApkSetMetadata {
                 if (manifest.`package` != metadata!!.appId || manifest.versionCode != metadata!!.versionCode) {
                     throw InvalidApkSetException("APK manifest info is not consistent across all APKs")
                 }
+            }
 
-                // Update the version name if it exists (i.e., if this is the base APK)
+            // Update the version name if this is the base APK
+            if (manifest.split == null) {
                 if (manifest.versionName != null) {
                     metadata = metadata!!.copy(versionName = manifest.versionName)
+                } else {
+                    throw InvalidApkSetException("base APK doesn't specify a version name")
                 }
             }
         }
@@ -154,9 +153,9 @@ fun parseApkSet(file: InputStream): ApkSetMetadata {
         throw InvalidApkSetException("no bundletool version found")
     }
 
-    // If nothing set the version name, freak out
-    if (metadata?.versionName == "") {
-        throw InvalidApkSetException("no APKs specified a version name")
+    // If there isn't a base APK, freak out
+    if (!splitNames.contains(null)) {
+        throw InvalidApkSetException("no base APK found")
     }
 
     return metadata ?: throw InvalidApkSetException("no APKs found")
