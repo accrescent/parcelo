@@ -4,6 +4,7 @@ data class AndroidManifest(
     val `package`: String,
     val versionCode: Int,
     val versionName: String?,
+    val split: String?,
     val application: Application,
 )
 

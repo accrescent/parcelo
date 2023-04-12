@@ -44,6 +44,8 @@ const val ANDROID_MANIFEST = "AndroidManifest.xml"
  * - all APKs must not be debuggable
  * - all APKs have the same signing certificates
  * - all APKs have the same app ID and version code
+ * - all APKs have unique split names
+ * - at most one APK has an empty split name
  * - at least one APK specifies a version name
  *
  * @return metadata describing the APK set and the app it represents
@@ -55,6 +57,7 @@ fun parseApkSet(file: InputStream): ApkSetMetadata {
     var bundletoolVersion: String? = null
     var metadata: ApkSetMetadata? = null
     var pinnedCertHashes = emptyList<String>()
+    val splitNames = mutableSetOf<String?>()
 
     ZipInputStream(file).use { zip ->
         generateSequence { zip.nextEntry }.filterNot { it.isDirectory }.forEach { entry ->
@@ -108,6 +111,10 @@ fun parseApkSet(file: InputStream): ApkSetMetadata {
                 manifestReader.readValue<AndroidManifest>(decodedManifest)
             } catch (e: ApkFormatException) {
                 throw InvalidApkSetException("an APK is malformed")
+            }
+
+            if (!splitNames.add(manifest.split)) {
+                throw InvalidApkSetException("duplicate split names found")
             }
 
             if (manifest.application.debuggable == true) {
