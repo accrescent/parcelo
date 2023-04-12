@@ -1,5 +1,6 @@
 package app.accrescent.parcelo.data
 
+import app.accrescent.parcelo.routes.auth.SESSION_LIFETIME
 import io.ktor.server.application.Application
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
@@ -14,8 +15,8 @@ fun Application.configureDatabase() {
     transaction {
         SchemaUtils.create(Apps, Drafts, Sessions, ReviewIssues, Reviewers, Users)
 
-        // If this is a development run, create a default superuser
         if (environment.developmentMode) {
+            // Create a default superuser
             val user = User.new {
                 githubUserId = System.getenv("DEBUG_USER_GITHUB_ID").toLong()
                 email = System.getenv("DEBUG_USER_EMAIL")
@@ -24,6 +25,12 @@ fun Application.configureDatabase() {
             Reviewer.new {
                 userId = user.id
                 email = System.getenv("DEBUG_USER_REVIEWER_EMAIL")
+            }
+
+            // Create a session for said superuser for testing
+            Session.new(System.getenv("DEBUG_USER_SESSION_ID")) {
+                userId = user.id
+                expiryTime = System.currentTimeMillis() + SESSION_LIFETIME.inWholeMilliseconds
             }
         }
     }
