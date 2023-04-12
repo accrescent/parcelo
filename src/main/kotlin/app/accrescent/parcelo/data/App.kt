@@ -5,6 +5,7 @@ import org.jetbrains.exposed.dao.Entity
 import org.jetbrains.exposed.dao.EntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.IdTable
+import org.jetbrains.exposed.sql.ReferenceOption
 
 object Apps : IdTable<String>("apps") {
     override val id = text("id").entityId()
@@ -12,6 +13,8 @@ object Apps : IdTable<String>("apps") {
     val versionCode = integer("version_code")
     val versionName = text("version_name")
     val iconHash = text("icon_hash")
+    val reviewIssueGroupId =
+        reference("review_issue_group_id", ReviewIssueGroups, ReferenceOption.NO_ACTION).nullable()
     override val primaryKey = PrimaryKey(id)
 }
 
@@ -22,6 +25,7 @@ class App(id: EntityID<String>) : Entity<String>(id), ToSerializable<Serializabl
     var versionCode by Apps.versionCode
     var versionName by Apps.versionName
     var iconHash by Apps.iconHash
+    var reviewIssueGroupId by Apps.reviewIssueGroupId
 
     override fun serializable(): SerializableApp {
         return SerializableApp(id.value, label, versionCode, versionName, iconHash)

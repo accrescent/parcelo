@@ -74,6 +74,7 @@ fun Route.createAppRoute() {
                         versionCode = draft.versionCode
                         versionName = draft.versionName
                         iconHash = draft.iconHash
+                        reviewIssueGroupId = draft.reviewIssueGroupId
                     }
                 }
             } catch (e: ExposedSQLException) {
