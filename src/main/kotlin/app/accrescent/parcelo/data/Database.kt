@@ -13,7 +13,15 @@ fun Application.configureDatabase() {
     )
 
     transaction {
-        SchemaUtils.create(Apps, Drafts, Sessions, ReviewIssues, Reviewers, Users)
+        SchemaUtils.create(
+            AccessControlLists,
+            Apps,
+            Drafts,
+            Sessions,
+            ReviewIssues,
+            Reviewers,
+            Users,
+        )
 
         if (environment.developmentMode) {
             // Create a default superuser

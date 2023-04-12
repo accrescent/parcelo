@@ -1,6 +1,7 @@
 package app.accrescent.parcelo.routes
 
 import app.accrescent.parcelo.data.App as AppDao
+import app.accrescent.parcelo.data.AccessControlList
 import app.accrescent.parcelo.data.Draft
 import app.accrescent.parcelo.data.Drafts
 import app.accrescent.parcelo.data.Session
@@ -69,13 +70,18 @@ fun Route.createAppRoute() {
             val app = try {
                 transaction {
                     draft.delete()
-                    AppDao.new(draft.appId) {
+                    val app = AppDao.new(draft.appId) {
                         label = draft.label
                         versionCode = draft.versionCode
                         versionName = draft.versionName
                         iconHash = draft.iconHash
                         reviewIssueGroupId = draft.reviewIssueGroupId
                     }
+                    AccessControlList.new {
+                        this.userId = userId
+                        appId = app.id
+                    }
+                    app
                 }
             } catch (e: ExposedSQLException) {
                 if (e.errorCode == ErrorCode.DUPLICATE_KEY_1) {
