@@ -29,8 +29,10 @@ fun Application.module(httpClient: HttpClient = HttpClient(CIO)) {
 
         val mainModule = module {
             single {
-                XmlMapper()
+                XmlMapper.builder()
+                    .defaultUseWrapper(false)
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+                    .build()
                     .registerKotlinModule()
                     .readerFor(AndroidManifest::class.java)
             }

@@ -2,11 +2,14 @@ package app.accrescent.parcelo.routes
 
 import app.accrescent.parcelo.data.Draft as DraftDao
 import app.accrescent.parcelo.data.Drafts as DbDrafts
+import app.accrescent.parcelo.data.ReviewIssue
+import app.accrescent.parcelo.data.ReviewIssueGroup
 import app.accrescent.parcelo.data.Reviewer
 import app.accrescent.parcelo.data.Reviewers
 import app.accrescent.parcelo.data.Session
 import app.accrescent.parcelo.validation.ApkSetMetadata
 import app.accrescent.parcelo.validation.InvalidApkSetException
+import app.accrescent.parcelo.validation.PERMISSION_REVIEW_BLACKLIST
 import app.accrescent.parcelo.validation.parseApkSet
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.PartData
@@ -101,6 +104,22 @@ fun Route.createDraftRoute() {
         if (apkSetMetadata != null && label != null && iconHash != null) {
             try {
                 val draft = transaction {
+                    // Associate review issues with draft as necessary
+                    val issueGroupId = if (apkSetMetadata.permissions.isNotEmpty()) {
+                        val issueGroupId = ReviewIssueGroup.new {}.id
+                        apkSetMetadata.permissions
+                            .filter { PERMISSION_REVIEW_BLACKLIST.contains(it) }
+                            .forEach {
+                                ReviewIssue.new {
+                                    reviewIssueGroupId = issueGroupId
+                                    rawValue = it
+                                }
+                            }
+                        issueGroupId
+                    } else {
+                        null
+                    }
+
                     DraftDao.new {
                         this.label = label
                         appId = apkSetMetadata.appId
@@ -108,6 +127,7 @@ fun Route.createDraftRoute() {
                         versionName = apkSetMetadata.versionName
                         this.iconHash = iconHash
                         this.submitterId = submitterId
+                        reviewIssueGroupId = issueGroupId
                     }.serializable()
                 }
 

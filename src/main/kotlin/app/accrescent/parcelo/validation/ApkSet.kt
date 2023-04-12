@@ -21,6 +21,7 @@ data class ApkSetMetadata(
     val versionCode: Int,
     val versionName: String,
     val bundletoolVersion: String,
+    val permissions: List<String>,
 )
 
 const val ANDROID_MANIFEST = "AndroidManifest.xml"
@@ -124,7 +125,8 @@ fun parseApkSet(file: InputStream): ApkSetMetadata {
             // Pin the app metadata on the first manifest parsed to ensure all split APKs have the
             // same app ID and version code.
             if (metadata == null) {
-                metadata = ApkSetMetadata(manifest.`package`, manifest.versionCode, "", "")
+                metadata =
+                    ApkSetMetadata(manifest.`package`, manifest.versionCode, "", "", emptyList())
             } else {
                 // Check that the metadata is the same as that previously pinned (sans the version
                 // name for reasons described above).
@@ -136,8 +138,12 @@ fun parseApkSet(file: InputStream): ApkSetMetadata {
                 }
             }
 
-            // Update the version name if this is the base APK
+            // Update the permissions and version name if this is the base APK
             if (manifest.split == null) {
+                manifest.usesPermissions?.let { permissions ->
+                    metadata = metadata!!.copy(permissions = permissions.map { it.name })
+                }
+
                 if (manifest.versionName != null) {
                     metadata = metadata!!.copy(versionName = manifest.versionName)
                 } else {
