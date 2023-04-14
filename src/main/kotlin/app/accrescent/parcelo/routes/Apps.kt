@@ -1,7 +1,7 @@
 package app.accrescent.parcelo.routes
 
-import app.accrescent.parcelo.data.App as AppDao
 import app.accrescent.parcelo.data.AccessControlList
+import app.accrescent.parcelo.data.App
 import app.accrescent.parcelo.data.Draft
 import app.accrescent.parcelo.data.Drafts
 import app.accrescent.parcelo.data.Session
@@ -70,7 +70,7 @@ fun Route.createAppRoute() {
             val app = try {
                 transaction {
                     draft.delete()
-                    val app = AppDao.new(draft.appId) {
+                    val app = App.new(draft.appId) {
                         label = draft.label
                         versionCode = draft.versionCode
                         versionName = draft.versionName
@@ -103,7 +103,7 @@ fun Route.createAppRoute() {
 
 fun Route.getAppRoute() {
     get<Apps.Id> {
-        val app = transaction { AppDao.findById(it.id) }?.serializable()
+        val app = transaction { App.findById(it.id) }?.serializable()
         if (app == null) {
             call.respond(HttpStatusCode.NotFound)
         } else {
@@ -114,7 +114,7 @@ fun Route.getAppRoute() {
 
 fun Route.getAppsRoute() {
     get<Apps> {
-        val apps = transaction { AppDao.all().map { it.serializable() } }
+        val apps = transaction { App.all().map { it.serializable() } }
 
         call.respond(apps)
     }

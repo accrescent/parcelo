@@ -1,7 +1,7 @@
 package app.accrescent.parcelo.routes.auth
 
-import app.accrescent.parcelo.data.Session as SessionDao
 import app.accrescent.parcelo.data.Sessions as DbSessions
+import app.accrescent.parcelo.data.Session
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.server.application.Application
@@ -56,7 +56,7 @@ fun Application.configureAuthentication(
                     // instead delete all expired sessions whenever a new session is created,
                     // which happens much less frequently than session validation.
                     DbSessions.deleteWhere { expiryTime less currentTime }
-                    SessionDao.findById(session.id)
+                    Session.findById(session.id)
                 }
             }
 

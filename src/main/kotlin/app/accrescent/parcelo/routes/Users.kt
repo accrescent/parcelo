@@ -1,6 +1,5 @@
 package app.accrescent.parcelo.routes
 
-import app.accrescent.parcelo.data.User as UserDao
 import app.accrescent.parcelo.data.User
 import io.ktor.http.HttpStatusCode
 import io.ktor.resources.Resource
@@ -42,7 +41,7 @@ fun Route.getUserRoute() {
 
 fun Route.getUsersRoute() {
     get<Users> {
-        val users = transaction { UserDao.all().map { it.serializable() } }
+        val users = transaction { User.all().map { it.serializable() } }
 
         call.respond(users)
     }

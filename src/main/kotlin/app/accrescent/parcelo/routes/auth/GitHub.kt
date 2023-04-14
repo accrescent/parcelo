@@ -1,6 +1,6 @@
 package app.accrescent.parcelo.routes.auth
 
-import app.accrescent.parcelo.data.Session as SessionDao
+import app.accrescent.parcelo.data.Session
 import app.accrescent.parcelo.data.User
 import app.accrescent.parcelo.data.Users
 import io.ktor.client.HttpClient
@@ -79,7 +79,7 @@ fun Route.githubRoutes() {
                 }
 
                 val sessionId = transaction {
-                    SessionDao.new(generateSessionId()) {
+                    Session.new(generateSessionId()) {
                         userId = user.id
                         expiryTime =
                             System.currentTimeMillis() + SESSION_LIFETIME.inWholeMilliseconds

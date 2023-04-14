@@ -1,7 +1,7 @@
 package app.accrescent.parcelo.routes
 
-import app.accrescent.parcelo.data.Draft as DraftDao
 import app.accrescent.parcelo.data.Drafts as DbDrafts
+import app.accrescent.parcelo.data.Draft
 import app.accrescent.parcelo.data.ReviewIssue
 import app.accrescent.parcelo.data.ReviewIssueGroup
 import app.accrescent.parcelo.data.Reviewer
@@ -117,7 +117,7 @@ fun Route.createDraftRoute() {
                     null
                 }
 
-                DraftDao.new {
+                Draft.new {
                     this.label = label
                     appId = apkSetMetadata.appId
                     versionCode = apkSetMetadata.versionCode
@@ -147,7 +147,7 @@ fun Route.deleteDraftRoute() {
         }
 
         val draft = transaction {
-            DraftDao.find { DbDrafts.id eq draftId and (DbDrafts.submitterId eq userId) }
+            Draft.find { DbDrafts.id eq draftId and (DbDrafts.submitterId eq userId) }
                 .singleOrNull()
         }
         if (draft == null) {
@@ -164,7 +164,7 @@ fun Route.getDraftsRoute() {
         val userId = call.principal<Session>()!!.userId
 
         val drafts = transaction {
-            DraftDao.find { DbDrafts.submitterId eq userId }.map { it.serializable() }
+            Draft.find { DbDrafts.submitterId eq userId }.map { it.serializable() }
         }.toList()
 
         call.respond(drafts)
@@ -183,7 +183,7 @@ fun Route.getDraftRoute() {
         }
 
         val draft = transaction {
-            DraftDao.find { DbDrafts.id eq draftId and (DbDrafts.submitterId eq userId) }
+            Draft.find { DbDrafts.id eq draftId and (DbDrafts.submitterId eq userId) }
                 .singleOrNull()
         }?.serializable()
         if (draft == null) {
@@ -215,7 +215,7 @@ fun Route.updateDraftRoute() {
         // Submit the draft
         if (request.submitted) {
             val draft = transaction {
-                DraftDao.find { DbDrafts.id eq draftId and (DbDrafts.submitterId eq userId) }
+                Draft.find { DbDrafts.id eq draftId and (DbDrafts.submitterId eq userId) }
                     .singleOrNull()
             }
             if (draft == null) {
@@ -244,7 +244,7 @@ fun Route.updateDraftRoute() {
             } else {
                 // Approve the draft
                 val draft = transaction {
-                    DraftDao.find { DbDrafts.id eq draftId and (DbDrafts.reviewerId eq reviewer.id) }
+                    Draft.find { DbDrafts.id eq draftId and (DbDrafts.reviewerId eq reviewer.id) }
                         .singleOrNull()
                 }
                 if (draft == null) {
