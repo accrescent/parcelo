@@ -28,8 +28,6 @@ import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.post
 import kotlinx.serialization.Serializable
-import org.h2.api.ErrorCode
-import org.jetbrains.exposed.exceptions.ExposedSQLException
 import org.jetbrains.exposed.sql.Random
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.selectAll
@@ -102,43 +100,35 @@ fun Route.createDraftRoute() {
         }
 
         if (apkSetMetadata != null && label != null && iconHash != null) {
-            try {
-                val draft = transaction {
-                    // Associate review issues with draft as necessary
-                    val issueGroupId = if (apkSetMetadata.permissions.isNotEmpty()) {
-                        val issueGroupId = ReviewIssueGroup.new {}.id
-                        apkSetMetadata.permissions
-                            .filter { PERMISSION_REVIEW_BLACKLIST.contains(it) }
-                            .forEach {
-                                ReviewIssue.new {
-                                    reviewIssueGroupId = issueGroupId
-                                    rawValue = it
-                                }
+            val draft = transaction {
+                // Associate review issues with draft as necessary
+                val issueGroupId = if (apkSetMetadata.permissions.isNotEmpty()) {
+                    val issueGroupId = ReviewIssueGroup.new {}.id
+                    apkSetMetadata.permissions
+                        .filter { PERMISSION_REVIEW_BLACKLIST.contains(it) }
+                        .forEach {
+                            ReviewIssue.new {
+                                reviewIssueGroupId = issueGroupId
+                                rawValue = it
                             }
-                        issueGroupId
-                    } else {
-                        null
-                    }
-
-                    DraftDao.new {
-                        this.label = label
-                        appId = apkSetMetadata.appId
-                        versionCode = apkSetMetadata.versionCode
-                        versionName = apkSetMetadata.versionName
-                        this.iconHash = iconHash
-                        this.submitterId = submitterId
-                        reviewIssueGroupId = issueGroupId
-                    }.serializable()
-                }
-
-                call.respond(draft)
-            } catch (e: ExposedSQLException) {
-                if (e.errorCode == ErrorCode.DUPLICATE_KEY_1) {
-                    call.respond(HttpStatusCode.Conflict)
+                        }
+                    issueGroupId
                 } else {
-                    throw e
+                    null
                 }
+
+                DraftDao.new {
+                    this.label = label
+                    appId = apkSetMetadata.appId
+                    versionCode = apkSetMetadata.versionCode
+                    versionName = apkSetMetadata.versionName
+                    this.iconHash = iconHash
+                    this.submitterId = submitterId
+                    reviewIssueGroupId = issueGroupId
+                }.serializable()
             }
+
+            call.respond(draft)
         } else {
             call.respond(HttpStatusCode.BadRequest)
         }
