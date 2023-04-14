@@ -71,6 +71,10 @@ task("buildFrontendRelease", NpxTask::class) {
     outputs.dir("dist")
 }
 
+task("ci") {
+    dependsOn(tasks.build, "buildFrontendRelease", "npm_run_lint")
+}
+
 dependencies {
     implementation("com.android.tools.apkparser:apkanalyzer:$androidToolsVersion")
     implementation("com.android.tools.build:apksig:$apksigVersion")
