@@ -80,6 +80,7 @@ fun Route.createAppRoute() {
                     AccessControlList.new {
                         this.userId = userId
                         appId = app.id
+                        update = true
                     }
                     app
                 }

@@ -20,6 +20,7 @@ fun Application.configureDatabase() {
             Sessions,
             ReviewIssues,
             Reviewers,
+            Updates,
             Users,
         )
 
