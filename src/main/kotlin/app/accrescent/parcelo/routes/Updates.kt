@@ -2,12 +2,14 @@ package app.accrescent.parcelo.routes
 
 import app.accrescent.parcelo.data.AccessControlLists
 import app.accrescent.parcelo.data.App
+import app.accrescent.parcelo.data.Apps
 import app.accrescent.parcelo.data.ReviewIssue
 import app.accrescent.parcelo.data.ReviewIssueGroup
 import app.accrescent.parcelo.data.ReviewIssues
 import app.accrescent.parcelo.data.Reviewers
 import app.accrescent.parcelo.data.Session
 import app.accrescent.parcelo.data.Update
+import app.accrescent.parcelo.data.Updates
 import app.accrescent.parcelo.validation.ApkSetMetadata
 import app.accrescent.parcelo.validation.InvalidApkSetException
 import app.accrescent.parcelo.validation.PERMISSION_REVIEW_BLACKLIST
@@ -22,6 +24,7 @@ import io.ktor.server.auth.principal
 import io.ktor.server.request.receiveMultipart
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
+import io.ktor.server.routing.patch
 import io.ktor.server.routing.post
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.Random
@@ -29,10 +32,12 @@ import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
+import java.util.UUID
 
 fun Route.updateRoutes() {
     authenticate("cookie") {
         createUpdateRoute()
+        updateUpdateRoute()
     }
 }
 
@@ -137,5 +142,53 @@ fun Route.createUpdateRoute() {
         }.serializable()
 
         call.respond(update)
+    }
+}
+
+fun Route.updateUpdateRoute() {
+    patch("/apps/{app_id}/updates/{update_id}") { route ->
+        val userId = call.principal<Session>()!!.userId
+        val appId = call.parameters["app_id"]!!
+        val updateId = try {
+            UUID.fromString(call.parameters["update_id"])
+        } catch (e: IllegalArgumentException) {
+            call.respond(HttpStatusCode.BadRequest)
+            return@patch
+        }
+
+        // Users can only submit an update they've created and which has a versionCode higher than
+        // that of the published app
+        val statusCode = transaction {
+            val publishedApp = Apps
+                .select { Apps.id eq appId }
+                .forUpdate() // Lock to prevent race conditions on the version code
+                .singleOrNull()
+                ?.let { App.wrapRow(it) }
+                ?: return@transaction HttpStatusCode.NotFound
+            val update = Updates
+                .innerJoin(Apps)
+                .select {
+                    Updates.id.eq(updateId)
+                        .and(Updates.appId eq appId)
+                        .and(Updates.submitterId eq userId)
+                }
+                .singleOrNull()
+                ?.let { Update.wrapRow(it) }
+                ?: return@transaction HttpStatusCode.NotFound
+
+            val requiresReview = update.reviewerId != null
+            if (update.versionCode <= publishedApp.versionCode) {
+                HttpStatusCode.UnprocessableEntity
+            } else if (requiresReview) {
+                update.submitted = true
+                HttpStatusCode.OK
+            } else {
+                publishedApp.versionCode = update.versionCode
+                update.delete()
+                HttpStatusCode.OK
+            }
+        }
+
+        call.respond(statusCode)
     }
 }

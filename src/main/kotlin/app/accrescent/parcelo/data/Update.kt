@@ -15,6 +15,7 @@ object Updates : UUIDTable("updates") {
     val reviewerId = reference("reviewer_id", Reviewers).nullable()
     val reviewIssueGroupId =
         reference("review_issue_group_id", ReviewIssueGroups, ReferenceOption.NO_ACTION).nullable()
+    val submitted = bool("submitted").default(false)
 }
 
 class Update(id: EntityID<UUID>) : UUIDEntity(id), ToSerializable<SerializableUpdate> {
@@ -25,6 +26,7 @@ class Update(id: EntityID<UUID>) : UUIDEntity(id), ToSerializable<SerializableUp
     var submitterId by Updates.submitterId
     var reviewerId by Updates.reviewerId
     var reviewIssueGroupId by Updates.reviewIssueGroupId
+    var submitted by Updates.submitted
 
     override fun serializable(): SerializableUpdate {
         return SerializableUpdate(id.value.toString(), appId.value, versionCode, reviewerId != null)
