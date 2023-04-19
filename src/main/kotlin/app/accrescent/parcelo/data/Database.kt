@@ -39,7 +39,7 @@ fun Application.configureDatabase() {
             // Create a session for said superuser for testing
             Session.new(System.getenv("DEBUG_USER_SESSION_ID")) {
                 userId = user.id
-                expiryTime = System.currentTimeMillis() + SESSION_LIFETIME.inWholeMilliseconds
+                expiryTime = Long.MAX_VALUE
             }
         }
     }
