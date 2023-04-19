@@ -10,6 +10,8 @@ data class Update(
     val appId: String,
     @SerialName("version_code")
     val versionCode: Int,
+    @SerialName("version_name")
+    val versionName: String,
     @SerialName("requires_review")
     val requiresReview: Boolean,
 )

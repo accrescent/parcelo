@@ -127,6 +127,7 @@ fun Route.createUpdateRoute() {
                     Update.new {
                         this.appId = app.id
                         versionCode = apkSetMetadata.versionCode
+                        versionName = apkSetMetadata.versionName
                         submitterId = userId
                         if (issueGroupId != null) {
                             reviewerId = Reviewers
@@ -184,6 +185,7 @@ fun Route.updateUpdateRoute() {
                 HttpStatusCode.OK
             } else {
                 publishedApp.versionCode = update.versionCode
+                publishedApp.versionName = update.versionName
                 update.delete()
                 HttpStatusCode.OK
             }

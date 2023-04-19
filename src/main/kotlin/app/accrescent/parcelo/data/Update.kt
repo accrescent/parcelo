@@ -11,6 +11,7 @@ import java.util.UUID
 object Updates : UUIDTable("updates") {
     val appId = reference("app_id", Apps, ReferenceOption.CASCADE)
     val versionCode = integer("version_code")
+    val versionName = text("version_name")
     val submitterId = reference("submitter_id", Users, ReferenceOption.CASCADE)
     val reviewerId = reference("reviewer_id", Reviewers).nullable()
     val reviewIssueGroupId =
@@ -23,12 +24,19 @@ class Update(id: EntityID<UUID>) : UUIDEntity(id), ToSerializable<SerializableUp
 
     var appId by Updates.appId
     var versionCode by Updates.versionCode
+    var versionName by Updates.versionName
     var submitterId by Updates.submitterId
     var reviewerId by Updates.reviewerId
     var reviewIssueGroupId by Updates.reviewIssueGroupId
     var submitted by Updates.submitted
 
     override fun serializable(): SerializableUpdate {
-        return SerializableUpdate(id.value.toString(), appId.value, versionCode, reviewerId != null)
+        return SerializableUpdate(
+            id.value.toString(),
+            appId.value,
+            versionCode,
+            versionName,
+            reviewerId != null,
+        )
     }
 }

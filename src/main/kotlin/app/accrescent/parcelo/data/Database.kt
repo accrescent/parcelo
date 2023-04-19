@@ -1,6 +1,5 @@
 package app.accrescent.parcelo.data
 
-import app.accrescent.parcelo.routes.auth.SESSION_LIFETIME
 import io.ktor.server.application.Application
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
