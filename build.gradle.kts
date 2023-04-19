@@ -17,7 +17,7 @@ plugins {
     kotlin("plugin.serialization") version "1.8.20"
     id("com.github.node-gradle.node") version "3.5.1"
     id("com.google.protobuf") version "0.9.2"
-    id("io.ktor.plugin") version "2.2.4"
+    id("io.ktor.plugin") version "2.3.0"
 }
 
 group = "app.accrescent"
