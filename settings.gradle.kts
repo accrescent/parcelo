@@ -1,1 +1,1 @@
-rootProject.name = "app.accrescent.parcelo"
+rootProject.name = "parcelo"
