@@ -2,6 +2,8 @@ package app.accrescent.parcelo
 
 import app.accrescent.parcelo.data.configureDatabase
 import app.accrescent.parcelo.routes.auth.configureAuthentication
+import app.accrescent.parcelo.storage.FileStorageService
+import app.accrescent.parcelo.storage.LocalFileStorageService
 import app.accrescent.parcelo.validation.AndroidManifest
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.dataformat.xml.XmlMapper
@@ -17,6 +19,7 @@ import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import org.koin.dsl.module
 import org.koin.ktor.plugin.Koin
 import org.koin.logger.slf4jLogger
+import kotlin.io.path.Path
 
 fun main() {
     embeddedServer(Netty, port = 8080, host = "0.0.0.0", module = Application::module)
@@ -36,6 +39,7 @@ fun Application.module(httpClient: HttpClient = HttpClient(CIO)) {
                     .registerKotlinModule()
                     .readerFor(AndroidManifest::class.java)
             }
+            single<FileStorageService> { LocalFileStorageService(Path(System.getenv("FILE_STORAGE_BASE_DIR"))) }
         }
 
         modules(mainModule)

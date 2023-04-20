@@ -10,6 +10,7 @@ import app.accrescent.parcelo.data.Reviewers
 import app.accrescent.parcelo.data.Session
 import app.accrescent.parcelo.data.Update
 import app.accrescent.parcelo.data.Updates
+import app.accrescent.parcelo.storage.FileStorageService
 import app.accrescent.parcelo.validation.ApkSetMetadata
 import app.accrescent.parcelo.validation.InvalidApkSetException
 import app.accrescent.parcelo.validation.PERMISSION_REVIEW_BLACKLIST
@@ -32,6 +33,7 @@ import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.koin.java.KoinJavaComponent.inject
 import java.util.UUID
 
 fun Route.updateRoutes() {
@@ -43,6 +45,8 @@ fun Route.updateRoutes() {
 
 fun Route.createUpdateRoute() {
     post("/apps/{app_id}/updates") {
+        val storageService by inject<FileStorageService>(FileStorageService::class.java)
+
         val userId = call.principal<Session>()!!.userId
         val appId = call.parameters["app_id"]!!
 
@@ -60,10 +64,12 @@ fun Route.createUpdateRoute() {
         }
 
         var apkSetMetadata: ApkSetMetadata? = null
+        var apkSetData: ByteArray? = null
         for (part in call.receiveMultipart().readAllParts()) {
             if (part is PartData.FileItem && part.name == "apk_set") {
                 apkSetMetadata = try {
-                    part.streamProvider().use { parseApkSet(it) }
+                    apkSetData = part.streamProvider().use { it.readAllBytes() }
+                    apkSetData.inputStream().use { parseApkSet(it) }
                 } catch (e: InvalidApkSetException) {
                     call.respond(HttpStatusCode.BadRequest)
                     return@post
@@ -72,7 +78,7 @@ fun Route.createUpdateRoute() {
                 }
             }
         }
-        if (apkSetMetadata == null) {
+        if (apkSetMetadata == null || apkSetData == null) {
             call.respond(HttpStatusCode.BadRequest)
             return@post
         }
@@ -90,6 +96,8 @@ fun Route.createUpdateRoute() {
             call.respond(HttpStatusCode.UnprocessableEntity)
             return@post
         }
+
+        val apkSetFileId = apkSetData.inputStream().use { storageService.saveFile(it) }
 
         // There exists:
         //
@@ -129,6 +137,7 @@ fun Route.createUpdateRoute() {
                         versionCode = apkSetMetadata.versionCode
                         versionName = apkSetMetadata.versionName
                         submitterId = userId
+                        fileId = apkSetFileId
                         if (issueGroupId != null) {
                             reviewerId = Reviewers
                                 .slice(Reviewers.id)
@@ -148,6 +157,8 @@ fun Route.createUpdateRoute() {
 
 fun Route.updateUpdateRoute() {
     patch("/apps/{app_id}/updates/{update_id}") { route ->
+        val storageService by inject<FileStorageService>(FileStorageService::class.java)
+
         val userId = call.principal<Session>()!!.userId
         val appId = call.parameters["app_id"]!!
         val updateId = try {
@@ -186,6 +197,11 @@ fun Route.updateUpdateRoute() {
             } else {
                 publishedApp.versionCode = update.versionCode
                 publishedApp.versionName = update.versionName
+
+                val oldAppFileId = publishedApp.fileId
+                publishedApp.fileId = update.fileId
+                storageService.deleteFile(oldAppFileId)
+
                 update.delete()
                 HttpStatusCode.OK
             }

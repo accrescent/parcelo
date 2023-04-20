@@ -15,6 +15,7 @@ object Updates : UUIDTable("updates") {
     val versionCode = integer("version_code")
     val versionName = text("version_name")
     val submitterId = reference("submitter_id", Users, ReferenceOption.CASCADE)
+    val fileId = reference("file_id", Files, ReferenceOption.NO_ACTION)
     val reviewerId = reference("reviewer_id", Reviewers).nullable()
     val reviewIssueGroupId =
         reference("review_issue_group_id", ReviewIssueGroups, ReferenceOption.NO_ACTION).nullable()
@@ -38,6 +39,7 @@ class Update(id: EntityID<UUID>) : UUIDEntity(id), ToSerializable<SerializableUp
     var versionCode by Updates.versionCode
     var versionName by Updates.versionName
     var submitterId by Updates.submitterId
+    var fileId by Updates.fileId
     var reviewerId by Updates.reviewerId
     var reviewIssueGroupId by Updates.reviewIssueGroupId
     var submitted by Updates.submitted

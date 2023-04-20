@@ -16,6 +16,8 @@ fun Application.configureDatabase() {
             AccessControlLists,
             Apps,
             Drafts,
+            Files,
+            Icons,
             Sessions,
             ReviewIssues,
             Reviewers,

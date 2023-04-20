@@ -74,7 +74,8 @@ fun Route.createAppRoute() {
                         label = draft.label
                         versionCode = draft.versionCode
                         versionName = draft.versionName
-                        iconHash = draft.iconHash
+                        fileId = draft.fileId
+                        iconId = draft.iconId
                         reviewIssueGroupId = draft.reviewIssueGroupId
                     }
                     AccessControlList.new {

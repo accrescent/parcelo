@@ -17,8 +17,9 @@ object Drafts : UUIDTable("drafts") {
     val label = text("label")
     val versionCode = integer("version_code")
     val versionName = text("version_name")
-    val iconHash = text("icon_hash")
     val submitterId = reference("submitter_id", Users, ReferenceOption.CASCADE)
+    val fileId = reference("file_id", Files, ReferenceOption.NO_ACTION)
+    val iconId = reference("icon_id", Icons, ReferenceOption.NO_ACTION)
     val reviewerId = reference("reviewer_id", Reviewers).nullable()
     val approved = bool("approved").default(false)
     val reviewIssueGroupId =
@@ -38,8 +39,9 @@ class Draft(id: EntityID<UUID>) : UUIDEntity(id), ToSerializable<SerializableDra
     var label by Drafts.label
     var versionCode by Drafts.versionCode
     var versionName by Drafts.versionName
-    var iconHash by Drafts.iconHash
     var submitterId by Drafts.submitterId
+    var fileId by Drafts.fileId
+    var iconId by Drafts.iconId
     var reviewerId by Drafts.reviewerId
     var approved by Drafts.approved
     var reviewIssueGroupId by Drafts.reviewIssueGroupId
@@ -51,7 +53,6 @@ class Draft(id: EntityID<UUID>) : UUIDEntity(id), ToSerializable<SerializableDra
             label,
             versionCode,
             versionName,
-            iconHash,
             reviewerId != null,
             approved,
         )

@@ -2,11 +2,13 @@ package app.accrescent.parcelo.routes
 
 import app.accrescent.parcelo.data.Drafts as DbDrafts
 import app.accrescent.parcelo.data.Draft
+import app.accrescent.parcelo.data.Icon
 import app.accrescent.parcelo.data.ReviewIssue
 import app.accrescent.parcelo.data.ReviewIssueGroup
 import app.accrescent.parcelo.data.Reviewer
 import app.accrescent.parcelo.data.Reviewers
 import app.accrescent.parcelo.data.Session
+import app.accrescent.parcelo.storage.FileStorageService
 import app.accrescent.parcelo.validation.ApkSetMetadata
 import app.accrescent.parcelo.validation.InvalidApkSetException
 import app.accrescent.parcelo.validation.PERMISSION_REVIEW_BLACKLIST
@@ -32,6 +34,7 @@ import org.jetbrains.exposed.sql.Random
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.koin.java.KoinJavaComponent.inject
 import java.security.MessageDigest
 import java.util.UUID
 import javax.imageio.ImageIO
@@ -57,17 +60,23 @@ fun Route.draftRoutes() {
 
 fun Route.createDraftRoute() {
     post("/drafts") {
+        val storageService by inject<FileStorageService>(FileStorageService::class.java)
+
         val submitterId = call.principal<Session>()!!.userId
 
         var apkSetMetadata: ApkSetMetadata? = null
         var label: String? = null
+        var apkSetData: ByteArray? = null
         var iconHash: String? = null
+        var iconData: ByteArray? = null
 
         val multipart = call.receiveMultipart().readAllParts()
         for (part in multipart) {
             if (part is PartData.FileItem && part.name == "apk_set") {
                 apkSetMetadata = try {
-                    part.streamProvider().use { parseApkSet(it) }
+                    apkSetData = part.streamProvider().use { it.readAllBytes() }
+
+                    apkSetData.inputStream().use { parseApkSet(it) }
                 } catch (e: InvalidApkSetException) {
                     call.respond(HttpStatusCode.BadRequest)
                     return@post
@@ -75,7 +84,7 @@ fun Route.createDraftRoute() {
                     part.dispose()
                 }
             } else if (part is PartData.FileItem && part.name == "icon") {
-                val iconData = part.streamProvider().use { it.readAllBytes() }
+                iconData = part.streamProvider().use { it.readAllBytes() }
 
                 // Icon must be a 512 x 512 PNG
                 val image = iconData.inputStream().use { ImageIO.read(it) }
@@ -99,7 +108,13 @@ fun Route.createDraftRoute() {
             }
         }
 
-        if (apkSetMetadata != null && label != null && iconHash != null) {
+        if (
+            apkSetMetadata != null &&
+            label != null &&
+            iconHash != null &&
+            iconData != null &&
+            apkSetData != null
+        ) {
             val draft = transaction {
                 // Associate review issues with draft as necessary
                 val issueGroupId = if (apkSetMetadata.permissions.isNotEmpty()) {
@@ -117,13 +132,20 @@ fun Route.createDraftRoute() {
                     null
                 }
 
+                val iconFileId = iconData.inputStream().use { storageService.saveFile(it) }
+                val appFileId = apkSetData.inputStream().use { storageService.saveFile(it) }
+                val icon = Icon.new {
+                    hash = iconHash
+                    fileId = iconFileId
+                }
                 Draft.new {
                     this.label = label
                     appId = apkSetMetadata.appId
                     versionCode = apkSetMetadata.versionCode
                     versionName = apkSetMetadata.versionName
-                    this.iconHash = iconHash
                     this.submitterId = submitterId
+                    fileId = appFileId
+                    iconId = icon.id
                     reviewIssueGroupId = issueGroupId
                 }.serializable()
             }
