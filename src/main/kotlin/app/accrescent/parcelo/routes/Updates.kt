@@ -156,7 +156,7 @@ fun Route.createUpdateRoute() {
 }
 
 fun Route.updateUpdateRoute() {
-    patch("/apps/{app_id}/updates/{update_id}") { route ->
+    patch("/apps/{app_id}/updates/{update_id}") {
         val storageService by inject<FileStorageService>(FileStorageService::class.java)
 
         val userId = call.principal<Session>()!!.userId
