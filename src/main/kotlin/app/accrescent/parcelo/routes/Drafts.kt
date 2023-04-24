@@ -37,6 +37,7 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import org.koin.java.KoinJavaComponent.inject
 import java.security.MessageDigest
 import java.util.UUID
+import javax.imageio.IIOException
 import javax.imageio.ImageIO
 
 @Resource("/drafts")
@@ -87,7 +88,17 @@ fun Route.createDraftRoute() {
                 iconData = part.streamProvider().use { it.readAllBytes() }
 
                 // Icon must be a 512 x 512 PNG
-                val image = iconData.inputStream().use { ImageIO.read(it) }
+                val pngReader = ImageIO.getImageReadersByFormatName("PNG").next()
+                val image = try {
+                    iconData.inputStream().use { ImageIO.createImageInputStream(it) }.use {
+                        pngReader.input = it
+                        pngReader.read(0)
+                    }
+                } catch (e: IIOException) {
+                    // Assume this is a format error
+                    call.respond(HttpStatusCode.BadRequest)
+                    return@post
+                }
                 if (image.width != 512 || image.height != 512) {
                     call.respond(HttpStatusCode.BadRequest)
                     return@post
