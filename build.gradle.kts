@@ -11,6 +11,7 @@ val ktorVersion: String by project
 val kotlinVersion: String by project
 val protobufVersion: String by project
 val logbackVersion: String by project
+val semverVersion: String by project
 
 plugins {
     kotlin("jvm") version "1.8.20"
@@ -80,6 +81,7 @@ dependencies {
     implementation("com.android.tools.build:apksig:$apksigVersion")
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-xml:$jacksonVersion")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion")
+    implementation("com.github.zafarkhaja:java-semver:$semverVersion")
     implementation("com.google.protobuf:protobuf-java:$protobufVersion")
     implementation("com.h2database:h2:$h2Version")
     implementation("io.insert-koin:koin-ktor:$koinVersion")

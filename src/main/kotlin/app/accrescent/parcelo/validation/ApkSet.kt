@@ -7,6 +7,8 @@ import com.android.apksig.util.DataSources
 import com.android.bundle.Commands.BuildApksResult
 import com.android.tools.apk.analyzer.BinaryXmlParser
 import com.fasterxml.jackson.databind.ObjectReader
+import com.github.zafarkhaja.semver.ParseException
+import com.github.zafarkhaja.semver.Version
 import com.google.protobuf.InvalidProtocolBufferException
 import io.ktor.util.moveToByteArray
 import org.koin.java.KoinJavaComponent.inject
@@ -25,6 +27,12 @@ data class ApkSetMetadata(
 )
 
 const val ANDROID_MANIFEST = "AndroidManifest.xml"
+
+/**
+ * The minimum acceptable bundletool version used to generate the APK set. This version is taken
+ * from a recent Android Studio release.
+ */
+private val MIN_BUNDLETOOL_VERSION = Version.Builder("1.11.4").build()
 
 /**
  * Parses an APK set into its metadata
@@ -72,7 +80,20 @@ fun parseApkSet(file: InputStream): ApkSetMetadata {
                 } catch (e: InvalidProtocolBufferException) {
                     throw InvalidApkSetException("bundletool metadata not valid")
                 }
-                bundletoolVersion = bundletoolMetadata.bundletool.version
+                // Validate bundletool version
+                val parsedBundletoolVersion = try {
+                    Version.Builder(bundletoolMetadata.bundletool.version).build()
+                } catch (e: ParseException) {
+                    throw InvalidApkSetException("invalid bundletool version")
+                }
+                if (parsedBundletoolVersion >= MIN_BUNDLETOOL_VERSION) {
+                    bundletoolVersion = parsedBundletoolVersion.toString()
+                } else {
+                    throw InvalidApkSetException(
+                        "APK set generated with bundletool $parsedBundletoolVersion" +
+                                " but minimum supported version is $MIN_BUNDLETOOL_VERSION"
+                    )
+                }
                 return@forEach
             }
 
