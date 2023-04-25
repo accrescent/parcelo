@@ -14,7 +14,7 @@ val logbackVersion: String by project
 val semverVersion: String by project
 
 plugins {
-    kotlin("jvm") version "1.8.20"
+    kotlin("jvm") version "1.8.21"
     kotlin("plugin.serialization") version "1.8.20"
     id("com.github.node-gradle.node") version "4.0.0"
     id("com.google.protobuf") version "0.9.2"
