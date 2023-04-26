@@ -8,9 +8,15 @@ data class AndroidManifest(
     val versionName: String?,
     val split: String?,
     val application: Application,
+) {
     @JacksonXmlProperty(localName = "uses-permission")
-    val usesPermissions: List<UsesPermission>?,
-)
+    var usesPermissions: List<UsesPermission>? = null
+        // Jackson workaround to prevent permission review bypasses. See
+        // https://github.com/FasterXML/jackson-dataformat-xml/issues/275 for more information.
+        set(value) {
+            field = (field ?: emptyList()) + (value ?: emptyList())
+        }
+}
 
 data class Application(val debuggable: Boolean?)
 
