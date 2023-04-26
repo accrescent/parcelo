@@ -20,6 +20,7 @@ import io.ktor.server.sessions.maxAge
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.less
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.transactions.transaction
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 
 val SESSION_LIFETIME = 1.days
@@ -34,7 +35,7 @@ fun Application.configureAuthentication(
 
     install(Sessions) {
         cookie<Session>(if (!developmentMode) "__Host-session" else "session") {
-            cookie.maxAge = SESSION_LIFETIME
+            cookie.maxAge = if (!developmentMode) SESSION_LIFETIME else Duration.INFINITE
             cookie.path = "/"
             cookie.secure = !developmentMode
             cookie.httpOnly = true
