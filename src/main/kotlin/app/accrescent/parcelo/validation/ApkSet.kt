@@ -23,7 +23,7 @@ data class ApkSetMetadata(
     val versionCode: Int,
     val versionName: String,
     val bundletoolVersion: String,
-    val permissions: List<String>,
+    val reviewIssues: List<String>,
 )
 
 const val ANDROID_MANIFEST = "AndroidManifest.xml"
@@ -159,10 +159,21 @@ fun parseApkSet(file: InputStream): ApkSetMetadata {
                 }
             }
 
-            // Update the permissions and version name if this is the base APK
+            // Update the review issues and version name if this is the base APK
             if (manifest.split == null) {
+                // Permissions
                 manifest.usesPermissions?.let { permissions ->
-                    metadata = metadata!!.copy(permissions = permissions.map { it.name })
+                    metadata = metadata!!.copy(reviewIssues = permissions.map { it.name })
+                }
+                // Service intent filter actions
+                manifest.application.services?.let { services ->
+                    val issues = metadata!!.reviewIssues.toMutableSet()
+                    services
+                        .flatMap { it.intentFilters ?: emptyList() }
+                        .flatMap { it.actions }
+                        .map { it.name }
+                        .forEach { issues.add(it) }
+                    metadata = metadata!!.copy(reviewIssues = issues.toList())
                 }
 
                 if (manifest.versionName != null) {

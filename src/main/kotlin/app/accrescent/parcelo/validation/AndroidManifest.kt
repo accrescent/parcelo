@@ -18,6 +18,38 @@ data class AndroidManifest(
         }
 }
 
-data class Application(val debuggable: Boolean?)
+data class Action(val name: String)
+
+data class Application(
+    val debuggable: Boolean?,
+) {
+    @JacksonXmlProperty(localName = "service")
+    var services: List<Service>? = null
+        // Jackson workaround to prevent review bypasses. See
+        // https://github.com/FasterXML/jackson-dataformat-xml/issues/275 for more information.
+        set(value) {
+            field = (field ?: emptyList()) + (value ?: emptyList())
+        }
+}
+
+class IntentFilter {
+    @JacksonXmlProperty(localName = "action")
+    var actions: List<Action> = emptyList()
+        // Jackson workaround to prevent review bypasses. See
+        // https://github.com/FasterXML/jackson-dataformat-xml/issues/275 for more information.
+        set(value) {
+            field += value
+        }
+}
+
+class Service {
+    @JacksonXmlProperty(localName = "intent-filter")
+    var intentFilters: List<IntentFilter>? = null
+        // Jackson workaround to prevent review bypasses. See
+        // https://github.com/FasterXML/jackson-dataformat-xml/issues/275 for more information.
+        set(value) {
+            field = (field ?: emptyList()) + (value ?: emptyList())
+        }
+}
 
 data class UsesPermission(val name: String, val maxSdkVersion: String?)

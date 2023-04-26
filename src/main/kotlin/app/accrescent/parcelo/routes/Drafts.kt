@@ -12,6 +12,7 @@ import app.accrescent.parcelo.storage.FileStorageService
 import app.accrescent.parcelo.validation.ApkSetMetadata
 import app.accrescent.parcelo.validation.InvalidApkSetException
 import app.accrescent.parcelo.validation.PERMISSION_REVIEW_BLACKLIST
+import app.accrescent.parcelo.validation.SERVICE_INTENT_FILTER_REVIEW_BLACKLIST
 import app.accrescent.parcelo.validation.parseApkSet
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.PartData
@@ -126,16 +127,17 @@ fun Route.createDraftRoute() {
             iconData != null &&
             apkSetData != null
         ) {
-            val permissionsToReview =
-                PERMISSION_REVIEW_BLACKLIST.intersect(apkSetMetadata.permissions.toSet())
+            val reviewIssues = PERMISSION_REVIEW_BLACKLIST
+                .union(SERVICE_INTENT_FILTER_REVIEW_BLACKLIST)
+                .intersect(apkSetMetadata.reviewIssues.toSet())
             val draft = transaction {
                 // Associate review issues with draft as necessary
-                val issueGroupId = if (permissionsToReview.isNotEmpty()) {
+                val issueGroupId = if (reviewIssues.isNotEmpty()) {
                     val issueGroupId = ReviewIssueGroup.new {}.id
-                    for (permission in permissionsToReview) {
+                    for (reviewIssue in reviewIssues) {
                         ReviewIssue.new {
                             reviewIssueGroupId = issueGroupId
-                            rawValue = permission
+                            rawValue = reviewIssue
                         }
                     }
                     issueGroupId

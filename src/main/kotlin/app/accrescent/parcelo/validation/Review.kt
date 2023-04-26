@@ -31,3 +31,9 @@ val PERMISSION_REVIEW_BLACKLIST = setOf(
     "android.permission.WRITE_CONTACTS",
     "android.permission.SYSTEM_ALERT_WINDOW",
 )
+
+val SERVICE_INTENT_FILTER_REVIEW_BLACKLIST = setOf(
+    "android.accessibilityservice.AccessibilityService",
+    "android.net.VpnService",
+    "android.view.InputMethod"
+)

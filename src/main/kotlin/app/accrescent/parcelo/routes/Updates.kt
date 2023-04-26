@@ -14,6 +14,7 @@ import app.accrescent.parcelo.storage.FileStorageService
 import app.accrescent.parcelo.validation.ApkSetMetadata
 import app.accrescent.parcelo.validation.InvalidApkSetException
 import app.accrescent.parcelo.validation.PERMISSION_REVIEW_BLACKLIST
+import app.accrescent.parcelo.validation.SERVICE_INTENT_FILTER_REVIEW_BLACKLIST
 import app.accrescent.parcelo.validation.parseApkSet
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.PartData
@@ -101,31 +102,32 @@ fun Route.createUpdateRoute() {
 
         // There exists:
         //
-        // 1. The permission review blacklist
-        // 2. The list of permissions the update is requesting
-        // 3. The list of permissions the published app has been approved for
+        // 1. The review issue blacklist
+        // 2. The list of review issues the update contains
+        // 3. The list of review issues the published app has been approved for
         //
-        // Only updates requesting permissions not previously approved should require review, and
-        // then only for those permissions not previously approved. Therefore, all permissions which
-        // exist in both (1) and (2) and do not exist in (3) should be stored with the update for
-        // review. If there are none, we don't assign a reviewer.
+        // Only updates adding review issues not previously approved should require review, and
+        // then only for those review issues not previously approved. Therefore, all review issues
+        // which exist in both (1) and (2) and do not exist in (3) should be stored with the update
+        // for review. If there are none, we don't assign a reviewer.
         val update = transaction {
             PERMISSION_REVIEW_BLACKLIST
-                .intersect(apkSetMetadata.permissions.toSet())
-                .let { permissions ->
+                .union(SERVICE_INTENT_FILTER_REVIEW_BLACKLIST)
+                .intersect(apkSetMetadata.reviewIssues.toSet())
+                .let { reviewIssues ->
                     if (app.reviewIssueGroupId != null) {
-                        permissions.subtract(ReviewIssue.find {
+                        reviewIssues.subtract(ReviewIssue.find {
                             ReviewIssues.reviewIssueGroupId eq app.reviewIssueGroupId!!
                         }.map { it.rawValue }.toSet())
                     } else {
-                        permissions
+                        reviewIssues
                     }
                 }
-                .let { permissions ->
+                .let { reviewIssues ->
                     var issueGroupId: EntityID<Int>? = null
-                    if (permissions.isNotEmpty()) {
+                    if (reviewIssues.isNotEmpty()) {
                         issueGroupId = ReviewIssueGroup.new {}.id
-                        permissions.forEach {
+                        reviewIssues.forEach {
                             ReviewIssue.new {
                                 reviewIssueGroupId = issueGroupId
                                 rawValue = it
