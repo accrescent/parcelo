@@ -126,18 +126,18 @@ fun Route.createDraftRoute() {
             iconData != null &&
             apkSetData != null
         ) {
+            val permissionsToReview =
+                PERMISSION_REVIEW_BLACKLIST.intersect(apkSetMetadata.permissions.toSet())
             val draft = transaction {
                 // Associate review issues with draft as necessary
-                val issueGroupId = if (apkSetMetadata.permissions.isNotEmpty()) {
+                val issueGroupId = if (permissionsToReview.isNotEmpty()) {
                     val issueGroupId = ReviewIssueGroup.new {}.id
-                    apkSetMetadata.permissions
-                        .filter { PERMISSION_REVIEW_BLACKLIST.contains(it) }
-                        .forEach {
-                            ReviewIssue.new {
-                                reviewIssueGroupId = issueGroupId
-                                rawValue = it
-                            }
+                    for (permission in permissionsToReview) {
+                        ReviewIssue.new {
+                            reviewIssueGroupId = issueGroupId
+                            rawValue = permission
                         }
+                    }
                     issueGroupId
                 } else {
                     null
