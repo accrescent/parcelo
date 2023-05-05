@@ -13,6 +13,7 @@ import app.accrescent.parcelo.data.Updates
 import app.accrescent.parcelo.storage.FileStorageService
 import app.accrescent.parcelo.validation.ApkSetMetadata
 import app.accrescent.parcelo.validation.InvalidApkSetException
+import app.accrescent.parcelo.validation.MIN_TARGET_SDK_UPDATE
 import app.accrescent.parcelo.validation.PERMISSION_REVIEW_BLACKLIST
 import app.accrescent.parcelo.validation.SERVICE_INTENT_FILTER_REVIEW_BLACKLIST
 import app.accrescent.parcelo.validation.parseApkSet
@@ -94,6 +95,10 @@ fun Route.createUpdateRoute() {
             return@post
         }
         if (apkSetMetadata.versionCode <= app.versionCode) {
+            call.respond(HttpStatusCode.UnprocessableEntity)
+            return@post
+        }
+        if (apkSetMetadata.targetSdk < MIN_TARGET_SDK_UPDATE) {
             call.respond(HttpStatusCode.UnprocessableEntity)
             return@post
         }

@@ -11,6 +11,7 @@ import app.accrescent.parcelo.data.Session
 import app.accrescent.parcelo.storage.FileStorageService
 import app.accrescent.parcelo.validation.ApkSetMetadata
 import app.accrescent.parcelo.validation.InvalidApkSetException
+import app.accrescent.parcelo.validation.MIN_TARGET_SDK_NEW_APP
 import app.accrescent.parcelo.validation.PERMISSION_REVIEW_BLACKLIST
 import app.accrescent.parcelo.validation.SERVICE_INTENT_FILTER_REVIEW_BLACKLIST
 import app.accrescent.parcelo.validation.parseApkSet
@@ -127,6 +128,11 @@ fun Route.createDraftRoute() {
             iconData != null &&
             apkSetData != null
         ) {
+            if (apkSetMetadata.targetSdk < MIN_TARGET_SDK_NEW_APP) {
+                call.respond(HttpStatusCode.UnprocessableEntity)
+                return@post
+            }
+
             val reviewIssues = PERMISSION_REVIEW_BLACKLIST
                 .union(SERVICE_INTENT_FILTER_REVIEW_BLACKLIST)
                 .intersect(apkSetMetadata.reviewIssues.toSet())

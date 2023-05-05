@@ -22,6 +22,7 @@ data class ApkSetMetadata(
     val appId: String,
     val versionCode: Int,
     val versionName: String,
+    val targetSdk: Int,
     val bundletoolVersion: String,
     val reviewIssues: List<String>,
 )
@@ -147,7 +148,7 @@ fun parseApkSet(file: InputStream): ApkSetMetadata {
             // same app ID and version code.
             if (metadata == null) {
                 metadata =
-                    ApkSetMetadata(manifest.`package`, manifest.versionCode, "", "", emptyList())
+                    ApkSetMetadata(manifest.`package`, manifest.versionCode, "", 0, "", emptyList())
             } else {
                 // Check that the metadata is the same as that previously pinned (sans the version
                 // name for reasons described above).
@@ -159,7 +160,7 @@ fun parseApkSet(file: InputStream): ApkSetMetadata {
                 }
             }
 
-            // Update the review issues and version name if this is the base APK
+            // Update the review issues, version name, and target SDK if this is the base APK
             if (manifest.split == null) {
                 // Permissions
                 manifest.usesPermissions?.let { permissions ->
@@ -176,10 +177,21 @@ fun parseApkSet(file: InputStream): ApkSetMetadata {
                     metadata = metadata!!.copy(reviewIssues = issues.toList())
                 }
 
+                // Version name
                 if (manifest.versionName != null) {
                     metadata = metadata!!.copy(versionName = manifest.versionName)
                 } else {
                     throw InvalidApkSetException("base APK doesn't specify a version name")
+                }
+
+                // Target SDK
+                if (manifest.usesSdk != null) {
+                    metadata = metadata!!.copy(
+                        targetSdk = manifest.usesSdk.targetSdkVersion
+                            ?: manifest.usesSdk.minSdkVersion
+                    )
+                } else {
+                    throw InvalidApkSetException("base APK doesn't specify a target SDK")
                 }
             }
         }

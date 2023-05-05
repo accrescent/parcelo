@@ -8,6 +8,8 @@ data class AndroidManifest(
     val versionName: String?,
     val split: String?,
     val application: Application,
+    @JacksonXmlProperty(localName = "uses-sdk")
+    val usesSdk: UsesSdk?,
 ) {
     @JacksonXmlProperty(localName = "uses-permission")
     var usesPermissions: List<UsesPermission>? = null
@@ -53,3 +55,5 @@ class Service {
 }
 
 data class UsesPermission(val name: String, val maxSdkVersion: String?)
+
+data class UsesSdk(val minSdkVersion: Int = 1, val targetSdkVersion: Int?)
