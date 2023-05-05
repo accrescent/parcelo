@@ -23,12 +23,14 @@ fun Application.configureDatabase() {
             Reviewers,
             Updates,
             Users,
+            WhitelistedGitHubUsers,
         )
 
         if (environment.developmentMode) {
             // Create a default superuser
+            val debugUserGitHubId = System.getenv("DEBUG_USER_GITHUB_ID").toLong()
             val user = User.new {
-                githubUserId = System.getenv("DEBUG_USER_GITHUB_ID").toLong()
+                githubUserId = debugUserGitHubId
                 email = System.getenv("DEBUG_USER_EMAIL")
                 publisher = true
             }
@@ -36,6 +38,7 @@ fun Application.configureDatabase() {
                 userId = user.id
                 email = System.getenv("DEBUG_USER_REVIEWER_EMAIL")
             }
+            WhitelistedGitHubUser.new(debugUserGitHubId) {}
 
             // Create a session for said superuser for testing
             Session.new(System.getenv("DEBUG_USER_SESSION_ID")) {

@@ -13,6 +13,7 @@ import { AppComponent } from './app.component';
 import { LandingComponent } from './landing/landing.component';
 import { ConsoleLayoutComponent } from './console-layout/console-layout.component';
 import { DashboardComponent } from './dashboard/dashboard.component';
+import { RegisterUnauthorizedComponent } from './register-unauthorized/register-unauthorized.component';
 
 @NgModule({
     declarations: [
@@ -20,6 +21,7 @@ import { DashboardComponent } from './dashboard/dashboard.component';
         ConsoleLayoutComponent,
         DashboardComponent,
         LandingComponent,
+        RegisterUnauthorizedComponent,
     ],
     imports: [
         BrowserModule,
