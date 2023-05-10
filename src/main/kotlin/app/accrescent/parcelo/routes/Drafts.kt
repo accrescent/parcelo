@@ -65,7 +65,7 @@ fun Route.createDraftRoute() {
     post("/drafts") {
         val storageService by inject<FileStorageService>(FileStorageService::class.java)
 
-        val submitterId = call.principal<Session>()!!.userId
+        val creatorId = call.principal<Session>()!!.userId
 
         var apkSetMetadata: ApkSetMetadata? = null
         var label: String? = null
@@ -162,7 +162,7 @@ fun Route.createDraftRoute() {
                     appId = apkSetMetadata.appId
                     versionCode = apkSetMetadata.versionCode
                     versionName = apkSetMetadata.versionName
-                    this.submitterId = submitterId
+                    this.creatorId = creatorId
                     fileId = appFileId
                     iconId = icon.id
                     reviewIssueGroupId = issueGroupId
@@ -188,7 +188,7 @@ fun Route.deleteDraftRoute() {
         }
 
         val draft = transaction {
-            Draft.find { DbDrafts.id eq draftId and (DbDrafts.submitterId eq userId) }
+            Draft.find { DbDrafts.id eq draftId and (DbDrafts.creatorId eq userId) }
                 .singleOrNull()
         }
         if (draft == null) {
@@ -205,7 +205,7 @@ fun Route.getDraftsRoute() {
         val userId = call.principal<Session>()!!.userId
 
         val drafts = transaction {
-            Draft.find { DbDrafts.submitterId eq userId }.map { it.serializable() }
+            Draft.find { DbDrafts.creatorId eq userId }.map { it.serializable() }
         }.toList()
 
         call.respond(drafts)
@@ -224,7 +224,7 @@ fun Route.getDraftRoute() {
         }
 
         val draft = transaction {
-            Draft.find { DbDrafts.id eq draftId and (DbDrafts.submitterId eq userId) }
+            Draft.find { DbDrafts.id eq draftId and (DbDrafts.creatorId eq userId) }
                 .singleOrNull()
         }?.serializable()
         if (draft == null) {
@@ -256,7 +256,7 @@ fun Route.updateDraftRoute() {
         // Submit the draft
         if (request.submitted) {
             val draft = transaction {
-                Draft.find { DbDrafts.id eq draftId and (DbDrafts.submitterId eq userId) }
+                Draft.find { DbDrafts.id eq draftId and (DbDrafts.creatorId eq userId) }
                     .singleOrNull()
             }
             if (draft == null) {

@@ -17,7 +17,7 @@ object Drafts : UUIDTable("drafts") {
     val label = text("label")
     val versionCode = integer("version_code")
     val versionName = text("version_name")
-    val submitterId = reference("submitter_id", Users, ReferenceOption.CASCADE)
+    val creatorId = reference("creator_id", Users, ReferenceOption.CASCADE)
     val fileId = reference("file_id", Files, ReferenceOption.NO_ACTION)
     val iconId = reference("icon_id", Icons, ReferenceOption.NO_ACTION)
     val reviewerId = reference("reviewer_id", Reviewers).nullable()
@@ -39,7 +39,7 @@ class Draft(id: EntityID<UUID>) : UUIDEntity(id), ToSerializable<SerializableDra
     var label by Drafts.label
     var versionCode by Drafts.versionCode
     var versionName by Drafts.versionName
-    var submitterId by Drafts.submitterId
+    var creatorId by Drafts.creatorId
     var fileId by Drafts.fileId
     var iconId by Drafts.iconId
     var reviewerId by Drafts.reviewerId

@@ -143,7 +143,7 @@ fun Route.createUpdateRoute() {
                         this.appId = app.id
                         versionCode = apkSetMetadata.versionCode
                         versionName = apkSetMetadata.versionName
-                        submitterId = userId
+                        creatorId = userId
                         fileId = apkSetFileId
                         if (issueGroupId != null) {
                             reviewerId = Reviewers
@@ -189,7 +189,7 @@ fun Route.updateUpdateRoute() {
                 .select {
                     Updates.id.eq(updateId)
                         .and(Updates.appId eq appId)
-                        .and(Updates.submitterId eq userId)
+                        .and(Updates.creatorId eq userId)
                 }
                 .singleOrNull()
                 ?.let { Update.wrapRow(it) }
