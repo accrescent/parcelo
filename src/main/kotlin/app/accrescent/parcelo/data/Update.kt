@@ -15,6 +15,7 @@ object Updates : UUIDTable("updates") {
     val versionCode = integer("version_code")
     val versionName = text("version_name")
     val creatorId = reference("creator_id", Users, ReferenceOption.CASCADE)
+    val creationTime = long("creation_time")
     val fileId = reference("file_id", Files, ReferenceOption.NO_ACTION)
     val reviewerId = reference("reviewer_id", Reviewers).nullable()
     val reviewIssueGroupId =
@@ -39,6 +40,7 @@ class Update(id: EntityID<UUID>) : UUIDEntity(id), ToSerializable<SerializableUp
     var versionCode by Updates.versionCode
     var versionName by Updates.versionName
     var creatorId by Updates.creatorId
+    var creationTime by Updates.creationTime
     var fileId by Updates.fileId
     var reviewerId by Updates.reviewerId
     var reviewIssueGroupId by Updates.reviewIssueGroupId

@@ -163,6 +163,7 @@ fun Route.createDraftRoute() {
                     versionCode = apkSetMetadata.versionCode
                     versionName = apkSetMetadata.versionName
                     this.creatorId = creatorId
+                    creationTime = System.currentTimeMillis()
                     fileId = appFileId
                     iconId = icon.id
                     reviewIssueGroupId = issueGroupId

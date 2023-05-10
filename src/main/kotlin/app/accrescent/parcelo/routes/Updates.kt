@@ -144,6 +144,7 @@ fun Route.createUpdateRoute() {
                         versionCode = apkSetMetadata.versionCode
                         versionName = apkSetMetadata.versionName
                         creatorId = userId
+                        creationTime = System.currentTimeMillis()
                         fileId = apkSetFileId
                         if (issueGroupId != null) {
                             reviewerId = Reviewers
