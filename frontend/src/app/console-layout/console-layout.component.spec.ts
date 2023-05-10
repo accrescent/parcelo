@@ -8,7 +8,7 @@ describe('ConsoleLayoutComponent', () => {
 
     beforeEach(async () => {
         await TestBed.configureTestingModule({
-            declarations: [ ConsoleLayoutComponent ]
+            imports: [ConsoleLayoutComponent]
         })
             .compileComponents();
 

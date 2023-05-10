@@ -8,7 +8,7 @@ describe('RegisterUnauthorizedComponent', () => {
 
     beforeEach(() => {
         TestBed.configureTestingModule({
-            declarations: [RegisterUnauthorizedComponent]
+            imports: [RegisterUnauthorizedComponent]
         });
         fixture = TestBed.createComponent(RegisterUnauthorizedComponent);
         component = fixture.componentInstance;
