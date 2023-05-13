@@ -16,7 +16,7 @@ val semverVersion: String by project
 plugins {
     kotlin("jvm") version "1.8.21"
     kotlin("plugin.serialization") version "1.8.21"
-    id("com.github.node-gradle.node") version "4.0.0"
+    id("com.github.node-gradle.node") version "5.0.0"
     id("com.google.protobuf") version "0.9.3"
     id("io.ktor.plugin") version "2.3.0"
 }
