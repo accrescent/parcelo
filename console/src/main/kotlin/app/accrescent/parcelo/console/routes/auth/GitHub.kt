@@ -5,7 +5,6 @@ import app.accrescent.parcelo.console.data.User
 import app.accrescent.parcelo.console.data.Users
 import app.accrescent.parcelo.console.data.WhitelistedGitHubUsers
 import io.ktor.client.HttpClient
-import io.ktor.client.engine.cio.CIO
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.call
@@ -31,7 +30,7 @@ fun AuthenticationConfig.github(
     clientId: String,
     clientSecret: String,
     redirectUrl: String,
-    httpClient: HttpClient = HttpClient(CIO),
+    httpClient: HttpClient = HttpClient(),
 ) {
     oauth("oauth2-github") {
         urlProvider = { redirectUrl }

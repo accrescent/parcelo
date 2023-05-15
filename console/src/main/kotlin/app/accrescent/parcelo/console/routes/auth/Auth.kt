@@ -3,7 +3,6 @@ package app.accrescent.parcelo.console.routes.auth
 import app.accrescent.parcelo.console.data.Session as SessionDao
 import app.accrescent.parcelo.console.data.Sessions as DbSessions
 import io.ktor.client.HttpClient
-import io.ktor.client.engine.cio.CIO
 import io.ktor.server.application.Application
 import io.ktor.server.application.call
 import io.ktor.server.application.install
@@ -29,7 +28,7 @@ fun Application.configureAuthentication(
     githubClientId: String,
     githubClientSecret: String,
     githubRedirectUrl: String,
-    httpClient: HttpClient = HttpClient(CIO),
+    httpClient: HttpClient = HttpClient(),
 ) {
     val developmentMode = environment.developmentMode
 
