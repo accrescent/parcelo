@@ -77,7 +77,7 @@ fun Route.createDraftRoute() {
         for (part in multipart) {
             if (part is PartData.FileItem && part.name == "apk_set") {
                 apkSetMetadata = try {
-                    apkSetData = part.streamProvider().use { it.readAllBytes() }
+                    apkSetData = part.streamProvider().use { it.readBytes() }
 
                     apkSetData.inputStream().use { parseApkSet(it) }
                 } catch (e: InvalidApkSetException) {
@@ -87,7 +87,7 @@ fun Route.createDraftRoute() {
                     part.dispose()
                 }
             } else if (part is PartData.FileItem && part.name == "icon") {
-                iconData = part.streamProvider().use { it.readAllBytes() }
+                iconData = part.streamProvider().use { it.readBytes() }
 
                 // Icon must be a 512 x 512 PNG
                 val pngReader = ImageIO.getImageReadersByFormatName("PNG").next()

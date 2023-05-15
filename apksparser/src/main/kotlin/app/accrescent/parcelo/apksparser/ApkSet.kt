@@ -71,7 +71,7 @@ public fun parseApkSet(file: InputStream): ApkSetMetadata {
 
     ZipInputStream(file).use { zip ->
         generateSequence { zip.nextEntry }.filterNot { it.isDirectory }.forEach { entry ->
-            val entryBytes = zip.readAllBytes()
+            val entryBytes = zip.readBytes()
             val entryDataSource = DataSources.asDataSource(ByteBuffer.wrap(entryBytes))
 
             // Parse metadata

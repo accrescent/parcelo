@@ -70,7 +70,7 @@ fun Route.createUpdateRoute() {
         for (part in call.receiveMultipart().readAllParts()) {
             if (part is PartData.FileItem && part.name == "apk_set") {
                 apkSetMetadata = try {
-                    apkSetData = part.streamProvider().use { it.readAllBytes() }
+                    apkSetData = part.streamProvider().use { it.readBytes() }
                     apkSetData.inputStream().use { parseApkSet(it) }
                 } catch (e: InvalidApkSetException) {
                     call.respond(HttpStatusCode.BadRequest)
