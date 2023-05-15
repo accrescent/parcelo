@@ -6,4 +6,5 @@ import java.io.InputStream
 interface FileStorageService {
     fun saveFile(inputStream: InputStream): EntityID<Int>
     fun deleteFile(id: EntityID<Int>)
+    fun loadFile(id: EntityID<Int>): InputStream
 }

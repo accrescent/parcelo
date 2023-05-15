@@ -3,6 +3,7 @@ import com.github.gradle.node.npm.task.NpxTask
 val exposedVersion: String by project
 val githubApiVersion: String by project
 val h2Version: String by project
+val jobrunrVersion: String by project
 val koinVersion: String by project
 val ktorVersion: String by project
 val kotlinVersion: String by project
@@ -81,6 +82,7 @@ dependencies {
     implementation("org.jetbrains.exposed:exposed-core:$exposedVersion")
     implementation("org.jetbrains.exposed:exposed-dao:$exposedVersion")
     implementation("org.jetbrains.exposed:exposed-jdbc:$exposedVersion")
+    implementation("org.jobrunr:jobrunr:$jobrunrVersion")
     implementation("org.kohsuke:github-api:$githubApiVersion")
     testImplementation("io.ktor:ktor-server-tests:$ktorVersion")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit:$kotlinVersion")
