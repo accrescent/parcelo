@@ -1,11 +1,11 @@
 package app.accrescent.parcelo.console.routes
 
-import app.accrescent.parcelo.console.data.AccessControlList
 import app.accrescent.parcelo.console.data.App
 import app.accrescent.parcelo.console.data.Draft
 import app.accrescent.parcelo.console.data.Drafts
 import app.accrescent.parcelo.console.data.Session
 import app.accrescent.parcelo.console.data.User
+import app.accrescent.parcelo.console.jobs.registerPublishAppJob
 import io.ktor.http.HttpStatusCode
 import io.ktor.resources.Resource
 import io.ktor.server.application.call
@@ -18,10 +18,9 @@ import io.ktor.server.routing.Route
 import io.ktor.server.routing.post
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import org.h2.api.ErrorCode
-import org.jetbrains.exposed.exceptions.ExposedSQLException
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.jobrunr.scheduling.BackgroundJob
 import java.util.UUID
 
 @Resource("/apps")
@@ -66,35 +65,9 @@ fun Route.createAppRoute() {
             transaction { Draft.find { Drafts.id eq draftId and Drafts.approved }.singleOrNull() }
 
         if (draft != null) {
-            // A draft with this ID exists, so transform it into a published app
-            val app = try {
-                transaction {
-                    draft.delete()
-                    val app = App.new(draft.appId) {
-                        label = draft.label
-                        versionCode = draft.versionCode
-                        versionName = draft.versionName
-                        fileId = draft.fileId
-                        iconId = draft.iconId
-                        reviewIssueGroupId = draft.reviewIssueGroupId
-                    }
-                    AccessControlList.new {
-                        this.userId = userId
-                        appId = app.id
-                        update = true
-                    }
-                    app
-                }
-            } catch (e: ExposedSQLException) {
-                if (e.errorCode == ErrorCode.DUPLICATE_KEY_1) {
-                    call.respond(HttpStatusCode.Conflict)
-                    return@post
-                } else {
-                    throw e
-                }
-            }.serializable()
-
-            call.respond(app)
+            // A draft with this ID exists, so register a job to publish it as an app
+            BackgroundJob.enqueue { registerPublishAppJob(draft.id.value) }
+            call.respond(HttpStatusCode.Accepted)
         } else {
             // No draft with this ID exists
             call.respond(HttpStatusCode.NotFound)

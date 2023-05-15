@@ -1,6 +1,7 @@
 package app.accrescent.parcelo.console
 
 import app.accrescent.parcelo.console.data.configureDatabase
+import app.accrescent.parcelo.console.jobs.configureJobRunr
 import app.accrescent.parcelo.console.routes.auth.configureAuthentication
 import app.accrescent.parcelo.console.storage.FileStorageService
 import app.accrescent.parcelo.console.storage.LocalFileStorageService
@@ -13,6 +14,7 @@ import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import org.koin.dsl.module
+import org.koin.ktor.ext.inject
 import org.koin.ktor.plugin.Koin
 import org.koin.logger.slf4jLogger
 import kotlin.io.path.Path
@@ -22,20 +24,30 @@ fun main() {
         .start(wait = true)
 }
 
-fun Application.module(httpClient: HttpClient = HttpClient(CIO)) {
+fun Application.module() {
     install(Koin) {
         slf4jLogger()
 
         val mainModule = module {
+            single {
+                Config(
+                    System.getenv("REPOSITORY_URL"),
+                    System.getenv("REPOSITORY_API_KEY"),
+                )
+            }
             single<FileStorageService> { LocalFileStorageService(Path(System.getenv("FILE_STORAGE_BASE_DIR"))) }
+            single { HttpClient(CIO) }
         }
 
         modules(mainModule)
     }
+    val httpClient: HttpClient by inject()
+
     install(ContentNegotiation) {
         json()
     }
     configureDatabase()
+    configureJobRunr()
     configureAuthentication(
         githubClientId = System.getenv("GITHUB_OAUTH2_CLIENT_ID"),
         githubClientSecret = System.getenv("GITHUB_OAUTH2_CLIENT_SECRET"),
