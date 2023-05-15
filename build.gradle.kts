@@ -5,3 +5,7 @@ plugins {
     id("com.google.protobuf") version "0.9.3" apply false
     id("io.ktor.plugin") version "2.3.0" apply false
 }
+
+tasks.register("ci") {
+    dependsOn(":console:ci", ":repository:build")
+}

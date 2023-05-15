@@ -13,6 +13,7 @@ import java.io.InputStream
 import java.nio.ByteBuffer
 import java.security.MessageDigest
 import java.security.cert.X509Certificate
+import java.util.Optional
 import java.util.zip.ZipInputStream
 
 public data class ApkSetMetadata(
@@ -22,6 +23,10 @@ public data class ApkSetMetadata(
     val targetSdk: Int,
     val bundletoolVersion: String,
     val reviewIssues: List<String>,
+    val abiSplits: Set<String>,
+    val densitySplits: Set<String>,
+    val langSplits: Set<String>,
+    val entrySplitNames: Map<String, Optional<String>>,
 )
 
 private const val ANDROID_MANIFEST = "AndroidManifest.xml"
@@ -143,7 +148,18 @@ public fun parseApkSet(file: InputStream): ApkSetMetadata {
             // same app ID and version code.
             if (metadata == null) {
                 metadata =
-                    ApkSetMetadata(manifest.`package`, manifest.versionCode, "", 0, "", emptyList())
+                    ApkSetMetadata(
+                        manifest.`package`,
+                        manifest.versionCode,
+                        "",
+                        0,
+                        "",
+                        emptyList(),
+                        emptySet(),
+                        emptySet(),
+                        emptySet(),
+                        emptyMap(),
+                    )
             } else {
                 // Check that the metadata is the same as that previously pinned (sans the version
                 // name for reasons described above).
@@ -189,8 +205,45 @@ public fun parseApkSet(file: InputStream): ApkSetMetadata {
                     throw InvalidApkSetException("base APK doesn't specify a target SDK")
                 }
             }
+
+            // Update the entry name -> split mapping
+            val map = metadata!!.entrySplitNames.toMutableMap()
+            map[entry.name] = if (manifest.split == null) {
+                Optional.empty()
+            } else {
+                Optional.of(manifest.split.substringAfter("config."))
+            }
+            metadata = metadata!!.copy(entrySplitNames = map)
         }
     }
+
+    // Update metadata with split config names
+    val (abiSplits, langSplits, densitySplits) = run {
+        val abiSplits = mutableSetOf<String>()
+        val langSplits = mutableSetOf<String>()
+        val densitySplits = mutableSetOf<String>()
+
+        for (splitName in splitNames) {
+            splitName?.let {
+                try {
+                    when (getSplitTypeForName(splitName)) {
+                        SplitType.ABI -> abiSplits
+                        SplitType.LANGUAGE -> langSplits
+                        SplitType.SCREEN_DENSITY -> densitySplits
+                    }.add(splitName.substringAfter("config."))
+                } catch (e: SplitNameNotConfigException) {
+                    throw InvalidApkSetException(e.message!!)
+                }
+            }
+        }
+
+        Triple(abiSplits.toSet(), langSplits.toSet(), densitySplits.toSet())
+    }
+    metadata = metadata?.copy(
+        abiSplits = abiSplits,
+        langSplits = langSplits,
+        densitySplits = densitySplits
+    )
 
     if (bundletoolVersion != null) {
         metadata = metadata?.copy(bundletoolVersion = bundletoolVersion!!)
@@ -223,4 +276,33 @@ private fun X509Certificate.fingerprint(): String {
         .joinToString("") { "%02x".format(it) }
 }
 
+public enum class SplitType { ABI, LANGUAGE, SCREEN_DENSITY }
+
+private val abiSplitNames = setOf("arm64_v8a", "armeabi_v7a", "x86", "x86_64")
+private val densitySplitNames =
+    setOf("ldpi", "mdpi", "hdpi", "xhdpi", "xxhdpi", "xxxhdpi", "nodpi", "tvdpi")
+
+/**
+ * Detects the configuration split API type based on its name
+ *
+ * @throws SplitNameNotConfigException the split name is not a valid configuration split name
+ */
+private fun getSplitTypeForName(splitName: String): SplitType {
+    val configName = splitName.substringAfter("config.")
+    if (configName == splitName) {
+        throw SplitNameNotConfigException(splitName)
+    }
+
+    return if (abiSplitNames.contains(configName)) {
+        SplitType.ABI
+    } else if (densitySplitNames.contains(configName)) {
+        SplitType.SCREEN_DENSITY
+    } else {
+        SplitType.LANGUAGE
+    }
+}
+
 public class InvalidApkSetException(message: String) : Exception(message)
+
+public class SplitNameNotConfigException(splitName: String) :
+    Exception("split name $splitName is not a config split name")
