@@ -36,7 +36,7 @@ import org.jetbrains.exposed.sql.Random
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.koin.java.KoinJavaComponent.inject
+import org.koin.ktor.ext.inject
 import java.security.MessageDigest
 import java.util.UUID
 import javax.imageio.IIOException
@@ -62,9 +62,9 @@ fun Route.draftRoutes() {
 }
 
 fun Route.createDraftRoute() {
-    post("/drafts") {
-        val storageService by inject<FileStorageService>(FileStorageService::class.java)
+    val storageService: FileStorageService by inject()
 
+    post("/drafts") {
         val creatorId = call.principal<Session>()!!.userId
 
         var apkSetMetadata: ApkSetMetadata? = null

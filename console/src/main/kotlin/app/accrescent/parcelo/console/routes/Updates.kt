@@ -35,7 +35,7 @@ import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.koin.java.KoinJavaComponent.inject
+import org.koin.ktor.ext.inject
 import java.util.UUID
 
 fun Route.updateRoutes() {
@@ -46,9 +46,9 @@ fun Route.updateRoutes() {
 }
 
 fun Route.createUpdateRoute() {
-    post("/apps/{app_id}/updates") {
-        val storageService by inject<FileStorageService>(FileStorageService::class.java)
+    val storageService: FileStorageService by inject()
 
+    post("/apps/{app_id}/updates") {
         val userId = call.principal<Session>()!!.userId
         val appId = call.parameters["app_id"]!!
 
@@ -164,9 +164,9 @@ fun Route.createUpdateRoute() {
 }
 
 fun Route.updateUpdateRoute() {
-    patch("/apps/{app_id}/updates/{update_id}") {
-        val storageService by inject<FileStorageService>(FileStorageService::class.java)
+    val storageService: FileStorageService by inject()
 
+    patch("/apps/{app_id}/updates/{update_id}") {
         val userId = call.principal<Session>()!!.userId
         val appId = call.parameters["app_id"]!!
         val updateId = try {
