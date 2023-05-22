@@ -122,6 +122,9 @@ fun Route.createDraftRoute() {
                 } else {
                     label = part.value
                 }
+            } else {
+                call.respond(HttpStatusCode.BadRequest)
+                return@post
             }
         }
 
