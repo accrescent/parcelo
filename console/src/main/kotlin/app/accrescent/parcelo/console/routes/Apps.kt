@@ -37,7 +37,6 @@ fun Route.appRoutes() {
         createAppRoute()
         getAppsRoute()
     }
-    getAppRoute()
 }
 
 @Serializable
@@ -74,17 +73,6 @@ fun Route.createAppRoute() {
         } else {
             // No draft with this ID exists
             call.respond(HttpStatusCode.NotFound)
-        }
-    }
-}
-
-fun Route.getAppRoute() {
-    get<Apps.Id> {
-        val app = transaction { App.findById(it.id) }?.serializable()
-        if (app == null) {
-            call.respond(HttpStatusCode.NotFound)
-        } else {
-            call.respond(app)
         }
     }
 }
