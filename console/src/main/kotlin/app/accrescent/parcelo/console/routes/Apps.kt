@@ -1,5 +1,7 @@
 package app.accrescent.parcelo.console.routes
 
+import app.accrescent.parcelo.console.data.Apps as DbApps
+import app.accrescent.parcelo.console.data.AccessControlLists
 import app.accrescent.parcelo.console.data.App
 import app.accrescent.parcelo.console.data.Draft
 import app.accrescent.parcelo.console.data.Drafts
@@ -19,6 +21,7 @@ import io.ktor.server.routing.post
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jobrunr.scheduling.BackgroundJob
 import java.util.UUID
@@ -32,9 +35,9 @@ class Apps {
 fun Route.appRoutes() {
     authenticate("cookie") {
         createAppRoute()
+        getAppsRoute()
     }
     getAppRoute()
-    getAppsRoute()
 }
 
 @Serializable
@@ -88,7 +91,16 @@ fun Route.getAppRoute() {
 
 fun Route.getAppsRoute() {
     get<Apps> {
-        val apps = transaction { App.all().map { it.serializable() } }
+        val userId = call.principal<Session>()!!.userId
+
+        val apps = transaction {
+            DbApps
+                .innerJoin(AccessControlLists)
+                .select {
+                    AccessControlLists.userId eq userId and (DbApps.id eq AccessControlLists.appId)
+                }
+                .map { App.wrapRow(it).serializable() }
+        }
 
         call.respond(apps)
     }
