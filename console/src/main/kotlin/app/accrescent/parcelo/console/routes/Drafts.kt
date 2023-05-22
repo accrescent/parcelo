@@ -60,7 +60,6 @@ fun Route.draftRoutes() {
         createDraftRoute()
         deleteDraftRoute()
         getDraftsRoute()
-        getDraftRoute()
         updateDraftRoute()
     }
 }
@@ -228,29 +227,6 @@ fun Route.getDraftsRoute() {
         }.toList()
 
         call.respond(drafts)
-    }
-}
-
-fun Route.getDraftRoute() {
-    get<Drafts.Id> {
-        val userId = call.principal<Session>()!!.userId
-
-        val draftId = try {
-            UUID.fromString(it.id)
-        } catch (e: IllegalArgumentException) {
-            call.respond(HttpStatusCode.BadRequest)
-            return@get
-        }
-
-        val draft = transaction {
-            Draft.find { DbDrafts.id eq draftId and (DbDrafts.creatorId eq userId) }
-                .singleOrNull()
-        }?.serializable()
-        if (draft == null) {
-            call.respond(HttpStatusCode.NotFound)
-        } else {
-            call.respond(draft)
-        }
     }
 }
 
