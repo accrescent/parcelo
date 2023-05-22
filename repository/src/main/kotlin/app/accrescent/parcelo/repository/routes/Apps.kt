@@ -10,12 +10,13 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.PartData
 import io.ktor.http.content.readAllParts
 import io.ktor.http.content.streamProvider
+import io.ktor.resources.Resource
 import io.ktor.server.application.call
 import io.ktor.server.auth.authenticate
 import io.ktor.server.request.receiveMultipart
+import io.ktor.server.resources.post
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
-import io.ktor.server.routing.post
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.koin.ktor.ext.inject
@@ -31,6 +32,9 @@ import javax.imageio.ImageIO
 import kotlin.io.path.createDirectories
 import kotlin.io.path.createFile
 
+@Resource("/apps")
+class Apps
+
 fun Route.appRoutes() {
     authenticate(API_KEY_AUTH_PROVIDER) {
         createAppRoute()
@@ -40,7 +44,7 @@ fun Route.appRoutes() {
 fun Route.createAppRoute() {
     val config: Config by inject()
 
-    post("/apps") {
+    post<Apps> {
         val multipart = call.receiveMultipart().readAllParts()
 
         var apkSetData: ByteArray? = null

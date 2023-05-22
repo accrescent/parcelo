@@ -1,5 +1,6 @@
 package app.accrescent.parcelo.console.routes
 
+import app.accrescent.parcelo.console.data.Apps as DbApps
 import app.accrescent.parcelo.console.data.Updates as DbUpdates
 import app.accrescent.parcelo.apksparser.ApkSetMetadata
 import app.accrescent.parcelo.apksparser.InvalidApkSetException
@@ -7,7 +8,6 @@ import app.accrescent.parcelo.apksparser.parseApkSet
 import app.accrescent.parcelo.console.Config
 import app.accrescent.parcelo.console.data.AccessControlLists
 import app.accrescent.parcelo.console.data.App
-import app.accrescent.parcelo.console.data.Apps
 import app.accrescent.parcelo.console.data.ReviewIssue
 import app.accrescent.parcelo.console.data.ReviewIssueGroup
 import app.accrescent.parcelo.console.data.ReviewIssues
@@ -29,10 +29,10 @@ import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.principal
 import io.ktor.server.request.receiveMultipart
 import io.ktor.server.resources.patch
+import io.ktor.server.resources.post
 import io.ktor.server.response.header
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
-import io.ktor.server.routing.post
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.Random
 import org.jetbrains.exposed.sql.and
@@ -59,9 +59,9 @@ fun Route.createUpdateRoute() {
     val config: Config by inject()
     val storageService: FileStorageService by inject()
 
-    post("/apps/{app_id}/updates") {
+    post<Apps.Id.Updates> { route ->
         val userId = call.principal<Session>()!!.userId
-        val appId = call.parameters["app_id"]!!
+        val appId = route.parent.id
 
         val updatePermitted = transaction {
             AccessControlLists
@@ -200,8 +200,8 @@ fun Route.updateUpdateRoute() {
         // Users can only submit an update they've created and which has a versionCode higher than
         // that of the published app
         val statusCode = transaction {
-            val publishedApp = Apps
-                .select { Apps.id eq appId }
+            val publishedApp = DbApps
+                .select { DbApps.id eq appId }
                 .forUpdate() // Lock to prevent race conditions on the version code
                 .singleOrNull()
                 ?.let { App.wrapRow(it) }

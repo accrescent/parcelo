@@ -15,9 +15,9 @@ import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.principal
 import io.ktor.server.request.receive
 import io.ktor.server.resources.get
+import io.ktor.server.resources.post
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
-import io.ktor.server.routing.post
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import org.jetbrains.exposed.sql.and
@@ -29,7 +29,10 @@ import java.util.UUID
 @Resource("/apps")
 class Apps {
     @Resource("{id}")
-    class Id(val parent: Apps = Apps(), val id: String)
+    class Id(val parent: Apps = Apps(), val id: String) {
+        @Resource("updates")
+        class Updates(val parent: Id)
+    }
 }
 
 fun Route.appRoutes() {
@@ -43,7 +46,7 @@ fun Route.appRoutes() {
 data class CreateAppRequest(@SerialName("draft_id") val draftId: String)
 
 fun Route.createAppRoute() {
-    post("/apps") {
+    post<Apps> {
         val userId = call.principal<Session>()!!.userId
 
         // Only allow publishers to publish apps
