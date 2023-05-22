@@ -5,6 +5,7 @@ import app.accrescent.parcelo.apksparser.ApkSetMetadata
 import app.accrescent.parcelo.apksparser.InvalidApkSetException
 import app.accrescent.parcelo.apksparser.parseApkSet
 import app.accrescent.parcelo.console.Config
+import app.accrescent.parcelo.console.data.App
 import app.accrescent.parcelo.console.data.Draft
 import app.accrescent.parcelo.console.data.Icon
 import app.accrescent.parcelo.console.data.ReviewIssue
@@ -135,6 +136,12 @@ fun Route.createDraftRoute() {
             iconData != null &&
             apkSetData != null
         ) {
+            // Check that there isn't already a published app with this ID
+            if (transaction { App.findById(apkSetMetadata.appId) } != null) {
+                call.respond(HttpStatusCode.Conflict)
+                return@post
+            }
+
             if (apkSetMetadata.targetSdk < MIN_TARGET_SDK_NEW_APP) {
                 call.respond(HttpStatusCode.UnprocessableEntity)
                 return@post
