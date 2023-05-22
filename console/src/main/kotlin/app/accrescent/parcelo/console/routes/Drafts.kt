@@ -10,7 +10,6 @@ import app.accrescent.parcelo.console.data.Draft
 import app.accrescent.parcelo.console.data.Icon
 import app.accrescent.parcelo.console.data.ReviewIssue
 import app.accrescent.parcelo.console.data.ReviewIssueGroup
-import app.accrescent.parcelo.console.data.Reviewer
 import app.accrescent.parcelo.console.data.Reviewers
 import app.accrescent.parcelo.console.data.Session
 import app.accrescent.parcelo.console.storage.FileStorageService
@@ -26,7 +25,6 @@ import io.ktor.resources.Resource
 import io.ktor.server.application.call
 import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.principal
-import io.ktor.server.request.receive
 import io.ktor.server.request.receiveMultipart
 import io.ktor.server.resources.delete
 import io.ktor.server.resources.get
@@ -35,7 +33,6 @@ import io.ktor.server.resources.post
 import io.ktor.server.response.header
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
-import kotlinx.serialization.Serializable
 import org.jetbrains.exposed.sql.Random
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.selectAll
@@ -51,9 +48,6 @@ class Drafts {
     @Resource("{id}")
     class Id(val parent: Drafts = Drafts(), val id: String)
 }
-
-@Serializable
-data class UpdateDraftRequest(val submitted: Boolean = false, val approved: Boolean = false)
 
 fun Route.draftRoutes() {
     authenticate("cookie") {
@@ -233,13 +227,6 @@ fun Route.getDraftsRoute() {
 fun Route.updateDraftRoute() {
     patch<Drafts.Id> { route ->
         val userId = call.principal<Session>()!!.userId
-        val request = call.receive<UpdateDraftRequest>()
-
-        // We can only submit or approve the app, not both at once
-        if (!(request.submitted xor request.approved)) {
-            call.respond(HttpStatusCode.BadRequest)
-            return@patch
-        }
 
         val draftId = try {
             UUID.fromString(route.id)
@@ -249,47 +236,25 @@ fun Route.updateDraftRoute() {
         }
 
         // Submit the draft
-        if (request.submitted) {
-            val draft = transaction {
-                Draft.find { DbDrafts.id eq draftId and (DbDrafts.creatorId eq userId) }
-                    .singleOrNull()
+        val draft = transaction {
+            Draft.find { DbDrafts.id eq draftId and (DbDrafts.creatorId eq userId) }.singleOrNull()
+        }
+        if (draft == null) {
+            call.respond(HttpStatusCode.NotFound)
+        } else if (draft.reviewerId != null) {
+            // A reviewer is already assigned
+            call.respond(HttpStatusCode.Forbidden)
+        } else {
+            // Submit the draft by assigning a random reviewer
+            transaction {
+                draft.reviewerId = Reviewers
+                    .slice(Reviewers.id)
+                    .selectAll()
+                    .orderBy(Random())
+                    .limit(1)
+                    .single()[Reviewers.id]
             }
-            if (draft == null) {
-                call.respond(HttpStatusCode.NotFound)
-            } else if (draft.reviewerId != null) {
-                // A reviewer is already assigned
-                call.respond(HttpStatusCode.Forbidden)
-            } else {
-                // Submit the draft by assigning a random reviewer
-                transaction {
-                    draft.reviewerId = Reviewers
-                        .slice(Reviewers.id)
-                        .selectAll()
-                        .orderBy(Random())
-                        .limit(1)
-                        .single()[Reviewers.id]
-                }
-                call.respond(draft.serializable())
-            }
-        } else if (request.approved) {
-            val reviewer =
-                transaction { Reviewer.find { Reviewers.userId eq userId }.singleOrNull() }
-            if (reviewer == null) {
-                // The user isn't the assigned reviewer
-                call.respond(HttpStatusCode.Forbidden)
-            } else {
-                // Approve the draft
-                val draft = transaction {
-                    Draft.find { DbDrafts.id eq draftId and (DbDrafts.reviewerId eq reviewer.id) }
-                        .singleOrNull()
-                }
-                if (draft == null) {
-                    call.respond(HttpStatusCode.NotFound)
-                } else {
-                    transaction { draft.approved = true }
-                    call.respond(draft.serializable())
-                }
-            }
+            call.respond(draft.serializable())
         }
     }
 }
