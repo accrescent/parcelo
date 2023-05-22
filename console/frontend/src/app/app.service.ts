@@ -8,7 +8,7 @@ import { App } from './app';
     providedIn: 'root'
 })
 export class AppService {
-    private readonly appsUrl = 'api/apps';
+    private readonly appsUrl = 'api/v1/apps';
 
     constructor(private http: HttpClient) {}
 

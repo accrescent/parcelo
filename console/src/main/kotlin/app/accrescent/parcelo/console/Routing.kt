@@ -19,7 +19,7 @@ fun Application.configureRouting() {
     routing {
         authRoutes()
 
-        route("/api") {
+        route("/api/v1") {
             sessionRoutes()
 
             appRoutes()
