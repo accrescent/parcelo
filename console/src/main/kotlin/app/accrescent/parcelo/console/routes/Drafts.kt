@@ -4,6 +4,7 @@ import app.accrescent.parcelo.console.data.Drafts as DbDrafts
 import app.accrescent.parcelo.apksparser.ApkSetMetadata
 import app.accrescent.parcelo.apksparser.InvalidApkSetException
 import app.accrescent.parcelo.apksparser.parseApkSet
+import app.accrescent.parcelo.console.Config
 import app.accrescent.parcelo.console.data.Draft
 import app.accrescent.parcelo.console.data.Icon
 import app.accrescent.parcelo.console.data.ReviewIssue
@@ -15,6 +16,7 @@ import app.accrescent.parcelo.console.storage.FileStorageService
 import app.accrescent.parcelo.console.validation.MIN_TARGET_SDK_NEW_APP
 import app.accrescent.parcelo.console.validation.PERMISSION_REVIEW_BLACKLIST
 import app.accrescent.parcelo.console.validation.SERVICE_INTENT_FILTER_REVIEW_BLACKLIST
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.PartData
 import io.ktor.http.content.readAllParts
@@ -28,6 +30,7 @@ import io.ktor.server.request.receiveMultipart
 import io.ktor.server.resources.delete
 import io.ktor.server.resources.get
 import io.ktor.server.resources.patch
+import io.ktor.server.response.header
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.post
@@ -62,6 +65,7 @@ fun Route.draftRoutes() {
 }
 
 fun Route.createDraftRoute() {
+    val config: Config by inject()
     val storageService: FileStorageService by inject()
 
     post("/drafts") {
@@ -170,7 +174,11 @@ fun Route.createDraftRoute() {
                 }.serializable()
             }
 
-            call.respond(draft)
+            call.response.header(
+                HttpHeaders.Location,
+                "${config.baseUrl}/api/v1/drafts/${draft.id}"
+            )
+            call.respond(HttpStatusCode.Created, draft)
         } else {
             call.respond(HttpStatusCode.BadRequest)
         }
