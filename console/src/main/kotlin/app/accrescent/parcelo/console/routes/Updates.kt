@@ -1,5 +1,6 @@
 package app.accrescent.parcelo.console.routes
 
+import app.accrescent.parcelo.console.data.Updates as DbUpdates
 import app.accrescent.parcelo.apksparser.ApkSetMetadata
 import app.accrescent.parcelo.apksparser.InvalidApkSetException
 import app.accrescent.parcelo.apksparser.parseApkSet
@@ -13,7 +14,6 @@ import app.accrescent.parcelo.console.data.ReviewIssues
 import app.accrescent.parcelo.console.data.Reviewers
 import app.accrescent.parcelo.console.data.Session
 import app.accrescent.parcelo.console.data.Update
-import app.accrescent.parcelo.console.data.Updates
 import app.accrescent.parcelo.console.storage.FileStorageService
 import app.accrescent.parcelo.console.validation.MIN_TARGET_SDK_UPDATE
 import app.accrescent.parcelo.console.validation.PERMISSION_REVIEW_BLACKLIST
@@ -23,14 +23,15 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.PartData
 import io.ktor.http.content.readAllParts
 import io.ktor.http.content.streamProvider
+import io.ktor.resources.Resource
 import io.ktor.server.application.call
 import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.principal
 import io.ktor.server.request.receiveMultipart
+import io.ktor.server.resources.patch
 import io.ktor.server.response.header
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
-import io.ktor.server.routing.patch
 import io.ktor.server.routing.post
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.Random
@@ -40,6 +41,12 @@ import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.koin.ktor.ext.inject
 import java.util.UUID
+
+@Resource("/updates")
+class Updates {
+    @Resource("{id}")
+    class Id(val parent: Updates = Updates(), val id: String)
+}
 
 fun Route.updateRoutes() {
     authenticate("cookie") {
@@ -176,13 +183,17 @@ fun Route.createUpdateRoute() {
 fun Route.updateUpdateRoute() {
     val storageService: FileStorageService by inject()
 
-    patch("/apps/{app_id}/updates/{update_id}") {
+    patch<Updates.Id> { route ->
         val userId = call.principal<Session>()!!.userId
-        val appId = call.parameters["app_id"]!!
         val updateId = try {
-            UUID.fromString(call.parameters["update_id"])
+            UUID.fromString(route.id)
         } catch (e: IllegalArgumentException) {
             call.respond(HttpStatusCode.BadRequest)
+            return@patch
+        }
+
+        val appId = transaction { Update.findById(updateId)?.appId } ?: run {
+            call.respond(HttpStatusCode.NotFound)
             return@patch
         }
 
@@ -195,13 +206,8 @@ fun Route.updateUpdateRoute() {
                 .singleOrNull()
                 ?.let { App.wrapRow(it) }
                 ?: return@transaction HttpStatusCode.NotFound
-            val update = Updates
-                .innerJoin(Apps)
-                .select {
-                    Updates.id.eq(updateId)
-                        .and(Updates.appId eq appId)
-                        .and(Updates.creatorId eq userId)
-                }
+            val update = DbUpdates
+                .select { DbUpdates.id eq updateId and (DbUpdates.creatorId eq userId) }
                 .singleOrNull()
                 ?.let { Update.wrapRow(it) }
                 ?: return@transaction HttpStatusCode.NotFound
