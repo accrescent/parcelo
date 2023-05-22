@@ -3,6 +3,7 @@ package app.accrescent.parcelo.console.routes
 import app.accrescent.parcelo.apksparser.ApkSetMetadata
 import app.accrescent.parcelo.apksparser.InvalidApkSetException
 import app.accrescent.parcelo.apksparser.parseApkSet
+import app.accrescent.parcelo.console.Config
 import app.accrescent.parcelo.console.data.AccessControlLists
 import app.accrescent.parcelo.console.data.App
 import app.accrescent.parcelo.console.data.Apps
@@ -17,6 +18,7 @@ import app.accrescent.parcelo.console.storage.FileStorageService
 import app.accrescent.parcelo.console.validation.MIN_TARGET_SDK_UPDATE
 import app.accrescent.parcelo.console.validation.PERMISSION_REVIEW_BLACKLIST
 import app.accrescent.parcelo.console.validation.SERVICE_INTENT_FILTER_REVIEW_BLACKLIST
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.PartData
 import io.ktor.http.content.readAllParts
@@ -25,6 +27,7 @@ import io.ktor.server.application.call
 import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.principal
 import io.ktor.server.request.receiveMultipart
+import io.ktor.server.response.header
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.patch
@@ -46,6 +49,7 @@ fun Route.updateRoutes() {
 }
 
 fun Route.createUpdateRoute() {
+    val config: Config by inject()
     val storageService: FileStorageService by inject()
 
     post("/apps/{app_id}/updates") {
@@ -159,7 +163,10 @@ fun Route.createUpdateRoute() {
                 }
         }.serializable()
 
-        call.respond(update)
+        call.apply {
+            response.header(HttpHeaders.Location, "${config.baseUrl}/api/v1/updates/${update.id}")
+            respond(HttpStatusCode.Created, update)
+        }
     }
 }
 

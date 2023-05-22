@@ -30,6 +30,7 @@ fun Application.module() {
         val mainModule = module {
             single {
                 Config(
+                    System.getenv("BASE_URL"),
                     System.getenv("REPOSITORY_URL"),
                     System.getenv("REPOSITORY_API_KEY"),
                 )
