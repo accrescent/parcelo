@@ -254,7 +254,7 @@ fun Route.updateDraftRoute() {
                     .limit(1)
                     .single()[Reviewers.id]
             }
-            call.respond(draft.serializable())
+            call.respond(HttpStatusCode.NoContent)
         }
     }
 }
