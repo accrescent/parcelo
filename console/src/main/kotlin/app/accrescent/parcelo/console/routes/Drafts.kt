@@ -243,7 +243,7 @@ fun Route.updateDraftRoute() {
             call.respond(HttpStatusCode.NotFound)
         } else if (draft.reviewerId != null) {
             // A reviewer is already assigned
-            call.respond(HttpStatusCode.Forbidden)
+            call.respond(HttpStatusCode.Conflict)
         } else {
             // Submit the draft by assigning a random reviewer
             transaction {
