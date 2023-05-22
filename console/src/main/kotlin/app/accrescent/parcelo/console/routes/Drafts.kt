@@ -31,10 +31,10 @@ import io.ktor.server.request.receiveMultipart
 import io.ktor.server.resources.delete
 import io.ktor.server.resources.get
 import io.ktor.server.resources.patch
+import io.ktor.server.resources.post
 import io.ktor.server.response.header
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
-import io.ktor.server.routing.post
 import kotlinx.serialization.Serializable
 import org.jetbrains.exposed.sql.Random
 import org.jetbrains.exposed.sql.and
@@ -68,7 +68,7 @@ fun Route.createDraftRoute() {
     val config: Config by inject()
     val storageService: FileStorageService by inject()
 
-    post("/drafts") {
+    post<Drafts> {
         val creatorId = call.principal<Session>()!!.userId
 
         var apkSetMetadata: ApkSetMetadata? = null
