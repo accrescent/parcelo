@@ -213,7 +213,7 @@ fun Route.deleteDraftRoute() {
             call.respond(HttpStatusCode.NotFound)
         } else {
             transaction { draft.delete() }
-            call.respond(HttpStatusCode.OK)
+            call.respond(HttpStatusCode.NoContent)
         }
     }
 }
