@@ -82,6 +82,9 @@ fun Route.createUpdateRoute() {
                 } finally {
                     part.dispose()
                 }
+            } else {
+                call.respond(HttpStatusCode.BadRequest)
+                return@post
             }
         }
         if (apkSetMetadata == null || apkSetData == null) {
