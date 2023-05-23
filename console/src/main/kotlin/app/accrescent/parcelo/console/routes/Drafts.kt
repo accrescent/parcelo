@@ -8,8 +8,11 @@ import app.accrescent.parcelo.console.Config
 import app.accrescent.parcelo.console.data.App
 import app.accrescent.parcelo.console.data.Draft
 import app.accrescent.parcelo.console.data.Icon
+import app.accrescent.parcelo.console.data.RejectionReason
+import app.accrescent.parcelo.console.data.Review
 import app.accrescent.parcelo.console.data.ReviewIssue
 import app.accrescent.parcelo.console.data.ReviewIssueGroup
+import app.accrescent.parcelo.console.data.Reviewer
 import app.accrescent.parcelo.console.data.Reviewers
 import app.accrescent.parcelo.console.data.Session
 import app.accrescent.parcelo.console.storage.FileStorageService
@@ -25,6 +28,7 @@ import io.ktor.resources.Resource
 import io.ktor.server.application.call
 import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.principal
+import io.ktor.server.request.receive
 import io.ktor.server.request.receiveMultipart
 import io.ktor.server.resources.delete
 import io.ktor.server.resources.get
@@ -33,6 +37,8 @@ import io.ktor.server.resources.post
 import io.ktor.server.response.header
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import org.jetbrains.exposed.sql.Random
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.selectAll
@@ -46,7 +52,10 @@ import javax.imageio.ImageIO
 @Resource("/drafts")
 class Drafts {
     @Resource("{id}")
-    class Id(val parent: Drafts = Drafts(), val id: String)
+    class Id(val parent: Drafts = Drafts(), val id: String) {
+        @Resource("review")
+        class Review(val parent: Id)
+    }
 }
 
 fun Route.draftRoutes() {
@@ -55,6 +64,8 @@ fun Route.draftRoutes() {
         deleteDraftRoute()
         getDraftsRoute()
         updateDraftRoute()
+
+        createDraftReviewRoute()
     }
 }
 
@@ -255,6 +266,94 @@ fun Route.updateDraftRoute() {
                     .single()[Reviewers.id]
             }
             call.respond(HttpStatusCode.NoContent)
+        }
+    }
+}
+
+@Serializable
+private enum class ReviewResult {
+    @SerialName("approved")
+    APPROVED,
+
+    @SerialName("rejected")
+    REJECTED,
+}
+
+@Serializable
+private data class ReviewRequest(
+    val result: ReviewResult,
+    val reasons: List<String>?,
+    @SerialName("additional_notes")
+    val additionalNotes: String?,
+)
+
+fun Route.createDraftReviewRoute() {
+    post<Drafts.Id.Review> { route ->
+        val userId = call.principal<Session>()!!.userId
+
+        val draftId = try {
+            UUID.fromString(route.parent.id)
+        } catch (e: IllegalArgumentException) {
+            call.respond(HttpStatusCode.BadRequest)
+            return@post
+        }
+        val request = call.receive<ReviewRequest>()
+        // FIXME(#114): Handle this validation automatically via kotlinx.serialization instead
+        if (
+            (request.result == ReviewResult.APPROVED && request.reasons != null) ||
+            (request.result == ReviewResult.REJECTED && request.reasons == null)
+        ) {
+            call.respond(HttpStatusCode.BadRequest)
+            return@post
+        }
+
+        // Normally we would include access control (in this case, the user's reviewer ID) in the
+        // query to prevent accidentally leaking data to unauthorized users, but in this case we
+        // instead choose to find the draft first, so we can return more specific status codes than
+        // Not Found as appropriate if the user has sufficient access.
+        val draft = transaction { Draft.findById(draftId) } ?: run {
+            call.respond(HttpStatusCode.NotFound)
+            return@post
+        }
+
+        val userCanReview =
+            transaction { Reviewer.find { Reviewers.userId eq userId }.singleOrNull() }
+                ?.let { it.id == draft.reviewerId }
+                ?: false
+        if (userCanReview) {
+            // Check whether this draft has already been reviewed
+            if (draft.reviewId != null) {
+                call.respond(HttpStatusCode.Conflict)
+                return@post
+            }
+
+            // Create the review
+            transaction {
+                val review = Review.new {
+                    approved = when (request.result) {
+                        ReviewResult.APPROVED -> true
+                        ReviewResult.REJECTED -> false
+                    }
+                    additionalNotes = request.additionalNotes
+                }
+                for (rejectionReason in request.reasons.orEmpty()) {
+                    RejectionReason.new {
+                        reviewId = review.id
+                        reason = rejectionReason
+                    }
+                }
+                draft.reviewId = review.id
+            }
+            call.respond(HttpStatusCode.Created, request)
+        } else {
+            // Check whether the user has read access to this draft. If they do, tell them they're
+            // not allowed to review the draft. Otherwise, don't reveal the draft exists.
+            val userCanRead = draft.creatorId == userId
+            if (userCanRead) {
+                call.respond(HttpStatusCode.Forbidden)
+            } else {
+                call.respond(HttpStatusCode.NotFound)
+            }
         }
     }
 }

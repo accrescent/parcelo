@@ -19,6 +19,8 @@ fun Application.configureDatabase() {
             Files,
             Icons,
             Sessions,
+            RejectionReasons,
+            Reviews,
             ReviewIssues,
             Reviewers,
             Updates,

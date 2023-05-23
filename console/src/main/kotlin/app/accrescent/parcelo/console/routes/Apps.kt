@@ -4,7 +4,7 @@ import app.accrescent.parcelo.console.data.Apps as DbApps
 import app.accrescent.parcelo.console.data.AccessControlLists
 import app.accrescent.parcelo.console.data.App
 import app.accrescent.parcelo.console.data.Draft
-import app.accrescent.parcelo.console.data.Drafts
+import app.accrescent.parcelo.console.data.Review
 import app.accrescent.parcelo.console.data.Session
 import app.accrescent.parcelo.console.data.User
 import app.accrescent.parcelo.console.jobs.registerPublishAppJob
@@ -66,8 +66,11 @@ fun Route.createAppRoute() {
         }
 
         // Only allow publishing of approved apps
-        val draft =
-            transaction { Draft.find { Drafts.id eq draftId and Drafts.approved }.singleOrNull() }
+        val draft = transaction {
+            Draft
+                .findById(draftId)
+                .takeIf { draft -> draft?.reviewId?.let { Review.findById(it)?.approved } ?: false }
+        }
 
         if (draft != null) {
             // A draft with this ID exists, so register a job to publish it as an app

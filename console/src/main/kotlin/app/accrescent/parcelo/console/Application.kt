@@ -12,6 +12,8 @@ import io.ktor.server.application.install
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.json.Json
 import org.koin.dsl.module
 import org.koin.ktor.ext.inject
 import org.koin.ktor.plugin.Koin
@@ -23,6 +25,7 @@ fun main() {
         .start(wait = true)
 }
 
+@OptIn(ExperimentalSerializationApi::class)
 fun Application.module() {
     install(Koin) {
         slf4jLogger()
@@ -44,7 +47,9 @@ fun Application.module() {
     val httpClient: HttpClient by inject()
 
     install(ContentNegotiation) {
-        json()
+        json(Json {
+            explicitNulls = false
+        })
     }
     configureDatabase()
     configureJobRunr()
