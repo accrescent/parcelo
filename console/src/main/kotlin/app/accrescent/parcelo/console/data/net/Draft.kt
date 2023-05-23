@@ -13,6 +13,20 @@ data class Draft(
     val versionCode: Int,
     @SerialName("version_name")
     val versionName: String,
-    val submitted: Boolean,
-    val approved: Boolean,
+    val status: DraftStatus,
 )
+
+@Serializable
+enum class DraftStatus {
+    @SerialName("unsubmitted")
+    UNSUBMITTED,
+
+    @SerialName("submitted")
+    SUBMITTED,
+
+    @SerialName("approved")
+    APPROVED,
+
+    @SerialName("rejected")
+    REJECTED,
+}
