@@ -24,6 +24,7 @@ public data class Action(val name: String)
 
 public data class Application(
     val debuggable: Boolean?,
+    val testOnly: Boolean?,
 ) {
     @JacksonXmlProperty(localName = "service")
     var services: List<Service>? = null

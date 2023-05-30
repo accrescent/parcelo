@@ -54,6 +54,7 @@ private val MIN_BUNDLETOOL_VERSION = Version.Builder("1.11.4").build()
  * - "toc.pb" is a valid BuildApksResult protocol buffer
  * - the input ZIP contains at least one APK
  * - all APKs must not be debuggable
+ * - all APKs must not be marked test only
  * - all APKs have the same signing certificates
  * - all APKs have the same app ID and version code
  * - all APKs have unique split names
@@ -142,6 +143,9 @@ public fun parseApkSet(file: InputStream): ApkSetMetadata {
 
             if (manifest.application.debuggable == true) {
                 throw InvalidApkSetException("application is debuggable")
+            }
+            if (manifest.application.testOnly == true) {
+                throw InvalidApkSetException("application is test only")
             }
 
             // Pin the app metadata on the first manifest parsed to ensure all split APKs have the
