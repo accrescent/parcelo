@@ -60,6 +60,7 @@ private val MIN_BUNDLETOOL_VERSION = Version.Builder("1.11.4").build()
  * - all APKs have unique split names
  * - exactly one APK is a base APK (i.e., has an empty split name)
  * - the base APK specifies a version name
+ * - the app ID is well-formed
  *
  * @return metadata describing the APK set and the app it represents
  * @throws InvalidApkSetException the APK set is invalid
@@ -151,6 +152,10 @@ public fun parseApkSet(file: InputStream): ApkSetMetadata {
             // Pin the app metadata on the first manifest parsed to ensure all split APKs have the
             // same app ID and version code.
             if (metadata == null) {
+                // Validate the app ID
+                if (!isValidAppId(manifest.`package`)) {
+                    throw InvalidApkSetException("app ID ${manifest.`package`} is not valid")
+                }
                 metadata =
                     ApkSetMetadata(
                         manifest.`package`,
@@ -304,6 +309,36 @@ private fun getSplitTypeForName(splitName: String): SplitType {
     } else {
         SplitType.LANGUAGE
     }
+}
+
+/**
+ * Returns whether the given string is a valid Android application ID according to
+ * https://developer.android.com/studio/build/configure-app-module. Specifically, it verifies:
+ *
+ * 1. The string contains two segments (one or more dots).
+ * 2. Each segment starts with a letter.
+ * 3. All characters are alphanumeric or an underscore.
+ *
+ * If any of these conditions are not met, verification fails and this function return false.
+ */
+
+private val alphanumericUnderscoreRegex = Regex("""^[a-zA-Z0-9_]+$""")
+
+private fun isValidAppId(appId: String): Boolean {
+    val segments = appId.split(".")
+    if (segments.size < 2) {
+        return false
+    }
+
+    for (segment in segments) {
+        when {
+            segment.isEmpty() -> return false
+            !segment[0].isLetter() -> return false
+            !alphanumericUnderscoreRegex.matches(segment) -> return false
+        }
+    }
+
+    return true
 }
 
 public class InvalidApkSetException(message: String) : Exception(message)
