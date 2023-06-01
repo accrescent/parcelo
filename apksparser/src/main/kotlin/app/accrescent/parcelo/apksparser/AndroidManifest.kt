@@ -1,9 +1,10 @@
 package app.accrescent.parcelo.apksparser
 
+import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty
 
 public data class AndroidManifest(
-    val `package`: String,
+    val `package`: AppId,
     val versionCode: Int,
     val versionName: String?,
     val split: String?,
@@ -11,6 +12,26 @@ public data class AndroidManifest(
     @JacksonXmlProperty(localName = "uses-sdk")
     val usesSdk: UsesSdk?,
 ) {
+    /**
+     * @throws IllegalArgumentException the app ID is not well-formed
+     */
+    @JsonCreator
+    public constructor(
+        `package`: String,
+        versionCode: Int,
+        versionName: String?,
+        split: String?,
+        application: Application,
+        usesSdk: UsesSdk?
+    ) : this(
+        AppId.parseFromString(`package`) ?: throw IllegalArgumentException(),
+        versionCode,
+        versionName,
+        split,
+        application,
+        usesSdk,
+    )
+
     @JacksonXmlProperty(localName = "uses-permission")
     var usesPermissions: List<UsesPermission>? = null
         // Jackson workaround to prevent permission review bypasses. See

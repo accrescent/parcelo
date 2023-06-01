@@ -6,6 +6,7 @@ import com.android.apksig.apk.ApkUtils
 import com.android.apksig.util.DataSources
 import com.android.bundle.Commands.BuildApksResult
 import com.android.tools.apk.analyzer.BinaryXmlParser
+import com.fasterxml.jackson.databind.exc.ValueInstantiationException
 import com.github.zafarkhaja.semver.ParseException
 import com.github.zafarkhaja.semver.Version
 import com.google.protobuf.InvalidProtocolBufferException
@@ -136,6 +137,8 @@ public fun parseApkSet(file: InputStream): ApkSetMetadata {
                 manifestReader.readValue<AndroidManifest>(decodedManifest)
             } catch (e: ApkFormatException) {
                 throw InvalidApkSetException("an APK is malformed")
+            } catch (e: ValueInstantiationException) {
+                throw InvalidApkSetException("Android manifest is invalid")
             }
 
             if (!splitNames.add(manifest.split)) {
@@ -151,12 +154,10 @@ public fun parseApkSet(file: InputStream): ApkSetMetadata {
 
             // Pin the app metadata on the first manifest parsed to ensure all split APKs have the
             // same app ID and version code.
-            val appId = AppId.parseFromString(manifest.`package`)
-                ?: throw InvalidApkSetException("app ID ${manifest.`package`} is not valid")
             if (metadata == null) {
                 metadata =
                     ApkSetMetadata(
-                        appId,
+                        manifest.`package`,
                         manifest.versionCode,
                         "",
                         0,
@@ -173,7 +174,7 @@ public fun parseApkSet(file: InputStream): ApkSetMetadata {
                 //
                 // We can non-null assert the metadata here since the changing closure is called
                 // sequentially.
-                if (appId != metadata!!.appId || manifest.versionCode != metadata!!.versionCode) {
+                if (manifest.`package` != metadata!!.appId || manifest.versionCode != metadata!!.versionCode) {
                     throw InvalidApkSetException("APK manifest info is not consistent across all APKs")
                 }
             }

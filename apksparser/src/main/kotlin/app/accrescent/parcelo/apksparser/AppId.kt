@@ -4,8 +4,7 @@ package app.accrescent.parcelo.apksparser
  * A well-formed Android application ID. Its [value] property is guaranteed to contain a valid
  * Android app ID.
  */
-@JvmInline
-public value class AppId private constructor(public val value: String) {
+public class AppId private constructor(public val value: String) {
     public companion object {
         /**
          * Parses the given string into an Android application ID according to
@@ -34,6 +33,14 @@ public value class AppId private constructor(public val value: String) {
 
             return AppId(s)
         }
+    }
+
+    override fun equals(other: Any?): Boolean {
+        return other is AppId && this.value == other.value
+    }
+
+    override fun hashCode(): Int {
+        return value.hashCode()
     }
 }
 
