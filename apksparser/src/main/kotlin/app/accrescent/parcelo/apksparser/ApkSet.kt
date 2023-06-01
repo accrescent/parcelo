@@ -1,17 +1,10 @@
 package app.accrescent.parcelo.apksparser
 
-import com.android.apksig.ApkVerifier
-import com.android.apksig.apk.ApkFormatException
-import com.android.apksig.apk.ApkUtils
-import com.android.apksig.util.DataSources
 import com.android.bundle.Commands.BuildApksResult
-import com.android.tools.apk.analyzer.BinaryXmlParser
-import com.fasterxml.jackson.databind.exc.ValueInstantiationException
 import com.github.zafarkhaja.semver.ParseException
 import com.github.zafarkhaja.semver.Version
 import com.google.protobuf.InvalidProtocolBufferException
 import java.io.InputStream
-import java.nio.ByteBuffer
 import java.security.MessageDigest
 import java.security.cert.X509Certificate
 import java.util.Optional
@@ -29,8 +22,6 @@ public data class ApkSetMetadata(
     val langSplits: Set<String>,
     val entrySplitNames: Map<String, Optional<String>>,
 )
-
-private const val ANDROID_MANIFEST = "AndroidManifest.xml"
 
 /**
  * The minimum acceptable bundletool version used to generate the APK set. This version is taken
@@ -75,7 +66,6 @@ public fun parseApkSet(file: InputStream): ApkSetMetadata {
     ZipInputStream(file).use { zip ->
         generateSequence { zip.nextEntry }.filterNot { it.isDirectory }.forEach { entry ->
             val entryBytes = zip.readBytes()
-            val entryDataSource = DataSources.asDataSource(ByteBuffer.wrap(entryBytes))
 
             // Parse metadata
             if (entry.name == "toc.pb") {
@@ -101,54 +91,31 @@ public fun parseApkSet(file: InputStream): ApkSetMetadata {
                 return@forEach
             }
 
-            // Everything else is an APK. Start by finding and verifying its signature.
-            val sigCheckResult = try {
-                ApkVerifier.Builder(entryDataSource).build().verify()
-            } catch (e: ApkFormatException) {
-                throw InvalidApkSetException("an APK is malformed")
-            }
-
-            if (sigCheckResult.isVerified) {
-                if (!(sigCheckResult.isVerifiedUsingV2Scheme || sigCheckResult.isVerifiedUsingV3Scheme)) {
-                    throw InvalidApkSetException("APK signature isn't at least v2 or v3")
-                } else if (sigCheckResult.signerCertificates.any { it.isDebug() }) {
-                    throw InvalidApkSetException("APK signed with debug certificate")
-                }
-            } else {
-                throw InvalidApkSetException("APK signature doesn't verify")
+            val apk = when (val result = Apk.parse(entryBytes)) {
+                is ParseApkResult.Ok -> result.apk
+                is ParseApkResult.Error -> throw InvalidApkSetException(result.message)
             }
 
             // Pin the APK signing certificates on the first APK encountered to ensure split APKs
             // can actually be installed.
             if (pinnedCertHashes.isEmpty()) {
-                pinnedCertHashes = sigCheckResult.signerCertificates.map { it.fingerprint() }
+                pinnedCertHashes = apk.signerCertificates.map { it.fingerprint() }
             } else {
                 // Check against pinned certificates
-                val theseCertHashes = sigCheckResult.signerCertificates.map { it.fingerprint() }
+                val theseCertHashes = apk.signerCertificates.map { it.fingerprint() }
                 if (theseCertHashes != pinnedCertHashes) {
                     throw InvalidApkSetException("APK signing certificates don't match each other")
                 }
             }
 
-            // Parse the Android manifest
-            val manifest = try {
-                val manifestBytes = ApkUtils.getAndroidManifest(entryDataSource).moveToByteArray()
-                val decodedManifest = BinaryXmlParser.decodeXml(ANDROID_MANIFEST, manifestBytes)
-                manifestReader.readValue<AndroidManifest>(decodedManifest)
-            } catch (e: ApkFormatException) {
-                throw InvalidApkSetException("an APK is malformed")
-            } catch (e: ValueInstantiationException) {
-                throw InvalidApkSetException("Android manifest is invalid")
-            }
-
-            if (!splitNames.add(manifest.split)) {
+            if (!splitNames.add(apk.manifest.split)) {
                 throw InvalidApkSetException("duplicate split names found")
             }
 
-            if (manifest.application.debuggable == true) {
+            if (apk.manifest.application.debuggable == true) {
                 throw InvalidApkSetException("application is debuggable")
             }
-            if (manifest.application.testOnly == true) {
+            if (apk.manifest.application.testOnly == true) {
                 throw InvalidApkSetException("application is test only")
             }
 
@@ -157,8 +124,8 @@ public fun parseApkSet(file: InputStream): ApkSetMetadata {
             if (metadata == null) {
                 metadata =
                     ApkSetMetadata(
-                        manifest.`package`,
-                        manifest.versionCode,
+                        apk.manifest.`package`,
+                        apk.manifest.versionCode,
                         "",
                         0,
                         "",
@@ -174,19 +141,22 @@ public fun parseApkSet(file: InputStream): ApkSetMetadata {
                 //
                 // We can non-null assert the metadata here since the changing closure is called
                 // sequentially.
-                if (manifest.`package` != metadata!!.appId || manifest.versionCode != metadata!!.versionCode) {
+                if (
+                    apk.manifest.`package` != metadata!!.appId ||
+                    apk.manifest.versionCode != metadata!!.versionCode
+                ) {
                     throw InvalidApkSetException("APK manifest info is not consistent across all APKs")
                 }
             }
 
             // Update the review issues, version name, and target SDK if this is the base APK
-            if (manifest.split == null) {
+            if (apk.manifest.split == null) {
                 // Permissions
-                manifest.usesPermissions?.let { permissions ->
+                apk.manifest.usesPermissions?.let { permissions ->
                     metadata = metadata!!.copy(reviewIssues = permissions.map { it.name })
                 }
                 // Service intent filter actions
-                manifest.application.services?.let { services ->
+                apk.manifest.application.services?.let { services ->
                     val issues = metadata!!.reviewIssues.toMutableSet()
                     services
                         .flatMap { it.intentFilters ?: emptyList() }
@@ -197,17 +167,17 @@ public fun parseApkSet(file: InputStream): ApkSetMetadata {
                 }
 
                 // Version name
-                if (manifest.versionName != null) {
-                    metadata = metadata!!.copy(versionName = manifest.versionName)
+                if (apk.manifest.versionName != null) {
+                    metadata = metadata!!.copy(versionName = apk.manifest.versionName)
                 } else {
                     throw InvalidApkSetException("base APK doesn't specify a version name")
                 }
 
                 // Target SDK
-                if (manifest.usesSdk != null) {
+                if (apk.manifest.usesSdk != null) {
                     metadata = metadata!!.copy(
-                        targetSdk = manifest.usesSdk.targetSdkVersion
-                            ?: manifest.usesSdk.minSdkVersion
+                        targetSdk = apk.manifest.usesSdk.targetSdkVersion
+                            ?: apk.manifest.usesSdk.minSdkVersion
                     )
                 } else {
                     throw InvalidApkSetException("base APK doesn't specify a target SDK")
@@ -216,10 +186,10 @@ public fun parseApkSet(file: InputStream): ApkSetMetadata {
 
             // Update the entry name -> split mapping
             val map = metadata!!.entrySplitNames.toMutableMap()
-            map[entry.name] = if (manifest.split == null) {
+            map[entry.name] = if (apk.manifest.split == null) {
                 Optional.empty()
             } else {
-                Optional.of(manifest.split.substringAfter("config."))
+                Optional.of(apk.manifest.split.substringAfter("config."))
             }
             metadata = metadata!!.copy(entrySplitNames = map)
         }
@@ -265,13 +235,6 @@ public fun parseApkSet(file: InputStream): ApkSetMetadata {
     }
 
     return metadata ?: throw InvalidApkSetException("no APKs found")
-}
-
-/**
- * Returns whether this is a debug certificate generated by the Android SDK tools
- */
-private fun X509Certificate.isDebug(): Boolean {
-    return subjectX500Principal.name == "C=US,O=Android,CN=Android Debug"
 }
 
 /**
