@@ -15,7 +15,7 @@ public data class AndroidManifest(
     var usesPermissions: List<UsesPermission>? = null
         // Jackson workaround to prevent permission review bypasses. See
         // https://github.com/FasterXML/jackson-dataformat-xml/issues/275 for more information.
-        set(value) {
+        private set(value) {
             field = (field ?: emptyList()) + (value ?: emptyList())
         }
 }
@@ -30,7 +30,7 @@ public data class Application(
     var services: List<Service>? = null
         // Jackson workaround to prevent review bypasses. See
         // https://github.com/FasterXML/jackson-dataformat-xml/issues/275 for more information.
-        set(value) {
+        private set(value) {
             field = (field ?: emptyList()) + (value ?: emptyList())
         }
 }
@@ -40,7 +40,7 @@ public class IntentFilter {
     public var actions: List<Action> = emptyList()
         // Jackson workaround to prevent review bypasses. See
         // https://github.com/FasterXML/jackson-dataformat-xml/issues/275 for more information.
-        set(value) {
+        private set(value) {
             field += value
         }
 }
@@ -50,7 +50,7 @@ public class Service {
     public var intentFilters: List<IntentFilter>? = null
         // Jackson workaround to prevent review bypasses. See
         // https://github.com/FasterXML/jackson-dataformat-xml/issues/275 for more information.
-        set(value) {
+        private set(value) {
             field = (field ?: emptyList()) + (value ?: emptyList())
         }
 }
