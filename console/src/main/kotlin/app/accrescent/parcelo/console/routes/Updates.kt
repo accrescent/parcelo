@@ -99,12 +99,12 @@ fun Route.createUpdateRoute() {
             return@post
         }
 
-        if (apkSetMetadata.appId != appId) {
+        if (apkSetMetadata.appId.value != appId) {
             call.respond(HttpStatusCode.UnprocessableEntity)
             return@post
         }
 
-        val app = transaction { App.findById(apkSetMetadata.appId) } ?: run {
+        val app = transaction { App.findById(apkSetMetadata.appId.value) } ?: run {
             call.respond(HttpStatusCode.NotFound)
             return@post
         }

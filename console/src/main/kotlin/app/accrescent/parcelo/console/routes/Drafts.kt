@@ -141,7 +141,7 @@ fun Route.createDraftRoute() {
             apkSetData != null
         ) {
             // Check that there isn't already a published app with this ID
-            if (transaction { App.findById(apkSetMetadata.appId) } != null) {
+            if (transaction { App.findById(apkSetMetadata.appId.value) } != null) {
                 call.respond(HttpStatusCode.Conflict)
                 return@post
             }
@@ -177,7 +177,7 @@ fun Route.createDraftRoute() {
                 }
                 Draft.new {
                     this.label = label
-                    appId = apkSetMetadata.appId
+                    appId = apkSetMetadata.appId.value
                     versionCode = apkSetMetadata.versionCode
                     versionName = apkSetMetadata.versionName
                     this.creatorId = creatorId

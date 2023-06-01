@@ -110,7 +110,7 @@ private fun publishApp(
     metadata: ApkSetMetadata,
     icon: InputStream,
 ) {
-    val appDir = Paths.get(publishDir, metadata.appId)
+    val appDir = Paths.get(publishDir, metadata.appId.value)
     val apksDir = Paths.get(appDir.toString(), metadata.versionCode.toString())
     val baseDirAttributes = PosixFilePermissions.asFileAttribute(
         setOf(
