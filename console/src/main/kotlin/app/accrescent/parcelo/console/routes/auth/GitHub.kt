@@ -3,6 +3,7 @@ package app.accrescent.parcelo.console.routes.auth
 import app.accrescent.parcelo.console.data.Session
 import app.accrescent.parcelo.console.data.User
 import app.accrescent.parcelo.console.data.Users
+import app.accrescent.parcelo.console.data.WhitelistedGitHubUser
 import app.accrescent.parcelo.console.data.WhitelistedGitHubUsers
 import io.ktor.client.HttpClient
 import io.ktor.http.HttpMethod
@@ -22,7 +23,6 @@ import io.ktor.server.routing.route
 import io.ktor.server.sessions.generateSessionId
 import io.ktor.server.sessions.sessions
 import io.ktor.server.sessions.set
-import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.kohsuke.github.GitHubBuilder
 
@@ -79,8 +79,8 @@ fun Route.githubRoutes() {
                     }
                 }
                 val userNotWhitelisted = transaction {
-                    WhitelistedGitHubUsers
-                        .select { WhitelistedGitHubUsers.id eq user.githubUserId }
+                    WhitelistedGitHubUser
+                        .find { WhitelistedGitHubUsers.id eq user.githubUserId }
                         .empty()
                 }
                 if (userNotWhitelisted) {

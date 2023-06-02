@@ -200,16 +200,14 @@ fun Route.updateUpdateRoute() {
         // Users can only submit an update they've created and which has a versionCode higher than
         // that of the published app
         val statusCode = transaction {
-            val publishedApp = DbApps
-                .select { DbApps.id eq appId }
+            val publishedApp = App
+                .find { DbApps.id eq appId }
                 .forUpdate() // Lock to prevent race conditions on the version code
                 .singleOrNull()
-                ?.let { App.wrapRow(it) }
                 ?: return@transaction HttpStatusCode.NotFound
-            val update = DbUpdates
-                .select { DbUpdates.id eq updateId and (DbUpdates.creatorId eq userId) }
+            val update = Update
+                .find { DbUpdates.id eq updateId and (DbUpdates.creatorId eq userId) }
                 .singleOrNull()
-                ?.let { Update.wrapRow(it) }
                 ?: return@transaction HttpStatusCode.NotFound
 
             val requiresReview = update.reviewerId != null
