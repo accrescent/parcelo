@@ -37,7 +37,7 @@ public class AndroidManifest private constructor(
         // Jackson workaround to prevent permission review bypasses. See
         // https://github.com/FasterXML/jackson-dataformat-xml/issues/275 for more information.
         private set(value) {
-            field = (field ?: emptyList()) + (value ?: emptyList())
+            field = field.orEmpty() + value.orEmpty()
         }
 }
 
@@ -52,7 +52,7 @@ public class Application private constructor(
         // Jackson workaround to prevent review bypasses. See
         // https://github.com/FasterXML/jackson-dataformat-xml/issues/275 for more information.
         private set(value) {
-            field = (field ?: emptyList()) + (value ?: emptyList())
+            field = field.orEmpty() + value.orEmpty()
         }
 }
 
@@ -72,7 +72,7 @@ public class Service private constructor() {
         // Jackson workaround to prevent review bypasses. See
         // https://github.com/FasterXML/jackson-dataformat-xml/issues/275 for more information.
         private set(value) {
-            field = (field ?: emptyList()) + (value ?: emptyList())
+            field = field.orEmpty() + value.orEmpty()
         }
 }
 

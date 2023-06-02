@@ -154,7 +154,7 @@ public fun parseApkSet(file: InputStream): ApkSetMetadata {
                 apk.manifest.application.services?.let { services ->
                     val issues = metadata!!.reviewIssues.toMutableSet()
                     services
-                        .flatMap { it.intentFilters ?: emptyList() }
+                        .flatMap { it.intentFilters.orEmpty() }
                         .flatMap { it.actions }
                         .map { it.name }
                         .forEach { issues.add(it) }
