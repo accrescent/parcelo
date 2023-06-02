@@ -3,20 +3,20 @@ package app.accrescent.parcelo.apksparser
 import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty
 
-public data class AndroidManifest(
-    val `package`: AppId,
-    val versionCode: Int,
-    val versionName: String?,
-    val split: String?,
-    val application: Application,
+public class AndroidManifest private constructor(
+    public val `package`: AppId,
+    public val versionCode: Int,
+    public val versionName: String?,
+    public val split: String?,
+    public val application: Application,
     @JacksonXmlProperty(localName = "uses-sdk")
-    val usesSdk: UsesSdk?,
+    public val usesSdk: UsesSdk?,
 ) {
     /**
      * @throws IllegalArgumentException the app ID is not well-formed
      */
     @JsonCreator
-    public constructor(
+    private constructor(
         `package`: String,
         versionCode: Int,
         versionName: String?,
@@ -33,7 +33,7 @@ public data class AndroidManifest(
     )
 
     @JacksonXmlProperty(localName = "uses-permission")
-    var usesPermissions: List<UsesPermission>? = null
+    public var usesPermissions: List<UsesPermission>? = null
         // Jackson workaround to prevent permission review bypasses. See
         // https://github.com/FasterXML/jackson-dataformat-xml/issues/275 for more information.
         private set(value) {
@@ -41,14 +41,14 @@ public data class AndroidManifest(
         }
 }
 
-public data class Action(val name: String)
+public class Action private constructor(public val name: String)
 
-public data class Application(
-    val debuggable: Boolean?,
-    val testOnly: Boolean?,
+public class Application private constructor(
+    public val debuggable: Boolean?,
+    public val testOnly: Boolean?,
 ) {
     @JacksonXmlProperty(localName = "service")
-    var services: List<Service>? = null
+    public var services: List<Service>? = null
         // Jackson workaround to prevent review bypasses. See
         // https://github.com/FasterXML/jackson-dataformat-xml/issues/275 for more information.
         private set(value) {
@@ -56,7 +56,7 @@ public data class Application(
         }
 }
 
-public class IntentFilter {
+public class IntentFilter private constructor() {
     @JacksonXmlProperty(localName = "action")
     public var actions: List<Action> = emptyList()
         // Jackson workaround to prevent review bypasses. See
@@ -66,7 +66,7 @@ public class IntentFilter {
         }
 }
 
-public class Service {
+public class Service private constructor() {
     @JacksonXmlProperty(localName = "intent-filter")
     public var intentFilters: List<IntentFilter>? = null
         // Jackson workaround to prevent review bypasses. See
@@ -76,6 +76,12 @@ public class Service {
         }
 }
 
-public data class UsesPermission(val name: String, val maxSdkVersion: String?)
+public class UsesPermission private constructor(
+    public val name: String,
+    public val maxSdkVersion: String?,
+)
 
-public data class UsesSdk(val minSdkVersion: Int = 1, val targetSdkVersion: Int?)
+public class UsesSdk private constructor(
+    public val minSdkVersion: Int = 1,
+    public val targetSdkVersion: Int?,
+)

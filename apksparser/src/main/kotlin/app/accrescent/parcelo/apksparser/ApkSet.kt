@@ -85,7 +85,7 @@ public fun parseApkSet(file: InputStream): ApkSetMetadata {
                 } else {
                     throw InvalidApkSetException(
                         "APK set generated with bundletool $parsedBundletoolVersion" +
-                                " but minimum supported version is $MIN_BUNDLETOOL_VERSION"
+                            " but minimum supported version is $MIN_BUNDLETOOL_VERSION"
                     )
                 }
                 return@forEach
