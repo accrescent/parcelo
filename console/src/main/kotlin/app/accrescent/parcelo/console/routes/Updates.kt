@@ -2,7 +2,7 @@ package app.accrescent.parcelo.console.routes
 
 import app.accrescent.parcelo.console.data.Apps as DbApps
 import app.accrescent.parcelo.console.data.Updates as DbUpdates
-import app.accrescent.parcelo.apksparser.ApkSetMetadata
+import app.accrescent.parcelo.apksparser.ApkSet
 import app.accrescent.parcelo.apksparser.InvalidApkSetException
 import app.accrescent.parcelo.console.Config
 import app.accrescent.parcelo.console.data.AccessControlLists
@@ -74,13 +74,13 @@ fun Route.createUpdateRoute() {
             return@post
         }
 
-        var apkSetMetadata: ApkSetMetadata? = null
+        var apkSet: ApkSet? = null
         var apkSetData: ByteArray? = null
         for (part in call.receiveMultipart().readAllParts()) {
             if (part is PartData.FileItem && part.name == "apk_set") {
-                apkSetMetadata = try {
+                apkSet = try {
                     apkSetData = part.streamProvider().use { it.readBytes() }
-                    apkSetData.inputStream().use { ApkSetMetadata.parse(it) }
+                    apkSetData.inputStream().use { ApkSet.parse(it) }
                 } catch (e: InvalidApkSetException) {
                     call.respond(HttpStatusCode.BadRequest)
                     return@post
@@ -92,25 +92,25 @@ fun Route.createUpdateRoute() {
                 return@post
             }
         }
-        if (apkSetMetadata == null || apkSetData == null) {
+        if (apkSet == null || apkSetData == null) {
             call.respond(HttpStatusCode.BadRequest)
             return@post
         }
 
-        if (apkSetMetadata.appId.value != appId) {
+        if (apkSet.appId.value != appId) {
             call.respond(HttpStatusCode.UnprocessableEntity)
             return@post
         }
 
-        val app = transaction { App.findById(apkSetMetadata.appId.value) } ?: run {
+        val app = transaction { App.findById(apkSet.appId.value) } ?: run {
             call.respond(HttpStatusCode.NotFound)
             return@post
         }
-        if (apkSetMetadata.versionCode <= app.versionCode) {
+        if (apkSet.versionCode <= app.versionCode) {
             call.respond(HttpStatusCode.UnprocessableEntity)
             return@post
         }
-        if (apkSetMetadata.targetSdk < MIN_TARGET_SDK_UPDATE) {
+        if (apkSet.targetSdk < MIN_TARGET_SDK_UPDATE) {
             call.respond(HttpStatusCode.UnprocessableEntity)
             return@post
         }
@@ -129,7 +129,7 @@ fun Route.createUpdateRoute() {
         // for review. If there are none, we don't assign a reviewer.
         val update = transaction {
             REVIEW_ISSUE_BLACKLIST
-                .intersect(apkSetMetadata.reviewIssues.toSet())
+                .intersect(apkSet.reviewIssues.toSet())
                 .let { reviewIssues ->
                     if (app.reviewIssueGroupId != null) {
                         reviewIssues.subtract(ReviewIssue.find {
@@ -152,8 +152,8 @@ fun Route.createUpdateRoute() {
                     }
                     Update.new {
                         this.appId = app.id
-                        versionCode = apkSetMetadata.versionCode
-                        versionName = apkSetMetadata.versionName
+                        versionCode = apkSet.versionCode
+                        versionName = apkSet.versionName
                         creatorId = userId
                         creationTime = System.currentTimeMillis()
                         fileId = apkSetFileId

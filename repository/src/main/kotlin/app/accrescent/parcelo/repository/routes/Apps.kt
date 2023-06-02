@@ -1,6 +1,6 @@
 package app.accrescent.parcelo.repository.routes
 
-import app.accrescent.parcelo.apksparser.ApkSetMetadata
+import app.accrescent.parcelo.apksparser.ApkSet
 import app.accrescent.parcelo.apksparser.InvalidApkSetException
 import app.accrescent.parcelo.repository.Config
 import app.accrescent.parcelo.repository.data.net.RepoData
@@ -47,14 +47,14 @@ fun Route.createAppRoute() {
         val multipart = call.receiveMultipart().readAllParts()
 
         var apkSetData: ByteArray? = null
-        var apkSetMetadata: ApkSetMetadata? = null
+        var apkSet: ApkSet? = null
         var iconData: ByteArray? = null
 
         for (part in multipart) {
             if (part is PartData.FileItem && part.name == "apk_set") {
-                apkSetMetadata = try {
+                apkSet = try {
                     apkSetData = part.streamProvider().use { it.readBytes() }
-                    apkSetData.inputStream().use { ApkSetMetadata.parse(it) }
+                    apkSetData.inputStream().use { ApkSet.parse(it) }
                 } catch (e: InvalidApkSetException) {
                     call.respond(HttpStatusCode.BadRequest)
                     return@post
@@ -87,11 +87,11 @@ fun Route.createAppRoute() {
         }
 
         // Publish app to the webserver
-        if (apkSetData != null && apkSetMetadata != null && iconData != null) {
-            apkSetData.inputStream().use { apkSet ->
-                ZipInputStream(apkSet).use { zip ->
+        if (apkSetData != null && apkSet != null && iconData != null) {
+            apkSetData.inputStream().use { apkSetInputStream ->
+                ZipInputStream(apkSetInputStream).use { zip ->
                     iconData.inputStream().use { icon ->
-                        publishApp(config.publishDirectory, zip, apkSetMetadata, icon)
+                        publishApp(config.publishDirectory, zip, apkSet, icon)
                     }
                 }
             }
@@ -106,7 +106,7 @@ fun Route.createAppRoute() {
 private fun publishApp(
     publishDir: String,
     zip: ZipInputStream,
-    metadata: ApkSetMetadata,
+    metadata: ApkSet,
     icon: InputStream,
 ) {
     val appDir = Paths.get(publishDir, metadata.appId.value)

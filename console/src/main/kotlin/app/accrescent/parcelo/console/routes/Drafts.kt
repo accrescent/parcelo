@@ -1,7 +1,7 @@
 package app.accrescent.parcelo.console.routes
 
 import app.accrescent.parcelo.console.data.Drafts as DbDrafts
-import app.accrescent.parcelo.apksparser.ApkSetMetadata
+import app.accrescent.parcelo.apksparser.ApkSet
 import app.accrescent.parcelo.apksparser.InvalidApkSetException
 import app.accrescent.parcelo.console.Config
 import app.accrescent.parcelo.console.data.App
@@ -74,7 +74,7 @@ fun Route.createDraftRoute() {
     post<Drafts> {
         val creatorId = call.principal<Session>()!!.userId
 
-        var apkSetMetadata: ApkSetMetadata? = null
+        var apkSet: ApkSet? = null
         var label: String? = null
         var apkSetData: ByteArray? = null
         var iconHash: String? = null
@@ -83,10 +83,10 @@ fun Route.createDraftRoute() {
         val multipart = call.receiveMultipart().readAllParts()
         for (part in multipart) {
             if (part is PartData.FileItem && part.name == "apk_set") {
-                apkSetMetadata = try {
+                apkSet = try {
                     apkSetData = part.streamProvider().use { it.readBytes() }
 
-                    apkSetData.inputStream().use { ApkSetMetadata.parse(it) }
+                    apkSetData.inputStream().use { ApkSet.parse(it) }
                 } catch (e: InvalidApkSetException) {
                     call.respond(HttpStatusCode.BadRequest)
                     return@post
@@ -132,24 +132,24 @@ fun Route.createDraftRoute() {
         }
 
         if (
-            apkSetMetadata != null &&
+            apkSet != null &&
             label != null &&
             iconHash != null &&
             iconData != null &&
             apkSetData != null
         ) {
             // Check that there isn't already a published app with this ID
-            if (transaction { App.findById(apkSetMetadata.appId.value) } != null) {
+            if (transaction { App.findById(apkSet.appId.value) } != null) {
                 call.respond(HttpStatusCode.Conflict)
                 return@post
             }
 
-            if (apkSetMetadata.targetSdk < MIN_TARGET_SDK_NEW_APP) {
+            if (apkSet.targetSdk < MIN_TARGET_SDK_NEW_APP) {
                 call.respond(HttpStatusCode.UnprocessableEntity)
                 return@post
             }
 
-            val reviewIssues = REVIEW_ISSUE_BLACKLIST intersect apkSetMetadata.reviewIssues.toSet()
+            val reviewIssues = REVIEW_ISSUE_BLACKLIST intersect apkSet.reviewIssues.toSet()
             val draft = transaction {
                 // Associate review issues with draft as necessary
                 val issueGroupId = if (reviewIssues.isNotEmpty()) {
@@ -173,9 +173,9 @@ fun Route.createDraftRoute() {
                 }
                 Draft.new {
                     this.label = label
-                    appId = apkSetMetadata.appId.value
-                    versionCode = apkSetMetadata.versionCode
-                    versionName = apkSetMetadata.versionName
+                    appId = apkSet.appId.value
+                    versionCode = apkSet.versionCode
+                    versionName = apkSet.versionName
                     this.creatorId = creatorId
                     creationTime = System.currentTimeMillis()
                     fileId = appFileId

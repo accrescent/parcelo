@@ -16,7 +16,7 @@ import java.util.zip.ZipInputStream
  */
 private val MIN_BUNDLETOOL_VERSION = Version.Builder("1.11.4").build()
 
-public class ApkSetMetadata private constructor(
+public class ApkSet private constructor(
     public val appId: AppId,
     public val versionCode: Int,
     public val versionName: String,
@@ -52,7 +52,7 @@ public class ApkSetMetadata private constructor(
          * @return metadata describing the APK set and the app it represents
          * @throws InvalidApkSetException the APK set is invalid
          */
-        public fun parse(file: InputStream): ApkSetMetadata {
+        public fun parse(file: InputStream): ApkSet {
             var appId: AppId? = null
             var versionCode: Int? = null
             var versionName: String? = null
@@ -208,7 +208,7 @@ public class ApkSetMetadata private constructor(
                 bundletoolVersion == null -> throw InvalidApkSetException("no bundletool version found")
             }
 
-            return ApkSetMetadata(
+            return ApkSet(
                 appId!!,
                 versionCode!!,
                 versionName!!,
