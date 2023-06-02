@@ -17,8 +17,7 @@ import app.accrescent.parcelo.console.data.Reviewers
 import app.accrescent.parcelo.console.data.Session
 import app.accrescent.parcelo.console.storage.FileStorageService
 import app.accrescent.parcelo.console.validation.MIN_TARGET_SDK_NEW_APP
-import app.accrescent.parcelo.console.validation.PERMISSION_REVIEW_BLACKLIST
-import app.accrescent.parcelo.console.validation.SERVICE_INTENT_FILTER_REVIEW_BLACKLIST
+import app.accrescent.parcelo.console.validation.REVIEW_ISSUE_BLACKLIST
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.PartData
@@ -151,9 +150,7 @@ fun Route.createDraftRoute() {
                 return@post
             }
 
-            val reviewIssues = PERMISSION_REVIEW_BLACKLIST
-                .union(SERVICE_INTENT_FILTER_REVIEW_BLACKLIST)
-                .intersect(apkSetMetadata.reviewIssues.toSet())
+            val reviewIssues = REVIEW_ISSUE_BLACKLIST intersect apkSetMetadata.reviewIssues.toSet()
             val draft = transaction {
                 // Associate review issues with draft as necessary
                 val issueGroupId = if (reviewIssues.isNotEmpty()) {

@@ -16,8 +16,7 @@ import app.accrescent.parcelo.console.data.Session
 import app.accrescent.parcelo.console.data.Update
 import app.accrescent.parcelo.console.storage.FileStorageService
 import app.accrescent.parcelo.console.validation.MIN_TARGET_SDK_UPDATE
-import app.accrescent.parcelo.console.validation.PERMISSION_REVIEW_BLACKLIST
-import app.accrescent.parcelo.console.validation.SERVICE_INTENT_FILTER_REVIEW_BLACKLIST
+import app.accrescent.parcelo.console.validation.REVIEW_ISSUE_BLACKLIST
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.PartData
@@ -130,8 +129,7 @@ fun Route.createUpdateRoute() {
         // which exist in both (1) and (2) and do not exist in (3) should be stored with the update
         // for review. If there are none, we don't assign a reviewer.
         val update = transaction {
-            PERMISSION_REVIEW_BLACKLIST
-                .union(SERVICE_INTENT_FILTER_REVIEW_BLACKLIST)
+            REVIEW_ISSUE_BLACKLIST
                 .intersect(apkSetMetadata.reviewIssues.toSet())
                 .let { reviewIssues ->
                     if (app.reviewIssueGroupId != null) {
