@@ -4,7 +4,6 @@ import app.accrescent.parcelo.console.data.Apps as DbApps
 import app.accrescent.parcelo.console.data.Updates as DbUpdates
 import app.accrescent.parcelo.apksparser.ApkSetMetadata
 import app.accrescent.parcelo.apksparser.InvalidApkSetException
-import app.accrescent.parcelo.apksparser.parseApkSet
 import app.accrescent.parcelo.console.Config
 import app.accrescent.parcelo.console.data.AccessControlLists
 import app.accrescent.parcelo.console.data.App
@@ -81,7 +80,7 @@ fun Route.createUpdateRoute() {
             if (part is PartData.FileItem && part.name == "apk_set") {
                 apkSetMetadata = try {
                     apkSetData = part.streamProvider().use { it.readBytes() }
-                    apkSetData.inputStream().use { parseApkSet(it) }
+                    apkSetData.inputStream().use { ApkSetMetadata.parse(it) }
                 } catch (e: InvalidApkSetException) {
                     call.respond(HttpStatusCode.BadRequest)
                     return@post

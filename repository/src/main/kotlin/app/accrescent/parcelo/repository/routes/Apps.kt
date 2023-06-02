@@ -2,7 +2,6 @@ package app.accrescent.parcelo.repository.routes
 
 import app.accrescent.parcelo.apksparser.ApkSetMetadata
 import app.accrescent.parcelo.apksparser.InvalidApkSetException
-import app.accrescent.parcelo.apksparser.parseApkSet
 import app.accrescent.parcelo.repository.Config
 import app.accrescent.parcelo.repository.data.net.RepoData
 import app.accrescent.parcelo.repository.routes.auth.API_KEY_AUTH_PROVIDER
@@ -55,7 +54,7 @@ fun Route.createAppRoute() {
             if (part is PartData.FileItem && part.name == "apk_set") {
                 apkSetMetadata = try {
                     apkSetData = part.streamProvider().use { it.readBytes() }
-                    apkSetData.inputStream().use { parseApkSet(it) }
+                    apkSetData.inputStream().use { ApkSetMetadata.parse(it) }
                 } catch (e: InvalidApkSetException) {
                     call.respond(HttpStatusCode.BadRequest)
                     return@post

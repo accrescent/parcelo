@@ -3,7 +3,6 @@ package app.accrescent.parcelo.console.routes
 import app.accrescent.parcelo.console.data.Drafts as DbDrafts
 import app.accrescent.parcelo.apksparser.ApkSetMetadata
 import app.accrescent.parcelo.apksparser.InvalidApkSetException
-import app.accrescent.parcelo.apksparser.parseApkSet
 import app.accrescent.parcelo.console.Config
 import app.accrescent.parcelo.console.data.App
 import app.accrescent.parcelo.console.data.Draft
@@ -87,7 +86,7 @@ fun Route.createDraftRoute() {
                 apkSetMetadata = try {
                     apkSetData = part.streamProvider().use { it.readBytes() }
 
-                    apkSetData.inputStream().use { parseApkSet(it) }
+                    apkSetData.inputStream().use { ApkSetMetadata.parse(it) }
                 } catch (e: InvalidApkSetException) {
                     call.respond(HttpStatusCode.BadRequest)
                     return@post
