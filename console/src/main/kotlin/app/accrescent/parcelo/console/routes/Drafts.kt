@@ -285,7 +285,17 @@ private data class ReviewRequest(
     val reasons: List<String>?,
     @SerialName("additional_notes")
     val additionalNotes: String?,
-)
+) {
+    // FIXME(#114): Handle this validation automatically via kotlinx.serialization instead
+    init {
+        if (
+            (result == ReviewResult.APPROVED && reasons != null) ||
+            (result == ReviewResult.REJECTED && reasons == null)
+        ) {
+            throw IllegalArgumentException()
+        }
+    }
+}
 
 fun Route.createDraftReviewRoute() {
     post<Drafts.Id.Review> { route ->
@@ -297,12 +307,9 @@ fun Route.createDraftReviewRoute() {
             call.respond(HttpStatusCode.BadRequest)
             return@post
         }
-        val request = call.receive<ReviewRequest>()
-        // FIXME(#114): Handle this validation automatically via kotlinx.serialization instead
-        if (
-            (request.result == ReviewResult.APPROVED && request.reasons != null) ||
-            (request.result == ReviewResult.REJECTED && request.reasons == null)
-        ) {
+        val request = try {
+            call.receive<ReviewRequest>()
+        } catch (e: IllegalArgumentException) {
             call.respond(HttpStatusCode.BadRequest)
             return@post
         }
