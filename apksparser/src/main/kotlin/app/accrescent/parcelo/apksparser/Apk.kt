@@ -144,7 +144,7 @@ public sealed class ParseApkResult {
  * as of Android 11.
  */
 private fun ApkVerifier.Result.isVerifiedUsingModernScheme(): Boolean {
-    return isVerifiedUsingV2Scheme || isVerifiedUsingV3Scheme
+    return isVerifiedUsingV2Scheme || isVerifiedUsingV3Scheme || isVerifiedUsingV31Scheme
 }
 
 /**
