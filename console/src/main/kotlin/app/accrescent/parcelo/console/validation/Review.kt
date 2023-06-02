@@ -1,5 +1,7 @@
 package app.accrescent.parcelo.console.validation
 
+const val MIN_TARGET_SDK = 31
+
 val PERMISSION_REVIEW_BLACKLIST = setOf(
     "android.permission.ACCESS_BACKGROUND_LOCATION",
     "android.permission.ACCESS_BACKGROUND_LOCATION",

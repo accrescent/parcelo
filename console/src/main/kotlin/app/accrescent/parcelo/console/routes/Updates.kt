@@ -14,7 +14,7 @@ import app.accrescent.parcelo.console.data.Reviewers
 import app.accrescent.parcelo.console.data.Session
 import app.accrescent.parcelo.console.data.Update
 import app.accrescent.parcelo.console.storage.FileStorageService
-import app.accrescent.parcelo.console.validation.MIN_TARGET_SDK_UPDATE
+import app.accrescent.parcelo.console.validation.MIN_TARGET_SDK
 import app.accrescent.parcelo.console.validation.REVIEW_ISSUE_BLACKLIST
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
@@ -110,7 +110,7 @@ fun Route.createUpdateRoute() {
             call.respond(HttpStatusCode.UnprocessableEntity)
             return@post
         }
-        if (apkSet.targetSdk < MIN_TARGET_SDK_UPDATE) {
+        if (apkSet.targetSdk < MIN_TARGET_SDK) {
             call.respond(HttpStatusCode.UnprocessableEntity)
             return@post
         }
