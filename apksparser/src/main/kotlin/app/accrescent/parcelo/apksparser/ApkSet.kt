@@ -53,12 +53,18 @@ private val MIN_BUNDLETOOL_VERSION = Version.Builder("1.11.4").build()
  * @throws InvalidApkSetException the APK set is invalid
  */
 public fun parseApkSet(file: InputStream): ApkSetMetadata {
+    var appId: AppId? = null
+    var versionCode: Int? = null
+    var versionName: String? = null
+    var targetSdk: Int? = null
     var bundletoolVersion: String? = null
-    var metadata: ApkSetMetadata? = null
-    var pinnedCertHashes = emptyList<String>()
+    val reviewIssues = mutableListOf<String>()
     val splitNames = mutableSetOf<String?>()
+    val entrySplitNames = mutableMapOf<String, Optional<String>>()
 
     ZipInputStream(file).use { zip ->
+        var pinnedCertHashes = emptyList<String>()
+
         generateSequence { zip.nextEntry }.filterNot { it.isDirectory }.forEach { entry ->
             val entryBytes = zip.readBytes()
 
@@ -114,32 +120,14 @@ public fun parseApkSet(file: InputStream): ApkSetMetadata {
                 throw InvalidApkSetException("application is test only")
             }
 
-            // Pin the app metadata on the first manifest parsed to ensure all split APKs have the
-            // same app ID and version code.
-            if (metadata == null) {
-                metadata =
-                    ApkSetMetadata(
-                        apk.manifest.`package`,
-                        apk.manifest.versionCode,
-                        "",
-                        0,
-                        "",
-                        emptyList(),
-                        emptySet(),
-                        emptySet(),
-                        emptySet(),
-                        emptyMap(),
-                    )
+            // Pin common data on the first manifest parsed to ensure all split APKs have the same
+            // app ID and version code.
+            if (appId == null) {
+                appId = apk.manifest.`package`
+                versionCode = apk.manifest.versionCode
             } else {
-                // Check that the metadata is the same as that previously pinned (sans the version
-                // name for reasons described above).
-                //
-                // We can non-null assert the metadata here since the changing closure is called
-                // sequentially.
-                if (
-                    apk.manifest.`package` != metadata!!.appId ||
-                    apk.manifest.versionCode != metadata!!.versionCode
-                ) {
+                // Check that the app ID and version code are the same as previously pinned
+                if (apk.manifest.`package` != appId || apk.manifest.versionCode != versionCode) {
                     throw InvalidApkSetException("APK manifest info is not consistent across all APKs")
                 }
             }
@@ -148,45 +136,31 @@ public fun parseApkSet(file: InputStream): ApkSetMetadata {
             if (apk.manifest.split == null) {
                 // Permissions
                 apk.manifest.usesPermissions?.let { permissions ->
-                    metadata = metadata!!.copy(reviewIssues = permissions.map { it.name })
+                    reviewIssues.addAll(permissions.map { it.name })
                 }
+
                 // Service intent filter actions
                 apk.manifest.application.services?.let { services ->
-                    val issues = metadata!!.reviewIssues.toMutableSet()
                     services
                         .flatMap { it.intentFilters.orEmpty() }
                         .flatMap { it.actions }
                         .map { it.name }
-                        .forEach { issues.add(it) }
-                    metadata = metadata!!.copy(reviewIssues = issues.toList())
+                        .forEach { reviewIssues.add(it) }
                 }
 
                 // Version name
-                if (apk.manifest.versionName != null) {
-                    metadata = metadata!!.copy(versionName = apk.manifest.versionName)
-                } else {
-                    throw InvalidApkSetException("base APK doesn't specify a version name")
-                }
+                apk.manifest.versionName?.let { versionName = it }
+                    ?: throw InvalidApkSetException("base APK doesn't specify a version name")
 
                 // Target SDK
-                if (apk.manifest.usesSdk != null) {
-                    metadata = metadata!!.copy(
-                        targetSdk = apk.manifest.usesSdk.targetSdkVersion
-                            ?: apk.manifest.usesSdk.minSdkVersion
-                    )
-                } else {
-                    throw InvalidApkSetException("base APK doesn't specify a target SDK")
-                }
+                apk.manifest.usesSdk?.let { targetSdk = it.targetSdkVersion ?: it.minSdkVersion }
+                    ?: throw InvalidApkSetException("base APK doesn't specify a target SDK")
             }
 
             // Update the entry name -> split mapping
-            val map = metadata!!.entrySplitNames.toMutableMap()
-            map[entry.name] = if (apk.manifest.split == null) {
-                Optional.empty()
-            } else {
-                Optional.of(apk.manifest.split.substringAfter("config."))
-            }
-            metadata = metadata!!.copy(entrySplitNames = map)
+            entrySplitNames[entry.name] = apk.manifest.split
+                ?.let { Optional.of(it.substringAfter("config.")) }
+                ?: Optional.empty()
         }
     }
 
@@ -212,24 +186,31 @@ public fun parseApkSet(file: InputStream): ApkSetMetadata {
 
         Triple(abiSplits.toSet(), langSplits.toSet(), densitySplits.toSet())
     }
-    metadata = metadata?.copy(
-        abiSplits = abiSplits,
-        langSplits = langSplits,
-        densitySplits = densitySplits
-    )
-
-    if (bundletoolVersion != null) {
-        metadata = metadata?.copy(bundletoolVersion = bundletoolVersion!!)
-    } else {
-        throw InvalidApkSetException("no bundletool version found")
-    }
 
     // If there isn't a base APK, freak out
     if (!splitNames.contains(null)) {
         throw InvalidApkSetException("no base APK found")
     }
 
-    return metadata ?: throw InvalidApkSetException("no APKs found")
+    when {
+        appId == null || versionCode == null -> throw InvalidApkSetException("no APKs found")
+        versionName == null -> throw InvalidApkSetException("no version name specified")
+        targetSdk == null -> throw InvalidApkSetException("no targetSdk specified")
+        bundletoolVersion == null -> throw InvalidApkSetException("no bundletool version found")
+    }
+
+    return ApkSetMetadata(
+        appId!!,
+        versionCode!!,
+        versionName!!,
+        targetSdk!!,
+        bundletoolVersion!!,
+        reviewIssues,
+        abiSplits,
+        densitySplits,
+        langSplits,
+        entrySplitNames,
+    )
 }
 
 /**
