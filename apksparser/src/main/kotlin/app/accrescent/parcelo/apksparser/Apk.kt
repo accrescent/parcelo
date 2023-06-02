@@ -44,7 +44,7 @@ public class Apk private constructor(
                 }
             }
             val signerCertificates = if (sigCheckResult.isVerified) {
-                if (!(sigCheckResult.isVerifiedUsingV2Scheme || sigCheckResult.isVerifiedUsingV3Scheme)) {
+                if (!(sigCheckResult.isVerifiedUsingModernScheme())) {
                     return ParseApkResult.Error.SignatureVersionError
                 } else if (sigCheckResult.signerCertificates.any { it.isDebug() }) {
                     return ParseApkResult.Error.DebugCertificateError
@@ -131,6 +131,20 @@ public sealed class ParseApkResult {
             override val message: String = "invalid Android manifest"
         }
     }
+}
+
+/**
+ * Returns whether the APK was signed with a "modern" signature scheme, i.e., a scheme of version
+ * greater than v1.
+ *
+ * We require this because v1 signatures are
+ * [insecure](https://source.android.com/docs/security/features/apksigning#v1) and because signature
+ * scheme v2 or greater is
+ * [required](https://developer.android.com/about/versions/11/behavior-changes-11#minimum-signature-scheme)
+ * as of Android 11.
+ */
+private fun ApkVerifier.Result.isVerifiedUsingModernScheme(): Boolean {
+    return isVerifiedUsingV2Scheme || isVerifiedUsingV3Scheme
 }
 
 /**
