@@ -1,6 +1,14 @@
 package app.accrescent.parcelo.console.validation
 
+import com.github.zafarkhaja.semver.Version
+
 const val MIN_TARGET_SDK = 31
+
+/**
+ * The minimum acceptable bundletool version used to generate the APK set. This version is taken
+ * from a recent Android Studio release.
+ */
+val MIN_BUNDLETOOL_VERSION = Version.Builder("1.11.4").build()
 
 val PERMISSION_REVIEW_BLACKLIST = setOf(
     "android.permission.ACCESS_BACKGROUND_LOCATION",

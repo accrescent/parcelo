@@ -10,18 +10,12 @@ import java.security.cert.X509Certificate
 import java.util.Optional
 import java.util.zip.ZipInputStream
 
-/**
- * The minimum acceptable bundletool version used to generate the APK set. This version is taken
- * from a recent Android Studio release.
- */
-private val MIN_BUNDLETOOL_VERSION = Version.Builder("1.11.4").build()
-
 public class ApkSet private constructor(
     public val appId: AppId,
     public val versionCode: Int,
     public val versionName: String,
     public val targetSdk: Int,
-    public val bundletoolVersion: String,
+    public val bundletoolVersion: Version,
     public val reviewIssues: List<String>,
     public val abiSplits: Set<String>,
     public val densitySplits: Set<String>,
@@ -57,7 +51,7 @@ public class ApkSet private constructor(
             var versionCode: Int? = null
             var versionName: String? = null
             var targetSdk: Int? = null
-            var bundletoolVersion: String? = null
+            var bundletoolVersion: Version? = null
             val reviewIssues = mutableListOf<String>()
             val splitNames = mutableSetOf<String?>()
             val entrySplitNames = mutableMapOf<String, Optional<String>>()
@@ -76,18 +70,10 @@ public class ApkSet private constructor(
                             throw InvalidApkSetException("bundletool metadata not valid")
                         }
                         // Validate bundletool version
-                        val parsedBundletoolVersion = try {
+                        bundletoolVersion = try {
                             Version.Builder(bundletoolMetadata.bundletool.version).build()
                         } catch (e: ParseException) {
                             throw InvalidApkSetException("invalid bundletool version")
-                        }
-                        if (parsedBundletoolVersion >= MIN_BUNDLETOOL_VERSION) {
-                            bundletoolVersion = parsedBundletoolVersion.toString()
-                        } else {
-                            throw InvalidApkSetException(
-                                "APK set generated with bundletool $parsedBundletoolVersion" +
-                                    " but minimum supported version is $MIN_BUNDLETOOL_VERSION"
-                            )
                         }
                         return@forEach
                     }
