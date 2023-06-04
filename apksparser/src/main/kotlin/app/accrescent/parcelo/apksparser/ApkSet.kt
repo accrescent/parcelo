@@ -32,10 +32,10 @@ public class ApkSet private constructor(
         /**
          * Parses an APK set into its metadata
          *
-         * For now this function attempts to determine whether the APK set is valid on a best-effort
-         * basis, so it may accept files which are not strictly valid APK sets. However, any APK set it
-         * rejects is certainly invalid. It currently accepts the given file as a valid APK set
-         * according to the following criteria:
+         * Only a subset of all valid APK sets can be successfully parsed by this function, as it
+         * imposes some additional constraints and makes some additional security checks which are
+         * not strictly necessary, but are helpful for our purposes. It currently accepts the given
+         * file as a valid APK set according to the following criteria:
          *
          * - the input file is a valid ZIP
          * - all non-directory entries in said ZIP except for "toc.pb" are valid APKs
