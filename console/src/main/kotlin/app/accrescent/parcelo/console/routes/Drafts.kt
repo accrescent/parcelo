@@ -2,7 +2,7 @@ package app.accrescent.parcelo.console.routes
 
 import app.accrescent.parcelo.console.data.Drafts as DbDrafts
 import app.accrescent.parcelo.apksparser.ApkSet
-import app.accrescent.parcelo.apksparser.InvalidApkSetException
+import app.accrescent.parcelo.apksparser.ParseApkSetResult
 import app.accrescent.parcelo.console.Config
 import app.accrescent.parcelo.console.data.App
 import app.accrescent.parcelo.console.data.Draft
@@ -84,15 +84,17 @@ fun Route.createDraftRoute() {
         val multipart = call.receiveMultipart().readAllParts()
         for (part in multipart) {
             if (part is PartData.FileItem && part.name == "apk_set") {
-                apkSet = try {
+                val parseResult = run {
                     apkSetData = part.streamProvider().use { it.readBytes() }
-
-                    apkSetData.inputStream().use { ApkSet.parse(it) }
-                } catch (e: InvalidApkSetException) {
-                    call.respond(HttpStatusCode.BadRequest)
-                    return@post
-                } finally {
-                    part.dispose()
+                    apkSetData!!.inputStream().use { ApkSet.parse(it) }
+                }
+                part.dispose()
+                apkSet = when (parseResult) {
+                    is ParseApkSetResult.Ok -> parseResult.apkSet
+                    is ParseApkSetResult.Error -> run {
+                        call.respond(HttpStatusCode.BadRequest)
+                        return@post
+                    }
                 }
             } else if (part is PartData.FileItem && part.name == "icon") {
                 iconData = part.streamProvider().use { it.readBytes() }
@@ -171,7 +173,7 @@ fun Route.createDraftRoute() {
                 }
 
                 val iconFileId = iconData.inputStream().use { storageService.saveFile(it) }
-                val appFileId = apkSetData.inputStream().use { storageService.saveFile(it) }
+                val appFileId = apkSetData!!.inputStream().use { storageService.saveFile(it) }
                 val icon = Icon.new {
                     hash = iconHash
                     fileId = iconFileId

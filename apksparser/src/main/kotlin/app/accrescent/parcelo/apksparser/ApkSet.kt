@@ -44,9 +44,8 @@ public class ApkSet private constructor(
          * - the base APK specifies a version name
          *
          * @return metadata describing the APK set and the app it represents
-         * @throws InvalidApkSetException the APK set is invalid
          */
-        public fun parse(file: InputStream): ApkSet {
+        public fun parse(file: InputStream): ParseApkSetResult {
             var appId: AppId? = null
             var versionCode: Int? = null
             var versionName: String? = null
@@ -67,20 +66,22 @@ public class ApkSet private constructor(
                         val bundletoolMetadata = try {
                             BuildApksResult.newBuilder().mergeFrom(entryBytes).build()
                         } catch (e: InvalidProtocolBufferException) {
-                            throw InvalidApkSetException("bundletool metadata not valid")
+                            return ParseApkSetResult.Error.BundletoolMetadataError
                         }
                         // Validate bundletool version
                         bundletoolVersion = try {
                             Version.Builder(bundletoolMetadata.bundletool.version).build()
                         } catch (e: ParseException) {
-                            throw InvalidApkSetException("invalid bundletool version")
+                            return ParseApkSetResult.Error.BundletoolVersionError
                         }
                         return@forEach
                     }
 
                     val apk = when (val result = Apk.parse(entryBytes)) {
                         is ParseApkResult.Ok -> result.apk
-                        is ParseApkResult.Error -> throw InvalidApkSetException(result.message)
+                        is ParseApkResult.Error -> return ParseApkSetResult.Error.ApkParseError(
+                            result
+                        )
                     }
 
                     // Pin the APK signing certificates on the first APK encountered to ensure split APKs
@@ -91,21 +92,19 @@ public class ApkSet private constructor(
                         // Check against pinned certificates
                         val theseCertHashes = apk.signerCertificates.map { it.fingerprint() }
                         if (theseCertHashes != pinnedCertHashes) {
-                            throw InvalidApkSetException(
-                                "APK signing certificates don't match each other"
-                            )
+                            return ParseApkSetResult.Error.SigningCertMismatchError
                         }
                     }
 
                     if (!splitNames.add(apk.manifest.split)) {
-                        throw InvalidApkSetException("duplicate split names found")
+                        return ParseApkSetResult.Error.DuplicateSplitError
                     }
 
                     if (apk.manifest.application.debuggable == true) {
-                        throw InvalidApkSetException("application is debuggable")
+                        return ParseApkSetResult.Error.DebuggableError
                     }
                     if (apk.manifest.application.testOnly == true) {
-                        throw InvalidApkSetException("application is test only")
+                        return ParseApkSetResult.Error.TestOnlyError
                     }
 
                     // Pin common data on the first manifest parsed to ensure all split APKs have
@@ -119,9 +118,7 @@ public class ApkSet private constructor(
                             apk.manifest.`package` != appId ||
                             apk.manifest.versionCode != versionCode
                         ) {
-                            throw InvalidApkSetException(
-                                "APK manifest info is not consistent across all APKs"
-                            )
+                            return ParseApkSetResult.Error.ManifestInfoInconsistentError
                         }
                     }
 
@@ -144,12 +141,12 @@ public class ApkSet private constructor(
                         // Version name
                         apk.manifest.versionName
                             ?.let { versionName = it }
-                            ?: throw InvalidApkSetException("base APK doesn't specify a version name")
+                            ?: return ParseApkSetResult.Error.BaseApkVersionNameUnspecifiedError
 
                         // Target SDK
                         apk.manifest.usesSdk
                             ?.let { targetSdk = it.targetSdkVersion ?: it.minSdkVersion }
-                            ?: throw InvalidApkSetException("base APK doesn't specify a target SDK")
+                            ?: return ParseApkSetResult.Error.BaseApkTargetSdkUnspecifiedError
                     }
 
                     // Update the entry name -> split mapping
@@ -174,7 +171,7 @@ public class ApkSet private constructor(
                                 SplitType.SCREEN_DENSITY -> densitySplits
                             }.add(splitName.substringAfter("config."))
                         } catch (e: SplitNameNotConfigException) {
-                            throw InvalidApkSetException(e.message!!)
+                            return ParseApkSetResult.Error.InvalidSplitNameError(splitName)
                         }
                     }
                 }
@@ -184,17 +181,17 @@ public class ApkSet private constructor(
 
             // If there isn't a base APK, freak out
             if (!splitNames.contains(null)) {
-                throw InvalidApkSetException("no base APK found")
+                return ParseApkSetResult.Error.BaseApkNotFoundError
             }
 
             when {
-                appId == null || versionCode == null -> throw InvalidApkSetException("no APKs found")
-                versionName == null -> throw InvalidApkSetException("no version name specified")
-                targetSdk == null -> throw InvalidApkSetException("no targetSdk specified")
-                bundletoolVersion == null -> throw InvalidApkSetException("no bundletool version found")
+                appId == null || versionCode == null -> return ParseApkSetResult.Error.ApksNotFoundError
+                versionName == null -> return ParseApkSetResult.Error.VersionNameNotFoundError
+                targetSdk == null -> return ParseApkSetResult.Error.TargetSdkNotFoundError
+                bundletoolVersion == null -> return ParseApkSetResult.Error.BundletoolVersionNotFoundError
             }
 
-            return ApkSet(
+            val apkSet = ApkSet(
                 appId!!,
                 versionCode!!,
                 versionName!!,
@@ -206,6 +203,140 @@ public class ApkSet private constructor(
                 langSplits,
                 entrySplitNames,
             )
+
+            return ParseApkSetResult.Ok(apkSet)
+        }
+    }
+}
+
+/**
+ * Representation of the result of attempting to parse an APK set
+ */
+public sealed class ParseApkSetResult {
+    /**
+     * The result of successful parsing
+     */
+    public data class Ok(val apkSet: ApkSet) : ParseApkSetResult()
+
+    /**
+     * The result of failed parsing
+     */
+    public sealed class Error : ParseApkSetResult() {
+        /**
+         * A message describing the error
+         */
+        public abstract val message: String
+
+        /**
+         * An error was encountered in parsing an APK
+         */
+        public data class ApkParseError(val error: ParseApkResult.Error) : Error() {
+            override val message: String = error.message
+        }
+
+        /**
+         * An error was encountered in parsing the bundletool metadata
+         */
+        public object BundletoolMetadataError : Error() {
+            override val message: String = "bundletool metadata not valid"
+        }
+
+        /**
+         * An error was encountered in parsing the bundletool version
+         */
+        public object BundletoolVersionError : Error() {
+            override val message: String = "invalid bundletool version"
+        }
+
+        /**
+         * A mismatch exists between APK signing certificates
+         */
+        public object SigningCertMismatchError : Error() {
+            override val message: String = "APK signing certificates don't match each other"
+        }
+
+        /**
+         * A duplicate split APK name was detected
+         */
+        public object DuplicateSplitError : Error() {
+            override val message: String = "duplicate split names found"
+        }
+
+        /**
+         * Application is debuggable
+         */
+        public object DebuggableError : Error() {
+            override val message: String = "application is debuggable"
+        }
+
+        /**
+         * Application is test-only
+         */
+        public object TestOnlyError : Error() {
+            override val message: String = "application is test only"
+        }
+
+        /**
+         * Android manifest info (app ID and version name) isn't the same across all APKs
+         */
+        public object ManifestInfoInconsistentError : Error() {
+            override val message: String = "APK manifest info is not consistent across all APKs"
+        }
+
+        /**
+         * The base APK doesn't specify a version name
+         */
+        public object BaseApkVersionNameUnspecifiedError : Error() {
+            override val message: String = "base APK doesn't specify a version name"
+        }
+
+        /**
+         * The base APK doesn't specify a target SDK
+         */
+        public object BaseApkTargetSdkUnspecifiedError : Error() {
+            override val message: String = "base APK doesn't specify a target SDK"
+        }
+
+        /**
+         * No base APK was found
+         */
+        public object BaseApkNotFoundError : Error() {
+            override val message: String = "no base APK found"
+        }
+
+        /**
+         * No APKs were found
+         */
+        public object ApksNotFoundError : Error() {
+            override val message: String = "no APKs found"
+        }
+
+        /**
+         * No version name was found in the APK set
+         */
+        public object VersionNameNotFoundError : Error() {
+            override val message: String = "no version name specified"
+        }
+
+        /**
+         * No target SDK was found in the APK set
+         */
+        public object TargetSdkNotFoundError : Error() {
+            override val message: String = "no targetSdk specified"
+        }
+
+        /**
+         * No bundletool version was found in the APK set
+         */
+        public object BundletoolVersionNotFoundError : Error() {
+            override val message: String = "no bundletool version found"
+        }
+
+        /**
+         * Parsing encountered an invalid configuration split APK name
+         */
+        public data class InvalidSplitNameError(val splitName: String) : Error() {
+            override val message: String = "$splitName is not a valid configuration split name"
         }
     }
 }
@@ -245,8 +376,6 @@ private fun getSplitTypeForName(splitName: String): SplitType {
         SplitType.LANGUAGE
     }
 }
-
-public class InvalidApkSetException(message: String) : Exception(message)
 
 public class SplitNameNotConfigException(splitName: String) :
     Exception("split name $splitName is not a config split name")

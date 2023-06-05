@@ -3,7 +3,7 @@ package app.accrescent.parcelo.console.routes
 import app.accrescent.parcelo.console.data.Apps as DbApps
 import app.accrescent.parcelo.console.data.Updates as DbUpdates
 import app.accrescent.parcelo.apksparser.ApkSet
-import app.accrescent.parcelo.apksparser.InvalidApkSetException
+import app.accrescent.parcelo.apksparser.ParseApkSetResult
 import app.accrescent.parcelo.console.Config
 import app.accrescent.parcelo.console.data.AccessControlLists
 import app.accrescent.parcelo.console.data.App
@@ -79,21 +79,24 @@ fun Route.createUpdateRoute() {
         var apkSetData: ByteArray? = null
         for (part in call.receiveMultipart().readAllParts()) {
             if (part is PartData.FileItem && part.name == "apk_set") {
-                apkSet = try {
+                val parseResult = run {
                     apkSetData = part.streamProvider().use { it.readBytes() }
-                    apkSetData.inputStream().use { ApkSet.parse(it) }
-                } catch (e: InvalidApkSetException) {
-                    call.respond(HttpStatusCode.BadRequest)
-                    return@post
-                } finally {
-                    part.dispose()
+                    apkSetData!!.inputStream().use { ApkSet.parse(it) }
+                }
+                part.dispose()
+                apkSet = when (parseResult) {
+                    is ParseApkSetResult.Ok -> parseResult.apkSet
+                    is ParseApkSetResult.Error -> run {
+                        call.respond(HttpStatusCode.BadRequest)
+                        return@post
+                    }
                 }
             } else {
                 call.respond(HttpStatusCode.BadRequest)
                 return@post
             }
         }
-        if (apkSet == null || apkSetData == null) {
+        if (apkSet == null) {
             call.respond(HttpStatusCode.BadRequest)
             return@post
         }
@@ -120,7 +123,7 @@ fun Route.createUpdateRoute() {
             return@post
         }
 
-        val apkSetFileId = apkSetData.inputStream().use { storageService.saveFile(it) }
+        val apkSetFileId = apkSetData!!.inputStream().use { storageService.saveFile(it) }
 
         // There exists:
         //

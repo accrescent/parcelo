@@ -1,7 +1,7 @@
 package app.accrescent.parcelo.repository.routes
 
 import app.accrescent.parcelo.apksparser.ApkSet
-import app.accrescent.parcelo.apksparser.InvalidApkSetException
+import app.accrescent.parcelo.apksparser.ParseApkSetResult
 import app.accrescent.parcelo.repository.Config
 import app.accrescent.parcelo.repository.data.net.RepoData
 import app.accrescent.parcelo.repository.routes.auth.API_KEY_AUTH_PROVIDER
@@ -52,14 +52,17 @@ fun Route.createAppRoute() {
 
         for (part in multipart) {
             if (part is PartData.FileItem && part.name == "apk_set") {
-                apkSet = try {
+                val parseResult = run {
                     apkSetData = part.streamProvider().use { it.readBytes() }
-                    apkSetData.inputStream().use { ApkSet.parse(it) }
-                } catch (e: InvalidApkSetException) {
-                    call.respond(HttpStatusCode.BadRequest)
-                    return@post
-                } finally {
-                    part.dispose
+                    apkSetData!!.inputStream().use { ApkSet.parse(it) }
+                }
+                part.dispose()
+                apkSet = when (parseResult) {
+                    is ParseApkSetResult.Ok -> parseResult.apkSet
+                    is ParseApkSetResult.Error -> run {
+                        call.respond(HttpStatusCode.BadRequest)
+                        return@post
+                    }
                 }
             } else if (part is PartData.FileItem && part.name == "icon") {
                 iconData = part.streamProvider().use { it.readBytes() }
@@ -88,7 +91,7 @@ fun Route.createAppRoute() {
 
         // Publish app to the webserver
         if (apkSetData != null && apkSet != null && iconData != null) {
-            apkSetData.inputStream().use { apkSetInputStream ->
+            apkSetData!!.inputStream().use { apkSetInputStream ->
                 ZipInputStream(apkSetInputStream).use { zip ->
                     iconData.inputStream().use { icon ->
                         publishApp(config.publishDirectory, zip, apkSet, icon)
