@@ -377,5 +377,5 @@ private fun getSplitTypeForName(splitName: String): SplitType {
     }
 }
 
-public class SplitNameNotConfigException(splitName: String) :
+private class SplitNameNotConfigException(splitName: String) :
     Exception("split name $splitName is not a config split name")
