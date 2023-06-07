@@ -1,5 +1,5 @@
 plugins {
-    kotlin("jvm") version "1.8.21" apply false
+    kotlin("jvm") version "1.8.22" apply false
     kotlin("plugin.serialization") version "1.8.21" apply false
     id("com.github.node-gradle.node") version "5.0.0" apply false
     id("com.google.protobuf") version "0.9.3" apply false
