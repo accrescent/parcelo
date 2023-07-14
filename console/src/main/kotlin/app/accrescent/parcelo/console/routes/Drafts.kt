@@ -14,6 +14,8 @@ import app.accrescent.parcelo.console.data.ReviewIssueGroup
 import app.accrescent.parcelo.console.data.Reviewer
 import app.accrescent.parcelo.console.data.Reviewers
 import app.accrescent.parcelo.console.data.Session
+import app.accrescent.parcelo.console.data.net.ApiError
+import app.accrescent.parcelo.console.data.net.toApiError
 import app.accrescent.parcelo.console.storage.FileStorageService
 import app.accrescent.parcelo.console.validation.MIN_BUNDLETOOL_VERSION
 import app.accrescent.parcelo.console.validation.MIN_TARGET_SDK
@@ -92,7 +94,7 @@ fun Route.createDraftRoute() {
                 apkSet = when (parseResult) {
                     is ParseApkSetResult.Ok -> parseResult.apkSet
                     is ParseApkSetResult.Error -> run {
-                        call.respond(HttpStatusCode.BadRequest)
+                        call.respond(HttpStatusCode.BadRequest, toApiError(parseResult))
                         return@post
                     }
                 }
@@ -108,11 +110,11 @@ fun Route.createDraftRoute() {
                     }
                 } catch (e: IIOException) {
                     // Assume this is a format error
-                    call.respond(HttpStatusCode.BadRequest)
+                    call.respond(HttpStatusCode.BadRequest, ApiError.iconImageFormat())
                     return@post
                 }
                 if (image.width != 512 || image.height != 512) {
-                    call.respond(HttpStatusCode.BadRequest)
+                    call.respond(HttpStatusCode.BadRequest, ApiError.imageResolution())
                     return@post
                 }
 
@@ -123,13 +125,13 @@ fun Route.createDraftRoute() {
             } else if (part is PartData.FormItem && part.name == "label") {
                 // Label must be between 3 and 30 characters in length inclusive
                 if (part.value.length < 3 || part.value.length > 30) {
-                    call.respond(HttpStatusCode.BadRequest)
+                    call.respond(HttpStatusCode.BadRequest, ApiError.labelLength())
                     return@post
                 } else {
                     label = part.value
                 }
             } else {
-                call.respond(HttpStatusCode.BadRequest)
+                call.respond(HttpStatusCode.BadRequest, ApiError.unknownPartName(part.name))
                 return@post
             }
         }
@@ -143,16 +145,25 @@ fun Route.createDraftRoute() {
         ) {
             // Check that there isn't already a published app with this ID
             if (transaction { App.findById(apkSet.appId.value) } != null) {
-                call.respond(HttpStatusCode.Conflict)
+                call.respond(HttpStatusCode.Conflict, ApiError.appAlreadyExists())
                 return@post
             }
 
             if (apkSet.targetSdk < MIN_TARGET_SDK) {
-                call.respond(HttpStatusCode.UnprocessableEntity)
+                call.respond(
+                    HttpStatusCode.UnprocessableEntity,
+                    ApiError.minTargetSdk(MIN_TARGET_SDK, apkSet.targetSdk)
+                )
                 return@post
             }
             if (apkSet.bundletoolVersion < MIN_BUNDLETOOL_VERSION) {
-                call.respond(HttpStatusCode.UnprocessableEntity)
+                call.respond(
+                    HttpStatusCode.UnprocessableEntity,
+                    ApiError.minBundletoolVersion(
+                        MIN_BUNDLETOOL_VERSION.toString(),
+                        apkSet.bundletoolVersion.toString()
+                    )
+                )
                 return@post
             }
 
@@ -197,7 +208,7 @@ fun Route.createDraftRoute() {
             )
             call.respond(HttpStatusCode.Created, draft)
         } else {
-            call.respond(HttpStatusCode.BadRequest)
+            call.respond(HttpStatusCode.BadRequest, ApiError.missingPartName())
         }
     }
 }
@@ -209,7 +220,7 @@ fun Route.deleteDraftRoute() {
         val draftId = try {
             UUID.fromString(route.id)
         } catch (e: IllegalArgumentException) {
-            call.respond(HttpStatusCode.BadRequest)
+            call.respond(HttpStatusCode.BadRequest, ApiError.invalidUuid(route.id))
             return@delete
         }
 
@@ -218,7 +229,7 @@ fun Route.deleteDraftRoute() {
                 .singleOrNull()
         }
         if (draft == null) {
-            call.respond(HttpStatusCode.NotFound)
+            call.respond(HttpStatusCode.NotFound, ApiError.draftNotFound(draftId))
         } else {
             transaction { draft.delete() }
             call.respond(HttpStatusCode.NoContent)
@@ -245,7 +256,7 @@ fun Route.updateDraftRoute() {
         val draftId = try {
             UUID.fromString(route.id)
         } catch (e: IllegalArgumentException) {
-            call.respond(HttpStatusCode.BadRequest)
+            call.respond(HttpStatusCode.BadRequest, ApiError.invalidUuid(route.id))
             return@patch
         }
 
@@ -254,10 +265,10 @@ fun Route.updateDraftRoute() {
             Draft.find { DbDrafts.id eq draftId and (DbDrafts.creatorId eq userId) }.singleOrNull()
         }
         if (draft == null) {
-            call.respond(HttpStatusCode.NotFound)
+            call.respond(HttpStatusCode.NotFound, ApiError.draftNotFound(draftId))
         } else if (draft.reviewerId != null) {
             // A reviewer is already assigned
-            call.respond(HttpStatusCode.Conflict)
+            call.respond(HttpStatusCode.Conflict, ApiError.reviewerAlreadyAssigned())
         } else {
             // Submit the draft by assigning a random reviewer
             transaction {
@@ -307,7 +318,7 @@ fun Route.createDraftReviewRoute() {
         val draftId = try {
             UUID.fromString(route.parent.id)
         } catch (e: IllegalArgumentException) {
-            call.respond(HttpStatusCode.BadRequest)
+            call.respond(HttpStatusCode.BadRequest, ApiError.invalidUuid(route.parent.id))
             return@post
         }
         val request = try {
@@ -322,7 +333,7 @@ fun Route.createDraftReviewRoute() {
         // instead choose to find the draft first, so we can return more specific status codes than
         // Not Found as appropriate if the user has sufficient access.
         val draft = transaction { Draft.findById(draftId) } ?: run {
-            call.respond(HttpStatusCode.NotFound)
+            call.respond(HttpStatusCode.NotFound, ApiError.draftNotFound(draftId))
             return@post
         }
 
@@ -333,7 +344,7 @@ fun Route.createDraftReviewRoute() {
         if (userCanReview) {
             // Check whether this draft has already been reviewed
             if (draft.reviewId != null) {
-                call.respond(HttpStatusCode.Conflict)
+                call.respond(HttpStatusCode.Conflict, ApiError.alreadyReviewed())
                 return@post
             }
 
@@ -360,9 +371,9 @@ fun Route.createDraftReviewRoute() {
             // not allowed to review the draft. Otherwise, don't reveal the draft exists.
             val userCanRead = draft.creatorId == userId
             if (userCanRead) {
-                call.respond(HttpStatusCode.Forbidden)
+                call.respond(HttpStatusCode.Forbidden, ApiError.reviewForbidden())
             } else {
-                call.respond(HttpStatusCode.NotFound)
+                call.respond(HttpStatusCode.NotFound, ApiError.draftNotFound(draftId))
             }
         }
     }

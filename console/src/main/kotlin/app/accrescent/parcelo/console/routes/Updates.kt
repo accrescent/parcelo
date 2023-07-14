@@ -13,6 +13,8 @@ import app.accrescent.parcelo.console.data.ReviewIssues
 import app.accrescent.parcelo.console.data.Reviewers
 import app.accrescent.parcelo.console.data.Session
 import app.accrescent.parcelo.console.data.Update
+import app.accrescent.parcelo.console.data.net.ApiError
+import app.accrescent.parcelo.console.data.net.toApiError
 import app.accrescent.parcelo.console.storage.FileStorageService
 import app.accrescent.parcelo.console.validation.MIN_BUNDLETOOL_VERSION
 import app.accrescent.parcelo.console.validation.MIN_TARGET_SDK
@@ -71,7 +73,7 @@ fun Route.createUpdateRoute() {
                 ?: false
         }
         if (!updatePermitted) {
-            call.respond(HttpStatusCode.Forbidden)
+            call.respond(HttpStatusCode.Forbidden, ApiError.updateCreationForbidden())
             return@post
         }
 
@@ -87,17 +89,17 @@ fun Route.createUpdateRoute() {
                 apkSet = when (parseResult) {
                     is ParseApkSetResult.Ok -> parseResult.apkSet
                     is ParseApkSetResult.Error -> run {
-                        call.respond(HttpStatusCode.BadRequest)
+                        call.respond(HttpStatusCode.BadRequest, toApiError(parseResult))
                         return@post
                     }
                 }
             } else {
-                call.respond(HttpStatusCode.BadRequest)
+                call.respond(HttpStatusCode.BadRequest, ApiError.unknownPartName(part.name))
                 return@post
             }
         }
         if (apkSet == null) {
-            call.respond(HttpStatusCode.BadRequest)
+            call.respond(HttpStatusCode.BadRequest, ApiError.missingPartName())
             return@post
         }
 
@@ -115,11 +117,20 @@ fun Route.createUpdateRoute() {
             return@post
         }
         if (apkSet.targetSdk < MIN_TARGET_SDK) {
-            call.respond(HttpStatusCode.UnprocessableEntity)
+            call.respond(
+                HttpStatusCode.UnprocessableEntity,
+                ApiError.minTargetSdk(MIN_TARGET_SDK, apkSet.targetSdk)
+            )
             return@post
         }
         if (apkSet.bundletoolVersion < MIN_BUNDLETOOL_VERSION) {
-            call.respond(HttpStatusCode.UnprocessableEntity)
+            call.respond(
+                HttpStatusCode.UnprocessableEntity,
+                ApiError.minBundletoolVersion(
+                    MIN_BUNDLETOOL_VERSION.toString(),
+                    apkSet.bundletoolVersion.toString()
+                )
+            )
             return@post
         }
 
@@ -193,12 +204,12 @@ fun Route.updateUpdateRoute() {
         val updateId = try {
             UUID.fromString(route.id)
         } catch (e: IllegalArgumentException) {
-            call.respond(HttpStatusCode.BadRequest)
+            call.respond(HttpStatusCode.BadRequest, ApiError.invalidUuid(route.id))
             return@patch
         }
 
         val appId = transaction { Update.findById(updateId)?.appId } ?: run {
-            call.respond(HttpStatusCode.NotFound)
+            call.respond(HttpStatusCode.NotFound, ApiError.updateNotFound(updateId))
             return@patch
         }
 

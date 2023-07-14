@@ -7,6 +7,7 @@ import app.accrescent.parcelo.console.data.Draft
 import app.accrescent.parcelo.console.data.Review
 import app.accrescent.parcelo.console.data.Session
 import app.accrescent.parcelo.console.data.User
+import app.accrescent.parcelo.console.data.net.ApiError
 import app.accrescent.parcelo.console.jobs.registerPublishAppJob
 import io.ktor.http.HttpStatusCode
 import io.ktor.resources.Resource
@@ -52,7 +53,7 @@ fun Route.createAppRoute() {
         // Only allow publishers to publish apps
         val isPublisher = transaction { User.findById(userId)?.publisher }
         if (isPublisher != true) {
-            call.respond(HttpStatusCode.Forbidden)
+            call.respond(HttpStatusCode.Forbidden, ApiError.publishForbidden())
             return@post
         }
 
@@ -61,7 +62,7 @@ fun Route.createAppRoute() {
             UUID.fromString(request.draftId)
         } catch (e: IllegalArgumentException) {
             // The draft ID isn't a valid UUID
-            call.respond(HttpStatusCode.BadRequest)
+            call.respond(HttpStatusCode.BadRequest, ApiError.invalidUuid(request.draftId))
             return@post
         }
 
@@ -78,7 +79,7 @@ fun Route.createAppRoute() {
             call.respond(HttpStatusCode.Accepted)
         } else {
             // No draft with this ID exists
-            call.respond(HttpStatusCode.NotFound)
+            call.respond(HttpStatusCode.NotFound, ApiError.draftNotFound(draftId))
         }
     }
 }
