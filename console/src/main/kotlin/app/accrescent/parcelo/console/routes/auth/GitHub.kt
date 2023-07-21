@@ -17,9 +17,7 @@ import io.ktor.server.auth.oauth
 import io.ktor.server.auth.principal
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondRedirect
-import io.ktor.server.routing.Route
-import io.ktor.server.routing.get
-import io.ktor.server.routing.route
+import io.ktor.server.routing.*
 import io.ktor.server.sessions.generateSessionId
 import io.ktor.server.sessions.sessions
 import io.ktor.server.sessions.set
@@ -54,8 +52,8 @@ fun Route.githubRoutes() {
         route("/github") {
             get("/login") {}
 
-            get("/callback") {
-                val principal: OAuthAccessTokenResponse.OAuth2 = call.principal() ?: return@get
+            post("/callback") {
+                val principal: OAuthAccessTokenResponse.OAuth2 = call.principal() ?: return@post
                 val githubUser = GitHubBuilder().withOAuthToken(principal.accessToken).build()
 
                 val githubUserId = githubUser.myself.id
@@ -68,7 +66,7 @@ fun Route.githubRoutes() {
                         ?.email
                         ?: run {
                             call.respond(HttpStatusCode.Forbidden)
-                            return@get
+                            return@post
                         }
 
                     transaction {
@@ -84,8 +82,8 @@ fun Route.githubRoutes() {
                         .empty()
                 }
                 if (userNotWhitelisted) {
-                    call.respondRedirect("/register/unauthorized")
-                    return@get
+                    call.respond(HttpStatusCode.Forbidden)
+                    return@post
                 }
 
                 val sessionId = transaction {
@@ -98,7 +96,7 @@ fun Route.githubRoutes() {
 
                 call.sessions.set(Session(sessionId))
 
-                call.respondRedirect("/register/ok")
+                call.respond(HttpStatusCode.OK)
             }
         }
     }

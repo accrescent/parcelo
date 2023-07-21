@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { Router, RouterLink, RouterOutlet } from '@angular/router';
 
-import { AuthService } from '../auth.service';
+import { AuthService } from '../auth/auth.service';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatListModule } from '@angular/material/list';

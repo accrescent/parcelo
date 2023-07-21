@@ -1,13 +1,12 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 
-import { authGuard } from './auth.guard';
+import { authGuard } from './auth/auth.guard';
 import { AppListComponent } from './app-list/app-list.component';
 import { ConsoleLayoutComponent } from './console-layout/console-layout.component';
 import { DashboardComponent } from './dashboard/dashboard.component';
 import { LandingComponent } from './landing/landing.component';
-import { RegisterOkComponent } from './register-ok/register-ok.component';
-import { RegisterUnauthorizedComponent } from './register-unauthorized/register-unauthorized.component';
+import { RegisterComponent } from './register/register.component';
 import { PageNotFoundComponent } from './page-not-found/page-not-found.component';
 
 const routes: Routes = [
@@ -16,8 +15,7 @@ const routes: Routes = [
         { path: 'apps', component: AppListComponent },
         { path: 'dashboard', component: DashboardComponent },
     ] },
-    { path: 'register/ok', component: RegisterOkComponent },
-    { path: 'register/unauthorized', component: RegisterUnauthorizedComponent },
+    { path: 'auth/github/callback', component: RegisterComponent },
     { path: '**', component: PageNotFoundComponent }
 ];
 
