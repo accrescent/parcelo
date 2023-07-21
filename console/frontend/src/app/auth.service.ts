@@ -3,14 +3,15 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 
-import { Observable } from 'rxjs';
+import { Observable, catchError, map, of, throwError } from 'rxjs';
 
 @Injectable({
     providedIn: 'root'
 })
 export class AuthService {
+    private readonly callbackUrl = 'auth/github/callback2';
     private readonly sessionUrl = 'api/v1/session';
 
     constructor(private http: HttpClient) {}
@@ -19,8 +20,23 @@ export class AuthService {
         return localStorage.getItem('loggedIn') === 'true';
     }
 
-    logIn(): void {
-        localStorage.setItem('loggedIn', 'true');
+    logIn(code: string, state: string): Observable<boolean> {
+        const params = new HttpParams().append('code', code).append('state', state);
+        return this.http.get<void>(this.callbackUrl, { observe: 'response', params })
+            .pipe(
+                map(res => {
+                    const result = res.status === 200;
+                    localStorage.setItem('loggedIn', result.toString());
+                    return result;
+                }),
+                catchError(err => {
+                    if (err.status === 403) {
+                        return of(false);
+                    } else {
+                        return throwError(err);
+                    }
+                }),
+            );
     }
 
     logOut(): Observable<void> {

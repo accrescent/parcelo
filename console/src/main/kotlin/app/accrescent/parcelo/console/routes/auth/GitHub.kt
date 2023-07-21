@@ -22,7 +22,6 @@ import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.oauth
 import io.ktor.server.auth.principal
 import io.ktor.server.response.respond
-import io.ktor.server.response.respondRedirect
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.get
 import io.ktor.server.routing.route
@@ -84,7 +83,7 @@ fun Route.githubRoutes() {
         route("/github") {
             get("/login") {}
 
-            get("/callback") {
+            get("/callback2") {
                 // Cross-site request forgery (CSRF) protection.
                 // See https://datatracker.ietf.org/doc/html/draft-ietf-oauth-v2-30#section-10.12
                 val oauthCookie =
@@ -128,7 +127,7 @@ fun Route.githubRoutes() {
                         .empty()
                 }
                 if (userNotWhitelisted) {
-                    call.respondRedirect("/register/unauthorized")
+                    call.respond(HttpStatusCode.Forbidden)
                     return@get
                 }
 
@@ -142,7 +141,7 @@ fun Route.githubRoutes() {
 
                 call.sessions.set(Session(sessionId))
 
-                call.respondRedirect("/login/ok")
+                call.respond(HttpStatusCode.OK)
             }
         }
     }

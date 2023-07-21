@@ -9,10 +9,9 @@ import { AppsScreenComponent } from './apps-screen/apps-screen.component';
 import { authGuard } from './auth.guard';
 import { ConsoleLayoutComponent } from './console-layout/console-layout.component';
 import { LandingComponent } from './landing/landing.component';
-import { LoginOkComponent } from './login-ok/login-ok.component';
+import { LoginComponent } from './login/login.component';
 import { PageNotFoundComponent } from './page-not-found/page-not-found.component';
 import { NewDraftScreenComponent } from './new-draft-screen/new-draft-screen.component';
-import { RegisterUnauthorizedComponent } from './register-unauthorized/register-unauthorized.component';
 
 const routes: Routes = [
     { path: '', component: LandingComponent },
@@ -20,8 +19,7 @@ const routes: Routes = [
         { path: 'apps', component: AppsScreenComponent },
         { path: 'drafts/new', component: NewDraftScreenComponent },
     ] },
-    { path: 'login/ok', component: LoginOkComponent },
-    { path: 'register/unauthorized', component: RegisterUnauthorizedComponent },
+    { path: 'auth/github/callback', component: LoginComponent },
     { path: '**', component: PageNotFoundComponent },
 ];
 

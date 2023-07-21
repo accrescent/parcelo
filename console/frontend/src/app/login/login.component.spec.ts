@@ -4,17 +4,17 @@
 
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { RegisterUnauthorizedComponent } from './register-unauthorized.component';
+import { LoginComponent } from './login.component';
 
-describe('RegisterUnauthorizedComponent', () => {
-    let component: RegisterUnauthorizedComponent;
-    let fixture: ComponentFixture<RegisterUnauthorizedComponent>;
+describe('LoginComponent', () => {
+    let component: LoginComponent;
+    let fixture: ComponentFixture<LoginComponent>;
 
     beforeEach(() => {
         TestBed.configureTestingModule({
-            imports: [RegisterUnauthorizedComponent]
+            declarations: [LoginComponent]
         });
-        fixture = TestBed.createComponent(RegisterUnauthorizedComponent);
+        fixture = TestBed.createComponent(LoginComponent);
         component = fixture.componentInstance;
         fixture.detectChanges();
     });

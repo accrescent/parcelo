@@ -1,0 +1,21 @@
+<!--
+Copyright 2023 Logan Magee
+
+SPDX-License-Identifier: AGPL-3.0-only
+-->
+
+<div class="center">
+    <div class="container" *ngIf="loading; else notAuthorized">
+        <mat-spinner></mat-spinner>
+        <div class="spacer"></div>
+        <h1>One moment...</h1>
+    </div>
+    <ng-template class="container" #notAuthorized>
+        <div class="container">
+            <h1>Registration not permitted</h1>
+
+            <p>Accrescent developer registration is currently invite-only. Please come back
+            when registration opens for everyone.</p>
+        </div>
+    </ng-template>
+</div>
