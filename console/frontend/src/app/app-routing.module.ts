@@ -6,17 +6,20 @@ import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 
 import { AppsScreenComponent } from './apps-screen/apps-screen.component';
+import { authGuard } from './auth.guard';
 import { ConsoleLayoutComponent } from './console-layout/console-layout.component';
 import { LandingComponent } from './landing/landing.component';
+import { LoginOkComponent } from './login-ok/login-ok.component';
 import { NewDraftScreenComponent } from './new-draft-screen/new-draft-screen.component';
 import { RegisterUnauthorizedComponent } from './register-unauthorized/register-unauthorized.component';
 
 const routes: Routes = [
     { path: '', component: LandingComponent },
-    { path: '', component: ConsoleLayoutComponent, children: [
+    { path: '', component: ConsoleLayoutComponent, canActivate: [authGuard], children: [
         { path: 'apps', component: AppsScreenComponent },
         { path: 'drafts/new', component: NewDraftScreenComponent },
     ] },
+    { path: 'login/ok', component: LoginOkComponent },
     { path: 'register/unauthorized', component: RegisterUnauthorizedComponent },
 ];
 

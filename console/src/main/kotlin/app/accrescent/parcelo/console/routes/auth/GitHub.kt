@@ -142,7 +142,7 @@ fun Route.githubRoutes() {
 
                 call.sessions.set(Session(sessionId))
 
-                call.respondRedirect("/apps")
+                call.respondRedirect("/login/ok")
             }
         }
     }
