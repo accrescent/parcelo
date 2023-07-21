@@ -11,7 +11,16 @@ export class AuthService {
 
     constructor(private http: HttpClient) {}
 
+    isLoggedIn(): boolean {
+        return localStorage.getItem("loggedIn") == 'true';
+    }
+
+    logIn(): void {
+        localStorage.setItem("loggedIn", 'true');
+    }
+
     logOut(): Observable<void> {
+        localStorage.setItem("loggedIn", 'false');
         return this.http.delete<void>(this.sessionUrl);
     }
 }
