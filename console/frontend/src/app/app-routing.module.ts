@@ -10,6 +10,7 @@ import { authGuard } from './auth.guard';
 import { ConsoleLayoutComponent } from './console-layout/console-layout.component';
 import { LandingComponent } from './landing/landing.component';
 import { LoginOkComponent } from './login-ok/login-ok.component';
+import { PageNotFoundComponent } from './page-not-found/page-not-found.component';
 import { NewDraftScreenComponent } from './new-draft-screen/new-draft-screen.component';
 import { RegisterUnauthorizedComponent } from './register-unauthorized/register-unauthorized.component';
 
@@ -21,6 +22,7 @@ const routes: Routes = [
     ] },
     { path: 'login/ok', component: LoginOkComponent },
     { path: 'register/unauthorized', component: RegisterUnauthorizedComponent },
+    { path: '**', component: PageNotFoundComponent },
 ];
 
 @NgModule({
