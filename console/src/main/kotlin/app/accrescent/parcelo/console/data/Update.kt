@@ -52,6 +52,7 @@ class Update(id: EntityID<UUID>) : UUIDEntity(id), ToSerializable<SerializableUp
             appId.value,
             versionCode,
             versionName,
+            creationTime,
             reviewerId != null,
         )
     }

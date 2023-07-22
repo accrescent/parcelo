@@ -70,6 +70,7 @@ class Draft(id: EntityID<UUID>) : UUIDEntity(id), ToSerializable<SerializableDra
             label,
             versionCode,
             versionName,
+            creationTime,
             status,
         )
     }
