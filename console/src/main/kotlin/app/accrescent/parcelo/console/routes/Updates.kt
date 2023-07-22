@@ -251,10 +251,7 @@ fun Route.updateUpdateRoute() {
                 .find { DbApps.id eq appId }
                 .forUpdate() // Lock to prevent race conditions on the version code
                 .singleOrNull()
-                ?: return@transaction Pair(
-                    HttpStatusCode.NotFound,
-                    ApiError.appNotFound(appId.value),
-                )
+                ?: return@transaction Pair(HttpStatusCode.InternalServerError, null)
             val update = Update
                 .find { DbUpdates.id eq updateId and (DbUpdates.creatorId eq userId) }
                 .singleOrNull()
