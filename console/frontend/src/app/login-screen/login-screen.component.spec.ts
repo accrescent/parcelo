@@ -4,19 +4,19 @@
 
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { LandingComponent } from './landing.component';
+import { LoginScreenComponent } from './login-screen.component';
 
-describe('LandingComponent', () => {
-    let component: LandingComponent;
-    let fixture: ComponentFixture<LandingComponent>;
+describe('LoginScreenComponent', () => {
+    let component: LoginScreenComponent;
+    let fixture: ComponentFixture<LoginScreenComponent>;
 
     beforeEach(async () => {
         await TestBed.configureTestingModule({
-            imports: [LandingComponent]
+            imports: [LoginScreenComponent]
         })
             .compileComponents();
 
-        fixture = TestBed.createComponent(LandingComponent);
+        fixture = TestBed.createComponent(LoginScreenComponent);
         component = fixture.componentInstance;
         fixture.detectChanges();
     });

@@ -6,10 +6,10 @@ import { Component } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 
 @Component({
-    selector: 'app-landing',
-    templateUrl: './landing.component.html',
-    styleUrls: ['./landing.component.scss'],
+    selector: 'app-login-screen',
+    templateUrl: './login-screen.component.html',
+    styleUrls: ['./login-screen.component.scss'],
     standalone: true,
     imports: [MatButtonModule],
 })
-export class LandingComponent { }
+export class LoginScreenComponent { }

@@ -32,6 +32,6 @@ export class ConsoleLayoutComponent {
 
     logOut(): void {
         this.authService.logOut().subscribe();
-        this.router.navigate(['/']);
+        this.router.navigate(['/login']);
     }
 }
