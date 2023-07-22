@@ -138,6 +138,12 @@ class ApiError private constructor(
             "Read forbidden",
             "This user does not have sufficient access rights to read this object",
         )
+
+        fun updateUnsubmittable(updateVersion: Int, appVersion: Int) = ApiError(
+            40,
+            "Update is unsubmittable",
+            "Update version code \"$updateVersion\" is less than published app version \"$appVersion\"",
+        )
     }
 }
 

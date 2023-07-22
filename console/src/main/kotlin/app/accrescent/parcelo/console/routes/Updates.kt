@@ -246,23 +246,32 @@ fun Route.updateUpdateRoute() {
 
         // Users can only submit an update they've created and which has a versionCode higher than
         // that of the published app
-        val statusCode = transaction {
+        val (statusCode, responseBody) = transaction {
             val publishedApp = App
                 .find { DbApps.id eq appId }
                 .forUpdate() // Lock to prevent race conditions on the version code
                 .singleOrNull()
-                ?: return@transaction HttpStatusCode.NotFound
+                ?: return@transaction Pair(
+                    HttpStatusCode.NotFound,
+                    ApiError.appNotFound(appId.value),
+                )
             val update = Update
                 .find { DbUpdates.id eq updateId and (DbUpdates.creatorId eq userId) }
                 .singleOrNull()
-                ?: return@transaction HttpStatusCode.NotFound
+                ?: return@transaction Pair(
+                    HttpStatusCode.NotFound,
+                    ApiError.updateNotFound(updateId),
+                )
 
             val requiresReview = update.reviewerId != null
             if (update.versionCode <= publishedApp.versionCode) {
-                HttpStatusCode.Conflict
+                Pair(
+                    HttpStatusCode.Conflict,
+                    ApiError.updateUnsubmittable(update.versionCode, publishedApp.versionCode),
+                )
             } else if (requiresReview) {
                 update.submitted = true
-                HttpStatusCode.OK
+                Pair(HttpStatusCode.OK, update.serializable())
             } else {
                 publishedApp.versionCode = update.versionCode
                 publishedApp.versionName = update.versionName
@@ -272,10 +281,14 @@ fun Route.updateUpdateRoute() {
                 storageService.deleteFile(oldAppFileId)
 
                 update.delete()
-                HttpStatusCode.OK
+                Pair(HttpStatusCode.OK, null)
             }
         }
 
-        call.respond(statusCode)
+        if (responseBody != null) {
+            call.respond(statusCode, responseBody)
+        } else {
+            call.respond(statusCode)
+        }
     }
 }
