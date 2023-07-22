@@ -20,7 +20,7 @@ object Drafts : UUIDTable("drafts") {
     val versionCode = integer("version_code")
     val versionName = text("version_name")
     val creatorId = reference("creator_id", Users, ReferenceOption.CASCADE)
-    val creationTime = long("creation_time")
+    val creationTime = long("creation_time").clientDefault { System.currentTimeMillis() / 1000 }
     val fileId = reference("file_id", Files, ReferenceOption.NO_ACTION)
     val iconId = reference("icon_id", Icons, ReferenceOption.NO_ACTION)
     val reviewerId = reference("reviewer_id", Reviewers).nullable()

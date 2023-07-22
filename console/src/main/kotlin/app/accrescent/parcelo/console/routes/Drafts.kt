@@ -195,7 +195,6 @@ fun Route.createDraftRoute() {
                     versionCode = apkSet.versionCode
                     versionName = apkSet.versionName
                     this.creatorId = creatorId
-                    creationTime = System.currentTimeMillis()
                     fileId = appFileId
                     iconId = icon.id
                     reviewIssueGroupId = issueGroupId
