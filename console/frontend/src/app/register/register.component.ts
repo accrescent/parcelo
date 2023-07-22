@@ -5,6 +5,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 import { AuthService } from '../auth/auth.service';
+import { AuthResult } from '../auth/auth.result';
 
 @Component({
   selector: 'app-register',
@@ -14,19 +15,22 @@ import { AuthService } from '../auth/auth.service';
   standalone: true
 })
 export class RegisterComponent implements OnInit {
-  loading = true;
+  result: AuthResult | null = null;
 
   constructor(private authService: AuthService, private activatedRoute: ActivatedRoute, private router: Router) {}
 
   ngOnInit(): void {
     this.activatedRoute.queryParams.subscribe(params => {
       this.authService.logIn(params['code'], params['state']).subscribe(res => {
-        if (res) {
+        this.result = res;
+        if (this.result == AuthResult.OK) {
           this.router.navigate(['dashboard']);
-        } else {
-          this.loading = false;
         }
       })
     })
+  }
+
+  public get authResult(): typeof AuthResult {
+    return AuthResult; 
   }
 }

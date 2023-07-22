@@ -5,6 +5,7 @@ import app.accrescent.parcelo.console.data.User
 import app.accrescent.parcelo.console.data.Users
 import app.accrescent.parcelo.console.data.WhitelistedGitHubUser
 import app.accrescent.parcelo.console.data.WhitelistedGitHubUsers
+import app.accrescent.parcelo.console.data.net.ApiError
 import io.ktor.client.HttpClient
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
@@ -65,7 +66,7 @@ fun Route.githubRoutes() {
                     val email = githubUser.myself.emails2.find { it.isPrimary && it.isVerified }
                         ?.email
                         ?: run {
-                            call.respond(HttpStatusCode.Forbidden)
+                            call.respond(HttpStatusCode.Unauthorized, ApiError.badOAuthRequest())
                             return@post
                         }
 
@@ -82,7 +83,7 @@ fun Route.githubRoutes() {
                         .empty()
                 }
                 if (userNotWhitelisted) {
-                    call.respond(HttpStatusCode.Forbidden)
+                    call.respond(HttpStatusCode.Unauthorized, ApiError.notWhitelisted())
                     return@post
                 }
 
