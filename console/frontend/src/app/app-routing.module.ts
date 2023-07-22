@@ -11,8 +11,9 @@ import { RegisterComponent } from './register/register.component';
 import { PageNotFoundComponent } from './page-not-found/page-not-found.component';
 
 const routes: Routes = [
-    { path: '', redirectTo: 'login', pathMatch: 'full'},
-    { path: 'login', component: LoginComponent, canActivate: [loginGuard], },
+    { path: '', redirectTo: 'login', pathMatch: 'full', canMatch: [loginGuard]},
+    { path: '', redirectTo: 'dashboard', pathMatch: 'full', canMatch: [authGuard]},
+    { path: 'login', component: LoginComponent, canActivate: [loginGuard]},
     { path: '', component: ConsoleLayoutComponent, canActivate: [authGuard], children: [
         { path: 'apps', component: AppListComponent },
         { path: 'dashboard', component: DashboardComponent },
