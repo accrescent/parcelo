@@ -259,7 +259,7 @@ fun Route.updateUpdateRoute() {
 
             val requiresReview = update.reviewerId != null
             if (update.versionCode <= publishedApp.versionCode) {
-                HttpStatusCode.UnprocessableEntity
+                HttpStatusCode.Conflict
             } else if (requiresReview) {
                 update.submitted = true
                 HttpStatusCode.OK
