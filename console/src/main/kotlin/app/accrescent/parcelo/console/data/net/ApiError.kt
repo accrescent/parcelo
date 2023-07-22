@@ -129,6 +129,15 @@ class ApiError private constructor(
 
         fun updateNotFound(id: UUID) =
             ApiError(37, "Update not found", "An update with id \"$id\" does not exist")
+
+        fun appNotFound(id: String) =
+            ApiError(38, "App not found", "An app with id \"$id\" does not exist")
+
+        fun readForbidden() = ApiError(
+            39,
+            "Read forbidden",
+            "This user does not have sufficient access rights to read this object",
+        )
     }
 }
 

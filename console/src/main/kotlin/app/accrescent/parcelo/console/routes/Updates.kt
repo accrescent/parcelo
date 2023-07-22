@@ -5,6 +5,7 @@ import app.accrescent.parcelo.console.data.Updates as DbUpdates
 import app.accrescent.parcelo.apksparser.ApkSet
 import app.accrescent.parcelo.apksparser.ParseApkSetResult
 import app.accrescent.parcelo.console.Config
+import app.accrescent.parcelo.console.data.AccessControlList
 import app.accrescent.parcelo.console.data.AccessControlLists
 import app.accrescent.parcelo.console.data.App
 import app.accrescent.parcelo.console.data.ReviewIssue
@@ -29,6 +30,7 @@ import io.ktor.server.application.call
 import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.principal
 import io.ktor.server.request.receiveMultipart
+import io.ktor.server.resources.get
 import io.ktor.server.resources.patch
 import io.ktor.server.resources.post
 import io.ktor.server.response.header
@@ -52,6 +54,7 @@ class Updates {
 fun Route.updateRoutes() {
     authenticate("cookie") {
         createUpdateRoute()
+        getUpdatesForAppRoute()
         updateUpdateRoute()
     }
 }
@@ -193,6 +196,35 @@ fun Route.createUpdateRoute() {
             response.header(HttpHeaders.Location, "${config.baseUrl}/api/v1/updates/${update.id}")
             respond(HttpStatusCode.Created, update)
         }
+    }
+}
+
+/**
+ * Returns the updates for a given app. The user must have the "update" permission to view these.
+ */
+fun Route.getUpdatesForAppRoute() {
+    get<Apps.Id.Updates> { route ->
+        val userId = call.principal<Session>()!!.userId
+
+        val appId = route.parent.id
+
+        val acl = transaction {
+            AccessControlList
+                .find { AccessControlLists.appId eq appId and (AccessControlLists.userId eq userId) }
+                .singleOrNull()
+        }
+        if (acl == null) {
+            call.respond(HttpStatusCode.NotFound, ApiError.appNotFound(appId))
+            return@get
+        } else if (!acl.update) {
+            call.respond(HttpStatusCode.Forbidden, ApiError.readForbidden())
+            return@get
+        }
+
+        val updates =
+            transaction { Update.find { DbUpdates.appId eq acl.appId }.map { it.serializable() } }
+
+        call.respond(HttpStatusCode.OK, updates)
     }
 }
 
