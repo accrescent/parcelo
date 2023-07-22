@@ -40,7 +40,7 @@ class Update(id: EntityID<UUID>) : UUIDEntity(id), ToSerializable<SerializableUp
     var versionCode by Updates.versionCode
     var versionName by Updates.versionName
     var creatorId by Updates.creatorId
-    var creationTime by Updates.creationTime
+    val creationTime by Updates.creationTime
     var fileId by Updates.fileId
     var reviewerId by Updates.reviewerId
     var reviewIssueGroupId by Updates.reviewIssueGroupId

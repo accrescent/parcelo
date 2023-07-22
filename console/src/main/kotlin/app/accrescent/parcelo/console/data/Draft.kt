@@ -43,7 +43,7 @@ class Draft(id: EntityID<UUID>) : UUIDEntity(id), ToSerializable<SerializableDra
     var versionCode by Drafts.versionCode
     var versionName by Drafts.versionName
     var creatorId by Drafts.creatorId
-    var creationTime by Drafts.creationTime
+    val creationTime by Drafts.creationTime
     var fileId by Drafts.fileId
     var iconId by Drafts.iconId
     var reviewerId by Drafts.reviewerId
