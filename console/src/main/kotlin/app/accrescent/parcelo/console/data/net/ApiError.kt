@@ -146,12 +146,12 @@ class ApiError private constructor(
         )
 
         fun badOAuthRequest() =
-            ApiError(38,
+            ApiError(41,
                 "Bad authentication request",
                 "The authentication route received malformed account information")
 
         fun notWhitelisted() =
-            ApiError(39,
+            ApiError(42,
                 "User is not whitelisted",
                     "The user attempting to register is not in the whitelist")
     }

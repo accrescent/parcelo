@@ -7,22 +7,29 @@
 	<ng-template #badRequest>
 		<div class="container" *ngIf="result === authResult.BAD_REQUEST; else notWhitelisted">
 	        <h1>Invalid login</h1>
-
 	        <p>This login attempt was rejected by the system. Try logging in again.</p>
+			<div class="spacer"></div>
+	        <a href="/login" mat-flat-button class="btn">
+                <span class="btn-text">Log in</span>
+	    	</a>
 		</div>
 		<ng-template #notWhitelisted>
 			<div class="container" *ngIf="result === authResult.NOT_WHITELISTED; else unknownError">
 		        <h1>Registration not permitted</h1>
-
 		        <p>Accrescent developer registration is currently invite-only. Please come back
 		        when registration opens for everyone.</p>
+		        <a href="/" mat-flat-button class="btn">
+		            <span class="btn-text">Go back</span>
+		    	</a>
 			</div>
 
 			<ng-template #unknownError>
 				<div class="container">
 			        <h1>Unknown error</h1>
-
-			        <p>Please report this to the Accrescent maintainers.</p>
+			        <p>Please report this to the Accrescent maintainers.</p>		        
+			        <a href="https://github.com/Accrescent/parcelo/issues" mat-flat-button class="btn">
+			            <span class="btn-text">Go back</span>
+			    	</a>
 				</div>
 			</ng-template>
 		</ng-template>

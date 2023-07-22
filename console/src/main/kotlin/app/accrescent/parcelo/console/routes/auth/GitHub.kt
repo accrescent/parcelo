@@ -58,7 +58,6 @@ fun Route.githubRoutes() {
                 val githubUser = GitHubBuilder().withOAuthToken(principal.accessToken).build()
 
                 val githubUserId = githubUser.myself.id
-
                 // Register if not already registered
                 val user = transaction {
                     User.find { Users.githubUserId eq githubUserId }.firstOrNull()
@@ -66,7 +65,7 @@ fun Route.githubRoutes() {
                     val email = githubUser.myself.emails2.find { it.isPrimary && it.isVerified }
                         ?.email
                         ?: run {
-                            call.respond(HttpStatusCode.Unauthorized, ApiError.badOAuthRequest())
+                            call.respond(HttpStatusCode.Unauthorized)
                             return@post
                         }
 
@@ -83,7 +82,7 @@ fun Route.githubRoutes() {
                         .empty()
                 }
                 if (userNotWhitelisted) {
-                    call.respond(HttpStatusCode.Unauthorized, ApiError.notWhitelisted())
+                    call.respond(HttpStatusCode.Forbidden)
                     return@post
                 }
 

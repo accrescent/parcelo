@@ -1,6 +1,8 @@
 import { Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 
+// TODO: Add interceptor to disallow localStorage weirdness
+
 @Component({
     selector: 'app-root',
     templateUrl: './app.component.html',

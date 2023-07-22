@@ -26,17 +26,14 @@ export class AuthService {
             .pipe(
                 map(() => AuthResult.OK),
                 catchError(err => {
-                    if (err.status == 401) {
-                        switch (err.error.error_code) {
-                        case 38:
-                            return of(AuthResult.BAD_REQUEST);
-                            break;
-                        case 39:
-                            return of(AuthResult.NOT_WHITELISTED);
-                            break;
-                        }
+                    switch (err.status) {
+                    case 401:
+                        return of(AuthResult.BAD_REQUEST);
+                    case 403:
+                        return of(AuthResult.NOT_WHITELISTED);
+                    default:
+                        return of(AuthResult.UNKNOWN_ERROR);
                     }
-                    return of(AuthResult.UNKNOWN_ERROR);
                 }),
                 tap(res => localStorage.setItem(this.loggedInStorageKey, (res === AuthResult.OK).toString()))
             );
