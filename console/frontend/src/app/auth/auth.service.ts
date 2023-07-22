@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams, HttpResponse, HttpHeaders } from '@angular/common/http';
 
-import { Observable, map } from 'rxjs';
+import { Observable, tap, map } from 'rxjs';
 
 @Injectable({
     providedIn: 'root'
@@ -9,6 +9,7 @@ import { Observable, map } from 'rxjs';
 export class AuthService {
     private readonly callbackUrl = 'auth/github/callback';
     private readonly sessionUrl = 'api/v1/session';
+    private readonly loggedInStorageKey = 'loggedIn';
 
     constructor(private http: HttpClient) {}
 
@@ -21,17 +22,13 @@ export class AuthService {
         const params = new HttpParams().append('code', code).append('state', state);
         return this.http.post<HttpResponse<string>>(this.callbackUrl, params, { observe: 'response', headers: header })
             .pipe(
-                map(res => {
-                    // TODO: There has to be another way to do this
-                    const result = res && res.status != 401;
-                    localStorage.setItem("loggedIn", result.toString());
-                    return result;
-                })
+                map(res => res && res.status != 401),
+                tap(res => localStorage.setItem(this.loggedInStorageKey, res.toString()))
             );
     }
 
     logOut(): Observable<void> {
-        localStorage.setItem("loggedIn", 'false');
+        localStorage.setItem(this.loggedInStorageKey, 'false');
         return this.http.delete<void>(this.sessionUrl);
     }
 }
