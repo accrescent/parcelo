@@ -6,9 +6,8 @@ import app.accrescent.parcelo.console.data.Users
 import app.accrescent.parcelo.console.data.WhitelistedGitHubUser
 import app.accrescent.parcelo.console.data.WhitelistedGitHubUsers
 import io.ktor.client.HttpClient
-import io.ktor.http.HttpMethod
-import io.ktor.http.HttpStatusCode
-import io.ktor.server.application.call
+import io.ktor.http.*
+import io.ktor.server.application.*
 import io.ktor.server.auth.AuthenticationConfig
 import io.ktor.server.auth.OAuthAccessTokenResponse
 import io.ktor.server.auth.OAuthServerSettings
@@ -25,6 +24,13 @@ import io.ktor.server.sessions.sessions
 import io.ktor.server.sessions.set
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.kohsuke.github.GitHubBuilder
+
+const val COOKIE_OAUTH_STATE_PROD = "__Host-oauth-state"
+const val COOKIE_OAUTH_STATE_DEVEL = "oauth-state"
+const val COOKIE_OAUTH_STATE_LIFETIME = 60*60 // 1 hour
+
+val ApplicationEnvironment.oauthStateCookieName get() =
+    if (!developmentMode) COOKIE_OAUTH_STATE_PROD else COOKIE_OAUTH_STATE_DEVEL
 
 fun AuthenticationConfig.github(
     clientId: String,
@@ -43,6 +49,23 @@ fun AuthenticationConfig.github(
                 clientId = clientId,
                 clientSecret = clientSecret,
                 defaultScopes = listOf("user:email"),
+                onStateCreated = { call, state ->
+                    // Cross-site request forgery (CSRF) protection.
+                    // See https://datatracker.ietf.org/doc/html/draft-ietf-oauth-v2-30#section-10.12
+                    val environment = call.application.environment
+                    val developmentMode = environment.developmentMode
+                    call.response.cookies.append(
+                        Cookie(
+                            name = environment.oauthStateCookieName,
+                            value = state,
+                            maxAge = COOKIE_OAUTH_STATE_LIFETIME,
+                            path = "/",
+                            secure = !developmentMode,
+                            httpOnly = true,
+                            extensions = mapOf("SameSite" to "Lax")
+                        )
+                    )
+                }
             )
         }
         client = httpClient
@@ -55,7 +78,20 @@ fun Route.githubRoutes() {
             get("/login") {}
 
             get("/callback") {
+                // Cross-site request forgery (CSRF) protection.
+                // See https://datatracker.ietf.org/doc/html/draft-ietf-oauth-v2-30#section-10.12
+                val oauthCookie = call.request.cookies[call.application.environment.oauthStateCookieName]
+                if (oauthCookie == null) {
+                    call.respond(HttpStatusCode.Forbidden)
+                    return@get
+                }
+
                 val principal: OAuthAccessTokenResponse.OAuth2 = call.principal() ?: return@get
+                if (principal.state != oauthCookie) {
+                    call.respond(HttpStatusCode.Forbidden)
+                    return@get
+                }
+
                 val githubUser = GitHubBuilder().withOAuthToken(principal.accessToken).build()
 
                 val githubUserId = githubUser.myself.id

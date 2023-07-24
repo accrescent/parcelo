@@ -129,6 +129,12 @@ class ApiError private constructor(
 
         fun updateNotFound(id: UUID) =
             ApiError(37, "Update not found", "An update with id \"$id\" does not exist")
+
+        fun notWhitelisted() = ApiError(
+            39,
+            "Not whitelisted",
+            "The user attempting to login is not in the whitelist and must wait until registration opens"
+        )
     }
 }
 
