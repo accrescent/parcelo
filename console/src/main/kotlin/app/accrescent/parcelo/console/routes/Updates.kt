@@ -178,14 +178,6 @@ fun Route.createUpdateRoute() {
                         versionName = apkSet.versionName
                         creatorId = userId
                         fileId = apkSetFileId
-                        if (issueGroupId != null) {
-                            reviewerId = Reviewers
-                                .slice(Reviewers.id)
-                                .selectAll()
-                                .orderBy(Random())
-                                .limit(1)
-                                .single()[Reviewers.id]
-                        }
                         reviewIssueGroupId = issueGroupId
                     }
                 }
@@ -260,15 +252,25 @@ fun Route.updateUpdateRoute() {
                     ApiError.updateNotFound(updateId),
                 )
 
-            val requiresReview = update.reviewerId != null
+            val requiresReview = update.reviewIssueGroupId != null
             if (update.versionCode <= publishedApp.versionCode) {
                 Pair(
                     HttpStatusCode.Conflict,
                     ApiError.updateUnsubmittable(update.versionCode, publishedApp.versionCode),
                 )
             } else if (requiresReview) {
-                update.submitted = true
-                Pair(HttpStatusCode.OK, update.serializable())
+                if (update.reviewerId != null) {
+                    Pair(HttpStatusCode.Conflict, ApiError.reviewerAlreadyAssigned())
+                } else {
+                    update.submitted = true
+                    update.reviewerId = Reviewers
+                        .slice(Reviewers.id)
+                        .selectAll()
+                        .orderBy(Random())
+                        .limit(1)
+                        .single()[Reviewers.id]
+                    Pair(HttpStatusCode.OK, update.serializable())
+                }
             } else {
                 publishedApp.versionCode = update.versionCode
                 publishedApp.versionName = update.versionName

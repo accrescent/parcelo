@@ -7,7 +7,7 @@ import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.UUIDTable
 import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.or
+import org.jetbrains.exposed.sql.not
 import java.util.UUID
 
 object Updates : UUIDTable("updates") {
@@ -24,11 +24,8 @@ object Updates : UUIDTable("updates") {
 
     init {
         check {
-            // This is an XNOR over the nullness of reviewerId and reviewIssueGroupId. In other
-            // words, either both reviewerId and reviewIssueGroupId must be null or both must be
-            // non-null.
-            reviewerId.isNull().and(reviewIssueGroupId.isNull())
-                .or(reviewerId.isNotNull() and reviewIssueGroupId.isNotNull())
+            // A reviewer may not be assigned if there isn't a set of review issues
+            not(reviewerId.isNotNull() and reviewIssueGroupId.isNull())
         }
     }
 }
@@ -53,7 +50,7 @@ class Update(id: EntityID<UUID>) : UUIDEntity(id), ToSerializable<SerializableUp
             versionCode,
             versionName,
             creationTime,
-            reviewerId != null,
+            reviewIssueGroupId != null,
         )
     }
 }
