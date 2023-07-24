@@ -1,6 +1,8 @@
 package app.accrescent.parcelo.console.validation
 
 import com.github.zafarkhaja.semver.Version
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
 const val MIN_TARGET_SDK = 31
 
@@ -50,3 +52,30 @@ val SERVICE_INTENT_FILTER_REVIEW_BLACKLIST = setOf(
 
 val REVIEW_ISSUE_BLACKLIST =
     PERMISSION_REVIEW_BLACKLIST union SERVICE_INTENT_FILTER_REVIEW_BLACKLIST
+
+@Serializable
+enum class ReviewResult {
+    @SerialName("approved")
+    APPROVED,
+
+    @SerialName("rejected")
+    REJECTED,
+}
+
+@Serializable
+data class ReviewRequest(
+    val result: ReviewResult,
+    val reasons: List<String>?,
+    @SerialName("additional_notes")
+    val additionalNotes: String?,
+) {
+    // FIXME(#114): Handle this validation automatically via kotlinx.serialization instead
+    init {
+        if (
+            (result == ReviewResult.APPROVED && reasons != null) ||
+            (result == ReviewResult.REJECTED && reasons == null)
+        ) {
+            throw IllegalArgumentException()
+        }
+    }
+}
