@@ -34,6 +34,7 @@ fun Application.module() {
             single {
                 Config(
                     System.getenv("BASE_URL"),
+                    System.getenv("CONSOLE_DATABASE_PATH"),
                     System.getenv("REPOSITORY_URL"),
                     System.getenv("REPOSITORY_API_KEY"),
                 )

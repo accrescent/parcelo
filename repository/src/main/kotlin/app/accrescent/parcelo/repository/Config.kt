@@ -1,3 +1,3 @@
 package app.accrescent.parcelo.repository
 
-data class Config(val publishDirectory: String)
+data class Config(val databasePath: String, val publishDirectory: String)

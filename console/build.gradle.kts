@@ -2,12 +2,12 @@ import com.github.gradle.node.npm.task.NpxTask
 
 val exposedVersion: String by project
 val githubApiVersion: String by project
-val h2Version: String by project
 val jobrunrVersion: String by project
 val koinVersion: String by project
 val ktorVersion: String by project
 val kotlinVersion: String by project
 val logbackVersion: String by project
+val sqliteVersion: String by project
 
 plugins {
     kotlin("jvm")
@@ -68,7 +68,6 @@ task("ci") {
 
 dependencies {
     implementation(project(":apksparser"))
-    implementation("com.h2database:h2:$h2Version")
     implementation("io.insert-koin:koin-ktor:$koinVersion")
     implementation("io.insert-koin:koin-logger-slf4j:$koinVersion")
     implementation("io.ktor:ktor-client-cio:$ktorVersion")
@@ -84,6 +83,7 @@ dependencies {
     implementation("org.jetbrains.exposed:exposed-jdbc:$exposedVersion")
     implementation("org.jobrunr:jobrunr:$jobrunrVersion")
     implementation("org.kohsuke:github-api:$githubApiVersion")
+    implementation("org.xerial:sqlite-jdbc:$sqliteVersion")
     testImplementation("io.ktor:ktor-server-tests:$ktorVersion")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit:$kotlinVersion")
 }

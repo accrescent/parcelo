@@ -20,7 +20,12 @@ fun Application.module() {
         slf4jLogger()
 
         val mainModule = module {
-            single { Config(System.getenv("REPOSITORY_PUBLISH_DIR")) }
+            single {
+                Config(
+                    System.getenv("REPOSITORY_DATABASE_PATH"),
+                    System.getenv("REPOSITORY_PUBLISH_DIR"),
+                )
+            }
         }
 
         modules(mainModule)

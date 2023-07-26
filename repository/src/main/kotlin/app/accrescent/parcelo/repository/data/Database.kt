@@ -1,15 +1,24 @@
 package app.accrescent.parcelo.repository.data
 
+import app.accrescent.parcelo.repository.Config
 import io.ktor.server.application.Application
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.koin.ktor.ext.inject
+import java.sql.DriverManager
 
 fun Application.configureDatabase() {
-    Database.connect(
-        "jdbc:h2:mem:parcelo;DB_CLOSE_DELAY=-1;DATABASE_TO_UPPER=false",
-        "org.h2.Driver",
-    )
+    val config: Config by inject()
+
+    if (environment.developmentMode) {
+        val url = "jdbc:sqlite:file::memory:?cache=shared"
+        // Keep connection alive. See https://github.com/JetBrains/Exposed/issues/726
+        DriverManager.getConnection(url)
+        Database.connect(url)
+    } else {
+        Database.connect("jdbc:sqlite:${config.databasePath}")
+    }
 
     transaction {
         SchemaUtils.create(Consoles)
