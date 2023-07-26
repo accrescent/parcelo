@@ -5,7 +5,7 @@ import org.jetbrains.exposed.dao.EntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.IdTable
 
-object WhitelistedGitHubUsers : IdTable<Long>("whitelisted_github_user") {
+object WhitelistedGitHubUsers : IdTable<Long>("whitelisted_github_users") {
     override val id = long("gh_id").entityId()
     override val primaryKey = PrimaryKey(id)
 }
