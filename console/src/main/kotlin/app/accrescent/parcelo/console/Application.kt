@@ -52,8 +52,7 @@ fun Application.module() {
             explicitNulls = false
         })
     }
-    configureDatabase()
-    configureJobRunr()
+    configureJobRunr(configureDatabase())
     configureAuthentication(
         githubClientId = System.getenv("GITHUB_OAUTH2_CLIENT_ID"),
         githubClientSecret = System.getenv("GITHUB_OAUTH2_CLIENT_SECRET"),

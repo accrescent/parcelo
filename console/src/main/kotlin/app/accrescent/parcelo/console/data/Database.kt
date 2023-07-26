@@ -6,19 +6,23 @@ import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.koin.ktor.ext.inject
+import org.sqlite.SQLiteDataSource
 import java.sql.DriverManager
+import javax.sql.DataSource
 
-fun Application.configureDatabase() {
+fun Application.configureDatabase(): DataSource {
     val config: Config by inject()
 
-    if (environment.developmentMode) {
-        val url = "jdbc:sqlite:file::memory:?cache=shared"
+    val dataSource = SQLiteDataSource().apply {
+        url = if (environment.developmentMode) {
+            "jdbc:sqlite:file::memory:?cache=shared"
+        } else {
+            "jdbc:sqlite:${config.databasePath}"
+        }
         // Keep connection alive. See https://github.com/JetBrains/Exposed/issues/726
         DriverManager.getConnection(url)
-        Database.connect(url)
-    } else {
-        Database.connect("jdbc:sqlite:${config.databasePath}")
     }
+    Database.connect(dataSource)
 
     transaction {
         SchemaUtils.create(
@@ -58,4 +62,6 @@ fun Application.configureDatabase() {
             }
         }
     }
+
+    return dataSource
 }
