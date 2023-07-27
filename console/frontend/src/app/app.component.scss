@@ -1,0 +1,12 @@
+
+mat-card {
+    background-color: #1f1f1f;
+    border-radius: 32px;
+    padding: 2.2em 3.5em 3em 3.5em;
+}
+
+mat-card-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}

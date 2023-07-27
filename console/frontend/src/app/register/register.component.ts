@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { NgIf } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 
+import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
@@ -12,7 +13,7 @@ import { AuthResult } from '../auth/auth.result';
   selector: 'app-register',
   templateUrl: './register.component.html',
   styleUrls: ['./register.component.scss'],
-  imports: [NgIf, MatProgressSpinnerModule, MatButtonModule],
+  imports: [NgIf, MatCardModule, MatProgressSpinnerModule, MatButtonModule],
   standalone: true
 })
 export class RegisterComponent implements OnInit {

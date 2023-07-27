@@ -1,18 +1,23 @@
 <div class="center">
-    <div class="container">
-        <img
-            src="assets/accrescent.svg"
-            alt="Accrescent logo"
-            width="140"
-            height="140"
-            class="logo">
-        <h2>Log in to Accrescent</h2>
-        <div class="spacer"></div>
-        <a href="/auth/github/login" mat-flat-button class="btn">
-            <div class="row">
-                <img src="assets/invertocat.svg" alt="Invertocat" height="30" width="30" class="icon">
-                <span class="btn-text">Log in with GitHub</span>
-            </div>
-        </a>
-    </div>
+    <mat-card>
+        <div class="logo-container">        
+            <img
+                src="assets/accrescent.svg"
+                alt="Accrescent logo"
+                width="140"
+                height="140"
+                class="logo">
+        </div>
+        <mat-card-header>
+            <mat-card-title>Log in to Accrescent</mat-card-title>
+        </mat-card-header>
+        <mat-card-actions>
+            <a href="/auth/github/login" mat-flat-button class="btn">
+                <div class="row">
+                    <img src="assets/invertocat.svg" alt="Invertocat" height="30" width="30" class="icon">
+                    <span class="btn-text">Log in with GitHub</span>
+                </div>
+            </a>            
+        </mat-card-actions>
+    </mat-card>
 </div>

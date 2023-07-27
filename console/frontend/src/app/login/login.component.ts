@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 
 @Component({
@@ -6,6 +7,6 @@ import { MatButtonModule } from '@angular/material/button';
     templateUrl: './login.component.html',
     styleUrls: ['./login.component.scss'],
     standalone: true,
-    imports: [MatButtonModule],
+    imports: [MatCardModule, MatButtonModule],
 })
 export class LoginComponent { }
