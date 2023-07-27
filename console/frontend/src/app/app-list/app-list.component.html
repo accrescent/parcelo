@@ -1,4 +1,16 @@
 <mat-grid-list cols="3" rowHeight="3:2">
+    <mat-grid-tile>      
+        <a matRipple href="/new-app" style="text-decoration: none; color: inherit">
+            <mat-card>
+                <mat-card-header>
+                    <mat-card-title>New app</mat-card-title>
+                </mat-card-header>
+                <mat-card-content>
+                    <p>Submit a new app to Accrescent.</p>
+                </mat-card-content>
+            </mat-card>
+        </a>   
+    </mat-grid-tile>
     <mat-grid-tile *ngFor="let app of apps">
         <app-app-card [app]="app"/>
     </mat-grid-tile>
