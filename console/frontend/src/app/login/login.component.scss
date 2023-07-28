@@ -8,20 +8,31 @@
 mat-card {
     background-color: #1f1f1f;
     border-radius: 32px;
-    padding: 2.2em 3.5em 3em 3.5em;
 }
 
-mat-card-header, mat-card-content, mat-card-actions {
+mat-card-header {
+    padding: 1.1em 3.5em 0 3.5em;
+    justify-content: center;
+}
+
+mat-card-content {
+    padding: 1.1em 3.5em 0 3.5em;
+    justify-content: center;
+}
+
+mat-card-actions {
+    padding: 1.1em 3.5em 2.2em 3.5em;
+    justify-content: center;
+}
+
+.logo-container {
+    padding: 2.2em 3.5em 0 3.5em;
+    display: flex;
     justify-content: center;
 }
 
 .logo {
     border-radius: 50%;
-}
-
-.logo-container {
-    display: flex;
-    justify-content: center;
 }
 
 .btn {
