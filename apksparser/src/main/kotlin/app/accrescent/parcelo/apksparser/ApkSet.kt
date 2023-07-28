@@ -51,8 +51,11 @@ public class ApkSet private constructor(
             var versionName: String? = null
             var targetSdk: Int? = null
             var bundletoolVersion: Version? = null
+
+            data class Split(val name: String?, val variantNumber: Int?)
             val reviewIssues = mutableListOf<String>()
-            val splitNames = mutableSetOf<String?>()
+            val variantMap = mutableMapOf<String, Int>()
+            val splits = mutableSetOf<Split>()
             val entrySplitNames = mutableMapOf<String, Optional<String>>()
 
             ZipInputStream(file).use { zip ->
@@ -73,6 +76,13 @@ public class ApkSet private constructor(
                             Version.Builder(bundletoolMetadata.bundletool.version).build()
                         } catch (e: ParseException) {
                             return ParseApkSetResult.Error.BundletoolVersionError
+                        }
+                        bundletoolMetadata.variantList.forEach { variant ->
+                            variant.apkSetList.forEach { apkSet ->
+                                apkSet.apkDescriptionList.forEach {
+                                    variantMap[it.path] = variant.variantNumber
+                                }
+                            }
                         }
                         return@forEach
                     }
@@ -96,7 +106,7 @@ public class ApkSet private constructor(
                         }
                     }
 
-                    if (!splitNames.add(apk.manifest.split)) {
+                    if (!splits.add(Split(apk.manifest.split, variantMap[entry.name]))) {
                         return ParseApkSetResult.Error.DuplicateSplitError
                     }
 
@@ -162,16 +172,16 @@ public class ApkSet private constructor(
                 val langSplits = mutableSetOf<String>()
                 val densitySplits = mutableSetOf<String>()
 
-                for (splitName in splitNames) {
-                    splitName?.let {
+                for (split in splits) {
+                    split.name?.let {
                         try {
-                            when (getSplitTypeForName(splitName)) {
+                            when (getSplitTypeForName(it)) {
                                 SplitType.ABI -> abiSplits
                                 SplitType.LANGUAGE -> langSplits
                                 SplitType.SCREEN_DENSITY -> densitySplits
-                            }.add(splitName.substringAfter("config."))
+                            }.add(it.substringAfter("config."))
                         } catch (e: SplitNameNotConfigException) {
-                            return ParseApkSetResult.Error.InvalidSplitNameError(splitName)
+                            return ParseApkSetResult.Error.InvalidSplitNameError(it)
                         }
                     }
                 }
@@ -180,7 +190,7 @@ public class ApkSet private constructor(
             }
 
             // If there isn't a base APK, freak out
-            if (!splitNames.contains(null)) {
+            if (splits.none { it.name == null }) {
                 return ParseApkSetResult.Error.BaseApkNotFoundError
             }
 
