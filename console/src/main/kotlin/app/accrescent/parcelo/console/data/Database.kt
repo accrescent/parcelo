@@ -15,12 +15,13 @@ fun Application.configureDatabase(): DataSource {
 
     val dataSource = SQLiteDataSource().apply {
         url = if (environment.developmentMode) {
-            "jdbc:sqlite:file::memory:?cache=shared"
+            "jdbc:sqlite:file::memory:?cache=shared".also {
+                // Keep connection alive. See https://github.com/JetBrains/Exposed/issues/726
+                DriverManager.getConnection(it)
+            }
         } else {
             "jdbc:sqlite:${config.databasePath}"
         }
-        // Keep connection alive. See https://github.com/JetBrains/Exposed/issues/726
-        DriverManager.getConnection(url)
     }
     Database.connect(dataSource)
 
