@@ -105,6 +105,8 @@ fun registerPublishUpdateJob(updateId: UUID) {
 
             val oldAppFileId = fileId
             fileId = update.fileId
+            // If file deletion fails, silently move on by ignoring the return value of deleteFile()
+            // here
             storageService.deleteFile(oldAppFileId)
 
             update.delete()

@@ -5,6 +5,12 @@ import java.io.InputStream
 
 interface FileStorageService {
     fun saveFile(inputStream: InputStream): EntityID<Int>
-    fun deleteFile(id: EntityID<Int>)
+
+    /**
+     * Deletes the given file by its ID
+     *
+     * @return whether deleting the file from disk succeeded
+     */
+    fun deleteFile(id: EntityID<Int>): Boolean
     fun loadFile(id: EntityID<Int>): InputStream
 }
