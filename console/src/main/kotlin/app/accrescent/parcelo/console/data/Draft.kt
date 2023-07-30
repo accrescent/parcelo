@@ -20,7 +20,7 @@ object Drafts : UUIDTable("drafts") {
     val versionCode = integer("version_code")
     val versionName = text("version_name")
     val creatorId = reference("creator_id", Users, ReferenceOption.CASCADE)
-    val creationTime = long("creation_time")
+    val creationTime = long("creation_time").clientDefault { System.currentTimeMillis() / 1000 }
     val fileId = reference("file_id", Files, ReferenceOption.NO_ACTION)
     val iconId = reference("icon_id", Icons, ReferenceOption.NO_ACTION)
     val reviewerId = reference("reviewer_id", Reviewers).nullable()
@@ -43,7 +43,7 @@ class Draft(id: EntityID<UUID>) : UUIDEntity(id), ToSerializable<SerializableDra
     var versionCode by Drafts.versionCode
     var versionName by Drafts.versionName
     var creatorId by Drafts.creatorId
-    var creationTime by Drafts.creationTime
+    val creationTime by Drafts.creationTime
     var fileId by Drafts.fileId
     var iconId by Drafts.iconId
     var reviewerId by Drafts.reviewerId
@@ -70,6 +70,7 @@ class Draft(id: EntityID<UUID>) : UUIDEntity(id), ToSerializable<SerializableDra
             label,
             versionCode,
             versionName,
+            creationTime,
             status,
         )
     }

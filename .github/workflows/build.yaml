@@ -1,4 +1,4 @@
-name: Build
+name: Build and analyze
 
 on: [push, pull_request]
 
@@ -16,3 +16,7 @@ jobs:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       - uses: gradle/gradle-build-action@v2
       - run: ./gradlew ci
+      - env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: ./gradlew sonar

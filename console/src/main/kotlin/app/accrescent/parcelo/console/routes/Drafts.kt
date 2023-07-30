@@ -20,6 +20,8 @@ import app.accrescent.parcelo.console.storage.FileStorageService
 import app.accrescent.parcelo.console.validation.MIN_BUNDLETOOL_VERSION
 import app.accrescent.parcelo.console.validation.MIN_TARGET_SDK
 import app.accrescent.parcelo.console.validation.REVIEW_ISSUE_BLACKLIST
+import app.accrescent.parcelo.console.validation.ReviewRequest
+import app.accrescent.parcelo.console.validation.ReviewResult
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.PartData
@@ -38,8 +40,6 @@ import io.ktor.server.resources.post
 import io.ktor.server.response.header
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
 import org.jetbrains.exposed.sql.Random
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.selectAll
@@ -195,7 +195,6 @@ fun Route.createDraftRoute() {
                     versionCode = apkSet.versionCode
                     versionName = apkSet.versionName
                     this.creatorId = creatorId
-                    creationTime = System.currentTimeMillis()
                     fileId = appFileId
                     iconId = icon.id
                     reviewIssueGroupId = issueGroupId
@@ -280,33 +279,6 @@ fun Route.updateDraftRoute() {
                     .single()[Reviewers.id]
             }
             call.respond(HttpStatusCode.NoContent)
-        }
-    }
-}
-
-@Serializable
-private enum class ReviewResult {
-    @SerialName("approved")
-    APPROVED,
-
-    @SerialName("rejected")
-    REJECTED,
-}
-
-@Serializable
-private data class ReviewRequest(
-    val result: ReviewResult,
-    val reasons: List<String>?,
-    @SerialName("additional_notes")
-    val additionalNotes: String?,
-) {
-    // FIXME(#114): Handle this validation automatically via kotlinx.serialization instead
-    init {
-        if (
-            (result == ReviewResult.APPROVED && reasons != null) ||
-            (result == ReviewResult.REJECTED && reasons == null)
-        ) {
-            throw IllegalArgumentException()
         }
     }
 }

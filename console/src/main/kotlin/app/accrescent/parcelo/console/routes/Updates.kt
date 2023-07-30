@@ -5,20 +5,27 @@ import app.accrescent.parcelo.console.data.Updates as DbUpdates
 import app.accrescent.parcelo.apksparser.ApkSet
 import app.accrescent.parcelo.apksparser.ParseApkSetResult
 import app.accrescent.parcelo.console.Config
+import app.accrescent.parcelo.console.data.AccessControlList
 import app.accrescent.parcelo.console.data.AccessControlLists
 import app.accrescent.parcelo.console.data.App
+import app.accrescent.parcelo.console.data.RejectionReason
+import app.accrescent.parcelo.console.data.Review
 import app.accrescent.parcelo.console.data.ReviewIssue
 import app.accrescent.parcelo.console.data.ReviewIssueGroup
 import app.accrescent.parcelo.console.data.ReviewIssues
+import app.accrescent.parcelo.console.data.Reviewer
 import app.accrescent.parcelo.console.data.Reviewers
 import app.accrescent.parcelo.console.data.Session
 import app.accrescent.parcelo.console.data.Update
 import app.accrescent.parcelo.console.data.net.ApiError
 import app.accrescent.parcelo.console.data.net.toApiError
+import app.accrescent.parcelo.console.jobs.registerPublishUpdateJob
 import app.accrescent.parcelo.console.storage.FileStorageService
 import app.accrescent.parcelo.console.validation.MIN_BUNDLETOOL_VERSION
 import app.accrescent.parcelo.console.validation.MIN_TARGET_SDK
 import app.accrescent.parcelo.console.validation.REVIEW_ISSUE_BLACKLIST
+import app.accrescent.parcelo.console.validation.ReviewRequest
+import app.accrescent.parcelo.console.validation.ReviewResult
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.PartData
@@ -28,7 +35,9 @@ import io.ktor.resources.Resource
 import io.ktor.server.application.call
 import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.principal
+import io.ktor.server.request.receive
 import io.ktor.server.request.receiveMultipart
+import io.ktor.server.resources.get
 import io.ktor.server.resources.patch
 import io.ktor.server.resources.post
 import io.ktor.server.response.header
@@ -40,19 +49,26 @@ import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.jobrunr.scheduling.BackgroundJob
 import org.koin.ktor.ext.inject
 import java.util.UUID
 
 @Resource("/updates")
 class Updates {
     @Resource("{id}")
-    class Id(val parent: Updates = Updates(), val id: String)
+    class Id(val parent: Updates = Updates(), val id: String) {
+        @Resource("review")
+        class Review(val parent: Id)
+    }
 }
 
 fun Route.updateRoutes() {
     authenticate("cookie") {
         createUpdateRoute()
+        getUpdatesForAppRoute()
         updateUpdateRoute()
+
+        createUpdateReviewRoute()
     }
 }
 
@@ -174,16 +190,7 @@ fun Route.createUpdateRoute() {
                         versionCode = apkSet.versionCode
                         versionName = apkSet.versionName
                         creatorId = userId
-                        creationTime = System.currentTimeMillis()
                         fileId = apkSetFileId
-                        if (issueGroupId != null) {
-                            reviewerId = Reviewers
-                                .slice(Reviewers.id)
-                                .selectAll()
-                                .orderBy(Random())
-                                .limit(1)
-                                .single()[Reviewers.id]
-                        }
                         reviewIssueGroupId = issueGroupId
                     }
                 }
@@ -196,9 +203,36 @@ fun Route.createUpdateRoute() {
     }
 }
 
-fun Route.updateUpdateRoute() {
-    val storageService: FileStorageService by inject()
+/**
+ * Returns the updates for a given app. The user must have the "update" permission to view these.
+ */
+fun Route.getUpdatesForAppRoute() {
+    get<Apps.Id.Updates> { route ->
+        val userId = call.principal<Session>()!!.userId
 
+        val appId = route.parent.id
+
+        val acl = transaction {
+            AccessControlList
+                .find { AccessControlLists.appId eq appId and (AccessControlLists.userId eq userId) }
+                .singleOrNull()
+        }
+        if (acl == null) {
+            call.respond(HttpStatusCode.NotFound, ApiError.appNotFound(appId))
+            return@get
+        } else if (!acl.update) {
+            call.respond(HttpStatusCode.Forbidden, ApiError.readForbidden())
+            return@get
+        }
+
+        val updates =
+            transaction { Update.find { DbUpdates.appId eq acl.appId }.map { it.serializable() } }
+
+        call.respond(HttpStatusCode.OK, updates)
+    }
+}
+
+fun Route.updateUpdateRoute() {
     patch<Updates.Id> { route ->
         val userId = call.principal<Session>()!!.userId
         val updateId = try {
@@ -215,36 +249,136 @@ fun Route.updateUpdateRoute() {
 
         // Users can only submit an update they've created and which has a versionCode higher than
         // that of the published app
-        val statusCode = transaction {
+        val (statusCode, responseBody) = transaction {
             val publishedApp = App
                 .find { DbApps.id eq appId }
                 .forUpdate() // Lock to prevent race conditions on the version code
                 .singleOrNull()
-                ?: return@transaction HttpStatusCode.NotFound
+                ?: return@transaction Pair(HttpStatusCode.InternalServerError, null)
             val update = Update
                 .find { DbUpdates.id eq updateId and (DbUpdates.creatorId eq userId) }
                 .singleOrNull()
-                ?: return@transaction HttpStatusCode.NotFound
+                ?: return@transaction Pair(
+                    HttpStatusCode.NotFound,
+                    ApiError.updateNotFound(updateId),
+                )
 
-            val requiresReview = update.reviewerId != null
+            val requiresReview = update.reviewIssueGroupId != null
             if (update.versionCode <= publishedApp.versionCode) {
-                HttpStatusCode.UnprocessableEntity
+                Pair(
+                    HttpStatusCode.Conflict,
+                    ApiError.updateVersionTooLow(update.versionCode, publishedApp.versionCode),
+                )
             } else if (requiresReview) {
-                update.submitted = true
-                HttpStatusCode.OK
+                if (update.reviewerId != null) {
+                    Pair(HttpStatusCode.Conflict, ApiError.reviewerAlreadyAssigned())
+                } else {
+                    update.submitted = true
+                    update.reviewerId = Reviewers
+                        .slice(Reviewers.id)
+                        .selectAll()
+                        .orderBy(Random())
+                        .limit(1)
+                        .single()[Reviewers.id]
+                    Pair(HttpStatusCode.OK, update.serializable())
+                }
             } else {
-                publishedApp.versionCode = update.versionCode
-                publishedApp.versionName = update.versionName
-
-                val oldAppFileId = publishedApp.fileId
-                publishedApp.fileId = update.fileId
-                storageService.deleteFile(oldAppFileId)
-
-                update.delete()
-                HttpStatusCode.OK
+                BackgroundJob.enqueue { registerPublishUpdateJob(update.id.value) }
+                Pair(HttpStatusCode.Accepted, null)
             }
         }
 
-        call.respond(statusCode)
+        if (responseBody != null) {
+            call.respond(statusCode, responseBody)
+        } else {
+            call.respond(statusCode)
+        }
+    }
+}
+
+fun Route.createUpdateReviewRoute() {
+    post<Updates.Id.Review> { route ->
+        val userId = call.principal<Session>()!!.userId
+
+        val updateId = try {
+            UUID.fromString(route.parent.id)
+        } catch (e: IllegalArgumentException) {
+            call.respond(HttpStatusCode.BadRequest, ApiError.invalidUuid(route.parent.id))
+            return@post
+        }
+        val request = try {
+            call.receive<ReviewRequest>()
+        } catch (e: IllegalArgumentException) {
+            call.respond(HttpStatusCode.BadRequest)
+            return@post
+        }
+
+        // Normally we would include access control (in this case, the user's reviewer ID) in the
+        // query to prevent accidentally leaking data to unauthorized users, but in this case we
+        // instead choose to find the update first, so we can return more specific status codes than
+        // Not Found as appropriate if the user has sufficient access.
+        val update = transaction { Update.findById(updateId) } ?: run {
+            call.respond(HttpStatusCode.NotFound, ApiError.updateNotFound(updateId))
+            return@post
+        }
+
+        val userCanReview =
+            transaction { Reviewer.find { Reviewers.userId eq userId }.singleOrNull() }
+                ?.let { it.id == update.reviewerId }
+                ?: false
+        if (userCanReview) {
+            // Check whether this update has already been reviewed
+            if (update.reviewId != null) {
+                call.respond(HttpStatusCode.Conflict, ApiError.alreadyReviewed())
+                return@post
+            }
+
+            // Check whether this update increases the version code
+            val publishedApp = transaction { App.findById(update.appId) } ?: run {
+                call.respond(HttpStatusCode.InternalServerError)
+                return@post
+            }
+            if (update.versionCode <= publishedApp.versionCode) {
+                call.respond(
+                    HttpStatusCode.Conflict,
+                    ApiError.updateVersionTooLow(update.versionCode, publishedApp.versionCode),
+                )
+                return@post
+            }
+
+            // Create the review
+            val review = transaction {
+                val review = Review.new {
+                    approved = when (request.result) {
+                        ReviewResult.APPROVED -> true
+                        ReviewResult.REJECTED -> false
+                    }
+                    additionalNotes = request.additionalNotes
+                }
+                for (rejectionReason in request.reasons.orEmpty()) {
+                    RejectionReason.new {
+                        reviewId = review.id
+                        reason = rejectionReason
+                    }
+                }
+                update.reviewId = review.id
+                review
+            }
+
+            // If approved, submit a publishing job for the update
+            if (review.approved) {
+                BackgroundJob.enqueue { registerPublishUpdateJob(update.id.value) }
+            }
+            call.respond(HttpStatusCode.Created, request)
+        } else {
+            // Check whether the user has read access to this update. If they do, tell them they're
+            // not allowed to review the update. Otherwise, don't reveal the update exists.
+            val userCanRead = update.creatorId == userId
+            if (userCanRead) {
+                call.respond(HttpStatusCode.Forbidden, ApiError.reviewForbidden())
+            } else {
+                call.respond(HttpStatusCode.NotFound, ApiError.updateNotFound(updateId))
+            }
+        }
     }
 }

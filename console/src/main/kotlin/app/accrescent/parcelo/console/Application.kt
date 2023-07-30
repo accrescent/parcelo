@@ -34,6 +34,7 @@ fun Application.module() {
             single {
                 Config(
                     System.getenv("BASE_URL"),
+                    System.getenv("CONSOLE_DATABASE_PATH"),
                     System.getenv("REPOSITORY_URL"),
                     System.getenv("REPOSITORY_API_KEY"),
                 )
@@ -51,8 +52,7 @@ fun Application.module() {
             explicitNulls = false
         })
     }
-    configureDatabase()
-    configureJobRunr()
+    configureJobRunr(configureDatabase())
     configureAuthentication(
         githubClientId = System.getenv("GITHUB_OAUTH2_CLIENT_ID"),
         githubClientSecret = System.getenv("GITHUB_OAUTH2_CLIENT_SECRET"),

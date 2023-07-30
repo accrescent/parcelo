@@ -26,11 +26,15 @@ class LocalFileStorageService(private val baseDirectory: Path) : FileStorageServ
         return transaction { FileDao.new { localPath = path.toString() }.id }
     }
 
-    override fun deleteFile(id: EntityID<Int>) {
+    override fun deleteFile(id: EntityID<Int>): Boolean {
         val path = getPathForFile(id) ?: throw FileNotFoundException()
-        File(path).delete()
+        if (!File(path).delete()) {
+            return false
+        }
 
         transaction { FileDao.findById(id)?.delete() }
+
+        return true
     }
 
     override fun loadFile(id: EntityID<Int>): InputStream {

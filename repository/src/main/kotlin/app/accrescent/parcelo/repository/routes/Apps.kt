@@ -14,6 +14,7 @@ import io.ktor.server.application.call
 import io.ktor.server.auth.authenticate
 import io.ktor.server.request.receiveMultipart
 import io.ktor.server.resources.post
+import io.ktor.server.resources.put
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
 import kotlinx.serialization.encodeToString
@@ -28,15 +29,24 @@ import java.nio.file.attribute.PosixFilePermissions
 import java.util.zip.ZipInputStream
 import javax.imageio.IIOException
 import javax.imageio.ImageIO
+import kotlin.io.path.ExperimentalPathApi
 import kotlin.io.path.createDirectories
 import kotlin.io.path.createFile
+import kotlin.io.path.deleteRecursively
+import kotlin.io.path.forEachDirectoryEntry
+import kotlin.io.path.isDirectory
+import kotlin.io.path.name
 
 @Resource("/apps")
-class Apps
+class Apps {
+    @Resource("{id}")
+    class Id(val parent: Apps = Apps(), val id: String)
+}
 
 fun Route.appRoutes() {
     authenticate(API_KEY_AUTH_PROVIDER) {
         createAppRoute()
+        updateAppRoute()
     }
 }
 
@@ -94,7 +104,7 @@ fun Route.createAppRoute() {
             apkSetData!!.inputStream().use { apkSetInputStream ->
                 ZipInputStream(apkSetInputStream).use { zip ->
                     iconData.inputStream().use { icon ->
-                        publishApp(config.publishDirectory, zip, apkSet, icon)
+                        publish(config.publishDirectory, zip, apkSet, PublicationType.NewApp(icon))
                     }
                 }
             }
@@ -106,11 +116,57 @@ fun Route.createAppRoute() {
     }
 }
 
-private fun publishApp(
+fun Route.updateAppRoute() {
+    val config: Config by inject()
+
+    put<Apps.Id> {
+        val multipart = call.receiveMultipart().readAllParts()
+
+        var apkSetData: ByteArray? = null
+        var apkSet: ApkSet? = null
+
+        for (part in multipart) {
+            if (part is PartData.FileItem && part.name == "apk_set") {
+                val parseResult = run {
+                    apkSetData = part.streamProvider().use { it.readBytes() }
+                    apkSetData!!.inputStream().use { ApkSet.parse(it) }
+                }
+                part.dispose()
+                apkSet = when (parseResult) {
+                    is ParseApkSetResult.Ok -> parseResult.apkSet
+                    is ParseApkSetResult.Error -> run {
+                        call.respond(HttpStatusCode.BadRequest)
+                        return@put
+                    }
+                }
+            } else {
+                call.respond(HttpStatusCode.BadRequest)
+                return@put
+            }
+        }
+
+        // Publish update to the webserver
+        apkSetData!!.inputStream().use { apkSetInputStream ->
+            ZipInputStream(apkSetInputStream).use { zip ->
+                publish(config.publishDirectory, zip, apkSet!!, PublicationType.Update)
+            }
+        }
+
+        call.respond(HttpStatusCode.OK)
+    }
+}
+
+private sealed class PublicationType {
+    class NewApp(val icon: InputStream) : PublicationType()
+    data object Update : PublicationType()
+}
+
+@OptIn(ExperimentalPathApi::class)
+private fun publish(
     publishDir: String,
     zip: ZipInputStream,
     metadata: ApkSet,
-    icon: InputStream,
+    type: PublicationType,
 ) {
     val appDir = Paths.get(publishDir, metadata.appId.value)
     val apksDir = Paths.get(appDir.toString(), metadata.versionCode.toString())
@@ -135,8 +191,10 @@ private fun publishApp(
     }
 
     // Copy icon
-    val iconFile = File(appDir.toString(), "icon.png")
-    FileOutputStream(iconFile).use { icon.copyTo(it) }
+    if (type is PublicationType.NewApp) {
+        val iconFile = File(appDir.toString(), "icon.png")
+        FileOutputStream(iconFile).use { type.icon.copyTo(it) }
+    }
 
     // Publish repodata
     val repoData = RepoData(
@@ -154,10 +212,26 @@ private fun publishApp(
             PosixFilePermission.OTHERS_READ,
         )
     )
-    val repoDataFile = appDir.resolve("repodata.json").createFile(repoDataFileAttributes)
+    val repoDataFile = appDir.resolve("repodata.json").apply {
+        if (type is PublicationType.NewApp) {
+            createFile(repoDataFileAttributes)
+        }
+    }
     repoDataFile.toFile().outputStream().use { outFile ->
         Json.encodeToString(repoData).byteInputStream().use {
             it.copyTo(outFile)
+        }
+    }
+
+    // Delete old split APKs
+    if (type is PublicationType.Update) {
+        appDir.forEachDirectoryEntry {
+            if (!it.isDirectory()) return@forEachDirectoryEntry
+
+            val directoryVersionCode = it.name.toIntOrNull() ?: return@forEachDirectoryEntry
+            if (directoryVersionCode < metadata.versionCode) {
+                it.deleteRecursively()
+            }
         }
     }
 }
