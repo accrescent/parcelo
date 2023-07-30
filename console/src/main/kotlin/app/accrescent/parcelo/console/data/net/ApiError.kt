@@ -136,17 +136,14 @@ class ApiError private constructor(
         fun readForbidden() = ApiError(
             39,
             "Read forbidden",
-            "This user does not have sufficient access rights to read this object")
+            "This user does not have sufficient access rights to read this object",
+        )
 
         fun updateVersionTooLow(updateVersion: Int, appVersion: Int) = ApiError(
             40,
             "Update version is too low",
-            "Update version code \"$updateVersion\" is less than published app version \"$appVersion\"")
-
-        fun notWhitelisted() = ApiError(
-            41,
-            "Not whitelisted",
-            "The user attempting to login is not in the whitelist and must wait until registration opens")
+            "Update version code \"$updateVersion\" is less than published app version \"$appVersion\"",
+        )
     }
 }
 
