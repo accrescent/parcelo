@@ -246,7 +246,7 @@ public class ApkSet private constructor(
 
                         // There can only be one base apk description in a variant.
                         if (baseSplit != null) {
-                            return ParseApkSetResult.Error.MultipleBaseApkDescriptionsError
+                            return ParseApkSetResult.Error.DuplicateBaseSplitsError
                         }
 
                         // A base APK file should have a null split instead of an empty one, search for such.
@@ -601,6 +601,10 @@ public sealed class ParseApkSetResult {
          */
         public object BaseApkDescriptionInconsistentError : Error() {
             override val message: String = "base apk description is not consistent with itself"
+        }
+
+        public object DuplicateBaseSplitsError : Error() {
+            override val message: String = "duplicate base apk descriptions found"
         }
 
         /**
