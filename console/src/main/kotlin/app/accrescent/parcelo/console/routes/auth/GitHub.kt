@@ -30,10 +30,11 @@ import org.kohsuke.github.GitHubBuilder
 
 const val COOKIE_OAUTH_STATE_PROD = "__Host-oauth-state"
 const val COOKIE_OAUTH_STATE_DEVEL = "oauth-state"
-const val COOKIE_OAUTH_STATE_LIFETIME = 60*60 // 1 hour
+const val COOKIE_OAUTH_STATE_LIFETIME = 60 * 60 // 1 hour
 
-val ApplicationEnvironment.oauthStateCookieName get() =
-    if (!developmentMode) COOKIE_OAUTH_STATE_PROD else COOKIE_OAUTH_STATE_DEVEL
+val ApplicationEnvironment.oauthStateCookieName
+    get() =
+        if (!developmentMode) COOKIE_OAUTH_STATE_PROD else COOKIE_OAUTH_STATE_DEVEL
 
 fun AuthenticationConfig.github(
     clientId: String,
