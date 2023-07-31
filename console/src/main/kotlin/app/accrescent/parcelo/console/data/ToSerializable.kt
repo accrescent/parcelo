@@ -5,7 +5,7 @@ package app.accrescent.parcelo.console.data
  *
  * T must be a class annotated with @Serializable
  */
-interface ToSerializable<T> {
+fun interface ToSerializable<T> {
     /**
      * Returns a serializable representation of the database object
      */

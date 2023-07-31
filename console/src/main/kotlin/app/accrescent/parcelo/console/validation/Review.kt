@@ -71,11 +71,9 @@ data class ReviewRequest(
 ) {
     // FIXME(#114): Handle this validation automatically via kotlinx.serialization instead
     init {
-        if (
-            (result == ReviewResult.APPROVED && reasons != null) ||
-            (result == ReviewResult.REJECTED && reasons == null)
-        ) {
-            throw IllegalArgumentException()
-        }
+        require(
+            result == ReviewResult.APPROVED && reasons == null ||
+                result == ReviewResult.REJECTED && reasons != null
+        )
     }
 }
