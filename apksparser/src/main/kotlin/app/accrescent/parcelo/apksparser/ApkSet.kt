@@ -10,6 +10,7 @@ import com.google.protobuf.InvalidProtocolBufferException
 import java.io.InputStream
 import java.security.MessageDigest
 import java.security.cert.X509Certificate
+import java.util.zip.ZipException
 import java.util.zip.ZipInputStream
 
 public class ApkSet private constructor(
@@ -63,51 +64,55 @@ public class ApkSet private constructor(
             ZipInputStream(file).use { zip ->
                 var pinnedCertHashes = emptyList<String>()
 
-                generateSequence { zip.nextEntry }.filterNot { it.isDirectory }.forEach { entry ->
-                    val entryBytes = zip.readBytes()
+                try {
+                    generateSequence { zip.nextEntry }.filterNot { it.isDirectory }.forEach { entry ->
+                        val entryBytes = zip.readBytes()
 
-                    if (entry.name == "toc.pb") {
-                        bundletoolMetadata = try {
-                            BuildApksResult.newBuilder().mergeFrom(entryBytes).build()
-                        } catch (e: InvalidProtocolBufferException) {
-                            return ParseApkSetResult.Error.MetadataParseError
+                        if (entry.name == "toc.pb") {
+                            bundletoolMetadata = try {
+                                BuildApksResult.newBuilder().mergeFrom(entryBytes).build()
+                            } catch (e: InvalidProtocolBufferException) {
+                                return ParseApkSetResult.Error.MetadataParseError
+                            }
+                        }
+
+                        val apk = when (val result = Apk.parse(entryBytes)) {
+                            is ParseApkResult.Ok -> result.apk
+                            is ParseApkResult.Error -> return ParseApkSetResult.Error.ApkParseError(result)
+                        }
+
+                        // Pin the APK signing certificates on the first APK encountered to ensure split APKs
+                        // can actually be installed.
+                        if (pinnedCertHashes.isEmpty()) {
+                            pinnedCertHashes = apk.signerCertificates.map { it.fingerprint() }
+                        } else {
+                            // Check against pinned certificates
+                            val theseCertHashes = apk.signerCertificates.map { it.fingerprint() }
+                            if (theseCertHashes != pinnedCertHashes) {
+                                return ParseApkSetResult.Error.SigningCertMismatchError
+                            }
+                        }
+
+                        // Fail on debuggable and testing APKs which have naturally weaker signatures
+                        if (apk.manifest.application.debuggable == true) {
+                            return ParseApkSetResult.Error.DebuggableError
+                        }
+
+                        if (apk.manifest.application.testOnly == true) {
+                            return ParseApkSetResult.Error.TestOnlyError
+                        }
+
+                        // Check that the app ID and version code are the same as previously pinned
+                        apkEntries.lastOrNull()?.run {
+                            if (innerApk.manifest.`package` != apk.manifest.`package` ||
+                                innerApk.manifest.versionCode != apk.manifest.versionCode
+                            ) {
+                                return ParseApkSetResult.Error.ManifestInfoInconsistentError
+                            }
                         }
                     }
-
-                    val apk = when (val result = Apk.parse(entryBytes)) {
-                        is ParseApkResult.Ok -> result.apk
-                        is ParseApkResult.Error -> return ParseApkSetResult.Error.ApkParseError(result)
-                    }
-
-                    // Pin the APK signing certificates on the first APK encountered to ensure split APKs
-                    // can actually be installed.
-                    if (pinnedCertHashes.isEmpty()) {
-                        pinnedCertHashes = apk.signerCertificates.map { it.fingerprint() }
-                    } else {
-                        // Check against pinned certificates
-                        val theseCertHashes = apk.signerCertificates.map { it.fingerprint() }
-                        if (theseCertHashes != pinnedCertHashes) {
-                            return ParseApkSetResult.Error.SigningCertMismatchError
-                        }
-                    }
-
-                    // Fail on debuggable and testing APKs which have naturally weaker signatures
-                    if (apk.manifest.application.debuggable == true) {
-                        return ParseApkSetResult.Error.DebuggableError
-                    }
-
-                    if (apk.manifest.application.testOnly == true) {
-                        return ParseApkSetResult.Error.TestOnlyError
-                    }
-
-                    // Check that the app ID and version code are the same as previously pinned
-                    apkEntries.lastOrNull()?.run {
-                        if (innerApk.manifest.`package` != apk.manifest.`package` ||
-                            innerApk.manifest.versionCode != apk.manifest.versionCode
-                        ) {
-                            return ParseApkSetResult.Error.ManifestInfoInconsistentError
-                        }
-                    }
+                } catch (e: ZipException) {
+                    return ParseApkSetResult.Error.ZipFormatError
                 }
             }
 
@@ -489,6 +494,13 @@ public sealed class ParseApkSetResult {
          */
         public object ManifestInfoInconsistentError : Error() {
             override val message: String = "APK manifest info is not consistent across all APKs"
+        }
+
+        /**
+         * The APK set's ZIP archive format is invalid.
+         */
+        public object ZipFormatError : Error() {
+            override val message: String = "APK set is not a well-formed zip archive"
         }
 
         /**
