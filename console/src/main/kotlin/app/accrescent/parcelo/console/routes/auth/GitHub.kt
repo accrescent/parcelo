@@ -56,11 +56,10 @@ fun AuthenticationConfig.github(
                 onStateCreated = { call, state ->
                     // Cross-site request forgery (CSRF) protection.
                     // See https://datatracker.ietf.org/doc/html/draft-ietf-oauth-v2-30#section-10.12
-                    val environment = call.application.environment
-                    val developmentMode = environment.developmentMode
+                    val developmentMode = call.application.environment.developmentMode
                     call.response.cookies.append(
                         Cookie(
-                            name = environment.oauthStateCookieName,
+                            name = call.application.environment.oauthStateCookieName,
                             value = state,
                             maxAge = COOKIE_OAUTH_STATE_LIFETIME,
                             path = "/",
