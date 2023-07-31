@@ -200,6 +200,7 @@ private fun publish(
     val repoData = RepoData(
         version = metadata.versionName,
         versionCode = metadata.versionCode,
+        bases = metadata.bases,
         abiSplits = metadata.abiSplits.map { it.replace("_", "-") }.toSet(),
         langSplits = metadata.langSplits,
         densitySplits = metadata.densitySplits,

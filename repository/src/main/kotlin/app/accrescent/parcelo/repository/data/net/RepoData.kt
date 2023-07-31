@@ -8,6 +8,8 @@ data class RepoData(
     val version: String,
     @SerialName("version_code")
     val versionCode: Int,
+    @SerialName("base_splits")
+    val bases: Set<String>,
     @SerialName("abi_splits")
     val abiSplits: Set<String>,
     @SerialName("density_splits")
