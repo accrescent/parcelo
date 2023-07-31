@@ -6,8 +6,11 @@ import app.accrescent.parcelo.console.data.Users
 import app.accrescent.parcelo.console.data.WhitelistedGitHubUser
 import app.accrescent.parcelo.console.data.WhitelistedGitHubUsers
 import io.ktor.client.HttpClient
-import io.ktor.http.*
-import io.ktor.server.application.*
+import io.ktor.http.Cookie
+import io.ktor.http.HttpMethod
+import io.ktor.http.HttpStatusCode
+import io.ktor.server.application.ApplicationEnvironment
+import io.ktor.server.application.call
 import io.ktor.server.auth.AuthenticationConfig
 import io.ktor.server.auth.OAuthAccessTokenResponse
 import io.ktor.server.auth.OAuthServerSettings
