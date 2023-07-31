@@ -209,11 +209,11 @@ public class ApkSet private constructor(
 
                 // There should only be one base split, and then an arbitrary amount of splits for ABI, language, and
                 // density. Note that splits in several variants could point to the same APK file.
-                // TODO: Disallow two splits in one variant pointing to the same APK file
                 var baseSplit: String? = null
                 val abiSplits = mutableMapOf<String, String>()
                 val langSplits = mutableMapOf<String, String>()
                 val densitySplits = mutableMapOf<String, String>()
+                val apkPaths = mutableSetOf<String>()
                 for (apkDescription in apkSet.apkDescriptionList) {
                     // Disallow any non-split (i.e. instant, APEX) APKs. Also disallow any rotated keys for now
                     // until it's clear what they do. TODO: See prior
@@ -221,6 +221,12 @@ public class ApkSet private constructor(
                         !apkDescription.signingDescription.signedWithRotatedKey
                     ) {
                         return ParseApkSetResult.Error.ApkDescriptionUnsupportedError
+                    }
+
+                    // Each APK description in a Variant should point to a unique APK file in the set. Note that APK
+                    // descriptions across different variants can point to the same APK file.
+                    if (!apkPaths.add(apkDescription.path)) {
+                        return ParseApkSetResult.Error.DuplicateSplitPathsError
                     }
 
                     val path = apkDescription.path
@@ -604,6 +610,10 @@ public sealed class ParseApkSetResult {
          */
         public object MultipleBaseSplitsFoundError : Error() {
             override val message: String = "multiple base splits found for apk description"
+        }
+
+        public object DuplicateSplitPathsError : Error() {
+            override val message: String = "several splits in a variant point to the same apk"
         }
 
 
