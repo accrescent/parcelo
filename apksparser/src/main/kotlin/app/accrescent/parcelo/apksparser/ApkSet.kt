@@ -13,7 +13,7 @@ import java.security.cert.X509Certificate
 import java.util.zip.ZipInputStream
 
 public class ApkSet private constructor(
-    public val appId: String,
+    public val appId: AppId,
     public val versionCode: Int,
     public val versionName: String,
     public val minSdk: Int,
@@ -148,7 +148,7 @@ public class ApkSet private constructor(
             // We will be encountering base splits as we parse variants, so start tracking the information
             // we need from them. Since there can be multiple, we want to make sure we are tracking "aggregate"
             // information, so we can check for inconsistency later.
-            val appIds = mutableSetOf<String>()
+            val appIds = mutableSetOf<AppId>()
             val versionCodes = mutableSetOf<Int>()
             val versionNames = mutableSetOf<String?>()
             val usesSdks = mutableSetOf<UsesSdk?>()
@@ -253,7 +253,7 @@ public class ApkSet private constructor(
 
                         // Aggregate the apk's manifest values
                         val manifest = apkEntry.innerApk.manifest
-                        appIds.add(manifest.`package`.value)
+                        appIds.add(manifest.`package`)
                         versionCodes.add(manifest.versionCode)
                         versionNames.add(manifest.versionName)
                         usesSdks.add(manifest.usesSdk)
@@ -383,7 +383,7 @@ public class ApkSet private constructor(
 
             // Start combining the values discovered from each base APK into a single value (barring disagreements)
             val appId = appIds.singleOrNull() ?: return ParseApkSetResult.Error.AppIdInconsistentError
-            if (metadata.packageName != appId) {
+            if (metadata.packageName != appId.value) {
                 return ParseApkSetResult.Error.AppIdInconsistentError
             }
 

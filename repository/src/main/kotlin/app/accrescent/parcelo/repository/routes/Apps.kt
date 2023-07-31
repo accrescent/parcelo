@@ -3,6 +3,7 @@ package app.accrescent.parcelo.repository.routes
 import app.accrescent.parcelo.apksparser.ApkSet
 import app.accrescent.parcelo.apksparser.ParseApkSetResult
 import app.accrescent.parcelo.repository.Config
+import app.accrescent.parcelo.repository.data.net.ApkGroup
 import app.accrescent.parcelo.repository.data.net.RepoData
 import app.accrescent.parcelo.repository.routes.auth.API_KEY_AUTH_PROVIDER
 import io.ktor.http.HttpStatusCode
@@ -36,6 +37,7 @@ import kotlin.io.path.deleteRecursively
 import kotlin.io.path.forEachDirectoryEntry
 import kotlin.io.path.isDirectory
 import kotlin.io.path.name
+import java.util.UUID
 
 @Resource("/apps")
 class Apps {
@@ -179,15 +181,15 @@ private fun publish(
     )
     apksDir.createDirectories(baseDirAttributes)
 
-    // Extract split APKs
+    val apkSetPathMapping = mutableMapOf<String, UUID>()
+
+    // Extract split APKs. These are given randomized names in order to avoid having to define a name spec
+    // for each possible split combination.
     generateSequence { zip.nextEntry }.filterNot { it.isDirectory }.forEach { entry ->
-        // Don't extract any file that doesn't have an associated split name or explicit lack thereof
-        val splitName = metadata.entrySplitNames[entry.name] ?: return@forEach
-
-        val fileName = if (splitName.isEmpty) "base.apk" else "split.${splitName.get()}.apk"
-        val outFile = File(apksDir.toString(), fileName)
-
+        val apkUuid = UUID.randomUUID()
+        val outFile = File(apksDir.toString(), apkUuid.toString())
         FileOutputStream(outFile).use { zip.copyTo(it) }
+        apkSetPathMapping[entry.name] = apkUuid
     }
 
     // Copy icon
@@ -196,14 +198,28 @@ private fun publish(
         FileOutputStream(iconFile).use { type.icon.copyTo(it) }
     }
 
+    // Remap variants into repodata apk groups
+    val groups = sortedMapOf<Int, ApkGroup>()
+    fun Map<String, String>.mapSplitsToUuids(mapping: Map<String, UUID>) = buildMap {
+        for (entry in this@mapSplitsToUuids.entries) {
+            this[entry.key] = mapping[entry.value]!!
+        }
+    }
+
+    for (variant in metadata.variants) {
+        groups[variant.minSdk] = ApkGroup(
+            baseSplitId = apkSetPathMapping[variant.baseSplit]!!,
+            abiSplitIds = variant.abiSplits.mapSplitsToUuids(apkSetPathMapping),
+            densitySplitIDs = variant.densitySplits.mapSplitsToUuids(apkSetPathMapping),
+            langSplitIds = variant.langSplits.mapSplitsToUuids(apkSetPathMapping),
+        )
+    }
+
     // Publish repodata
     val repoData = RepoData(
         version = metadata.versionName,
         versionCode = metadata.versionCode,
-        bases = metadata.bases,
-        abiSplits = metadata.abiSplits.map { it.replace("_", "-") }.toSet(),
-        langSplits = metadata.langSplits,
-        densitySplits = metadata.densitySplits,
+        apkGroups = groups
     )
     val repoDataFileAttributes = PosixFilePermissions.asFileAttribute(
         setOf(
