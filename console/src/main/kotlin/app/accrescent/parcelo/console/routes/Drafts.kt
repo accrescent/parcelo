@@ -85,54 +85,62 @@ fun Route.createDraftRoute() {
 
         val multipart = call.receiveMultipart().readAllParts()
         for (part in multipart) {
-            if (part is PartData.FileItem && part.name == "apk_set") {
-                val parseResult = run {
-                    apkSetData = part.streamProvider().use { it.readBytes() }
-                    apkSetData!!.inputStream().use { ApkSet.parse(it) }
+            when {
+                part is PartData.FileItem && part.name == "apk_set" -> {
+                    val parseResult = run {
+                        apkSetData = part.streamProvider().use { it.readBytes() }
+                        apkSetData!!.inputStream().use { ApkSet.parse(it) }
+                    }
+                    part.dispose()
+                    apkSet = when (parseResult) {
+                        is ParseApkSetResult.Ok -> parseResult.apkSet
+                        is ParseApkSetResult.Error -> run {
+                            call.respond(HttpStatusCode.BadRequest, toApiError(parseResult))
+                            return@post
+                        }
+                    }
                 }
-                part.dispose()
-                apkSet = when (parseResult) {
-                    is ParseApkSetResult.Ok -> parseResult.apkSet
-                    is ParseApkSetResult.Error -> run {
-                        call.respond(HttpStatusCode.BadRequest, toApiError(parseResult))
+
+                part is PartData.FileItem && part.name == "icon" -> {
+                    iconData = part.streamProvider().use { it.readBytes() }
+
+                    // Icon must be a 512 x 512 PNG
+                    val pngReader = ImageIO.getImageReadersByFormatName("PNG").next()
+                    val image = try {
+                        iconData.inputStream().use { ImageIO.createImageInputStream(it) }.use {
+                            pngReader.input = it
+                            pngReader.read(0)
+                        }
+                    } catch (e: IIOException) {
+                        // Assume this is a format error
+                        call.respond(HttpStatusCode.BadRequest, ApiError.iconImageFormat())
                         return@post
                     }
-                }
-            } else if (part is PartData.FileItem && part.name == "icon") {
-                iconData = part.streamProvider().use { it.readBytes() }
-
-                // Icon must be a 512 x 512 PNG
-                val pngReader = ImageIO.getImageReadersByFormatName("PNG").next()
-                val image = try {
-                    iconData.inputStream().use { ImageIO.createImageInputStream(it) }.use {
-                        pngReader.input = it
-                        pngReader.read(0)
+                    if (image.width != 512 || image.height != 512) {
+                        call.respond(HttpStatusCode.BadRequest, ApiError.imageResolution())
+                        return@post
                     }
-                } catch (e: IIOException) {
-                    // Assume this is a format error
-                    call.respond(HttpStatusCode.BadRequest, ApiError.iconImageFormat())
-                    return@post
-                }
-                if (image.width != 512 || image.height != 512) {
-                    call.respond(HttpStatusCode.BadRequest, ApiError.imageResolution())
-                    return@post
+
+                    iconHash = MessageDigest
+                        .getInstance("SHA-256")
+                        .digest(iconData)
+                        .joinToString("") { "%02x".format(it) }
                 }
 
-                iconHash = MessageDigest
-                    .getInstance("SHA-256")
-                    .digest(iconData)
-                    .joinToString("") { "%02x".format(it) }
-            } else if (part is PartData.FormItem && part.name == "label") {
-                // Label must be between 3 and 30 characters in length inclusive
-                if (part.value.length < 3 || part.value.length > 30) {
-                    call.respond(HttpStatusCode.BadRequest, ApiError.labelLength())
-                    return@post
-                } else {
-                    label = part.value
+                part is PartData.FormItem && part.name == "label" -> {
+                    // Label must be between 3 and 30 characters in length inclusive
+                    if (part.value.length < 3 || part.value.length > 30) {
+                        call.respond(HttpStatusCode.BadRequest, ApiError.labelLength())
+                        return@post
+                    } else {
+                        label = part.value
+                    }
                 }
-            } else {
-                call.respond(HttpStatusCode.BadRequest, ApiError.unknownPartName(part.name))
-                return@post
+
+                else -> {
+                    call.respond(HttpStatusCode.BadRequest, ApiError.unknownPartName(part.name))
+                    return@post
+                }
             }
         }
 
