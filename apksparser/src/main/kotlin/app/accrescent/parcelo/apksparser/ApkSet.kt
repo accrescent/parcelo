@@ -74,6 +74,7 @@ public class ApkSet private constructor(
                             } catch (e: InvalidProtocolBufferException) {
                                 return ParseApkSetResult.Error.MetadataParseError
                             }
+                            return@forEach
                         }
 
                         val apk = when (val result = Apk.parse(entryBytes)) {
@@ -110,6 +111,8 @@ public class ApkSet private constructor(
                                 return ParseApkSetResult.Error.ManifestInfoInconsistentError
                             }
                         }
+
+                        apkEntries.add(ApkEntry(apk, entry.name))
                     }
                 } catch (e: ZipException) {
                     return ParseApkSetResult.Error.ZipFormatError
@@ -133,7 +136,8 @@ public class ApkSet private constructor(
 
             // Check for unsupported base-level metadata features.
             if (metadata.assetSliceSetList.isNotEmpty() ||
-                metadata.assetModulesInfo != null ||
+                metadata.assetModulesInfo.appVersionList.isNotEmpty() ||
+                metadata.assetModulesInfo.assetVersionTag.isNotEmpty() ||
                 metadata.defaultTargetingValueList.isNotEmpty() ||
                 metadata.permanentlyFusedModulesList.isNotEmpty()
             ) {
@@ -166,11 +170,11 @@ public class ApkSet private constructor(
 
                 // Currently we only accept variant targeting by SDK, as that is the only reasonable way
                 // the base splits (which usually have version-dependent compression) can be propertly tracked.
-                if (variantTargeting.abiTargeting != null ||
-                    variantTargeting.screenDensityTargeting != null ||
-                    variantTargeting.multiAbiTargeting != null ||
-                    variantTargeting.textureCompressionFormatTargeting != null ||
-                    variantTargeting.sdkRuntimeTargeting != null
+                if (variantTargeting.abiTargeting.valueList.isNotEmpty() ||
+                    variantTargeting.screenDensityTargeting.valueList.isNotEmpty() ||
+                    variantTargeting.multiAbiTargeting.valueList.isNotEmpty() ||
+                    variantTargeting.textureCompressionFormatTargeting.valueList.isNotEmpty() ||
+                    variantTargeting.sdkRuntimeTargeting.requiresSdkRuntime
                 ) {
                     return ParseApkSetResult.Error.VariantTargetingUnsupportedError
                 }
@@ -206,8 +210,11 @@ public class ApkSet private constructor(
                 // Base feature modules have no targeting, so targeted modules are also considered a sign of several
                 // feature modules and considered invalid.
                 val moduleTargeting = apkSet.moduleMetadata.targeting
-                if (moduleTargeting.sdkVersionTargeting != null || moduleTargeting.deviceFeatureTargetingList.isNotEmpty() ||
-                    moduleTargeting.userCountriesTargeting != null || moduleTargeting.deviceGroupTargeting != null
+                if (moduleTargeting.sdkVersionTargeting.valueList.isNotEmpty() ||
+                    moduleTargeting.deviceFeatureTargetingList.isNotEmpty() ||
+                    moduleTargeting.userCountriesTargeting.countryCodesList.isNotEmpty() ||
+                    moduleTargeting.userCountriesTargeting.exclude ||
+                    moduleTargeting.deviceGroupTargeting.valueList.isNotEmpty()
                 ) {
                     return ParseApkSetResult.Error.ModuleTargetingUnsupportedError
                 }
@@ -221,9 +228,10 @@ public class ApkSet private constructor(
                 val apkPaths = mutableSetOf<String>()
                 for (apkDescription in apkSet.apkDescriptionList) {
                     // Disallow any non-split (i.e. instant, APEX) APKs. Also disallow any rotated keys for now
-                    // until it's clear what they do. TODO: See prior
-                    if (apkDescription.splitApkMetadata == null ||
-                        !apkDescription.signingDescription.signedWithRotatedKey
+                    // until it's clear what they do.
+                    if (apkDescription.apkMetadataOneofValueCase !=
+                        Commands.ApkDescription.ApkMetadataOneofValueCase.SPLIT_APK_METADATA ||
+                        apkDescription.signingDescription.signedWithRotatedKey
                     ) {
                         return ParseApkSetResult.Error.ApkDescriptionUnsupportedError
                     }
@@ -279,11 +287,11 @@ public class ApkSet private constructor(
                     } else {
                         // These APK targets are not supported by the client and should be disallowed for now.
                         val apkTargeting = apkDescription.targeting
-                        if (apkTargeting.textureCompressionFormatTargeting != null ||
-                            apkTargeting.multiAbiTargeting != null ||
-                            apkTargeting.sanitizerTargeting != null ||
-                            apkTargeting.deviceTierTargeting != null ||
-                            apkTargeting.countrySetTargeting != null
+                        if (apkTargeting.textureCompressionFormatTargeting.valueList.isNotEmpty() ||
+                            apkTargeting.multiAbiTargeting.valueList.isNotEmpty() ||
+                            apkTargeting.sanitizerTargeting.valueList.isNotEmpty() ||
+                            apkTargeting.deviceTierTargeting.valueList.isNotEmpty() ||
+                            apkTargeting.countrySetTargeting.valueList.isNotEmpty()
                         ) {
                             return ParseApkSetResult.Error.ApkTargetingUnsupportedError
                         }
@@ -295,8 +303,8 @@ public class ApkSet private constructor(
                         val densityTargeting = apkTargeting.screenDensityTargeting
 
                         val (id, dst) = when {
-                            abiTargeting != null -> {
-                                if (langTargeting != null || densityTargeting != null) {
+                            abiTargeting.valueList.isNotEmpty() -> {
+                                if (langTargeting.valueList.isNotEmpty() || densityTargeting.valueList.isNotEmpty()) {
                                     return ParseApkSetResult.Error.ApkTargetingUnsupportedError
                                 }
 
@@ -316,8 +324,8 @@ public class ApkSet private constructor(
                             // Due to when condition logic, we actually don't need to fully check that the other
                             // two values are null since they were already ruled out by prior when blocks.
 
-                            langTargeting != null -> {
-                                if (densityTargeting != null) {
+                            langTargeting.valueList.isNotEmpty() -> {
+                                if (densityTargeting.valueList.isNotEmpty()) {
                                     return ParseApkSetResult.Error.ApkTargetingUnsupportedError
                                 }
 
@@ -326,7 +334,7 @@ public class ApkSet private constructor(
                                 Pair(lang, langSplits)
                             }
 
-                            densityTargeting != null -> {
+                            densityTargeting.valueList.isNotEmpty() -> {
                                 // Transform the ABI alias into a string value usable with the repodata format
                                 val density = densityTargeting.valueList.singleOrNull()
                                     ?: return ParseApkSetResult.Error.ApkSetUnsupportedError

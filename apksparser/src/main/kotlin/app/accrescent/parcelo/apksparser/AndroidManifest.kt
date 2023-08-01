@@ -83,5 +83,10 @@ public class UsesPermission private constructor(
 
 public class UsesSdk private constructor(
     public val minSdkVersion: Int = 1,
-    public val targetSdkVersion: Int?,
-)
+    public val targetSdkVersion: Int?
+) {
+    override fun equals(other: Any?): Boolean = other is UsesSdk &&
+            minSdkVersion == other.minSdkVersion && targetSdkVersion == other.targetSdkVersion
+
+    override fun hashCode(): Int = 31 * minSdkVersion.hashCode() + targetSdkVersion.hashCode()
+}
