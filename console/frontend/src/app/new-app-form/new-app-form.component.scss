@@ -31,10 +31,14 @@ a {
     color: inherit;
 }
 
-input[type="file"] {
-    display: none;
+.upload {
+    flex-shrink: 0;
 }
 
-.progress-bar {
-    width: 24em;
+.upload-status {
+    margin-left: 1em;
+}
+
+input[type="file"] {
+    display: none;
 }

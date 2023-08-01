@@ -8,15 +8,17 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
+import { MatTooltipModule } from '@angular/material/tooltip';
 
-import { Draft } from '../app/app';
+import { DraftError } from '../app/app';
 import { AppService } from '../app/app.service';
 
 @Component({
     selector: 'app-new-app-form',
     templateUrl: './new-app-form.component.html',
     styleUrls: ['./new-app-form.component.scss'],
-    imports: [NgIf, NgFor, FormsModule, ReactiveFormsModule, MatInputModule, MatFormFieldModule, MatProgressBarModule, MatButtonModule, MatCardModule],
+    imports: [NgIf, NgFor, FormsModule, ReactiveFormsModule, MatInputModule, MatTooltipModule,
+        MatFormFieldModule, MatProgressBarModule, MatButtonModule, MatCardModule],
     standalone: true
 })
 export class NewAppFormComponent {
@@ -28,9 +30,8 @@ export class NewAppFormComponent {
         app: this.app,
         icon: this.icon,
     });
-
-    draft: Draft | undefined = undefined;
     uploadProgress = 0;
+    error: DraftError | undefined = undefined;
 
     constructor(
         private fb: NonNullableFormBuilder,
@@ -57,15 +58,19 @@ export class NewAppFormComponent {
 
         if (app !== undefined && icon !== undefined) {
             this.appService.upload(label, app, icon).subscribe(event => {
-                if (event.type === HttpEventType.UploadProgress) {
-                    this.uploadProgress = 100 * event.loaded / event.total!!;
+                if (event === undefined) {
+                    return;
+                }
 
-                    // Clear the progress bar once the upload is complete
-                    if (event.loaded === event.total) {
-                        this.uploadProgress = 0;
-                    }
-                } else if (event instanceof HttpResponse) {
-                    this.draft = event.body!!;
+                if (typeof event === "number") {
+                    this.uploadProgress = event;
+                    this.error = undefined;
+                } else if ((event as DraftError).title !== undefined) {
+                    this.uploadProgress = 0;
+                    this.error = event as DraftError;
+                } else {
+                    this.uploadProgress = 0;
+                    this.error = undefined;
                 }
             });
         }

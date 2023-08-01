@@ -8,3 +8,8 @@ export interface App {
 export interface Draft {
     id: string;
 }
+
+export interface DraftError {
+    title: string;
+    message: string;
+}
