@@ -1,0 +1,90 @@
+<div class="center">
+	<mat-card>
+		<form [formGroup]="uploadForm" (ngSubmit)="onUpload()">
+			<mat-card-header>
+				<mat-card-title>App upload</mat-card-title>
+			</mat-card-header>
+			<mat-card-content>
+			    <mat-form-field appearance="outline">
+			        <mat-label>App Name</mat-label>
+			        <input id="label" #labelinput type="text" formControlName="label" matInput>
+			        <mat-error *ngIf="label.invalid">{{getLabelErrorMessage()}}</mat-error>
+			    </mat-form-field>
+			    <input id="icon" #iconinput type="file" accept="image/png" formControlName="icon">
+			    <button
+			    	style="display: block"
+			        type="button"
+			        mat-flat-button
+			        (click)="iconinput.click()">
+			        Select app icon
+			    </button>
+			    <h5>Icon must be a 512 x 512 PNG</h5>
+			    <p>{{ uploadForm.value.icon?.replace("C:\\fakepath\\", "") }}</p>
+			    <input id="app" #appinput type="file" accept=".apks" formControlName="app">
+			    <button
+			    	style="display: block"
+			        type="button"
+			        mat-flat-button
+			        (click)="appinput.click()">
+			        Select APK set
+			    </button>
+			    <h5>APK set must comply with <a href="https://accrescent.app/docs/guide/publish/requirements.html">App Requirements</a></h5>
+			    <p>{{ uploadForm.value.app?.replace("C:\\fakepath\\", "") }}</p>
+			    <mat-progress-bar *ngIf="uploadProgress !== 0" [value]="uploadProgress" class="progress-bar">
+			    </mat-progress-bar>
+			</mat-card-content>
+			<mat-card-actions>
+			    <button
+			        type="submit"
+			        [disabled]="uploadForm.invalid"
+			        mat-flat-button
+			        color="primary">
+			        Upload
+			    </button>
+			    <mat-error style="margin-left: 1em">Something????</mat-error>
+			</mat-card-actions>
+		</form>	
+	</mat-card>
+</div>
+<!-- 
+
+		<form *ngIf="app" [formGroup]="confirmationForm" (ngSubmit)="onConfirm()">
+			<mat-card-header>
+				<mat-card-title>App info</mat-card-title>
+			</mat-card-header>
+			<mat-card-content>
+			    <mat-form-field appearance="fill">
+			        <mat-label>App ID</mat-label>
+			        <input type="text" value="{{ app.id }}" disabled matInput>
+			    </mat-form-field>
+			    <br>
+			    <mat-form-field appearance="fill">
+			        <mat-label>Display name</mat-label>
+			        <input type="text" required formControlName="label" matInput>
+			    </mat-form-field>
+			    <br>
+			    <mat-form-field appearance="fill">
+			        <mat-label>Version code</mat-label>
+			        <input type="text" value="{{ app.version_code }}" disabled matInput>
+			    </mat-form-field>
+			    <br>
+			    <mat-form-field appearance="fill">
+			        <mat-label>Version name</mat-label>
+			        <input type="text" value="{{ app.version_name }}" disabled matInput>
+			    </mat-form-field>
+			    <br>
+
+			    <mat-card-actions>
+				    <button
+				        type="submit"
+				        [disabled]="confirmationForm.invalid"
+				        mat-flat-button
+				        color="primary">
+				        Submit
+				    </button>
+				</mat-card-actions>				
+			</mat-card-content>
+		</form>				
+	</mat-card>
+</div>
+ -->

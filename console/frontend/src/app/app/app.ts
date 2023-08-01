@@ -4,3 +4,7 @@ export interface App {
     version_code: number;
     version_name: string;
 }
+
+export interface Draft {
+    id: string;
+}

@@ -4,9 +4,9 @@ import { MatGridListModule } from '@angular/material/grid-list';
 import { MatRippleModule } from '@angular/material/core';
 import { MatCardModule } from '@angular/material/card';
 
-import { App } from '../app';
+import { App } from '../app/app';
 import { AppCardComponent } from '../app-card/app-card.component';
-import { AppService } from '../app.service';
+import { AppService } from '../app/app.service';
 
 @Component({
     selector: 'app-app-list',

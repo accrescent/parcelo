@@ -1,0 +1,40 @@
+.center {
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+mat-card {
+    background-color: #1f1f1f;
+    border-radius: 32px;
+}
+
+mat-card-header {
+    padding: 2.2em 3.5em 0 3.5em;
+}
+
+mat-card-content {
+    padding: 1.1em 3.5em 0 3.5em;
+}
+
+mat-card-actions {
+    padding: 1.1em 3.5em 2.2em 3.5em;
+}
+
+mat-form-field {
+    width: 24em;
+    margin-bottom: 12px;
+}
+
+a {
+    color: inherit;
+}
+
+input[type="file"] {
+    display: none;
+}
+
+.progress-bar {
+    width: 24em;
+}

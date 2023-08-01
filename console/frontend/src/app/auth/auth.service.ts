@@ -28,9 +28,17 @@ export class AuthService {
                 catchError(err => {
                     switch (err.status) {
                     case 401:
-                        return of(AuthResult.BAD_REQUEST);
+                        if (err.error != null && err.error.error_code == 41) {
+                            // Backend confirmed that the user wasn't whitelisted.
+                            return of(AuthResult.NOT_WHITELISTED);
+                        } else {
+                            // Probably ktor rejecting a stale OAuth token.
+                            return of(AuthResult.BAD_REQUEST);
+                        }
                     case 403:
-                        return of(AuthResult.NOT_WHITELISTED);
+                        // Some other route failure (CSRF mitigation, malformed account data, etc.) that
+                        // should be treated as an invalid login
+                        return of(AuthResult.BAD_REQUEST);
                     default:
                         return of(AuthResult.UNKNOWN_ERROR);
                     }

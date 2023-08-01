@@ -2,7 +2,7 @@ import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 
-import { App } from '../app';
+import { App } from '../app/app';
 
 @Component({
     selector: 'app-app-card',
