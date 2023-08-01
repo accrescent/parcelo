@@ -3,12 +3,14 @@ package app.accrescent.parcelo.console.routes.auth
 import app.accrescent.parcelo.console.data.Session as SessionDao
 import app.accrescent.parcelo.console.data.Sessions as DbSessions
 import io.ktor.client.HttpClient
+import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
 import io.ktor.server.application.call
 import io.ktor.server.application.install
 import io.ktor.server.auth.Authentication
 import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.session
+import io.ktor.server.response.respond
 import io.ktor.server.response.respondRedirect
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.get
@@ -60,7 +62,9 @@ fun Application.configureAuthentication(
                 }
             }
 
-            challenge("/auth/login")
+            challenge {
+                call.respond(HttpStatusCode.Unauthorized)
+            }
         }
 
         github(githubClientId, githubClientSecret, githubRedirectUrl, httpClient)
