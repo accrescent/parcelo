@@ -28,7 +28,7 @@ export class AppService {
                 return of(err.error);
             }),
             map(event => {
-                if ((event as DraftError).title !== undefined) {
+                if ((event as DraftError) !== undefined) {
                     return event;
                 }
 

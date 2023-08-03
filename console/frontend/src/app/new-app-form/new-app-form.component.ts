@@ -10,7 +10,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
-import { DraftError } from '../app/app';
+import { Draft, DraftError } from '../app/app';
 import { AppService } from '../app/app.service';
 
 @Component({
@@ -32,6 +32,7 @@ export class NewAppFormComponent {
     });
     uploadProgress = 0;
     error: DraftError | undefined = undefined;
+    draft: Draft | undefined = undefined;
 
     constructor(
         private fb: NonNullableFormBuilder,
@@ -65,12 +66,15 @@ export class NewAppFormComponent {
                 if (typeof event === "number") {
                     this.uploadProgress = event;
                     this.error = undefined;
+                    this.draft = undefined;
                 } else if ((event as DraftError).title !== undefined) {
                     this.uploadProgress = 0;
                     this.error = event as DraftError;
+                    this.draft = undefined;
                 } else {
                     this.uploadProgress = 0;
                     this.error = undefined;
+                    this.draft = event as Draft;
                 }
             });
         }
