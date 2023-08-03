@@ -1,5 +1,5 @@
 <div class="center">
-    <mat-card *ngIf="result === null; else badRequest">
+    <mat-card *ngIf="error === null; else badRequest">
         <div class="spinner-container">       
 			<mat-spinner></mat-spinner>
         </div>
@@ -8,7 +8,7 @@
     	</mat-card-header>
     </mat-card>
 	<ng-template #badRequest>
-		<mat-card *ngIf="result === authResult.BAD_REQUEST; else notWhitelisted">
+		<mat-card *ngIf="error === authError.BAD_REQUEST; else notWhitelisted">
 	    	<mat-card-header>
 	    		<mat-card-title>Invalid login</mat-card-title>
 	    	</mat-card-header>
@@ -23,7 +23,7 @@
 		</mat-card>
 
 		<ng-template #notWhitelisted>
-			<mat-card *ngIf="result === authResult.NOT_WHITELISTED; else unknownError">
+			<mat-card *ngIf="error === authError.NOT_WHITELISTED; else unknownError">
 		    	<mat-card-header>
 		    		<mat-card-title>Registration not permitted</mat-card-title>
 		    	</mat-card-header>

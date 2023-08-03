@@ -67,7 +67,7 @@ export class NewAppFormComponent {
                     this.uploadProgress = event;
                     this.error = undefined;
                     this.draft = undefined;
-                } else if ((event as DraftError).title !== undefined) {
+                } else if ((event as DraftError).title) {
                     this.uploadProgress = 0;
                     this.error = event as DraftError;
                     this.draft = undefined;

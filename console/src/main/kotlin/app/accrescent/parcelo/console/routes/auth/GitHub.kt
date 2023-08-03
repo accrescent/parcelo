@@ -1,5 +1,8 @@
 package app.accrescent.parcelo.console.routes.auth
 
+import app.accrescent.parcelo.console.data.AccessControlList
+import app.accrescent.parcelo.console.data.Reviewer
+import app.accrescent.parcelo.console.data.Reviewers
 import app.accrescent.parcelo.console.data.Session
 import app.accrescent.parcelo.console.data.User
 import app.accrescent.parcelo.console.data.Users
@@ -86,6 +89,14 @@ fun Route.githubRoutes() {
                     return@post
                 }
 
+                val isReviewer = transaction {
+                    !Reviewer
+                        .find { Reviewers.userId eq user.id }
+                        .empty()
+                }
+
+                val isPublisher = user.publisher
+
                 val sessionId = transaction {
                     Session.new(generateSessionId()) {
                         userId = user.id
@@ -96,7 +107,7 @@ fun Route.githubRoutes() {
 
                 call.sessions.set(Session(sessionId))
 
-                call.respond(HttpStatusCode.OK)
+                call.respond(Permissions(isReviewer, isPublisher))
             }
         }
     }

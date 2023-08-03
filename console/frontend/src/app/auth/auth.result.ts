@@ -1,6 +1,0 @@
-export enum AuthResult {
-	OK,
-	BAD_REQUEST,
-	NOT_WHITELISTED,
-	UNKNOWN_ERROR
-}
