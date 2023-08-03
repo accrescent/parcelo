@@ -7,7 +7,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 import { AuthService } from '../auth/auth.service';
-import { Permissions, AuthError } from '../auth/auth';
+import { AuthError } from '../auth/auth';
 
 @Component({
     selector: 'app-register',
@@ -23,12 +23,10 @@ export class RegisterComponent implements OnInit {
 
     ngOnInit(): void {
         this.activatedRoute.queryParams.subscribe(params => {
-            this.authService.logIn(params['code'], params['state']).subscribe(res => {
-                if ((res as Permissions).reviewer) {
-                    this.router.navigate(['/']);
-                } else {
-                    this.error = res as AuthError;
-                }
+            const component = this;
+            this.authService.logIn(params['code'], params['state']).subscribe({
+                complete: () => component.router.navigate(['/']),
+                error: (err) => component.error = err as AuthError
             });
         });
     }

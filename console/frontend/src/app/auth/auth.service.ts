@@ -23,33 +23,33 @@ export class AuthService {
         return null;
     }
 
-    logIn(code: string, state: string): Observable<Permissions | AuthError> {
+    logIn(code: string, state: string): Observable<Permissions> {
         const header = new HttpHeaders().set('Content-Type', 'application/x-www-form-urlencoded');
         const params = new HttpParams().append('code', code).append('state', state);
         return this.http.post<Permissions>(this.callbackUrl, params, { observe: 'response', headers: header })
             .pipe(
                 map(res => res.body!!),
+                tap(res => {
+                    if ((res as Permissions).reviewer) {
+                        localStorage.setItem(this.authStorageKey, JSON.stringify(res));
+                    }
+                }),
                 catchError(err => {
                     switch (err.status) {
                     case 401:
                         if (err.error != null && err.error.error_code == 41) {
                             // Backend confirmed that the user wasn't whitelisted.
-                            return of(AuthError.NOT_WHITELISTED);
+                            throw AuthError.NOT_WHITELISTED;
                         } else {
                             // Probably ktor rejecting a stale OAuth token.
-                            return of(AuthError.BAD_REQUEST);
+                            throw AuthError.BAD_REQUEST;
                         }
                     case 403:
                         // Some other route failure (CSRF mitigation, malformed account data, etc.) that
                         // should be treated as an invalid login
-                        return of(AuthError.BAD_REQUEST);
+                        throw AuthError.BAD_REQUEST;
                     default:
-                        return of(AuthError.UNKNOWN_ERROR);
-                    }
-                }),
-                tap(res => {
-                    if ((res as Permissions).reviewer) {
-                        localStorage.setItem(this.authStorageKey, JSON.stringify(res));
+                        throw AuthError.UNKNOWN_ERROR;
                     }
                 })
             );

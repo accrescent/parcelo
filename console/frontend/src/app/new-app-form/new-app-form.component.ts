@@ -1,5 +1,4 @@
 import { Component } from '@angular/core';
-import { HttpEventType, HttpResponse } from '@angular/common/http';
 import { NgIf, NgFor } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormControl, NonNullableFormBuilder, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -58,24 +57,19 @@ export class NewAppFormComponent {
         const app = (<HTMLInputElement>document.getElementById("app")).files?.[0];
 
         if (app !== undefined && icon !== undefined) {
-            this.appService.upload(label, app, icon).subscribe(event => {
-                if (event === undefined) {
-                    return;
-                }
-
-                if (typeof event === "number") {
-                    this.uploadProgress = event;
-                    this.error = undefined;
-                    this.draft = undefined;
-                } else if ((event as DraftError).title) {
-                    this.uploadProgress = 0;
-                    this.error = event as DraftError;
-                    this.draft = undefined;
-                } else {
-                    this.uploadProgress = 0;
-                    this.error = undefined;
-                    this.draft = event as Draft;
-                }
+            const component = this;
+            this.uploadProgress = 0;
+            this.error = undefined;
+            this.draft = undefined;
+            this.appService.upload(label, app, icon).subscribe({
+                next: (event) => {
+                    if (typeof event === "number") {
+                        component.uploadProgress = event as number;
+                    } else {
+                        component.draft = event as Draft;
+                    }
+                }, 
+                error: (err) => component.error = err
             });
         }
     }
