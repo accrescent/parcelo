@@ -1,3 +1,7 @@
+// Copyright 2023 Logan Magee
+//
+// SPDX-License-Identifier: AGPL-3.0-only
+
 val exposedVersion: String by project
 val koinVersion: String by project
 val ktorVersion: String by project

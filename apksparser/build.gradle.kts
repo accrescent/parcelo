@@ -1,3 +1,7 @@
+// Copyright 2023 Logan Magee
+//
+// SPDX-License-Identifier: AGPL-3.0-only
+
 val androidToolsVersion: String by project
 val apksigVersion: String by project
 val jacksonVersion: String by project

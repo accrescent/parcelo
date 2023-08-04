@@ -1,3 +1,7 @@
+// Copyright 2023 Logan Magee
+//
+// SPDX-License-Identifier: AGPL-3.0-only
+
 import com.github.gradle.node.npm.task.NpxTask
 
 val exposedVersion: String by project
