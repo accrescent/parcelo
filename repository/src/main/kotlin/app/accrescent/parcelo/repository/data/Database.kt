@@ -8,9 +8,12 @@ import app.accrescent.parcelo.repository.Config
 import io.ktor.server.application.Application
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
+import org.jetbrains.exposed.sql.insertIgnore
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.koin.ktor.ext.inject
 import java.sql.DriverManager
+
+const val DEBUG_CONSOLE_LABEL = "debug-console"
 
 fun Application.configureDatabase() {
     val config: Config by inject()
@@ -25,13 +28,13 @@ fun Application.configureDatabase() {
     }
 
     transaction {
-        SchemaUtils.create(Consoles)
+        SchemaUtils.createMissingTablesAndColumns(Consoles)
 
         if (environment.developmentMode) {
             // Create a default console
-            Console.new {
-                label = "debug-console"
-                apiKey = config.repositoryApiKey
+            Consoles.insertIgnore {
+                it[label] = DEBUG_CONSOLE_LABEL
+                it[apiKey] = config.repositoryApiKey
             }
         }
     }

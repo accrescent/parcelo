@@ -8,6 +8,7 @@ import app.accrescent.parcelo.console.Config
 import io.ktor.server.application.Application
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
+import org.jetbrains.exposed.sql.insertIgnore
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.koin.ktor.ext.inject
 import org.sqlite.SQLiteDataSource
@@ -30,7 +31,7 @@ fun Application.configureDatabase(): DataSource {
     Database.connect(dataSource)
 
     transaction {
-        SchemaUtils.create(
+        SchemaUtils.createMissingTablesAndColumns(
             AccessControlLists,
             Apps,
             Drafts,
@@ -49,21 +50,22 @@ fun Application.configureDatabase(): DataSource {
         if (environment.developmentMode) {
             // Create a default superuser
             val debugUserGitHubId = System.getenv("DEBUG_USER_GITHUB_ID").toLong()
-            val user = User.new {
-                githubUserId = debugUserGitHubId
-                email = System.getenv("DEBUG_USER_EMAIL")
-                publisher = true
+            val userId = Users.insertIgnore {
+                it[githubUserId] = debugUserGitHubId
+                it[email] = System.getenv("DEBUG_USER_EMAIL")
+                it[publisher] = true
+            }[Users.id]
+            Reviewers.insertIgnore {
+                it[this.userId] = userId
+                it[email] = System.getenv("DEBUG_USER_REVIEWER_EMAIL")
             }
-            Reviewer.new {
-                userId = user.id
-                email = System.getenv("DEBUG_USER_REVIEWER_EMAIL")
-            }
-            WhitelistedGitHubUser.new(debugUserGitHubId) {}
+            WhitelistedGitHubUsers.insertIgnore { it[id] = debugUserGitHubId }
 
             // Create a session for said superuser for testing
-            Session.new(System.getenv("DEBUG_USER_SESSION_ID")) {
-                userId = user.id
-                expiryTime = Long.MAX_VALUE
+            Sessions.insertIgnore {
+                it[id] = System.getenv("DEBUG_USER_SESSION_ID")
+                it[this.userId] = userId
+                it[expiryTime] = Long.MAX_VALUE
             }
         }
     }
