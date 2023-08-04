@@ -11,15 +11,15 @@ mat-card {
 }
 
 mat-card-header {
-    padding: 2.2em 3.5em 0 3.5em;
+    padding: 32px 32px 0px 32px;
 }
 
-mat-card-content {
-    padding: 1.1em 3.5em 0 3.5em;
+mat-card-content, mat-card-content:last-child {
+    padding: 16px 32px 0px 32px;
 }
 
 mat-card-actions {
-    padding: 1.1em 3.5em 2.2em 3.5em;
+    padding: 16px 32px 32px 32px;
 }
 
 mat-form-field {
