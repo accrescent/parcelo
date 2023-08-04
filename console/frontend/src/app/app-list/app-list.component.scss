@@ -1,3 +1,21 @@
-mat-card, app-app-card {
-    width: 25em;
+.grid {
+    display: flex;
+    flex: 0 0 auto;
+    width: auto;
+    flex-wrap: wrap;
+    margin: 1em;
+}
+
+mat-card {
+    background-color: #1f1f1f;
+    border-radius: 32px;
+    margin: 1em;
+}
+
+mat-card-header {
+    padding: 32px 32px 0px 32px;
+}
+
+mat-card-content, mat-card-content:last-child {
+    padding: 16px 32px 32px 32px;
 }

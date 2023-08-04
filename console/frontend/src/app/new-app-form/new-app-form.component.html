@@ -12,7 +12,7 @@
 			    </mat-form-field>
 			    <input id="icon" #iconinput type="file" accept="image/png" formControlName="icon">
 			    <button
-			    	style="display: block"
+			    	class="upload-button"
 			        type="button"
 			        mat-flat-button
 			        (click)="iconinput.click()">
@@ -22,7 +22,7 @@
 			    <p>{{ uploadForm.value.icon?.replace("C:\\fakepath\\", "") }}</p>
 			    <input id="app" #appinput type="file" accept=".apks" formControlName="app">
 			    <button
-			    	style="display: block"
+			    	class="upload-button"
 			        type="button"
 			        mat-flat-button
 			        (click)="appinput.click()">

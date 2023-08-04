@@ -6,6 +6,7 @@
 }
 
 mat-card {
+    width: 32em;
     background-color: #1f1f1f;
     border-radius: 32px;
 }
@@ -23,12 +24,16 @@ mat-card-actions {
 }
 
 mat-form-field {
-    width: 24em;
+    width: 100%;
     margin-bottom: 12px;
 }
 
 a {
     color: inherit;
+}
+
+strong {
+    font-weight: 500;
 }
 
 .upload {
@@ -37,6 +42,10 @@ a {
 
 .upload-status {
     margin-left: 1em;
+}
+
+.upload-button {
+    display: block;
 }
 
 input[type="file"] {
