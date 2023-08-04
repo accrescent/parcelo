@@ -6,6 +6,7 @@ package app.accrescent.parcelo.console.data
 
 import app.accrescent.parcelo.console.Config
 import io.ktor.server.application.Application
+import org.flywaydb.core.Flyway
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.insertIgnore
@@ -69,6 +70,8 @@ fun Application.configureDatabase(): DataSource {
             }
         }
     }
+
+    Flyway.configure().dataSource(dataSource).baselineOnMigrate(true).load().migrate()
 
     return dataSource
 }

@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 val exposedVersion: String by project
+val flywayVersion: String by project
 val koinVersion: String by project
 val ktorVersion: String by project
 val kotlinVersion: String by project
@@ -34,6 +35,7 @@ dependencies {
     implementation("io.ktor:ktor-server-core:$ktorVersion")
     implementation("io.ktor:ktor-server-netty:$ktorVersion")
     implementation("io.ktor:ktor-server-resources:$ktorVersion")
+    implementation("org.flywaydb:flyway-core:$flywayVersion")
     implementation("org.jetbrains.exposed:exposed-core:$exposedVersion")
     implementation("org.jetbrains.exposed:exposed-dao:$exposedVersion")
     implementation("org.jetbrains.exposed:exposed-jdbc:$exposedVersion")
