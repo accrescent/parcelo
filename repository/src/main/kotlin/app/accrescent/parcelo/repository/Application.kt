@@ -28,6 +28,7 @@ fun Application.module() {
                 Config(
                     System.getenv("REPOSITORY_DATABASE_PATH"),
                     System.getenv("REPOSITORY_PUBLISH_DIR"),
+                    System.getenv("REPOSITORY_API_KEY"),
                 )
             }
         }

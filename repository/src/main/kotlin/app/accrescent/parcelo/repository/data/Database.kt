@@ -31,7 +31,7 @@ fun Application.configureDatabase() {
             // Create a default console
             Console.new {
                 label = "debug-console"
-                apiKey = System.getenv("REPOSITORY_API_KEY")
+                apiKey = config.repositoryApiKey
             }
         }
     }
