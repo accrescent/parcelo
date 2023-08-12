@@ -83,7 +83,7 @@ public class ApkSet private constructor(
                         }
 
                         // Pin the APK signing certificates on the first APK encountered to ensure split APKs
-                        // can actually be installed.
+                        // can actually be installed
                         if (pinnedCertHashes.isEmpty()) {
                             pinnedCertHashes = apk.signerCertificates.map { it.fingerprint() }
                         } else {
@@ -129,12 +129,12 @@ public class ApkSet private constructor(
                 return ParseApkSetResult.Error.BundletoolVersionError
             }
 
-            // It's somewhat unclear, but this flag is also likely related to testing and should be treated as such.
+            // It's somewhat unclear, but this flag is also likely related to testing and should be treated as such
             if (metadata.localTestingInfo.enabled) {
                 return ParseApkSetResult.Error.TestOnlyError
             }
 
-            // Check for unsupported base-level metadata features.
+            // Check for unsupported base-level metadata features
             if (metadata.assetSliceSetList.isNotEmpty() ||
                 metadata.assetModulesInfo.appVersionList.isNotEmpty() ||
                 metadata.assetModulesInfo.assetVersionTag.isNotEmpty() ||
@@ -144,7 +144,7 @@ public class ApkSet private constructor(
                 return ParseApkSetResult.Error.MetadataUnsupportedError
             }
 
-            // If we don't have any variants, we don't have any APKs.
+            // If we don't have any variants, we don't have any APKs
             if (metadata.variantList.isEmpty()) {
                 return ParseApkSetResult.Error.VariantsNotFoundError
             }
@@ -156,7 +156,7 @@ public class ApkSet private constructor(
 
             // We will be encountering base splits as we parse variants, so start tracking the information
             // we need from them. Since there can be multiple, we want to make sure we are tracking "aggregate"
-            // information, so we can check for inconsistency later.
+            // information, so we can check for inconsistency later
             val appIds = mutableSetOf<AppId>()
             val versionCodes = mutableSetOf<Int>()
             val versionNames = mutableSetOf<String?>()
@@ -169,7 +169,7 @@ public class ApkSet private constructor(
                 val variantTargeting = variant.targeting
 
                 // Currently we only accept variant targeting by SDK, as that is the only reasonable way
-                // the base splits (which usually have version-dependent compression) can be propertly tracked.
+                // the base splits (which usually have version-dependent compression) can be propertly tracked
                 if (variantTargeting.abiTargeting.valueList.isNotEmpty() ||
                     variantTargeting.screenDensityTargeting.valueList.isNotEmpty() ||
                     variantTargeting.multiAbiTargeting.valueList.isNotEmpty() ||
@@ -180,11 +180,11 @@ public class ApkSet private constructor(
                 }
 
                 // Since we've ruled out all other targets as being null, if this field is missing too, that means
-                // that the variant has no target information usable by the device, which is probably invalid.
+                // that the variant has no target information usable by the device, which is probably invalid
                 val sdkTargeting = variant.targeting.sdkVersionTargeting
                     ?: return ParseApkSetResult.Error.VariantTargetsNothingError
                 // Only accept a single SDK value for now. You will see this in a few other places as it's currently
-                // unclear why or how these fields would have more than one value.
+                // unclear why or how these fields would have more than one value
                 val sdk = sdkTargeting.valueList.singleOrNull()
                     ?: return ParseApkSetResult.Error.VariantSDKUnsupportedError
                 val minSdk = sdk.min.value
@@ -198,7 +198,7 @@ public class ApkSet private constructor(
                     return ParseApkSetResult.Error.ApkSetUnsupportedError
 
                 // We currently don't support non-base feature modules. Error out if any other modules are encountered
-                // to avoid putting invalid APKs into the repository.
+                // to avoid putting invalid APKs into the repository
                 val module = apkSet.moduleMetadata
                 if (module.name != "base" || module.moduleType != Commands.FeatureModuleType.FEATURE_MODULE ||
                     module.isInstant || module.dependenciesList.isNotEmpty() ||
@@ -208,7 +208,7 @@ public class ApkSet private constructor(
                 }
 
                 // Base feature modules have no targeting, so targeted modules are also considered a sign of several
-                // feature modules and considered invalid.
+                // feature modules and considered invalid
                 val moduleTargeting = apkSet.moduleMetadata.targeting
                 if (moduleTargeting.sdkVersionTargeting.valueList.isNotEmpty() ||
                     moduleTargeting.deviceFeatureTargetingList.isNotEmpty() ||
@@ -220,7 +220,7 @@ public class ApkSet private constructor(
                 }
 
                 // There should only be one base split, and then an arbitrary amount of splits for ABI, language, and
-                // density. Note that splits in several variants could point to the same APK file.
+                // density. Note that splits in several variants could point to the same APK file
                 var baseSplit: String? = null
                 val abiSplits = mutableMapOf<String, String>()
                 val langSplits = mutableMapOf<String, String>()
@@ -228,7 +228,7 @@ public class ApkSet private constructor(
                 val apkPaths = mutableSetOf<String>()
                 for (apkDescription in apkSet.apkDescriptionList) {
                     // Disallow any non-split (i.e. instant, APEX) APKs. Also disallow any rotated keys for now
-                    // until it's clear what they do.
+                    // until it's clear what they do
                     if (apkDescription.apkMetadataOneofValueCase !=
                         Commands.ApkDescription.ApkMetadataOneofValueCase.SPLIT_APK_METADATA ||
                         apkDescription.signingDescription.signedWithRotatedKey
@@ -237,7 +237,7 @@ public class ApkSet private constructor(
                     }
 
                     // Each APK description in a Variant should point to a unique APK file in the set. Note that APK
-                    // descriptions across different variants can point to the same APK file.
+                    // descriptions across different variants can point to the same APK file
                     if (!apkPaths.add(apkDescription.path)) {
                         return ParseApkSetResult.Error.DuplicateSplitPathsError
                     }
@@ -247,17 +247,17 @@ public class ApkSet private constructor(
                     val isBase = apkDescription.splitApkMetadata.isMasterSplit
                     if (isBase || splitId.isEmpty()) {
                         // Base APKs should have the corresponding metadata flag set and an empty ID. Any other
-                        // configuration should be invalid.
+                        // configuration should be invalid
                         if (!isBase || splitId.isNotEmpty()) {
                             return ParseApkSetResult.Error.BaseApkDescriptionInconsistentError
                         }
 
-                        // There can only be one base apk description in a variant.
+                        // There can only be one base apk description in a variant
                         if (baseSplit != null) {
                             return ParseApkSetResult.Error.DuplicateBaseSplitsError
                         }
 
-                        // A base APK file should have a null split instead of an empty one, search for such.
+                        // A base APK file should have a null split instead of an empty one, search for such
                         val apkEntry = apkEntries.filter { it.path == path && it.innerApk.manifest.split == null }
                             .ifEmpty { return ParseApkSetResult.Error.NoBaseSplitsFoundError }
                             .singleOrNull() ?: return ParseApkSetResult.Error.MultipleBaseSplitsFoundError
@@ -285,7 +285,7 @@ public class ApkSet private constructor(
 
                         consumed.add(apkEntry)
                     } else {
-                        // These APK targets are not supported by the client and should be disallowed for now.
+                        // These APK targets are not supported by the client and should be disallowed for now
                         val apkTargeting = apkDescription.targeting
                         if (apkTargeting.textureCompressionFormatTargeting.valueList.isNotEmpty() ||
                             apkTargeting.multiAbiTargeting.valueList.isNotEmpty() ||
@@ -297,7 +297,7 @@ public class ApkSet private constructor(
                         }
 
                         // We only allow an APK to target either abi, language, or density, currently. Combinations
-                        // are disallowed.
+                        // are disallowed
                         val abiTargeting = apkTargeting.abiTargeting
                         val langTargeting = apkTargeting.languageTargeting
                         val densityTargeting = apkTargeting.screenDensityTargeting
@@ -321,10 +321,9 @@ public class ApkSet private constructor(
                                 Pair(name, abiSplits)
                             }
 
-                            // Due to when condition logic, we actually don't need to fully check that the other
-                            // two values are null since they were already ruled out by prior when blocks.
-
                             langTargeting.valueList.isNotEmpty() -> {
+                                // Due to when condition logic, we actually don't need to fully check that the other
+                                // two values are null since they were already ruled out by prior when blocks
                                 if (densityTargeting.valueList.isNotEmpty()) {
                                     return ParseApkSetResult.Error.ApkTargetingUnsupportedError
                                 }
@@ -353,7 +352,7 @@ public class ApkSet private constructor(
                             }
 
                             // Since we've already ruled out all other APK targets, this implies that the APK
-                            // targets no device attribute, which is probably invalid.
+                            // targets no device attribute, which is probably invalid
                             else -> return ParseApkSetResult.Error.ApkTargetsNothingError
                         }
 
@@ -363,8 +362,10 @@ public class ApkSet private constructor(
                         }
 
                         // In manifests and in the split metadata, all the target parameters used are prefixed
-                        // with "config". Keep this in mind when validating the target and
+                        // with "config"
                         val targetSplitId = "config.${id}"
+
+                        // Make sure that the split ID is consistent with the metadata
                         if (splitId != targetSplitId) {
                             return ParseApkSetResult.Error.SplitIdInconsistentError
                         }
@@ -389,7 +390,7 @@ public class ApkSet private constructor(
 
             // It's possible that the metadata might have been tampered with in order to not list certain APKs.
             // In this case, we must make sure that all the Apks linked during variant parsing encompass
-            // all the variants discovered during the initial parsing phase.
+            // all the variants discovered during the initial parsing phase
             if (consumed.size != apkEntries.size) {
                 return ParseApkSetResult.Error.UnaccountedSplitsError
             }
@@ -404,7 +405,7 @@ public class ApkSet private constructor(
 
             // versionName (and later usesSdk) are already nullable, so using singleOrNull would not allow us to handle
             // all possibilities. Replicate the functionality manually instead and return two different errors for
-            // each type of "null" encountered.
+            // each type of "null" encountered
             val versionName = if (versionNames.size == 1) {
                 versionNames.first() ?: return ParseApkSetResult.Error.VersionNameUnspecifiedError
             } else {

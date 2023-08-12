@@ -17,19 +17,19 @@ class ApiError private constructor(
 
         fun apkSetInvalid(message: String) = ApiError(2, "APK set is invalid", message)
 
-        fun apkSetUnsupported(message: String) = ApiError(3, "APK set unsupported", message)
+        fun apkSetUnsupported(message: String) = ApiError(3, "APK set is unsupported", message)
 
-        fun apkSetSignature(message: String) = ApiError(4, "APK set incorrectly signed", message)
+        fun apkSetSignature(message: String) = ApiError(4, "APK set is incorrectly signed", message)
 
-        fun apkSetDebuggable(message: String) = ApiError(5, "APK set in debug mode", message)
+        fun apkSetDebuggable(message: String) = ApiError(5, "APK set is in debug mode", message)
 
-        fun apkSetTestable(message: String) = ApiError(6, "APK set in test mode", message)
+        fun apkSetTestable(message: String) = ApiError(6, "APK set is in test mode", message)
 
         fun apkFormat(message: String) = ApiError(7, "Could not parse APK", message)
 
         fun apkInvalid(message: String) = ApiError(8, "APK is invalid", message)
 
-        fun apkSignature(message: String) = ApiError(9, "APK incorrectly signed", message)
+        fun apkSignature(message: String) = ApiError(9, "APK is incorrectly signed", message)
 
         fun iconImageFormat() =
             ApiError(10, "Image is not in an acceptable format", "Icon must be a PNG")
