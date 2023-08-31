@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 import { Component, Input } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 
 import { App } from '../app';
@@ -11,7 +10,7 @@ import { App } from '../app';
 @Component({
     selector: 'app-app-card',
     standalone: true,
-    imports: [CommonModule, MatCardModule],
+    imports: [MatCardModule],
     templateUrl: './app-card.component.html',
 })
 export class AppCardComponent {

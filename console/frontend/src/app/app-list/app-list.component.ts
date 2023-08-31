@@ -2,8 +2,8 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only
 
+import { NgFor } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { MatGridListModule } from '@angular/material/grid-list';
 
 import { App } from '../app';
@@ -13,7 +13,7 @@ import { AppService } from '../app.service';
 @Component({
     selector: 'app-app-list',
     standalone: true,
-    imports: [AppCardComponent, CommonModule, MatGridListModule],
+    imports: [AppCardComponent, MatGridListModule, NgFor],
     templateUrl: './app-list.component.html',
     styleUrls: ['./app-list.component.scss']
 })
