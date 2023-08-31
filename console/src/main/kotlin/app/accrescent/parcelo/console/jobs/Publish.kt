@@ -36,7 +36,7 @@ fun registerPublishAppJob(draftId: UUID) {
         transaction { Icon.findById(draft.iconId)?.fileId } ?: throw IllegalStateException()
 
     // Publish to the repository server
-    val publishUrl = URLBuilder(config.repositoryUrl)
+    val publishUrl = URLBuilder(config.repository.url)
         .appendPathSegments("api", "v1", "apps")
         .buildString()
     runBlocking {
@@ -52,7 +52,7 @@ fun registerPublishAppJob(draftId: UUID) {
                 })
             }
         }) {
-            header("Authorization", "token ${config.repositoryApiKey}")
+            header("Authorization", "token ${config.repository.apiKey}")
             expectSuccess = true
         }
     }
@@ -84,7 +84,7 @@ fun registerPublishUpdateJob(updateId: UUID) {
     val update = transaction { Update.findById(updateId) } ?: return
 
     // Publish to the repository server
-    val publishUrl = URLBuilder(config.repositoryUrl)
+    val publishUrl = URLBuilder(config.repository.url)
         .appendPathSegments("api", "v1", "apps", update.appId.toString())
         .buildString()
     runBlocking {
@@ -96,7 +96,7 @@ fun registerPublishUpdateJob(updateId: UUID) {
             }
         }) {
             method = HttpMethod.Put
-            header("Authorization", "token ${config.repositoryApiKey}")
+            header("Authorization", "token ${config.repository.apiKey}")
             expectSuccess = true
         }
     }

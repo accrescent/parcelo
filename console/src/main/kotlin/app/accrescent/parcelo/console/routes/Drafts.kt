@@ -215,7 +215,7 @@ fun Route.createDraftRoute() {
 
             call.response.header(
                 HttpHeaders.Location,
-                "${config.baseUrl}/api/v1/drafts/${draft.id}"
+                "${config.application.baseUrl}/api/v1/drafts/${draft.id}"
             )
             call.respond(HttpStatusCode.Created, draft)
         } else {

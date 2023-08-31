@@ -5,8 +5,24 @@
 package app.accrescent.parcelo.console
 
 data class Config(
-    val baseUrl: String,
-    val databasePath: String,
-    val repositoryUrl: String,
-    val repositoryApiKey: String,
-)
+    val application: Application,
+    val repository: Repository,
+    val github: GitHub,
+) {
+    data class Application(
+        val baseUrl: String,
+        val databasePath: String,
+        val fileStorageDir: String,
+    )
+
+    data class Repository(
+        val url: String,
+        val apiKey: String,
+    )
+
+    data class GitHub(
+        val clientId: String,
+        val clientSecret: String,
+        val redirectUrl: String,
+    )
+}

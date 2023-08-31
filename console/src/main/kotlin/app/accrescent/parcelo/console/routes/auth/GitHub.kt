@@ -87,7 +87,8 @@ fun Route.githubRoutes() {
             get("/callback") {
                 // Cross-site request forgery (CSRF) protection.
                 // See https://datatracker.ietf.org/doc/html/draft-ietf-oauth-v2-30#section-10.12
-                val oauthCookie = call.request.cookies[call.application.environment.oauthStateCookieName]
+                val oauthCookie =
+                    call.request.cookies[call.application.environment.oauthStateCookieName]
                 if (oauthCookie == null) {
                     call.respond(HttpStatusCode.Forbidden)
                     return@get

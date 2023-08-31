@@ -201,7 +201,10 @@ fun Route.createUpdateRoute() {
         }.serializable()
 
         call.apply {
-            response.header(HttpHeaders.Location, "${config.baseUrl}/api/v1/updates/${update.id}")
+            response.header(
+                HttpHeaders.Location,
+                "${config.application.baseUrl}/api/v1/updates/${update.id}",
+            )
             respond(HttpStatusCode.Created, update)
         }
     }
