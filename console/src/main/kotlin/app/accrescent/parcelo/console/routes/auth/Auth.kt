@@ -74,7 +74,7 @@ fun Application.configureAuthentication(
 fun Route.authRoutes() {
     authenticate("cookie") {
         get("/login") {
-            call.respondRedirect("/dashboard")
+            call.respondRedirect("/apps")
         }
     }
 
