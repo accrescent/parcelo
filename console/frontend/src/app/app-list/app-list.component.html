@@ -1,3 +1,14 @@
+<!--
+Copyright 2023 Logan Magee
+
+SPDX-License-Identifier: AGPL-3.0-only
+-->
+
+<mat-grid-list cols="3" rowHeight="3:2">
+    <mat-grid-tile *ngFor="let app of apps">
+        <app-app-card [app]="app"/>
+    </mat-grid-tile>
+</mat-grid-list>
 <div class="grid">
     <mat-card *ngFor="let app of apps">
         <mat-card-header>

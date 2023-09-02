@@ -1,3 +1,7 @@
+// Copyright 2023 Logan Magee
+//
+// SPDX-License-Identifier: AGPL-3.0-only
+
 package app.accrescent.parcelo.repository
 
 import app.accrescent.parcelo.repository.data.configureDatabase
@@ -24,6 +28,7 @@ fun Application.module() {
                 Config(
                     System.getenv("REPOSITORY_DATABASE_PATH"),
                     System.getenv("REPOSITORY_PUBLISH_DIR"),
+                    System.getenv("REPOSITORY_API_KEY"),
                 )
             }
         }

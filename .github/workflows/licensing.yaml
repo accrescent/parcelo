@@ -1,0 +1,14 @@
+# Copyright 2023 Logan Magee
+#
+# SPDX-License-Identifier: AGPL-3.0-only
+
+name: Check licensing
+
+on: [push, pull_request]
+
+jobs:
+  license-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: fsfe/reuse-action@v2

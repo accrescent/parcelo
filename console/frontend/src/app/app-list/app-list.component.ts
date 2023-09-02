@@ -1,3 +1,7 @@
+// Copyright 2023 Logan Magee
+//
+// SPDX-License-Identifier: AGPL-3.0-only
+
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatRippleModule } from '@angular/material/core';

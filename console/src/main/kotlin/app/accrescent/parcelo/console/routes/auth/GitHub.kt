@@ -1,3 +1,7 @@
+// Copyright 2023 Logan Magee
+//
+// SPDX-License-Identifier: AGPL-3.0-only
+
 package app.accrescent.parcelo.console.routes.auth
 
 import app.accrescent.parcelo.console.data.AccessControlList
@@ -10,8 +14,10 @@ import app.accrescent.parcelo.console.data.WhitelistedGitHubUser
 import app.accrescent.parcelo.console.data.WhitelistedGitHubUsers
 import app.accrescent.parcelo.console.data.net.ApiError
 import io.ktor.client.HttpClient
+import io.ktor.http.Cookie
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
+import io.ktor.server.application.ApplicationEnvironment
 import io.ktor.server.application.call
 import io.ktor.server.auth.AuthenticationConfig
 import io.ktor.server.auth.OAuthAccessTokenResponse
@@ -27,6 +33,14 @@ import io.ktor.server.sessions.sessions
 import io.ktor.server.sessions.set
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.kohsuke.github.GitHubBuilder
+
+const val COOKIE_OAUTH_STATE_PROD = "__Host-oauth-state"
+const val COOKIE_OAUTH_STATE_DEVEL = "oauth-state"
+const val COOKIE_OAUTH_STATE_LIFETIME = 60 * 60 // 1 hour
+
+val ApplicationEnvironment.oauthStateCookieName
+    get() =
+        if (!developmentMode) COOKIE_OAUTH_STATE_PROD else COOKIE_OAUTH_STATE_DEVEL
 
 fun AuthenticationConfig.github(
     clientId: String,
@@ -45,6 +59,22 @@ fun AuthenticationConfig.github(
                 clientId = clientId,
                 clientSecret = clientSecret,
                 defaultScopes = listOf("user:email"),
+                onStateCreated = { call, state ->
+                    // Cross-site request forgery (CSRF) protection.
+                    // See https://datatracker.ietf.org/doc/html/draft-ietf-oauth-v2-30#section-10.12
+                    val developmentMode = call.application.environment.developmentMode
+                    call.response.cookies.append(
+                        Cookie(
+                            name = call.application.environment.oauthStateCookieName,
+                            value = state,
+                            maxAge = COOKIE_OAUTH_STATE_LIFETIME,
+                            path = "/",
+                            secure = !developmentMode,
+                            httpOnly = true,
+                            extensions = mapOf("SameSite" to "Lax")
+                        )
+                    )
+                }
             )
         }
         client = httpClient
@@ -57,7 +87,20 @@ fun Route.githubRoutes() {
             get("/login") {}
 
             post("/callback") {
+                // Cross-site request forgery (CSRF) protection.
+                // See https://datatracker.ietf.org/doc/html/draft-ietf-oauth-v2-30#section-10.12
+                val oauthCookie = call.request.cookies[call.application.environment.oauthStateCookieName]
+                if (oauthCookie == null) {
+                    call.respond(HttpStatusCode.Forbidden)
+                    return@post
+                }
+
                 val principal: OAuthAccessTokenResponse.OAuth2 = call.principal() ?: return@post
+                if (principal.state != oauthCookie) {
+                    call.respond(HttpStatusCode.Forbidden)
+                    return@post
+                }
+
                 val githubUser = GitHubBuilder().withOAuthToken(principal.accessToken).build()
 
                 val githubUserId = githubUser.myself.id

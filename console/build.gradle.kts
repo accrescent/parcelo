@@ -1,6 +1,11 @@
+// Copyright 2023 Logan Magee
+//
+// SPDX-License-Identifier: AGPL-3.0-only
+
 import com.github.gradle.node.npm.task.NpxTask
 
 val exposedVersion: String by project
+val flywayVersion: String by project
 val githubApiVersion: String by project
 val jobrunrVersion: String by project
 val koinVersion: String by project
@@ -78,6 +83,7 @@ dependencies {
     implementation("io.ktor:ktor-server-netty:$ktorVersion")
     implementation("io.ktor:ktor-server-resources:$ktorVersion")
     implementation("ch.qos.logback:logback-classic:$logbackVersion")
+    implementation("org.flywaydb:flyway-core:$flywayVersion")
     implementation("org.jetbrains.exposed:exposed-core:$exposedVersion")
     implementation("org.jetbrains.exposed:exposed-dao:$exposedVersion")
     implementation("org.jetbrains.exposed:exposed-jdbc:$exposedVersion")
