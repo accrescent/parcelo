@@ -47,17 +47,20 @@
 		</form>	
 		<div *ngIf="draft !== undefined">
 			<mat-card-header>
-				<mat-card-title>App submitted!</mat-card-title>
+				<mat-card-title>App uploaded!</mat-card-title>
 			</mat-card-header>
 			<mat-card-content>
-				<p>Your app has been placed in the review queue. Please give 2-4 days for the app be approved and published.</p>
 				<p><strong>Name</strong>: {{ draft.label }}</p>
 				<p><strong>ID</strong>: {{ draft.app_id }}</p>
 				<p><strong>Version</strong>: {{ draft.version_name }} ({{ draft.version_code }})</p>
+				<p>Would you like to submit the app for review?</p>
 			</mat-card-content>
 			<mat-card-actions>
-		        <a href="/" mat-flat-button color="primary" class="btn">
-		            <span class="btn-text">Go back</span>
+		        <a href="/" mat-flat-button color="primary" class="btn" (click)="onConfirm()">
+		            <span class="btn-text">Yes</span>
+		    	</a>
+		        <a href="/" mat-flat-button color="secondary" class="btn dont-confirm-button" (click)="onSkipConfirm()">
+		            <span class="btn-text">Maybe Later</span>
 		    	</a>
 			</mat-card-actions>
 		</div>

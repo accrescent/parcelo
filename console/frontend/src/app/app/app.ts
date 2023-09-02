@@ -6,6 +6,7 @@ export interface App {
 }
 
 export interface Draft {
+    id: string,
     app_id: string
     label: string,
     version_code: string,

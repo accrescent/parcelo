@@ -34,7 +34,34 @@ export class AppService {
                     throw new Error("unreachable");
                 }
             }),
-            catchError(err => { throw err.error; })
+            catchError(err => { 
+                if (!err.error) {
+                    // Unexpected non-ApiError, make up one 
+                    // TODO: Move this to interceptor
+                    err.error = {
+                        errorCode: -1,
+                        title: "Internal server error",
+                        message: "Please report the issue"
+                    };
+                }
+                throw err.error; 
+            })
+        );
+    }
+
+    confirm(draft: Draft): Observable<void> {
+        return this.http.patch<void>(this.draftsUrl + "/" + draft.id, { observe: 'events'}).pipe(
+            catchError(err => { 
+                if (!err.error) {
+                    // Unexpected non-ApiError, make up one 
+                    err.error = {
+                        errorCode: -1,
+                        title: "Internal server error",
+                        message: "Please report the issue"
+                    };
+                }
+                throw err.error; 
+            })
         );
     }
 }

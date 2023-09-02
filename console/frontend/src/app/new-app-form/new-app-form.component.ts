@@ -73,4 +73,17 @@ export class NewAppFormComponent {
             });
         }
     }
+
+    onConfirm(): void {
+        if (this.draft === undefined) throw new Error("Invalid draft state on confirmation");
+        const component = this;
+        this.appService.confirm(this.draft).subscribe({
+            next: () => this.router.navigate(["dashboard"]),
+            error: (err) => component.error = err
+        });
+    }
+
+    onSkipConfirm(): void {
+        this.router.navigate(["dashboard"]);
+    }
 }
