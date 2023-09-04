@@ -1,0 +1,30 @@
+<!--
+Copyright 2023 Logan Magee
+
+SPDX-License-Identifier: AGPL-3.0-only
+-->
+
+<form [formGroup]="form" (ngSubmit)="emitForm()">
+    <input id="apkset" #apksetinput type="file" accept=".apks" formControlName="apkSet">
+    <button type="button" mat-flat-button color="primary" (click)="apksetinput.click()">
+        Select APK set
+    </button>
+    <p>{{ form.value.apkSet?.replace("C:\\fakepath\\", "") }}</p>
+    <br>
+    <br>
+
+    <input id="icon" #iconinput type="file" accept="image/png" formControlName="icon">
+    <button type="button" mat-flat-button color="primary" (click)="iconinput.click()">
+        Select app icon
+    </button>
+    <p>{{ form.value.icon?.replace("C:\\fakepath\\", "") }}</p>
+    <h5>Icon must be a 512 x 512 PNG</h5>
+    <br>
+
+    <mat-form-field>
+        <mat-label>Display name</mat-label>
+        <input type="text" formControlName="label" matInput>
+    </mat-form-field>
+
+    <button type="submit" [disabled]="form.invalid" mat-flat-button color="primary">Upload</button>
+</form>

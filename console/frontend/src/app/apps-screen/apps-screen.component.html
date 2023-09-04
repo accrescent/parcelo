@@ -1,0 +1,30 @@
+<!--
+Copyright 2023 Logan Magee
+
+SPDX-License-Identifier: AGPL-3.0-only
+-->
+
+<mat-card id="create-card" routerLink="/drafts/new">
+    <mat-card-header>
+        <mat-card-title>New app</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+        <p>Submit a new app to Accrescent.</p>
+    </mat-card-content>
+</mat-card>
+<mat-divider/>
+
+<h2 class="section-header">Apps</h2>
+<div class="grid-container">
+    <app-app-card *ngFor="let app of apps" [app]="app"/>
+    <p *ngIf="apps.length === 0">No published apps</p>
+</div>
+
+<h2 class="section-header">Drafts</h2>
+<div class="grid-container">
+    <app-draft-card
+        *ngFor="let draft of drafts"
+        [draft]="draft"
+        (submitForReview)="submitDraft($event)"/>
+    <p *ngIf="drafts.length === 0">No drafts</p>
+</div>
