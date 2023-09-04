@@ -6,9 +6,9 @@ import { Component } from '@angular/core';
 import { HttpResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
 
-import { DraftService } from '../draft.service';
+import { DraftService } from '../app/draft.service';
 import { NewDraftEditorComponent } from '../new-draft-editor/new-draft-editor.component';
-import { NewDraftForm } from '../new-draft-form';
+import { NewDraftForm } from '../new-draft-editor/new-draft-form';
 
 @Component({
     selector: 'app-new-draft-screen',

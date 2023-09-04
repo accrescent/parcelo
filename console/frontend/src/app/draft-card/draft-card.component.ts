@@ -6,7 +6,7 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 
-import { Draft, DraftStatus } from '../draft';
+import { Draft, DraftStatus } from '../app/draft';
 
 @Component({
     selector: 'app-draft-card',

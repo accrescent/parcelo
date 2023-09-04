@@ -11,9 +11,9 @@ import { RouterLink } from '@angular/router';
 import { App } from '../app/app';
 import { AppCardComponent } from '../app-card/app-card.component';
 import { AppService } from '../app/app.service';
-import { Draft, DraftStatus } from '../draft';
+import { Draft, DraftStatus } from '../app/draft';
 import { DraftCardComponent } from '../draft-card/draft-card.component';
-import { DraftService } from '../draft.service';
+import { DraftService } from '../app/draft.service';
 
 @Component({
     selector: 'app-apps-screen',
