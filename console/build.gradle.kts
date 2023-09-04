@@ -6,6 +6,7 @@ import com.github.gradle.node.npm.task.NpxTask
 
 val exposedVersion: String by project
 val flywayVersion: String by project
+val fourkomaVersion: String by project
 val githubApiVersion: String by project
 val jobrunrVersion: String by project
 val koinVersion: String by project
@@ -73,6 +74,7 @@ task("ci") {
 
 dependencies {
     implementation(project(":apksparser"))
+    implementation("cc.ekblad:4koma:$fourkomaVersion")
     implementation("io.insert-koin:koin-ktor:$koinVersion")
     implementation("io.insert-koin:koin-logger-slf4j:$koinVersion")
     implementation("io.ktor:ktor-client-cio:$ktorVersion")

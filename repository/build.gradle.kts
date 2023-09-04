@@ -4,6 +4,7 @@
 
 val exposedVersion: String by project
 val flywayVersion: String by project
+val fourkomaVersion: String by project
 val koinVersion: String by project
 val ktorVersion: String by project
 val kotlinVersion: String by project
@@ -28,6 +29,7 @@ application {
 
 dependencies {
     implementation(project(":apksparser"))
+    implementation("cc.ekblad:4koma:$fourkomaVersion")
     implementation("ch.qos.logback:logback-classic:$logbackVersion")
     implementation("io.insert-koin:koin-ktor:$koinVersion")
     implementation("io.insert-koin:koin-logger-slf4j:$koinVersion")

@@ -35,7 +35,7 @@ fun Application.configureRouting() {
     if (environment.developmentMode) {
         routing {
             singlePageApplication {
-                angular("frontend/dist/frontend")
+                angular("console/frontend/dist/frontend")
             }
         }
     }

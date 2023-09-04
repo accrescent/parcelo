@@ -8,7 +8,7 @@ import com.github.zafarkhaja.semver.Version
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
-const val MIN_TARGET_SDK = 31
+const val MIN_TARGET_SDK = 33
 
 /**
  * The minimum acceptable bundletool version used to generate the APK set. This version is taken
