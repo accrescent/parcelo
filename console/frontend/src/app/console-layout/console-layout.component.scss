@@ -9,7 +9,11 @@
 }
 
 #main {
-    height: 90vh;
+    min-height: 90vh;
+}
+
+mat-sidenav-content {
+    padding: 2rem;
 }
 
 .spacer {
