@@ -4,12 +4,8 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-.grid {
-    display: flex;
-    flex: 0 0 auto;
-    width: auto;
-    flex-wrap: wrap;
-    margin: 1em;
+input[type="file"] {
+    display: none;
 }
 
 mat-card {

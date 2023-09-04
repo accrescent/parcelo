@@ -78,12 +78,12 @@ export class NewAppFormComponent {
         if (this.draft === undefined) throw new Error("Invalid draft state on confirmation");
         const component = this;
         this.appService.confirm(this.draft).subscribe({
-            next: () => this.router.navigate(["dashboard"]),
+            next: () => this.router.navigate(["apps"]),
             error: (err) => component.error = err
         });
     }
 
     onSkipConfirm(): void {
-        this.router.navigate(["dashboard"]);
+        this.router.navigate(["apps"]);
     }
 }

@@ -4,17 +4,17 @@
 
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { AppListComponent } from './app-list.component';
+import { AppCardComponent } from './app-card.component';
 
-describe('AppListComponent', () => {
-    let component: AppListComponent;
-    let fixture: ComponentFixture<AppListComponent>;
+describe('AppCardComponent', () => {
+    let component: AppCardComponent;
+    let fixture: ComponentFixture<AppCardComponent>;
 
     beforeEach(() => {
         TestBed.configureTestingModule({
-            imports: [AppListComponent]
+            imports: [AppCardComponent]
         });
-        fixture = TestBed.createComponent(AppListComponent);
+        fixture = TestBed.createComponent(AppCardComponent);
         component = fixture.componentInstance;
         fixture.detectChanges();
     });

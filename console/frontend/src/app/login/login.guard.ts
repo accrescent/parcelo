@@ -9,5 +9,5 @@ export const loginGuard: CanActivateFn = (route, state) => {
     return true;
   }
   const router = inject(Router);
-  return router.parseUrl('/dashboard');
+  return router.parseUrl('/apps');
 };

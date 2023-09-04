@@ -10,17 +10,17 @@ import { loginGuard } from './login/login.guard';
 import { LoginComponent } from './login/login.component';
 import { RegisterComponent } from './register/register.component';
 import { ConsoleLayoutComponent } from './console-layout/console-layout.component';
-import { AppListComponent } from './app-list/app-list.component';
-import { NewAppFormComponent } from './new-app-form/new-app-form.component';
 import { PageNotFoundComponent } from './page-not-found/page-not-found.component';
+import { AppsScreenComponent } from './apps-screen/apps-screen.component';
+import { NewDraftScreenComponent } from './new-draft-screen/new-draft-screen.component';
 
 const routes: Routes = [
     { path: '', redirectTo: 'login', pathMatch: 'full', canMatch: [loginGuard]},
-    { path: '', redirectTo: 'dashboard', pathMatch: 'full', canMatch: [authGuard]},
+    { path: '', redirectTo: 'apps', pathMatch: 'full', canMatch: [authGuard]},
     { path: 'login', component: LoginComponent, canActivate: [loginGuard]},
     { path: '', component: ConsoleLayoutComponent, canActivate: [authGuard], children: [
-        { path: 'apps', component: AppListComponent },
-        { path: 'new-app', component: NewAppFormComponent }
+        { path: 'apps', component: AppsScreenComponent },
+        { path: 'drafts/new', component: NewDraftScreenComponent },
     ] },
     { path: 'auth/github/callback', component: RegisterComponent },
     { path: '**', component: PageNotFoundComponent }
