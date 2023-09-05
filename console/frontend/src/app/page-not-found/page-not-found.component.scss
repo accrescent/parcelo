@@ -1,26 +1,10 @@
-.center {
-    height: 100vh;
+.col {
     display: flex;
+    flex-direction: column;
     justify-content: center;
-    align-items: center;
+    align-items: start;
 }
 
-mat-card {
-    background-color: #1f1f1f;
-    border-radius: 32px;
-}
-
-mat-card-header {
-    padding: 2.2em 3.5em 0 3.5em;
-    justify-content: center;
-}
-
-mat-card-content {
-    padding: 1.1em 3.5em 0 3.5em;
-    justify-content: center;
-}
-
-mat-card-actions {
-    padding: 1.1em 3.5em 2.2em 3.5em;
-    justify-content: center;
+.btn {
+    align-self: flex-end;
 }

@@ -1,38 +1,13 @@
-.center {
-    height: 100vh;
+.col {
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
 }
 
-mat-card {
-    background-color: #1f1f1f;
-    border-radius: 32px;
-}
-
-mat-card-header {
-    padding: 32px 32px 0px 32px;
-    justify-content: center;
-}
-
-mat-card-content, mat-card-content:last-child {
-    padding: 16px 32px 0px 32px;
-    justify-content: center;
-}
-
-mat-card-actions {
-    padding: 16px 32px 32px 32px;
-    justify-content: center;
-}
-
-.logo-container {
-    padding: 2.2em 3.5em 0 3.5em;
-    display: flex;
-    justify-content: center;
-}
-
 .logo {
     border-radius: 50%;
+    margin-bottom: 16px;
 }
 
 .btn {

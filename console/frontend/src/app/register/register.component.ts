@@ -5,6 +5,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { FormContainerModule } from '../form-container/form-container.module';
 
 import { AuthService } from '../auth/auth.service';
 import { AuthError } from '../auth/auth';
@@ -13,7 +14,7 @@ import { AuthError } from '../auth/auth';
     selector: 'app-register',
     templateUrl: './register.component.html',
     styleUrls: ['./register.component.scss'],
-    imports: [NgIf, MatCardModule, MatProgressSpinnerModule, MatButtonModule],
+    imports: [NgIf, MatCardModule, MatProgressSpinnerModule, MatButtonModule, FormContainerModule],
     standalone: true
 })
 export class RegisterComponent implements OnInit {

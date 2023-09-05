@@ -5,24 +5,6 @@
     align-items: center;
 }
 
-mat-card {
-    width: 32em;
-    background-color: #1f1f1f;
-    border-radius: 32px;
-}
-
-mat-card-header {
-    padding: 32px 32px 0px 32px;
-}
-
-mat-card-content, mat-card-content:last-child {
-    padding: 16px 32px 0px 32px;
-}
-
-mat-card-actions {
-    padding: 16px 32px 32px 32px;
-}
-
 mat-form-field {
     width: 100%;
     margin-bottom: 12px;

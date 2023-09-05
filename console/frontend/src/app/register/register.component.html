@@ -1,58 +1,38 @@
-<div class="center">
-    <mat-card *ngIf="error === null; else badRequest">
+<app-form-container>
+    <div *ngIf="error === null; else badRequest" class="col-center">
         <div class="spinner-container">       
 			<mat-spinner></mat-spinner>
         </div>
-    	<mat-card-header>
-    		<mat-card-title>One moment...</mat-card-title>
-    	</mat-card-header>
-    </mat-card>
+    	<h2 class="orphan-header">One moment...</h2>
+    </div>
 	<ng-template #badRequest>
-		<mat-card *ngIf="error === authError.BAD_REQUEST; else notWhitelisted">
-	    	<mat-card-header>
-	    		<mat-card-title>Invalid login</mat-card-title>
-	    	</mat-card-header>
-			<mat-card-content>
-	        	<p>This login attempt was rejected by the system. Try logging in again.</p>
-			</mat-card-content>
-			<mat-card-actions>
-		        <a href="/login" mat-flat-button color="primary" class="btn">
-	                <span class="btn-text">Log in</span>
-		    	</a>
-			</mat-card-actions>
-		</mat-card>
+		<div *ngIf="error === authError.BAD_REQUEST; else notWhitelisted" class="col-start">
+	    	<h2>Invalid login</h2>
+			<p>This login attempt was rejected by the system. Try logging in again.</p>
+			<a href="/login" mat-flat-button color="primary" class="btn">
+				<span class="btn-text">Log in</span>
+			</a>
+		</div>
 
 		<ng-template #notWhitelisted>
-			<mat-card *ngIf="error === authError.NOT_WHITELISTED; else unknownError">
-		    	<mat-card-header>
-		    		<mat-card-title>Registration not permitted</mat-card-title>
-		    	</mat-card-header>
-				<mat-card-content>
-		        	<p>Accrescent developer registration is currently invite-only. Please come back
+			<div *ngIf="error === authError.NOT_WHITELISTED; else unknownError" class="col-start">
+	    		<h2>Registration not permitted</h2>
+				<p>Accrescent developer registration is currently invite-only. Please come back
 		        	   when registration opens for everyone.</p>
-				</mat-card-content>
-				<mat-card-actions>
-			        <a href="/" mat-flat-button color="primary" class="btn">
-			            <span class="btn-text">Go back</span>
-			    	</a>
-				</mat-card-actions>
-			</mat-card>
+				<a href="/" mat-flat-button color="primary" class="btn">
+					<span class="btn-text">Go back</span>
+				</a>
+			</div>
 
 			<ng-template #unknownError>
-				<mat-card>
-			    	<mat-card-header>
-			    		<mat-card-title>Unknown error</mat-card-title>
-			    	</mat-card-header>
-					<mat-card-content>
-			        	<p>Please report this to the Accrescent maintainers.</p>
-					</mat-card-content>
-					<mat-card-actions>	        
-				        <a href="https://github.com/Accrescent/parcelo/issues" mat-flat-button color="primary" class="btn">
-				            <span class="btn-text">Report issue</span>
-				    	</a>
-					</mat-card-actions>
-				</mat-card>
+				<div class="col-start">
+					<h2>Unknown error</h2>
+			        <p>Please report this to the Accrescent maintainers.</p>        
+					<a href="https://github.com/Accrescent/parcelo/issues" mat-flat-button color="primary" class="btn">
+						<span class="btn-text">Report issue</span>
+					</a>
+				</div>
 			</ng-template>
 		</ng-template>
 	</ng-template>
-</div>
+</app-form-container>
