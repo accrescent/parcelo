@@ -4,6 +4,36 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
+ mat-form-field {
+    width: 20rem;
+ }
+
 input[type="file"] {
     display: none;
+}
+
+.col {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+}
+
+.btn {
+    margin-top: 16px;
+}
+
+.btn-start {
+    @extend .btn;
+    align-self: flex-start;
+    margin-bottom: 16px;
+}
+
+.btn-end {
+    @extend .btn;
+    align-self: flex-end;
+}
+
+.no-spacing {
+    margin-bottom: 0;
 }

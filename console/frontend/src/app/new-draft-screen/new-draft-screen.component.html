@@ -4,4 +4,7 @@ Copyright 2023 Logan Magee
 SPDX-License-Identifier: AGPL-3.0-only
 -->
 
-<app-new-draft-editor (formSubmit)="submitNewDraft($event)"/>
+<app-form-container>
+    <h2>New app</h2>
+    <app-new-draft-editor (formSubmit)="submitNewDraft($event)"/>
+</app-form-container>

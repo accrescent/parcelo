@@ -4,27 +4,28 @@ Copyright 2023 Logan Magee
 SPDX-License-Identifier: AGPL-3.0-only
 -->
 
-<form [formGroup]="form" (ngSubmit)="emitForm()">
-    <input id="apkset" #apksetinput type="file" accept=".apks" formControlName="apkSet">
-    <button type="button" mat-flat-button color="primary" (click)="apksetinput.click()">
-        Select APK set
-    </button>
-    <p>{{ form.value.apkSet?.replace("C:\\fakepath\\", "") }}</p>
-    <br>
-    <br>
-
-    <input id="icon" #iconinput type="file" accept="image/png" formControlName="icon">
-    <button type="button" mat-flat-button color="primary" (click)="iconinput.click()">
-        Select app icon
-    </button>
-    <p>{{ form.value.icon?.replace("C:\\fakepath\\", "") }}</p>
-    <h5>Icon must be a 512 x 512 PNG</h5>
-    <br>
-
-    <mat-form-field>
+<form [formGroup]="form" (ngSubmit)="emitForm()" class="col">
+    <mat-form-field appearance="outline">
         <mat-label>Display name</mat-label>
         <input type="text" formControlName="label" matInput>
     </mat-form-field>
 
-    <button type="submit" [disabled]="form.invalid" mat-flat-button color="primary">Upload</button>
+    <h3 class="no-spacing">Icon</h3>
+    <h5>Must be a 512 x 512 PNG</h5>
+    <input id="icon" #iconinput type="file" accept="image/png" formControlName="icon">
+    <p class="no-spacing" *ngIf="form.value.icon else noIcon">{{form.value.icon!!.replace('C:\\fakepath\\', '')}}</p>
+    <ng-template #noIcon>
+        <i>No icon selected</i>
+    </ng-template>
+    <button type="button" mat-flat-button color="primary" (click)="iconinput.click()" class="btn-start">Select</button>
+
+    <h3>APK Set</h3>
+    <input id="apkset" #apksetinput type="file" accept=".apks" formControlName="apkSet">
+    <p class="no-spacing" *ngIf="form.value.apkSet else noApkSet">{{form.value.apkSet!!.replace('C:\\fakepath\\', '')}}</p>
+    <ng-template #noApkSet>
+        <i>No APK set selected</i>
+    </ng-template>
+    <button type="button" mat-flat-button color="primary" (click)="apksetinput.click()" class="btn-start">Select</button>
+
+    <button type="submit" [disabled]="form.invalid" mat-flat-button color="primary" class="btn-end">Upload</button>
 </form>
