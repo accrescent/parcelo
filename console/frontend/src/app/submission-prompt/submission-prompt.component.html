@@ -1,0 +1,15 @@
+<div class="col">
+    <p><strong>Name</strong>: {{ draft.label }}</p>
+    <p><strong>ID</strong>: {{ draft.app_id }}</p>
+    <p><strong>Version</strong>: {{ draft.version_name }} ({{ draft.version_code }})</p>
+    <p>Would you like to submit the app for review?</p>
+    <div class="btn-row">
+        <a href="/" mat-flat-button color="secondary" class="btn-l" (click)="cancelSubmission()">
+            <span class="btn-text">Maybe Later</span>
+        </a>
+
+        <a href="/" mat-flat-button color="primary" (click)="confirmSubmission()">
+            <span class="btn-text">Yes</span>
+        </a>
+    </div>
+</div>

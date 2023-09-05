@@ -148,16 +148,6 @@ class ApiError private constructor(
             "Update version is too low",
             "Update version code \"$updateVersion\" is less than published app version \"$appVersion\"",
         )
-
-        fun badOAuthRequest() =
-            ApiError(41,
-                "Bad authentication request",
-                "The authentication route received malformed account information")
-
-        fun notWhitelisted() =
-            ApiError(42,
-                "User is not whitelisted",
-                    "The user attempting to register is not in the whitelist")
     }
 }
 

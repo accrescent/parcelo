@@ -4,27 +4,31 @@
 
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
+import { NgIf, NgFor } from '@angular/common';
 
 import { FormContainerComponent } from '../form-container/form-container.component';
 import { DraftService } from '../app/draft.service';
 import { NewDraftEditorComponent } from '../new-draft-editor/new-draft-editor.component';
 import { NewDraftForm } from '../new-draft-editor/new-draft-form';
 import { ProgressIndicatorComponent } from '../progress-indicator/progress-indicator.component';
-import { NotLoading, Loading, LoadingFailed, ProgressState } from '../progress-indicator/progress.state';
+import { ProgressState } from '../progress-indicator/progress.state';
+import { Draft } from '../app/draft';
+import { SubmissionPromptComponent } from '../submission-prompt/submission-prompt.component';
 
 @Component({
     selector: 'app-new-draft-screen',
     standalone: true,
     styleUrls: ["./new-draft-screen.component.scss"],
-    imports: [FormContainerComponent, NewDraftEditorComponent, ProgressIndicatorComponent],
+    imports: [FormContainerComponent, NewDraftEditorComponent, ProgressIndicatorComponent, NgIf, NgFor, SubmissionPromptComponent],
     templateUrl: './new-draft-screen.component.html',
 })
 export class NewDraftScreenComponent {
+    draft: Draft | undefined = undefined;
     loadingState: ProgressState = { kind: 'NotLoading' };
     
     constructor(private draftService: DraftService, private router: Router) {}
 
-    submitNewDraft(form: NewDraftForm): void {
+    uploadDraft(form: NewDraftForm): void {
         // I don't know how else to resolve the scope issue in the subscribe object
         const component = this;
         component.loadingState = { kind: 'NotLoading' };
@@ -34,7 +38,7 @@ export class NewDraftScreenComponent {
                 if (typeof event === "number") {
                     component.loadingState = { kind: 'Loading', progress: event };
                 } else {
-                    this.router.navigate(["apps"]);
+                    component.draft = event;
                 }
             }, 
             error: (err) => {
@@ -42,5 +46,13 @@ export class NewDraftScreenComponent {
                 component.loadingState = { kind: 'LoadingFailed', error: err.error };
             }
         });
+    }
+
+    submitDraft(draft: Draft): void {
+        this.draftService.submitDraft(draft.id).subscribe(() => this.exit());        
+    }
+
+    exit(): void {
+        this.router.navigate(["apps"]);
     }
 }
