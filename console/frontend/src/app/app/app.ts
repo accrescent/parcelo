@@ -12,8 +12,3 @@ export interface Draft {
     version_code: string,
     version_name: string,
 }
-
-export interface DraftError {
-    title: string;
-    message: string;
-}

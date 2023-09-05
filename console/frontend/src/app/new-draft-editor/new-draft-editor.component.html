@@ -23,7 +23,7 @@ SPDX-License-Identifier: AGPL-3.0-only
     <input id="apkset" #apksetinput type="file" accept=".apks" formControlName="apkSet">
     <p class="no-spacing" *ngIf="form.value.apkSet else noApkSet">{{form.value.apkSet!!.replace('C:\\fakepath\\', '')}}</p>
     <ng-template #noApkSet>
-        <i>No APK set selected</i>
+        <i>No APK Set selected</i>
     </ng-template>
     <button type="button" mat-flat-button color="primary" (click)="apksetinput.click()" class="btn-start">Select</button>
 

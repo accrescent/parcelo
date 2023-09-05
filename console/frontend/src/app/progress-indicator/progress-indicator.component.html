@@ -1,0 +1,5 @@
+<div class="container" *ngIf="state.kind !== 'NotLoading'">
+    <mat-progress-bar class="progress" *ngIf="state.kind === 'Loading'" [value]="state.progress">
+    </mat-progress-bar>
+    <mat-error class="error" *ngIf="state.kind === 'LoadingFailed'" [matTooltip]="state.error.message">{{ state.error.title }}</mat-error>
+</div>
