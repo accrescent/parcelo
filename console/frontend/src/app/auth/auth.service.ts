@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams, HttpHeaders } from '@angular/common/http';
 
-import { Observable, of, map, tap, catchError } from 'rxjs';
+import { Observable, map, tap, catchError } from 'rxjs';
 
 import { Permissions, AuthError } from './auth';
 
@@ -28,7 +28,7 @@ export class AuthService {
         const params = new HttpParams().append('code', code).append('state', state);
         return this.http.post<Permissions>(this.callbackUrl, params, { observe: 'response', headers: header })
             .pipe(
-                map(res => res.body!!),
+                map(res => res.body!),
                 tap(res => {
                     if ((res as Permissions).reviewer) {
                         localStorage.setItem(this.authStorageKey, JSON.stringify(res));

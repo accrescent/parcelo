@@ -29,7 +29,8 @@ export class NewDraftScreenComponent {
     constructor(private draftService: DraftService, private router: Router) {}
 
     uploadDraft(form: NewDraftForm): void {
-        // I don't know how else to resolve the scope issue in the subscribe object
+        // No other reasonable way to update based on several observable outcomes without using a this reference.
+        // eslint-disable-next-line @typescript-eslint/no-this-alias
         const component = this;
         component.loadingState = { kind: 'NotLoading' };
         this.draftService.createDraft(form.apkSet, form.icon, form.label).subscribe({

@@ -24,6 +24,8 @@ export class RegisterComponent implements OnInit {
 
     ngOnInit(): void {
         this.activatedRoute.queryParams.subscribe(params => {
+            // No other reasonable way to update based on several observable outcomes without using a this reference.
+            // eslint-disable-next-line @typescript-eslint/no-this-alias
             const component = this;
             this.authService.logIn(params['code'], params['state']).subscribe({
                 complete: () => component.router.navigate(['/']),

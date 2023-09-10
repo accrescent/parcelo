@@ -3,22 +3,22 @@ import { Draft } from '../app/draft';
 import { MatButtonModule } from '@angular/material/button';
 
 @Component({
-  selector: 'app-submission-prompt',
-  templateUrl: './submission-prompt.component.html',
-  styleUrls: ['./submission-prompt.component.scss'],
-  imports: [MatButtonModule],
-  standalone: true
+    selector: 'app-submission-prompt',
+    templateUrl: './submission-prompt.component.html',
+    styleUrls: ['./submission-prompt.component.scss'],
+    imports: [MatButtonModule],
+    standalone: true
 })
 export class SubmissionPromptComponent {
-  @Input() draft: Draft = {} as Draft;
-  @Output() confirm = new EventEmitter<void>();
-  @Output() cancel = new EventEmitter<void>();
+    @Input() draft: Draft = {} as Draft;
+    @Output() confirm = new EventEmitter<void>();
+    @Output() cancel = new EventEmitter<void>();
   
-  confirmSubmission(): void {
-    this.confirm.emit();
-  }
+    confirmSubmission(): void {
+        this.confirm.emit();
+    }
 
-  cancelSubmission(): void {
-    this.cancel.emit();
-  }
+    cancelSubmission(): void {
+        this.cancel.emit();
+    }
 }

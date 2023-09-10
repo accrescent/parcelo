@@ -29,9 +29,9 @@ export class DraftService {
             filter(event => event.type === HttpEventType.UploadProgress || event instanceof HttpResponse),
             map(event => {
                 if (event.type === HttpEventType.UploadProgress) {
-                    return Math.round(100 * event.loaded / event.total!!);
+                    return Math.round(100 * event.loaded / event.total!);
                 } else if (event instanceof HttpResponse) {
-                    return event.body!!;
+                    return event.body!;
                 } else {
                     throw new Error("unreachable");
                 }
