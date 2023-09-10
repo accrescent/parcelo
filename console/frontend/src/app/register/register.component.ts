@@ -1,3 +1,7 @@
+// Copyright 2023 Logan Magee
+//
+// SPDX-License-Identifier: AGPL-3.0-only
+
 import { Component, OnInit } from '@angular/core';
 import { NgIf } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';

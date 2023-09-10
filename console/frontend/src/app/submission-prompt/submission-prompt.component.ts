@@ -1,3 +1,7 @@
+// Copyright 2023 Logan Magee
+//
+// SPDX-License-Identifier: AGPL-3.0-only
+
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { Draft } from '../app/draft';
 import { MatButtonModule } from '@angular/material/button';
