@@ -23,7 +23,7 @@ version = "0.0.0"
 application {
     mainClass.set("app.accrescent.parcelo.repository.ApplicationKt")
 
-    val isDevelopment: Boolean = true;
+    val isDevelopment: Boolean = project.ext.has("development")
     applicationDefaultJvmArgs = listOf("-Dio.ktor.development=$isDevelopment")
 }
 
