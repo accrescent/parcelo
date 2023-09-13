@@ -13,11 +13,12 @@ import { Observable, catchError, map, of, tap, throwError } from 'rxjs';
 export class AuthService {
     private readonly callbackUrl = 'auth/github/callback2';
     private readonly sessionUrl = 'api/v1/session';
+    private readonly loggedInStorageKey = 'loggedIn';
 
     constructor(private http: HttpClient) {}
 
     get loggedIn(): boolean {
-        return localStorage.getItem('loggedIn') === 'true';
+        return localStorage.getItem(this.loggedInStorageKey) === 'true';
     }
 
     logIn(code: string, state: string): Observable<boolean> {
@@ -25,7 +26,7 @@ export class AuthService {
         return this.http.get<void>(this.callbackUrl, { observe: 'response', params })
             .pipe(
                 map(res => res.status === 200),
-                tap(res => localStorage.setItem('loggedIn', res.toString())),
+                tap(res => localStorage.setItem(this.loggedInStorageKey, res.toString())),
                 catchError(err => {
                     if (err.status === 403) {
                         return of(false);
@@ -37,7 +38,7 @@ export class AuthService {
     }
 
     logOut(): Observable<void> {
-        localStorage.setItem('loggedIn', 'false');
+        localStorage.setItem(this.loggedInStorageKey, 'false');
         return this.http.delete<void>(this.sessionUrl);
     }
 }
