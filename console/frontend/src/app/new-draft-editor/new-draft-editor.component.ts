@@ -6,6 +6,7 @@ import { NgIf } from '@angular/common';
 import { Component, EventEmitter, Output } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
+import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 
@@ -14,7 +15,14 @@ import { NewDraftForm } from '../new-draft-form';
 @Component({
     selector: 'app-new-draft-editor',
     standalone: true,
-    imports: [MatButtonModule, MatFormFieldModule, MatInputModule, NgIf, ReactiveFormsModule],
+    imports: [
+        MatButtonModule,
+        MatCardModule,
+        MatFormFieldModule,
+        MatInputModule,
+        NgIf,
+        ReactiveFormsModule,
+    ],
     templateUrl: './new-draft-editor.component.html',
     styleUrls: ['./new-draft-editor.component.scss'],
 })
