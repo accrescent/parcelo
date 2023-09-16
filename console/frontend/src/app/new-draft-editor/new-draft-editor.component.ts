@@ -37,6 +37,13 @@ export class NewDraftEditorComponent {
 
     constructor(private fb: NonNullableFormBuilder) {}
 
+    shouldShowLengthError(): boolean {
+        const label = this.form.controls['label'];
+
+        return (label.hasError('minlength') || label.hasError('maxlength')) &&
+            !label.hasError('required');
+    }
+
     emitForm(): void {
         const apkSet = (<HTMLInputElement>document.getElementById("apkset")).files?.[0];
         const icon = (<HTMLInputElement>document.getElementById("icon")).files?.[0];
