@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpParams, HttpStatusCode } from '@angular/common/http';
 
 import { Observable, catchError, map, of, tap, throwError } from 'rxjs';
 
@@ -25,10 +25,10 @@ export class AuthService {
         const params = new HttpParams().append('code', code).append('state', state);
         return this.http.get<void>(this.callbackUrl, { observe: 'response', params })
             .pipe(
-                map(res => res.status === 200),
+                map(res => res.status === HttpStatusCode.Ok),
                 tap(res => localStorage.setItem(this.loggedInStorageKey, res.toString())),
                 catchError(err => {
-                    if (err.status === 403) {
+                    if (err.status === HttpStatusCode.Forbidden) {
                         return of(false);
                     } else {
                         return throwError(err);
