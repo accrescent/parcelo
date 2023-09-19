@@ -13,7 +13,6 @@ import { Draft, DraftStatus } from '../draft';
     standalone: true,
     imports: [MatButtonModule, MatCardModule],
     templateUrl: './draft-card.component.html',
-    styleUrls: ['./draft-card.component.scss']
 })
 export class DraftCardComponent {
     @Input({ required: true }) draft!: Draft;
