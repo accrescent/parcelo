@@ -34,6 +34,7 @@
         "@typescript-eslint/explicit-function-return-type": "error",
         "eqeqeq": ["error", "always"],
         "indent": ["error", 4],
+        "quotes": ["error", "single", { "allowTemplateLiterals": true }],
         "semi": ["error", "always"]
       }
     },

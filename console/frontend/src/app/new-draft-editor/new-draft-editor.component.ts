@@ -45,8 +45,8 @@ export class NewDraftEditorComponent {
     }
 
     emitForm(): void {
-        const apkSet = (<HTMLInputElement>document.getElementById("apkset")).files?.[0];
-        const icon = (<HTMLInputElement>document.getElementById("icon")).files?.[0];
+        const apkSet = (<HTMLInputElement>document.getElementById('apkset')).files?.[0];
+        const icon = (<HTMLInputElement>document.getElementById('icon')).files?.[0];
 
         if (apkSet !== undefined && icon !== undefined && this.form.value.label !== undefined) {
             const form: NewDraftForm = {

@@ -13,7 +13,7 @@ export interface Draft {
 }
 
 export enum DraftStatus {
-    Unsubmitted = "unsubmitted",
-    Submitted = "submitted",
-    Approved = "approved",
+    Unsubmitted = 'unsubmitted',
+    Submitted = 'submitted',
+    Approved = 'approved',
 }
