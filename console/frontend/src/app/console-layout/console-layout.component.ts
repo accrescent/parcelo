@@ -31,7 +31,6 @@ export class ConsoleLayoutComponent {
     constructor(private authService: AuthService, private router: Router) {}
 
     logOut(): void {
-        this.authService.logOut().subscribe();
-        this.router.navigate(['/login']);
+        this.authService.logOut().subscribe(() => this.router.navigate(['/login']));
     }
 }
