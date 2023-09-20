@@ -4,7 +4,7 @@
 
 import { Component, Inject } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
-import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { MatDialogModule, MAT_DIALOG_DATA } from '@angular/material/dialog';
 
 import { Draft } from '../draft';
 
@@ -16,8 +16,5 @@ import { Draft } from '../draft';
     styleUrls: ['./draft-submission-dialog.component.scss']
 })
 export class DraftSubmissionDialogComponent {
-    constructor(
-        @Inject(MAT_DIALOG_DATA) public data: Draft,
-        private dialogRef: MatDialogRef<DraftSubmissionDialogComponent>,
-    ) {}
+    constructor(@Inject(MAT_DIALOG_DATA) public data: Draft) {}
 }
