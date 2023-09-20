@@ -5,6 +5,7 @@
 import { NgFor, NgIf } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatDividerModule } from '@angular/material/divider';
 import { RouterLink } from '@angular/router';
 
@@ -13,6 +14,9 @@ import { AppCardComponent } from '../app-card/app-card.component';
 import { AppService } from '../app.service';
 import { Draft, DraftStatus } from '../draft';
 import { DraftCardComponent } from '../draft-card/draft-card.component';
+import {
+    DraftDeletionDialogComponent,
+} from '../draft-deletion-dialog/draft-deletion-dialog.component';
 import { DraftService } from '../draft.service';
 
 @Component({
@@ -22,6 +26,7 @@ import { DraftService } from '../draft.service';
         AppCardComponent,
         DraftCardComponent,
         MatCardModule,
+        MatDialogModule,
         MatDividerModule,
         NgFor,
         NgIf,
@@ -34,7 +39,11 @@ export class AppsScreenComponent implements OnInit {
     apps: App[] = [];
     drafts: Draft[] = [];
 
-    constructor(private appService: AppService, private draftService: DraftService) {}
+    constructor(
+        private appService: AppService,
+        private draftService: DraftService,
+        private dialog: MatDialog,
+    ) {}
 
     ngOnInit(): void {
         this.appService.getApps().subscribe(apps => this.apps = apps);
@@ -42,13 +51,23 @@ export class AppsScreenComponent implements OnInit {
     }
 
     deleteDraft(id: string): void {
-        this.draftService.deleteDraft(id).subscribe(() => {
-            // Remove from the UI
-            const i = this.drafts.findIndex(d => d.id === id);
-            if (i > -1) {
-                this.drafts.splice(i, 1);
-            }
-        });
+        const draft = this.drafts.find(d => d.id === id);
+
+        this.dialog
+            .open(DraftDeletionDialogComponent, { data: draft })
+            .afterClosed()
+            .subscribe(confirmed => {
+                if (confirmed) {
+                    this.draftService.deleteDraft(id).subscribe(() => {
+                        // Remove from the UI
+                        const i = this.drafts.findIndex(d => d.id === id);
+                        if (i > -1) {
+                            this.drafts.splice(i, 1);
+                        }
+                    });
+                }
+            });
+
     }
 
     submitDraft(id: string): void {
