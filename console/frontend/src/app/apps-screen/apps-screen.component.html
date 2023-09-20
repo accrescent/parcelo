@@ -25,6 +25,7 @@ SPDX-License-Identifier: AGPL-3.0-only
     <app-draft-card
         *ngFor="let draft of drafts"
         [draft]="draft"
+        (delete)="deleteDraft($event)"
         (submitForReview)="submitDraft($event)"/>
     <p *ngIf="drafts.length === 0">No drafts</p>
 </div>

@@ -16,9 +16,14 @@ import { Draft, DraftStatus } from '../draft';
 })
 export class DraftCardComponent {
     @Input({ required: true }) draft!: Draft;
+    @Output() delete = new EventEmitter<string>();
     @Output() submitForReview = new EventEmitter<string>();
 
     draftStatusEnum = DraftStatus;
+
+    onDelete(): void {
+        this.delete.emit(this.draft.id);
+    }
 
     onSubmitForReview(): void {
         this.submitForReview.emit(this.draft.id);

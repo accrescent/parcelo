@@ -34,4 +34,8 @@ export class DraftService {
     submitDraft(id: string): Observable<void> {
         return this.http.patch<void>(`${this.draftsUrl}/${id}`, '');
     }
+
+    deleteDraft(id: string): Observable<void> {
+        return this.http.delete<void>(`${this.draftsUrl}/${id}`);
+    }
 }

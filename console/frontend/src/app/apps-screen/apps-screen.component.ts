@@ -41,6 +41,16 @@ export class AppsScreenComponent implements OnInit {
         this.draftService.getDrafts().subscribe(drafts => this.drafts = drafts);
     }
 
+    deleteDraft(id: string): void {
+        this.draftService.deleteDraft(id).subscribe(() => {
+            // Remove from the UI
+            const i = this.drafts.findIndex(d => d.id === id);
+            if (i > -1) {
+                this.drafts.splice(i, 1);
+            }
+        });
+    }
+
     submitDraft(id: string): void {
         this.draftService.submitDraft(id).subscribe(() => {
             // Mark as submitted in the UI

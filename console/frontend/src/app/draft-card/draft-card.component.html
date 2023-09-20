@@ -18,6 +18,7 @@ SPDX-License-Identifier: AGPL-3.0-only
         </ul>
     </mat-card-content>
     <mat-card-actions align="end">
+        <button (click)="onDelete()" mat-button color="warn">Delete</button>
         <button
             (click)="onSubmitForReview()"
             [disabled]="draft.status !== draftStatusEnum.Unsubmitted"
