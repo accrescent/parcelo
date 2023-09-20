@@ -49,6 +49,7 @@ import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.Random
+import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.selectAll
@@ -232,8 +233,12 @@ fun Route.getUpdatesForAppRoute() {
             return@get
         }
 
-        val updates =
-            transaction { Update.find { DbUpdates.appId eq acl.appId }.map { it.serializable() } }
+        val updates = transaction {
+            Update
+                .find { DbUpdates.appId eq acl.appId }
+                .orderBy(DbUpdates.creationTime to SortOrder.ASC)
+                .map { it.serializable() }
+        }
 
         call.respond(HttpStatusCode.OK, updates)
     }

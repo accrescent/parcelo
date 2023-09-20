@@ -45,6 +45,7 @@ import io.ktor.server.response.header
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
 import org.jetbrains.exposed.sql.Random
+import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -253,7 +254,10 @@ fun Route.getDraftsRoute() {
         val userId = call.principal<Session>()!!.userId
 
         val drafts = transaction {
-            Draft.find { DbDrafts.creatorId eq userId }.map { it.serializable() }
+            Draft
+                .find { DbDrafts.creatorId eq userId }
+                .orderBy(DbDrafts.creationTime to SortOrder.ASC)
+                .map { it.serializable() }
         }.toList()
 
         call.respond(drafts)
