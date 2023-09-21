@@ -16,6 +16,10 @@ export class AppService {
 
     constructor(private http: HttpClient) {}
 
+    getApp(id: string): Observable<App> {
+        return this.http.get<App>(`${this.appsUrl}/${id}`);
+    }
+
     getApps(): Observable<App[]> {
         return this.http.get<App[]>(this.appsUrl);
     }

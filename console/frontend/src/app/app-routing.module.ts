@@ -12,11 +12,13 @@ import { LoginComponent } from './login/login.component';
 import { LoginScreenComponent } from './login-screen/login-screen.component';
 import { PageNotFoundComponent } from './page-not-found/page-not-found.component';
 import { NewDraftScreenComponent } from './new-draft-screen/new-draft-screen.component';
+import { NewUpdateScreenComponent } from './new-update-screen/new-update-screen.component';
 
 const routes: Routes = [
     { path: '', component: ConsoleLayoutComponent, canActivate: [authGuard], children: [
         { path: '', redirectTo: 'apps', pathMatch: 'full' },
         { path: 'apps', component: AppsScreenComponent },
+        { path: 'apps/:id/updates/new', component: NewUpdateScreenComponent },
         { path: 'drafts/new', component: NewDraftScreenComponent },
     ] },
     { path: 'login', component: LoginScreenComponent },

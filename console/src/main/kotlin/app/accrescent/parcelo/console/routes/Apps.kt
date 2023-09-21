@@ -43,6 +43,7 @@ class Apps {
 fun Route.appRoutes() {
     authenticate("cookie") {
         createAppRoute()
+        getAppRoute()
         getAppsRoute()
     }
 }
@@ -84,6 +85,32 @@ fun Route.createAppRoute() {
         } else {
             // No draft with this ID exists
             call.respond(HttpStatusCode.NotFound, ApiError.draftNotFound(draftId))
+        }
+    }
+}
+
+fun Route.getAppRoute() {
+    get<Apps.Id> { route ->
+        val userId = call.principal<Session>()!!.userId
+        val appId = route.id
+
+        val app = transaction {
+            DbApps
+                .innerJoin(AccessControlLists)
+                .select {
+                    AccessControlLists.userId.eq(userId)
+                        .and(DbApps.id eq AccessControlLists.appId)
+                        .and(DbApps.id eq appId)
+                }
+                .singleOrNull()
+                ?.let { App.wrapRow(it) }
+                ?.serializable()
+        }
+
+        if (app == null) {
+            call.respond(HttpStatusCode.NotFound, ApiError.appNotFound(appId))
+        } else {
+            call.respond(HttpStatusCode.OK, app)
         }
     }
 }
