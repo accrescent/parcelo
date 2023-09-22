@@ -148,6 +148,12 @@ class ApiError private constructor(
             "Update version is too low",
             "Update version code \"$updateVersion\" is less than published app version \"$appVersion\"",
         )
+
+        fun updateAppIdDoesntMatch(appId: String, updateAppId: String) = ApiError(
+            41,
+            "Update app ID doesn't match",
+            "The update's app ID \"$updateAppId\" doesn't match the published app ID \"$appId\"",
+        )
     }
 }
 

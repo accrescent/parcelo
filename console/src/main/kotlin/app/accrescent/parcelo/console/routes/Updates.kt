@@ -125,16 +125,22 @@ fun Route.createUpdateRoute() {
         }
 
         if (apkSet.appId.value != appId) {
-            call.respond(HttpStatusCode.UnprocessableEntity)
+            call.respond(
+                HttpStatusCode.UnprocessableEntity,
+                ApiError.updateAppIdDoesntMatch(appId, apkSet.appId.value),
+            )
             return@post
         }
 
         val app = transaction { App.findById(apkSet.appId.value) } ?: run {
-            call.respond(HttpStatusCode.NotFound)
+            call.respond(HttpStatusCode.NotFound, ApiError.appNotFound(apkSet.appId.value))
             return@post
         }
         if (apkSet.versionCode <= app.versionCode) {
-            call.respond(HttpStatusCode.UnprocessableEntity)
+            call.respond(
+                HttpStatusCode.UnprocessableEntity,
+                ApiError.updateVersionTooLow(apkSet.versionCode, app.versionCode),
+            )
             return@post
         }
         if (apkSet.targetSdk < MIN_TARGET_SDK) {
