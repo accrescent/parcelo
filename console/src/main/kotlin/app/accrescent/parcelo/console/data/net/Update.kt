@@ -36,4 +36,7 @@ enum class UpdateStatus {
 
     @SerialName("publishing")
     PUBLISHING,
+
+    @SerialName("published")
+    PUBLISHED,
 }

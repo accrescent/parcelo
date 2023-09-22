@@ -28,6 +28,7 @@ object Updates : UUIDTable("updates") {
         reference("review_issue_group_id", ReviewIssueGroups, ReferenceOption.NO_ACTION).nullable()
     val submitted = bool("submitted").default(false)
     val reviewId = reference("review_id", Reviews, ReferenceOption.NO_ACTION).nullable()
+    val published = bool("published").default(false)
 
     init {
         check {
@@ -50,18 +51,27 @@ class Update(id: EntityID<UUID>) : UUIDEntity(id), ToSerializable<SerializableUp
     var reviewIssueGroupId by Updates.reviewIssueGroupId
     var submitted by Updates.submitted
     var reviewId by Updates.reviewId
+    var published by Updates.published
 
     override fun serializable(): SerializableUpdate {
         val status = if (!submitted) {
             UpdateStatus.UNSUBMITTED
         } else if (reviewerId == null) {
-            UpdateStatus.PUBLISHING
+            if (published) {
+                UpdateStatus.PUBLISHED
+            } else {
+                UpdateStatus.PUBLISHING
+            }
         } else if (reviewId == null) {
             UpdateStatus.PENDING_REVIEW
         } else {
             val review = transaction { Review.findById(reviewId!!)!! }
             if (review.approved) {
-                UpdateStatus.PUBLISHING
+                if (published) {
+                    UpdateStatus.PUBLISHED
+                } else {
+                    UpdateStatus.PUBLISHING
+                }
             } else {
                 UpdateStatus.REJECTED
             }

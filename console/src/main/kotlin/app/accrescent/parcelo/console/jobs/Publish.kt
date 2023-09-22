@@ -113,7 +113,7 @@ fun registerPublishUpdateJob(updateId: UUID) {
             // here
             storageService.deleteFile(oldAppFileId)
 
-            update.delete()
+            update.published = true
         }
     }
 }

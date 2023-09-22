@@ -17,4 +17,5 @@ export enum UpdateStatus {
     PendingReview = 'pending-review',
     Rejected = 'rejected',
     Publishing = 'publishing',
+    Published = 'published',
 }
