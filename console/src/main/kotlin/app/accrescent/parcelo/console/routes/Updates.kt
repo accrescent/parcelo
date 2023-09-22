@@ -295,6 +295,7 @@ fun Route.updateUpdateRoute() {
                     Pair(HttpStatusCode.OK, update.serializable())
                 }
             } else {
+                update.submitted = true
                 BackgroundJob.enqueue { registerPublishUpdateJob(update.id.value) }
                 Pair(HttpStatusCode.Accepted, null)
             }
