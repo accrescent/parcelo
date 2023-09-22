@@ -38,7 +38,8 @@ export class AuthService {
     }
 
     logOut(): Observable<void> {
-        localStorage.setItem(this.loggedInStorageKey, 'false');
-        return this.http.delete<void>(this.sessionUrl);
+        return this.http.delete<void>(this.sessionUrl).pipe(
+            tap(() => localStorage.setItem(this.loggedInStorageKey, 'false')),
+        );
     }
 }
