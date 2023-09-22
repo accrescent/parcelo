@@ -76,20 +76,23 @@ export class UpdatesScreenComponent implements OnInit {
                         .afterClosed()
                         .subscribe(confirmed => {
                             if (confirmed) {
-                                this.updateService.submitUpdate(update.id).subscribe(submittedUpdate => {
-                                    // Mark as submitted in the UI
-                                    const uiUpdate = this.updates.find(u => {
-                                        return u.id === update.id &&
-                                            u.status === UpdateStatus.Unsubmitted;
-                                    });
-                                    if (uiUpdate !== undefined) {
-                                        uiUpdate.status = submittedUpdate.status;
-                                    }
-                                });
+                                this.submitUpdate(update.id);
                             }
                         });
                 }
             });
         }
+    }
+
+    submitUpdate(id: string): void {
+        this.updateService.submitUpdate(id).subscribe(submittedUpdate => {
+            // Mark as submitted in the UI
+            const update = this
+                .updates
+                .find(update => update.id === id && update.status === UpdateStatus.Unsubmitted);
+            if (update !== undefined) {
+                update.status = submittedUpdate.status;
+            }
+        });
     }
 }

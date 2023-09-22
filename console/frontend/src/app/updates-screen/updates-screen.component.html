@@ -12,6 +12,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <h2 class="section-header">Updates</h2>
 <div class="grid-container">
-    <app-update-card *ngFor="let update of updates" [update]="update"/>
+    <app-update-card
+        *ngFor="let update of updates"
+        [update]="update"
+        (submitForReview)="submitUpdate($event)"/>
     <p *ngIf="updates.length === 0">No unpublished updates</p>
 </div>

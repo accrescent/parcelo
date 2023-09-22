@@ -2,17 +2,25 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only
 
-import { Component, Input } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 
-import { Update } from '../update';
+import { Update, UpdateStatus } from '../update';
 
 @Component({
     selector: 'app-update-card',
     standalone: true,
-    imports: [MatCardModule],
+    imports: [MatButtonModule, MatCardModule],
     templateUrl: './update-card.component.html',
 })
 export class UpdateCardComponent {
     @Input({ required: true }) update!: Update;
+    @Output() submitForReview = new EventEmitter<string>();
+
+    updateStatusEnum = UpdateStatus;
+
+    onSubmitForReview(): void {
+        this.submitForReview.emit(this.update.id);
+    }
 }
