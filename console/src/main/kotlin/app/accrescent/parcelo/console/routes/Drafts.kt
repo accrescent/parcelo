@@ -226,6 +226,8 @@ fun Route.createDraftRoute() {
 }
 
 fun Route.deleteDraftRoute() {
+    val storageService: FileStorageService by inject()
+
     delete<Drafts.Id> { route ->
         val userId = call.principal<Session>()!!.userId
 
@@ -243,7 +245,11 @@ fun Route.deleteDraftRoute() {
         if (draft == null) {
             call.respond(HttpStatusCode.NotFound, ApiError.draftNotFound(draftId))
         } else {
-            transaction { draft.delete() }
+            transaction {
+                storageService.deleteFile(draft.fileId)
+                storageService.deleteFile(draft.iconId)
+                draft.delete()
+            }
             call.respond(HttpStatusCode.NoContent)
         }
     }
