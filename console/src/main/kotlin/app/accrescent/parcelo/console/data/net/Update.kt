@@ -20,4 +20,20 @@ data class Update(
     val creationTime: Long,
     @SerialName("requires_review")
     val requiresReview: Boolean,
+    val status: UpdateStatus,
 )
+
+@Serializable
+enum class UpdateStatus {
+    @SerialName("unsubmitted")
+    UNSUBMITTED,
+
+    @SerialName("pending-review")
+    PENDING_REVIEW,
+
+    @SerialName("rejected")
+    REJECTED,
+
+    @SerialName("publishing")
+    PUBLISHING,
+}

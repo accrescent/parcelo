@@ -5,6 +5,7 @@
 package app.accrescent.parcelo.console.data
 
 import app.accrescent.parcelo.console.data.net.Update as SerializableUpdate
+import app.accrescent.parcelo.console.data.net.UpdateStatus
 import org.jetbrains.exposed.dao.UUIDEntity
 import org.jetbrains.exposed.dao.UUIDEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
@@ -12,6 +13,7 @@ import org.jetbrains.exposed.dao.id.UUIDTable
 import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.not
+import org.jetbrains.exposed.sql.transactions.transaction
 import java.util.UUID
 
 object Updates : UUIDTable("updates") {
@@ -50,6 +52,21 @@ class Update(id: EntityID<UUID>) : UUIDEntity(id), ToSerializable<SerializableUp
     var reviewId by Updates.reviewId
 
     override fun serializable(): SerializableUpdate {
+        val status = if (!submitted) {
+            UpdateStatus.UNSUBMITTED
+        } else if (reviewerId == null) {
+            UpdateStatus.PUBLISHING
+        } else if (reviewId == null) {
+            UpdateStatus.PENDING_REVIEW
+        } else {
+            val review = transaction { Review.findById(reviewId!!)!! }
+            if (review.approved) {
+                UpdateStatus.PUBLISHING
+            } else {
+                UpdateStatus.REJECTED
+            }
+        }
+
         return SerializableUpdate(
             id.value.toString(),
             appId.value,
@@ -57,6 +74,7 @@ class Update(id: EntityID<UUID>) : UUIDEntity(id), ToSerializable<SerializableUp
             versionName,
             creationTime,
             reviewIssueGroupId != null,
+            status,
         )
     }
 }
