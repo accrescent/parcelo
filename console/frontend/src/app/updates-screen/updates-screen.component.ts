@@ -65,6 +65,11 @@ export class UpdatesScreenComponent implements OnInit {
             this.updateService.createUpdate(this.app.id, form.apkSet).subscribe(event => {
                 if (event.type === HttpEventType.UploadProgress) {
                     this.uploadProgress = 100 * event.loaded / event.total!;
+
+                    // Clear the progress bar once the upload is complete
+                    if (event.loaded === event.total!) {
+                        this.uploadProgress = 0;
+                    }
                 } else if (event instanceof HttpResponse) {
                     const update = event.body!;
 

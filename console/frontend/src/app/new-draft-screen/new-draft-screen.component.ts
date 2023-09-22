@@ -34,6 +34,11 @@ export class NewDraftScreenComponent {
         this.draftService.createDraft(form.apkSet, form.icon, form.label).subscribe(event => {
             if (event.type === HttpEventType.UploadProgress) {
                 this.uploadProgress = 100 * event.loaded / event.total!;
+
+                // Clear the progress bar once the upload is complete
+                if (event.loaded === event.total!) {
+                    this.uploadProgress = 0;
+                }
             } else if (event instanceof HttpResponse) {
                 const draft = event.body!;
                 this.dialog
