@@ -34,7 +34,7 @@ export class UpdateService {
         return this.http.get<Update[]>(`${this.appsUrl}/${appId}/updates`);
     }
 
-    submitUpdate(id: string): Observable<void> {
-        return this.http.patch<void>(`${this.updatesUrl}/${id}`, '');
+    submitUpdate(id: string): Observable<Update> {
+        return this.http.patch<Update>(`${this.updatesUrl}/${id}`, '');
     }
 }

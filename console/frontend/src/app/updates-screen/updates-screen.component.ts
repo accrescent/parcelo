@@ -14,7 +14,7 @@ import { App } from '../app';
 import { AppService } from '../app.service';
 import { NewUpdateEditorComponent } from '../new-update-editor/new-update-editor.component';
 import { NewUpdateForm } from '../new-update-form';
-import { Update } from '../update';
+import { Update, UpdateStatus } from '../update';
 import { UpdateCardComponent } from '../update-card/update-card.component';
 import { UpdateService } from '../update.service';
 import {
@@ -67,6 +67,8 @@ export class UpdatesScreenComponent implements OnInit {
                     this.uploadProgress = 100 * event.loaded / event.total!;
                 } else if (event instanceof HttpResponse) {
                     const update = event.body!;
+
+                    this.updates.push(update);
                     this.dialog
                         .open(UpdateSubmissionDialogComponent, {
                             data: { app: this.app, update: update },
@@ -74,11 +76,16 @@ export class UpdatesScreenComponent implements OnInit {
                         .afterClosed()
                         .subscribe(confirmed => {
                             if (confirmed) {
-                                this.updateService.submitUpdate(update.id).subscribe(() => {
-                                    this.router.navigate(['apps']);
+                                this.updateService.submitUpdate(update.id).subscribe(submittedUpdate => {
+                                    // Mark as submitted in the UI
+                                    const uiUpdate = this.updates.find(u => {
+                                        return u.id === update.id &&
+                                            u.status === UpdateStatus.Unsubmitted;
+                                    });
+                                    if (uiUpdate !== undefined) {
+                                        uiUpdate.status = submittedUpdate.status;
+                                    }
                                 });
-                            } else {
-                                this.router.navigate(['apps']);
                             }
                         });
                 }
