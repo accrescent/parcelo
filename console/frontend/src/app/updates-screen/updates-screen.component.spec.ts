@@ -4,17 +4,17 @@
 
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { NewUpdateScreenComponent } from './new-update-screen.component';
+import { UpdatesScreenComponent } from './updates-screen.component';
 
-describe('NewUpdateScreenComponent', () => {
-    let component: NewUpdateScreenComponent;
-    let fixture: ComponentFixture<NewUpdateScreenComponent>;
+describe('UpdatesScreenComponent', () => {
+    let component: UpdatesScreenComponent;
+    let fixture: ComponentFixture<UpdatesScreenComponent>;
 
     beforeEach(() => {
         TestBed.configureTestingModule({
-            imports: [NewUpdateScreenComponent]
+            imports: [UpdatesScreenComponent]
         });
-        fixture = TestBed.createComponent(NewUpdateScreenComponent);
+        fixture = TestBed.createComponent(UpdatesScreenComponent);
         component = fixture.componentInstance;
         fixture.detectChanges();
     });

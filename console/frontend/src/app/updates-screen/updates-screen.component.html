@@ -1,0 +1,17 @@
+<!--
+Copyright 2023 Logan Magee
+
+SPDX-License-Identifier: AGPL-3.0-only
+-->
+
+<app-new-update-editor (formSubmit)="submitNewUpdate($event)">
+    <mat-progress-bar [value]="uploadProgress"/>
+</app-new-update-editor>
+
+<mat-divider/>
+
+<h2 class="section-header">Updates</h2>
+<div class="grid-container">
+    <app-update-card *ngFor="let update of updates" [update]="update"/>
+    <p *ngIf="updates.length === 0">No unpublished updates</p>
+</div>

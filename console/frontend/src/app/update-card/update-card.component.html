@@ -1,0 +1,20 @@
+<!--
+Copyright 2023 Logan Magee
+
+SPDX-License-Identifier: AGPL-3.0-only
+-->
+
+<mat-card>
+    <mat-card-header>
+        <mat-card-title>{{ update.version_name }}</mat-card-title>
+        <mat-card-subtitle>{{ update.id }}</mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content>
+        <br>
+        <h4>Update info</h4>
+        <ul>
+            <li>Version code: {{ update.version_code }}</li>
+            <li>Requires review: {{ update.requires_review }}</li>
+        </ul>
+    </mat-card-content>
+</mat-card>
