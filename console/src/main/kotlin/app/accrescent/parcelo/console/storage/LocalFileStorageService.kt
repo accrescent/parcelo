@@ -5,8 +5,13 @@
 package app.accrescent.parcelo.console.storage
 
 import app.accrescent.parcelo.console.data.File as FileDao
+import app.accrescent.parcelo.console.data.Files
+import app.accrescent.parcelo.console.jobs.cleanFile
 import org.jetbrains.exposed.dao.id.EntityID
+import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.not
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.jobrunr.scheduling.BackgroundJob
 import java.io.File
 import java.io.FileNotFoundException
 import java.io.InputStream
@@ -30,22 +35,19 @@ class LocalFileStorageService(private val baseDirectory: Path) : FileStorageServ
         return transaction { FileDao.new { localPath = path.toString() }.id }
     }
 
-    override fun deleteFile(id: EntityID<Int>): Boolean {
-        val path = getPathForFile(id) ?: throw FileNotFoundException()
-        if (!File(path).delete()) {
-            return false
-        }
+    override fun deleteFile(id: EntityID<Int>) {
+        transaction { findFile(id)?.apply { deleted = true } } ?: throw FileNotFoundException()
 
-        transaction { FileDao.findById(id)?.delete() }
-
-        return true
+        BackgroundJob.enqueue { cleanFile(id.value) }
     }
 
     override fun loadFile(id: EntityID<Int>): InputStream {
-        val path = getPathForFile(id) ?: throw FileNotFoundException()
+        val path = findFile(id)?.localPath ?: throw FileNotFoundException()
 
         return File(path).inputStream()
     }
 
-    private fun getPathForFile(id: EntityID<Int>) = transaction { FileDao.findById(id)?.localPath }
+    private fun findFile(id: EntityID<Int>): FileDao? = transaction {
+        FileDao.find { Files.id eq id and not(Files.deleted) }.singleOrNull()
+    }
 }

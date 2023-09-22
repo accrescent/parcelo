@@ -12,9 +12,7 @@ interface FileStorageService {
 
     /**
      * Deletes the given file by its ID
-     *
-     * @return whether deleting the file from disk succeeded
      */
-    fun deleteFile(id: EntityID<Int>): Boolean
+    fun deleteFile(id: EntityID<Int>)
     fun loadFile(id: EntityID<Int>): InputStream
 }

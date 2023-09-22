@@ -11,10 +11,12 @@ import org.jetbrains.exposed.dao.id.IntIdTable
 
 object Files : IntIdTable("files") {
     val localPath = text("local_path")
+    val deleted = bool("deleted").default(false)
 }
 
 class File(id: EntityID<Int>) : IntEntity(id) {
     companion object : IntEntityClass<File>(Files)
 
     var localPath by Files.localPath
+    var deleted by Files.deleted
 }

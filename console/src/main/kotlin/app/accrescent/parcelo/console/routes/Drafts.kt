@@ -245,11 +245,9 @@ fun Route.deleteDraftRoute() {
         if (draft == null) {
             call.respond(HttpStatusCode.NotFound, ApiError.draftNotFound(draftId))
         } else {
-            transaction {
-                storageService.deleteFile(draft.fileId)
-                storageService.deleteFile(draft.iconId)
-                draft.delete()
-            }
+            storageService.deleteFile(draft.fileId)
+            storageService.deleteFile(draft.iconId)
+            transaction { draft.delete() }
             call.respond(HttpStatusCode.NoContent)
         }
     }
