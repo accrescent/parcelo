@@ -11,9 +11,23 @@ SPDX-License-Identifier: AGPL-3.0-only
 <mat-divider/>
 
 <h2 class="section-header">Updates</h2>
+<mat-chip-listbox multiple>
+    <mat-chip-option
+        [selected]="showRejected"
+        (selectionChange)="showRejected = $event.selected"
+        color="accent">
+        Rejected
+    </mat-chip-option>
+    <mat-chip-option
+        [selected]="showPublished"
+        (selectionChange)="showPublished = $event.selected"
+        color="accent">
+        Published
+    </mat-chip-option>
+</mat-chip-listbox>
 <div class="grid-container">
     <app-update-card
-        *ngFor="let update of updates"
+        *ngFor="let update of updates | updateFilter : showRejected : showPublished"
         [update]="update"
         (submitForReview)="submitUpdate($event)"/>
     <p *ngIf="updates.length === 0">No updates</p>

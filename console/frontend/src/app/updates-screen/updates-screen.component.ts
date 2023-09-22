@@ -5,6 +5,7 @@
 import { NgFor, NgIf } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { HttpEventType, HttpResponse } from '@angular/common/http';
+import { MatChipsModule } from '@angular/material/chips';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
@@ -16,6 +17,7 @@ import { NewUpdateEditorComponent } from '../new-update-editor/new-update-editor
 import { NewUpdateForm } from '../new-update-form';
 import { Update, UpdateStatus } from '../update';
 import { UpdateCardComponent } from '../update-card/update-card.component';
+import { UpdateFilterPipe } from '../update-filter.pipe';
 import { UpdateService } from '../update.service';
 import {
     UpdateSubmissionDialogComponent
@@ -25,6 +27,7 @@ import {
     selector: 'app-updates-screen',
     standalone: true,
     imports: [
+        MatChipsModule,
         MatDialogModule,
         MatDividerModule,
         MatProgressBarModule,
@@ -32,6 +35,7 @@ import {
         NgFor,
         NgIf,
         UpdateCardComponent,
+        UpdateFilterPipe,
     ],
     templateUrl: './updates-screen.component.html',
     styleUrls: ['./updates-screen.component.scss'],
@@ -40,6 +44,9 @@ export class UpdatesScreenComponent implements OnInit {
     app?: App;
     updates: Update[] = [];
     uploadProgress = 0;
+
+    showRejected = false;
+    showPublished = false;
 
     constructor(
         private activatedRoute: ActivatedRoute,
