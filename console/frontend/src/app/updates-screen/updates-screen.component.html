@@ -16,5 +16,5 @@ SPDX-License-Identifier: AGPL-3.0-only
         *ngFor="let update of updates"
         [update]="update"
         (submitForReview)="submitUpdate($event)"/>
-    <p *ngIf="updates.length === 0">No unpublished updates</p>
+    <p *ngIf="updates.length === 0">No updates</p>
 </div>
