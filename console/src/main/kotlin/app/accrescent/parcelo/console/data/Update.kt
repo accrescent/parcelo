@@ -54,26 +54,21 @@ class Update(id: EntityID<UUID>) : UUIDEntity(id), ToSerializable<SerializableUp
     var published by Updates.published
 
     override fun serializable(): SerializableUpdate {
-        val status = if (!submitted) {
-            UpdateStatus.UNSUBMITTED
-        } else if (reviewerId == null) {
-            if (published) {
-                UpdateStatus.PUBLISHED
-            } else {
-                UpdateStatus.PUBLISHING
-            }
-        } else if (reviewId == null) {
-            UpdateStatus.PENDING_REVIEW
-        } else {
-            val review = transaction { Review.findById(reviewId!!)!! }
-            if (review.approved) {
-                if (published) {
-                    UpdateStatus.PUBLISHED
+        val status = when {
+            !submitted -> UpdateStatus.UNSUBMITTED
+            reviewerId == null -> if (published) UpdateStatus.PUBLISHED else UpdateStatus.PUBLISHING
+            reviewId == null -> UpdateStatus.PENDING_REVIEW
+            else -> {
+                val review = transaction { Review.findById(reviewId!!)!! }
+                if (review.approved) {
+                    if (published) {
+                        UpdateStatus.PUBLISHED
+                    } else {
+                        UpdateStatus.PUBLISHING
+                    }
                 } else {
-                    UpdateStatus.PUBLISHING
+                    UpdateStatus.REJECTED
                 }
-            } else {
-                UpdateStatus.REJECTED
             }
         }
 
