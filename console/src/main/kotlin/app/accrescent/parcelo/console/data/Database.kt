@@ -26,7 +26,7 @@ fun Application.configureDatabase(): DataSource {
                 DriverManager.getConnection(it)
             }
         } else {
-            "jdbc:sqlite:${config.application.databasePath}"
+            "jdbc:sqlite:${config.application.databasePath}?journal_mode=wal"
         }
     }
     Database.connect(dataSource)
