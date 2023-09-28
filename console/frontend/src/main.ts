@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only
 
-import { provideHttpClient, withInterceptorsFromDi} from '@angular/common/http';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { importProvidersFrom } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -14,6 +14,7 @@ import { provideAnimations } from '@angular/platform-browser/animations';
 
 import { AppComponent } from './app/app.component';
 import { AppRoutingModule } from './app/app-routing.module';
+import { unauthorizedInterceptor } from './app/unauthorized.interceptor';
 
 bootstrapApplication(AppComponent, {
     providers: [
@@ -27,7 +28,7 @@ bootstrapApplication(AppComponent, {
             MatToolbarModule,
         ),
         provideAnimations(),
-        provideHttpClient(withInterceptorsFromDi())
+        provideHttpClient(withInterceptors([unauthorizedInterceptor]))
     ]
 })
     .catch(err => console.error(err));
