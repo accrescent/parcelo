@@ -59,6 +59,9 @@ import javax.imageio.ImageIO
 
 @Resource("/drafts")
 class Drafts {
+    @Resource("assigned")
+    class Assigned(val parent: Drafts)
+
     @Resource("{id}")
     class Id(val parent: Drafts = Drafts(), val id: String) {
         @Resource("apkset")
@@ -76,6 +79,7 @@ fun Route.draftRoutes() {
         getDraftsRoute()
         updateDraftRoute()
 
+        getAssignedDraftsRoute()
         getDraftApkSetRoute()
 
         createDraftReviewRoute()
@@ -307,6 +311,30 @@ fun Route.updateDraftRoute() {
             }
             call.respond(HttpStatusCode.NoContent)
         }
+    }
+}
+
+/**
+ * Returns the list of unreviewed drafts assigned to the current user for review. If the user is not
+ * a reviewer, this route returns a 403.
+ */
+fun Route.getAssignedDraftsRoute() {
+    get<Drafts.Assigned> {
+        val userId = call.principal<Session>()!!.userId
+
+        val reviewer =
+            transaction { Reviewer.find { Reviewers.userId eq userId }.singleOrNull() } ?: run {
+                call.respond(HttpStatusCode.Forbidden, ApiError.readForbidden())
+                return@get
+            }
+
+        val assignedDrafts = transaction {
+            Draft
+                .find { DbDrafts.reviewerId eq reviewer.id and (DbDrafts.reviewId eq null) }
+                .map { it.serializable() }
+        }
+
+        call.respond(HttpStatusCode.OK, assignedDrafts)
     }
 }
 
