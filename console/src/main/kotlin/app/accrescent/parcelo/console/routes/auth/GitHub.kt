@@ -4,6 +4,8 @@
 
 package app.accrescent.parcelo.console.routes.auth
 
+import app.accrescent.parcelo.console.data.Reviewer
+import app.accrescent.parcelo.console.data.Reviewers
 import app.accrescent.parcelo.console.data.Session
 import app.accrescent.parcelo.console.data.User
 import app.accrescent.parcelo.console.data.Users
@@ -28,6 +30,7 @@ import io.ktor.server.routing.route
 import io.ktor.server.sessions.generateSessionId
 import io.ktor.server.sessions.sessions
 import io.ktor.server.sessions.set
+import kotlinx.serialization.Serializable
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.kohsuke.github.GitHubBuilder
 
@@ -38,6 +41,9 @@ const val COOKIE_OAUTH_STATE_LIFETIME = 60 * 60 // 1 hour
 val ApplicationEnvironment.oauthStateCookieName
     get() =
         if (!developmentMode) COOKIE_OAUTH_STATE_PROD else COOKIE_OAUTH_STATE_DEVEL
+
+@Serializable
+data class AuthResult(val reviewer: Boolean)
 
 fun AuthenticationConfig.github(
     clientId: String,
@@ -141,7 +147,12 @@ fun Route.githubRoutes() {
 
                 call.sessions.set(Session(sessionId))
 
-                call.respond(HttpStatusCode.OK)
+                // Determine whether the user is a reviewer
+                val reviewer = transaction {
+                    Reviewer.find { Reviewers.userId eq user.id }.singleOrNull()
+                } != null
+
+                call.respond(HttpStatusCode.OK, AuthResult(reviewer))
             }
         }
     }

@@ -7,6 +7,8 @@ import { HttpClient, HttpParams, HttpStatusCode } from '@angular/common/http';
 
 import { Observable, catchError, map, of, tap, throwError } from 'rxjs';
 
+import { AuthResult } from './auth-result';
+
 @Injectable({
     providedIn: 'root'
 })
@@ -14,6 +16,7 @@ export class AuthService {
     private readonly callbackUrl = 'auth/github/callback2';
     private readonly sessionUrl = 'api/v1/session';
     private readonly loggedInStorageKey = 'loggedIn';
+    private readonly reviewerStorageKey = 'reviewer';
 
     constructor(private http: HttpClient) {}
 
@@ -21,10 +24,19 @@ export class AuthService {
         return localStorage.getItem(this.loggedInStorageKey) === 'true';
     }
 
+    get reviewer(): boolean {
+        return localStorage.getItem(this.reviewerStorageKey) === 'true';
+    }
+
     logIn(code: string, state: string): Observable<boolean> {
         const params = new HttpParams().append('code', code).append('state', state);
-        return this.http.get<void>(this.callbackUrl, { observe: 'response', params })
+        return this.http.get<AuthResult>(this.callbackUrl, { observe: 'response', params })
             .pipe(
+                tap(res => {
+                    const body = res.body!;
+
+                    localStorage.setItem(this.reviewerStorageKey, body.reviewer.toString());
+                }),
                 map(res => res.status === HttpStatusCode.Ok),
                 tap(res => localStorage.setItem(this.loggedInStorageKey, res.toString())),
                 catchError(err => {
@@ -39,7 +51,10 @@ export class AuthService {
 
     logOut(): Observable<void> {
         return this.http.delete<void>(this.sessionUrl).pipe(
-            tap(() => localStorage.setItem(this.loggedInStorageKey, 'false')),
+            tap(() => {
+                localStorage.setItem(this.loggedInStorageKey, 'false');
+                localStorage.removeItem(this.reviewerStorageKey);
+            }),
         );
     }
 }
