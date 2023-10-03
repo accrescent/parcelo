@@ -154,6 +154,12 @@ class ApiError private constructor(
             "Update app ID doesn't match",
             "The update's app ID \"$updateAppId\" doesn't match the published app ID \"$appId\"",
         )
+
+        fun downloadForbidden() = ApiError(
+            42,
+            "Download forbidden",
+            "This user does not have sufficient access rights to download this object",
+        )
     }
 }
 

@@ -26,6 +26,7 @@ import app.accrescent.parcelo.console.validation.MIN_TARGET_SDK
 import app.accrescent.parcelo.console.validation.REVIEW_ISSUE_BLACKLIST
 import app.accrescent.parcelo.console.validation.ReviewRequest
 import app.accrescent.parcelo.console.validation.ReviewResult
+import io.ktor.http.ContentDisposition
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.PartData
@@ -43,6 +44,7 @@ import io.ktor.server.resources.patch
 import io.ktor.server.resources.post
 import io.ktor.server.response.header
 import io.ktor.server.response.respond
+import io.ktor.server.response.respondBytes
 import io.ktor.server.routing.Route
 import org.jetbrains.exposed.sql.Random
 import org.jetbrains.exposed.sql.SortOrder
@@ -59,6 +61,9 @@ import javax.imageio.ImageIO
 class Drafts {
     @Resource("{id}")
     class Id(val parent: Drafts = Drafts(), val id: String) {
+        @Resource("apkset")
+        class ApkSet(val parent: Id)
+
         @Resource("review")
         class Review(val parent: Id)
     }
@@ -70,6 +75,8 @@ fun Route.draftRoutes() {
         deleteDraftRoute()
         getDraftsRoute()
         updateDraftRoute()
+
+        getDraftApkSetRoute()
 
         createDraftReviewRoute()
     }
@@ -299,6 +306,57 @@ fun Route.updateDraftRoute() {
                     .single()[Reviewers.id]
             }
             call.respond(HttpStatusCode.NoContent)
+        }
+    }
+}
+
+/**
+ * Returns the APK set for a given draft. This route is only accessible by the draft's reviewer.
+ */
+fun Route.getDraftApkSetRoute() {
+    val storageService: FileStorageService by inject()
+
+    get<Drafts.Id.ApkSet> { route ->
+        val userId = call.principal<Session>()!!.userId
+
+        val draftId = try {
+            UUID.fromString(route.parent.id)
+        } catch (e: IllegalArgumentException) {
+            call.respond(HttpStatusCode.BadRequest, ApiError.invalidUuid(route.parent.id))
+            return@get
+        }
+
+        // Normally we would include access control (in this case, the user's reviewer ID) in the
+        // query to prevent accidentally leaking data to unauthorized users, but in this case we
+        // instead choose to find the draft first, so we can return more specific status codes than
+        // Not Found as appropriate if the user has sufficient access.
+        val draft = transaction { Draft.findById(draftId) } ?: run {
+            call.respond(HttpStatusCode.NotFound, ApiError.draftNotFound(draftId))
+            return@get
+        }
+        val userIsDraftReviewer =
+            transaction { Reviewer.find { Reviewers.userId eq userId }.singleOrNull() }
+                ?.let { it.id == draft.reviewerId }
+                ?: false
+
+        if (userIsDraftReviewer) {
+            call.response.header(
+                HttpHeaders.ContentDisposition,
+                ContentDisposition.Attachment.withParameter(
+                    ContentDisposition.Parameters.FileName,
+                    "draft-${draft.appId}-${draft.versionCode}.apks",
+                ).toString(),
+            )
+            call.respondBytes { storageService.loadFile(draft.fileId).use { it.readBytes() } }
+        } else {
+            // Check whether the user has read access to this draft. If they do, tell them they're
+            // not allowed to download the APK set. Otherwise, don't reveal that the draft exists.
+            val userCanRead = userId == draft.creatorId
+            if (userCanRead) {
+                call.respond(HttpStatusCode.Forbidden, ApiError.downloadForbidden())
+            } else {
+                call.respond(HttpStatusCode.NotFound, ApiError.draftNotFound(draftId))
+            }
         }
     }
 }
