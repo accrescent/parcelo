@@ -317,6 +317,8 @@ fun Route.updateDraftRoute() {
 /**
  * Returns the list of unreviewed drafts assigned to the current user for review. If the user is not
  * a reviewer, this route returns a 403.
+ *
+ * See also [getAssignedUpdatesRoute]
  */
 fun Route.getAssignedDraftsRoute() {
     get<Drafts.Assigned> {

@@ -62,6 +62,9 @@ import java.util.UUID
 
 @Resource("/updates")
 class Updates {
+    @Resource("assigned")
+    class Assigned(val parent: Updates)
+
     @Resource("{id}")
     class Id(val parent: Updates = Updates(), val id: String) {
         @Resource("apkset")
@@ -78,6 +81,7 @@ fun Route.updateRoutes() {
         getUpdatesForAppRoute()
         updateUpdateRoute()
 
+        getAssignedUpdatesRoute()
         getUpdateApkSetRoute()
 
         createUpdateReviewRoute()
@@ -319,6 +323,32 @@ fun Route.updateUpdateRoute() {
         } else {
             call.respond(statusCode)
         }
+    }
+}
+
+/**
+ * Returns the list of unreviewed updates assigned to the current user for review. If the user is
+ * not a reviewer, this route returns a 403.
+ *
+ * See also [getAssignedDraftsRoute]
+ */
+fun Route.getAssignedUpdatesRoute() {
+    get<Updates.Assigned> {
+        val userId = call.principal<Session>()!!.userId
+
+        val reviewer =
+            transaction { Reviewer.find { Reviewers.userId eq userId }.singleOrNull() } ?: run {
+                call.respond(HttpStatusCode.Forbidden, ApiError.readForbidden())
+                return@get
+            }
+
+        val assignedUpdates = transaction {
+            Update
+                .find { DbUpdates.reviewerId eq reviewer.id and (DbUpdates.reviewId eq null) }
+                .map { it.serializable() }
+        }
+
+        call.respond(HttpStatusCode.OK, assignedUpdates)
     }
 }
 
