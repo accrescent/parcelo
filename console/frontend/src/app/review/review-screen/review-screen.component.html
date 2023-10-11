@@ -1,0 +1,14 @@
+<!--
+Copyright 2023 Logan Magee
+
+SPDX-License-Identifier: AGPL-3.0-only
+-->
+
+<h2>Drafts</h2>
+<div class="grid-container">
+    <app-reviewer-draft-card
+        *ngFor="let draft of drafts"
+        [draft]="draft"
+        (postReview)="openDraftReviewDialog($event)"/>
+    <p *ngIf="drafts.length === 0">No drafts to review</p>
+</div>

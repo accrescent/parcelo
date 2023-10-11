@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only
 
+import { NgIf } from '@angular/common';
 import { Component } from '@angular/core';
 import { Router, RouterLink, RouterOutlet } from '@angular/router';
 
@@ -23,12 +24,17 @@ import { MatToolbarModule } from '@angular/material/toolbar';
         MatListModule,
         MatSidenavModule,
         MatToolbarModule,
+        NgIf,
         RouterLink,
         RouterOutlet,
     ],
 })
 export class ConsoleLayoutComponent {
     constructor(private authService: AuthService, private router: Router) {}
+
+    get reviewer(): boolean {
+        return this.authService.reviewer;
+    }
 
     logOut(): void {
         this.authService.logOut().subscribe(() => this.router.navigate(['/login']));

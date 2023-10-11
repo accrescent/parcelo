@@ -20,6 +20,10 @@ const routes: Routes = [
         { path: 'apps', component: AppsScreenComponent },
         { path: 'apps/:id/updates', component: UpdatesScreenComponent },
         { path: 'drafts/new', component: NewDraftScreenComponent },
+        {
+            path: 'review',
+            loadChildren: () => import('./review/review.routes').then(m => m.REVIEW_ROUTES),
+        },
     ] },
     { path: 'login', component: LoginScreenComponent },
     { path: 'auth/github/callback', component: LoginComponent },
