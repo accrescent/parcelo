@@ -340,6 +340,8 @@ fun Route.getAssignedDraftsRoute() {
 
 /**
  * Returns the APK set for a given draft. This route is only accessible by the draft's reviewer.
+ *
+ * See also [getUpdateApkSetRoute].
  */
 fun Route.getDraftApkSetRoute() {
     val storageService: FileStorageService by inject()

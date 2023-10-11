@@ -30,6 +30,7 @@ import app.accrescent.parcelo.console.validation.MIN_TARGET_SDK
 import app.accrescent.parcelo.console.validation.REVIEW_ISSUE_BLACKLIST
 import app.accrescent.parcelo.console.validation.ReviewRequest
 import app.accrescent.parcelo.console.validation.ReviewResult
+import io.ktor.http.ContentDisposition
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.PartData
@@ -46,6 +47,7 @@ import io.ktor.server.resources.patch
 import io.ktor.server.resources.post
 import io.ktor.server.response.header
 import io.ktor.server.response.respond
+import io.ktor.server.response.respondBytes
 import io.ktor.server.routing.Route
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.Random
@@ -62,6 +64,9 @@ import java.util.UUID
 class Updates {
     @Resource("{id}")
     class Id(val parent: Updates = Updates(), val id: String) {
+        @Resource("apkset")
+        class ApkSet(val parent: Id)
+
         @Resource("review")
         class Review(val parent: Id)
     }
@@ -72,6 +77,8 @@ fun Route.updateRoutes() {
         createUpdateRoute()
         getUpdatesForAppRoute()
         updateUpdateRoute()
+
+        getUpdateApkSetRoute()
 
         createUpdateReviewRoute()
     }
@@ -311,6 +318,59 @@ fun Route.updateUpdateRoute() {
             call.respond(statusCode, responseBody)
         } else {
             call.respond(statusCode)
+        }
+    }
+}
+
+/**
+ * Returns the APK set for a given update. This route is only accessible by the update's reviewer.
+ *
+ * See also [getDraftApkSetRoute].
+ */
+fun Route.getUpdateApkSetRoute() {
+    val storageService: FileStorageService by inject()
+
+    get<Updates.Id.ApkSet> { route ->
+        val userId = call.principal<Session>()!!.userId
+
+        val updateId = try {
+            UUID.fromString(route.parent.id)
+        } catch (e: IllegalArgumentException) {
+            call.respond(HttpStatusCode.BadRequest, ApiError.invalidUuid(route.parent.id))
+            return@get
+        }
+
+        // Normally we would include access control (in this case, the user's reviewer ID) in the
+        // query to prevent accidentally leaking data to unauthorized users, but in this case we
+        // instead choose to find the update first, so we can return more specific status codes than
+        // Not Found as appropriate if the user has sufficient access.
+        val update = transaction { Update.findById(updateId) } ?: run {
+            call.respond(HttpStatusCode.NotFound, ApiError.updateNotFound(updateId))
+            return@get
+        }
+        val userIsUpdateReviewer =
+            transaction { Reviewer.find { Reviewers.userId eq userId }.singleOrNull() }
+                ?.let { it.id == update.reviewerId }
+                ?: false
+
+        if (userIsUpdateReviewer) {
+            call.response.header(
+                HttpHeaders.ContentDisposition,
+                ContentDisposition.Attachment.withParameter(
+                    ContentDisposition.Parameters.FileName,
+                    "update-${update.appId}-${update.versionCode}.apks",
+                ).toString(),
+            )
+            call.respondBytes { storageService.loadFile(update.fileId).use { it.readBytes() } }
+        } else {
+            // Check whether the user has read access to this update. If they do, tell them they're
+            // not allowed to download the APK set. Otherwise, don't reveal that the update exists.
+            val userCanRead = userId == update.creatorId
+            if (userCanRead) {
+                call.respond(HttpStatusCode.Forbidden, ApiError.downloadForbidden())
+            } else {
+                call.respond(HttpStatusCode.NotFound, ApiError.updateNotFound(updateId))
+            }
         }
     }
 }
