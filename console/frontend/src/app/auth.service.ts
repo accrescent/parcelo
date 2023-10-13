@@ -17,6 +17,7 @@ export class AuthService {
     private readonly sessionUrl = 'api/v1/session';
     private readonly loggedInStorageKey = 'loggedIn';
     private readonly reviewerStorageKey = 'reviewer';
+    private readonly publisherStorageKey = 'publisher';
 
     constructor(private http: HttpClient) {}
 
@@ -28,6 +29,10 @@ export class AuthService {
         return localStorage.getItem(this.reviewerStorageKey) === 'true';
     }
 
+    get publisher(): boolean {
+        return localStorage.getItem(this.publisherStorageKey) === 'true';
+    }
+
     logIn(code: string, state: string): Observable<boolean> {
         const params = new HttpParams().append('code', code).append('state', state);
         return this.http.get<AuthResult>(this.callbackUrl, { observe: 'response', params })
@@ -36,6 +41,7 @@ export class AuthService {
                     const body = res.body!;
 
                     localStorage.setItem(this.reviewerStorageKey, body.reviewer.toString());
+                    localStorage.setItem(this.publisherStorageKey, body.publisher.toString());
                 }),
                 map(res => res.status === HttpStatusCode.Ok),
                 tap(res => localStorage.setItem(this.loggedInStorageKey, res.toString())),

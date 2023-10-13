@@ -43,7 +43,7 @@ val ApplicationEnvironment.oauthStateCookieName
         if (!developmentMode) COOKIE_OAUTH_STATE_PROD else COOKIE_OAUTH_STATE_DEVEL
 
 @Serializable
-data class AuthResult(val reviewer: Boolean)
+data class AuthResult(val reviewer: Boolean, val publisher: Boolean)
 
 fun AuthenticationConfig.github(
     clientId: String,
@@ -152,7 +152,7 @@ fun Route.githubRoutes() {
                     Reviewer.find { Reviewers.userId eq user.id }.singleOrNull()
                 } != null
 
-                call.respond(HttpStatusCode.OK, AuthResult(reviewer))
+                call.respond(HttpStatusCode.OK, AuthResult(reviewer, user.publisher))
             }
         }
     }

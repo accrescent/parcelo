@@ -1,0 +1,25 @@
+<!--
+Copyright 2023 Logan Magee
+
+SPDX-License-Identifier: AGPL-3.0-only
+-->
+
+<mat-card>
+    <mat-card-header>
+        <mat-card-title>{{ draft.label }}</mat-card-title>
+        <mat-card-subtitle>{{ draft.app_id }}</mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content>
+        <br>
+        <h4>Draft info</h4>
+        <ul>
+            <li>Version name: {{ draft.version_name }}</li>
+            <li>Version code: {{ draft.version_code }}</li>
+        </ul>
+    </mat-card-content>
+    <mat-card-actions align="end">
+        <button type="button" (click)="onPublish()" mat-flat-button color="primary">
+            Publish
+        </button>
+    </mat-card-actions>
+</mat-card>

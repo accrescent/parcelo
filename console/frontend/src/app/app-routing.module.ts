@@ -34,6 +34,10 @@ const routes: Routes = [
                 path: 'review',
                 loadChildren: () => import('./review/review.routes').then(m => m.REVIEW_ROUTES),
             },
+            {
+                path: 'publish',
+                loadChildren: () => import('./publish/publish.routes').then(m => m.PUBLISH_ROUTES),
+            },
         ],
     },
     {

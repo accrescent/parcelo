@@ -4,4 +4,5 @@
 
 export interface AuthResult {
     reviewer: boolean;
+    publisher: boolean;
 }

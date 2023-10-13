@@ -36,6 +36,10 @@ export class ConsoleLayoutComponent {
         return this.authService.reviewer;
     }
 
+    get publisher(): boolean {
+        return this.authService.publisher;
+    }
+
     logOut(): void {
         this.authService.logOut().subscribe(() => this.router.navigate(['/login']));
     }
