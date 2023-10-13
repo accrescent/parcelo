@@ -35,4 +35,7 @@ enum class DraftStatus {
 
     @SerialName("rejected")
     REJECTED,
+
+    @SerialName("publishing")
+    PUBLISHING,
 }

@@ -71,11 +71,14 @@ fun Route.createAppRoute() {
             return@post
         }
 
-        // Only allow publishing of approved apps
+        // Only allow publishing of approved apps which are not already being published
         val draft = transaction {
             Draft
                 .findById(draftId)
                 .takeIf { draft -> draft?.reviewId?.let { Review.findById(it)?.approved } ?: false }
+                ?.takeIf { draft -> !draft.publishing }
+                // Update publishing status if found
+                ?.apply { publishing = true }
         }
 
         if (draft != null) {

@@ -31,6 +31,7 @@ object Drafts : UUIDTable("drafts") {
     val reviewIssueGroupId =
         reference("review_issue_group_id", ReviewIssueGroups, ReferenceOption.NO_ACTION).nullable()
     val reviewId = reference("review_id", Reviews, ReferenceOption.NO_ACTION).nullable()
+    val publishing = bool("publishing").default(false)
 
     init {
         // Drafts can't be reviewed without being submitted (which is equivalent to having a
@@ -53,6 +54,7 @@ class Draft(id: EntityID<UUID>) : UUIDEntity(id), ToSerializable<SerializableDra
     var reviewerId by Drafts.reviewerId
     var reviewIssueGroupId by Drafts.reviewIssueGroupId
     var reviewId by Drafts.reviewId
+    var publishing by Drafts.publishing
 
     override fun serializable(): SerializableDraft {
         val status = if (reviewerId == null) {
@@ -60,11 +62,15 @@ class Draft(id: EntityID<UUID>) : UUIDEntity(id), ToSerializable<SerializableDra
         } else if (reviewId == null) {
             DraftStatus.SUBMITTED
         } else {
-            val review = transaction { Review.findById(reviewId!!)!! }
-            if (review.approved) {
-                DraftStatus.APPROVED
+            if (publishing) {
+                DraftStatus.PUBLISHING
             } else {
-                DraftStatus.REJECTED
+                val review = transaction { Review.findById(reviewId!!)!! }
+                if (review.approved) {
+                    DraftStatus.APPROVED
+                } else {
+                    DraftStatus.REJECTED
+                }
             }
         }
 
