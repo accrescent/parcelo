@@ -16,5 +16,6 @@ export enum DraftStatus {
     Unsubmitted = 'unsubmitted',
     Submitted = 'submitted',
     Approved = 'approved',
+    Rejected = 'rejected',
     Publishing = 'publishing',
 }
