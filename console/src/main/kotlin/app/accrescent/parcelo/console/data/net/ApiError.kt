@@ -160,6 +160,12 @@ class ApiError private constructor(
             "Download forbidden",
             "This user does not have sufficient access rights to download this object",
         )
+
+        fun variantNumberNotFound(path: String) = ApiError(
+            43,
+            "Variant number not found",
+            "Variant number not found for $path",
+        )
     }
 }
 
@@ -204,5 +210,6 @@ fun toApiError(error: ParseApkSetResult.Error): ApiError = with(error) {
         ParseApkSetResult.Error.TargetSdkNotFoundError -> ApiError.targetSdkNotFound(message)
         ParseApkSetResult.Error.TestOnlyError -> ApiError.testOnly(message)
         ParseApkSetResult.Error.VersionNameNotFoundError -> ApiError.versionNameNotFound(message)
+        is ParseApkSetResult.Error.VariantNumberNotFoundError -> ApiError.variantNumberNotFound(path)
     }
 }

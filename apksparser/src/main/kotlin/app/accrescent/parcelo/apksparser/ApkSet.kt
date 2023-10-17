@@ -26,6 +26,8 @@ public class ApkSet private constructor(
     public val langSplits: Set<String>,
     public val entrySplitNames: Map<String, Optional<String>>,
 ) {
+    private data class Split(val name: String?, val variantNumber: Int)
+
     public companion object {
         /**
          * Parses an APK set into its metadata
@@ -44,8 +46,8 @@ public class ApkSet private constructor(
          * - all APKs have the same signing certificates
          * - all APKs have the same app ID and version code
          * - all APKs have unique split names
-         * - exactly one APK is a base APK (i.e., has an empty split name)
-         * - the base APK specifies a version name
+         * - at least one APK is a base APK (i.e., has an empty split name)
+         * - the base APKs specify a version name
          *
          * @return metadata describing the APK set and the app it represents
          */
@@ -55,8 +57,9 @@ public class ApkSet private constructor(
             var versionName: String? = null
             var targetSdk: Int? = null
             var bundletoolVersion: Version? = null
+            val pathToVariantMap = mutableMapOf<String, Int>()
             val reviewIssues = mutableListOf<String>()
-            val splitNames = mutableSetOf<String?>()
+            val splits = mutableSetOf<Split>()
             val entrySplitNames = mutableMapOf<String, Optional<String>>()
 
             ZipInputStream(file).use { zip ->
@@ -72,6 +75,18 @@ public class ApkSet private constructor(
                         } catch (e: InvalidProtocolBufferException) {
                             return ParseApkSetResult.Error.BundletoolMetadataError
                         }
+
+                        // Update path to variant number mapping. Since we rely on this for APK
+                        // validation, this places an implicit requirement on the APK set that
+                        // toc.pb must be the first entry.
+                        bundletoolMetadata.variantList.forEach { variant ->
+                            variant.apkSetList.forEach { apkSet ->
+                                apkSet.apkDescriptionList.forEach { apkDescription ->
+                                    pathToVariantMap[apkDescription.path] = variant.variantNumber
+                                }
+                            }
+                        }
+
                         // Validate bundletool version
                         bundletoolVersion = try {
                             Version.Builder(bundletoolMetadata.bundletool.version).build()
@@ -100,7 +115,9 @@ public class ApkSet private constructor(
                         }
                     }
 
-                    if (!splitNames.add(apk.manifest.split)) {
+                    val variantNumber = pathToVariantMap[entry.name]
+                        ?: return ParseApkSetResult.Error.VariantNumberNotFoundError(entry.name)
+                    if (!splits.add(Split(apk.manifest.split, variantNumber))) {
                         return ParseApkSetResult.Error.DuplicateSplitError
                     }
 
@@ -166,7 +183,7 @@ public class ApkSet private constructor(
                 val langSplits = mutableSetOf<String>()
                 val densitySplits = mutableSetOf<String>()
 
-                for (splitName in splitNames) {
+                for (splitName in splits.map { it.name }) {
                     splitName?.let {
                         try {
                             when (getSplitTypeForName(splitName)) {
@@ -184,7 +201,7 @@ public class ApkSet private constructor(
             }
 
             // If there isn't a base APK, freak out
-            if (!splitNames.contains(null)) {
+            if (splits.none { it.name == null}) {
                 return ParseApkSetResult.Error.BaseApkNotFoundError
             }
 
@@ -341,6 +358,13 @@ public sealed class ParseApkSetResult {
          */
         public data class InvalidSplitNameError(val splitName: String) : Error() {
             override val message: String = "$splitName is not a valid configuration split name"
+        }
+
+        /**
+         * No variant number was found for the APK at the given path
+         */
+        public data class VariantNumberNotFoundError(val path: String) : Error() {
+            override val message: String = "no variant number found for $path"
         }
     }
 }
