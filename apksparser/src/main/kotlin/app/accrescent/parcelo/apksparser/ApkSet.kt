@@ -39,8 +39,8 @@ public class ApkSet private constructor(
          *
          * - the input file is a valid ZIP
          * - no ZIP entry names are duplicates
-         * - all non-directory entries in said ZIP except for "toc.pb" are valid APKs
-         * - "toc.pb" is a valid BuildApksResult protocol buffer
+         * - the first entry is a valid BuildApksResult protocol buffer
+         * - all non-directory entries after the first are valid APKs
          * - the input ZIP contains at least one APK
          * - all APKs must not be debuggable
          * - all APKs must not be marked test only
@@ -67,43 +67,40 @@ public class ApkSet private constructor(
                 var pinnedCertHashes = emptyList<String>()
                 val encounteredEntryNames = mutableSetOf<String>()
 
+                // Position stream at beginning of first entry data
+                zip.nextEntry
+
+                // Parse metadata
+                val bundletoolMetadata = try {
+                    BuildApksResult.newBuilder().mergeFrom(zip.readBytes()).build()
+                } catch (e: InvalidProtocolBufferException) {
+                    return ParseApkSetResult.Error.BundletoolMetadataError
+                }
+
+                // Update path to variant number mapping
+                bundletoolMetadata.variantList.forEach { variant ->
+                    variant.apkSetList.forEach { apkSet ->
+                        apkSet.apkDescriptionList.forEach { apkDescription ->
+                            pathToVariantMap[apkDescription.path] = variant.variantNumber
+                        }
+                    }
+                }
+
+                // Validate bundletool version
+                bundletoolVersion = try {
+                    Version.Builder(bundletoolMetadata.bundletool.version).build()
+                } catch (e: ParseException) {
+                    return ParseApkSetResult.Error.BundletoolVersionError
+                }
+
+                // Parse APKs
                 generateSequence { zip.nextEntry }.filterNot { it.isDirectory }.forEach { entry ->
                     // Forbid duplicate entry names so that we can rely on them being unique
                     if (!encounteredEntryNames.add(entry.name)) {
                         return ParseApkSetResult.Error.ZipFormatError
                     }
 
-                    val entryBytes = zip.readBytes()
-
-                    // Parse metadata
-                    if (entry.name == "toc.pb") {
-                        val bundletoolMetadata = try {
-                            BuildApksResult.newBuilder().mergeFrom(entryBytes).build()
-                        } catch (e: InvalidProtocolBufferException) {
-                            return ParseApkSetResult.Error.BundletoolMetadataError
-                        }
-
-                        // Update path to variant number mapping. Since we rely on this for APK
-                        // validation, this places an implicit requirement on the APK set that
-                        // toc.pb must be the first entry.
-                        bundletoolMetadata.variantList.forEach { variant ->
-                            variant.apkSetList.forEach { apkSet ->
-                                apkSet.apkDescriptionList.forEach { apkDescription ->
-                                    pathToVariantMap[apkDescription.path] = variant.variantNumber
-                                }
-                            }
-                        }
-
-                        // Validate bundletool version
-                        bundletoolVersion = try {
-                            Version.Builder(bundletoolMetadata.bundletool.version).build()
-                        } catch (e: ParseException) {
-                            return ParseApkSetResult.Error.BundletoolVersionError
-                        }
-                        return@forEach
-                    }
-
-                    val apk = when (val result = Apk.parse(entryBytes)) {
+                    val apk = when (val result = Apk.parse(zip.readBytes())) {
                         is ParseApkResult.Ok -> result.apk
                         is ParseApkResult.Error -> return ParseApkSetResult.Error.ApkParseError(
                             result
