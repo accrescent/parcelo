@@ -96,42 +96,42 @@ public sealed class ParseApkResult {
         /**
          * The APK is not a well-formed ZIP archive
          */
-        public object ZipFormatError : Error() {
+        public data object ZipFormatError : Error() {
             override val message: String = "APK is not a well-formed ZIP archive"
         }
 
         /**
          * The APK is not well-formed. The specific reason is not specified.
          */
-        public object ApkFormatError : Error() {
+        public data object ApkFormatError : Error() {
             override val message: String = "APK is not well-formed"
         }
 
         /**
          * The APK was not signed with a required signature version
          */
-        public object SignatureVersionError : Error() {
+        public data object SignatureVersionError : Error() {
             override val message: String = "APK not signed with a required signature version"
         }
 
         /**
          * The APK is signed with a debug certificate
          */
-        public object DebugCertificateError : Error() {
+        public data object DebugCertificateError : Error() {
             override val message: String = "APK is signed with a debug certificate"
         }
 
         /**
          * Signature verification failed. In other words, the signature is invalid for this APK.
          */
-        public object SignatureVerificationError : Error() {
+        public data object SignatureVerificationError : Error() {
             override val message: String = "signature verification failed"
         }
 
         /**
          * The Android manifest is not valid
          */
-        public object AndroidManifestError : Error() {
+        public data object AndroidManifestError : Error() {
             override val message: String = "invalid Android manifest"
         }
     }
