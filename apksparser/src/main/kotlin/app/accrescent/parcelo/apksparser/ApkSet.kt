@@ -265,98 +265,98 @@ public sealed class ParseApkSetResult {
         /**
          * An error was encountered in parsing the bundletool metadata
          */
-        public object BundletoolMetadataError : Error() {
+        public data object BundletoolMetadataError : Error() {
             override val message: String = "bundletool metadata not valid"
         }
 
         /**
          * An error was encountered in parsing the bundletool version
          */
-        public object BundletoolVersionError : Error() {
+        public data object BundletoolVersionError : Error() {
             override val message: String = "invalid bundletool version"
         }
 
         /**
          * A mismatch exists between APK signing certificates
          */
-        public object SigningCertMismatchError : Error() {
+        public data object SigningCertMismatchError : Error() {
             override val message: String = "APK signing certificates don't match each other"
         }
 
         /**
          * A duplicate split APK name was detected
          */
-        public object DuplicateSplitError : Error() {
+        public data object DuplicateSplitError : Error() {
             override val message: String = "duplicate split names found"
         }
 
         /**
          * Application is debuggable
          */
-        public object DebuggableError : Error() {
+        public data object DebuggableError : Error() {
             override val message: String = "application is debuggable"
         }
 
         /**
          * Application is test-only
          */
-        public object TestOnlyError : Error() {
+        public data object TestOnlyError : Error() {
             override val message: String = "application is test only"
         }
 
         /**
          * Android manifest info (app ID and version name) isn't the same across all APKs
          */
-        public object ManifestInfoInconsistentError : Error() {
+        public data object ManifestInfoInconsistentError : Error() {
             override val message: String = "APK manifest info is not consistent across all APKs"
         }
 
         /**
          * The base APK doesn't specify a version name
          */
-        public object BaseApkVersionNameUnspecifiedError : Error() {
+        public data object BaseApkVersionNameUnspecifiedError : Error() {
             override val message: String = "base APK doesn't specify a version name"
         }
 
         /**
          * The base APK doesn't specify a target SDK
          */
-        public object BaseApkTargetSdkUnspecifiedError : Error() {
+        public data object BaseApkTargetSdkUnspecifiedError : Error() {
             override val message: String = "base APK doesn't specify a target SDK"
         }
 
         /**
          * No base APK was found
          */
-        public object BaseApkNotFoundError : Error() {
+        public data object BaseApkNotFoundError : Error() {
             override val message: String = "no base APK found"
         }
 
         /**
          * No APKs were found
          */
-        public object ApksNotFoundError : Error() {
+        public data object ApksNotFoundError : Error() {
             override val message: String = "no APKs found"
         }
 
         /**
          * No version name was found in the APK set
          */
-        public object VersionNameNotFoundError : Error() {
+        public data object VersionNameNotFoundError : Error() {
             override val message: String = "no version name specified"
         }
 
         /**
          * No target SDK was found in the APK set
          */
-        public object TargetSdkNotFoundError : Error() {
+        public data object TargetSdkNotFoundError : Error() {
             override val message: String = "no targetSdk specified"
         }
 
         /**
          * No bundletool version was found in the APK set
          */
-        public object BundletoolVersionNotFoundError : Error() {
+        public data object BundletoolVersionNotFoundError : Error() {
             override val message: String = "no bundletool version found"
         }
 
@@ -377,7 +377,7 @@ public sealed class ParseApkSetResult {
         /**
          * The provided file is not a valid ZIP
          */
-        public object ZipFormatError : Error() {
+        public data object ZipFormatError : Error() {
             override val message: String = "file is not a valid ZIP"
         }
     }
