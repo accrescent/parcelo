@@ -211,5 +211,6 @@ fun toApiError(error: ParseApkSetResult.Error): ApiError = with(error) {
         ParseApkSetResult.Error.TestOnlyError -> ApiError.testOnly(message)
         ParseApkSetResult.Error.VersionNameNotFoundError -> ApiError.versionNameNotFound(message)
         is ParseApkSetResult.Error.VariantNumberNotFoundError -> ApiError.variantNumberNotFound(path)
+        ParseApkSetResult.Error.ZipFormatError -> ApiError.zipFormat(message)
     }
 }
