@@ -191,7 +191,7 @@ fun Route.createDraftRoute() {
                 return@post
             }
 
-            val reviewIssues = REVIEW_ISSUE_BLACKLIST intersect apkSet.reviewIssues.toSet()
+            val reviewIssues = REVIEW_ISSUE_BLACKLIST intersect apkSet.reviewIssues
             val draft = transaction {
                 // Associate review issues with draft as necessary
                 val issueGroupId = if (reviewIssues.isNotEmpty()) {

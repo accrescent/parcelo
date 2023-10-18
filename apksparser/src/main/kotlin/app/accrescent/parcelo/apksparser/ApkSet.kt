@@ -20,7 +20,7 @@ public class ApkSet private constructor(
     public val versionName: String,
     public val targetSdk: Int,
     public val bundletoolVersion: Version,
-    public val reviewIssues: List<String>,
+    public val reviewIssues: Set<String>,
     public val abiSplits: Set<String>,
     public val densitySplits: Set<String>,
     public val langSplits: Set<String>,
@@ -59,7 +59,7 @@ public class ApkSet private constructor(
             var targetSdk: Int? = null
             var bundletoolVersion: Version? = null
             val pathToVariantMap = mutableMapOf<String, Int>()
-            val reviewIssues = mutableListOf<String>()
+            val reviewIssues = mutableSetOf<String>()
             val splits = mutableSetOf<Split>()
             val entrySplitNames = mutableMapOf<String, Optional<String>>()
 

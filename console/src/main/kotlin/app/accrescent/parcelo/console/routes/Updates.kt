@@ -186,7 +186,7 @@ fun Route.createUpdateRoute() {
         // for review. If there are none, we don't assign a reviewer.
         val update = transaction {
             REVIEW_ISSUE_BLACKLIST
-                .intersect(apkSet.reviewIssues.toSet())
+                .intersect(apkSet.reviewIssues)
                 .let { reviewIssues ->
                     if (app.reviewIssueGroupId != null) {
                         reviewIssues.subtract(ReviewIssue.find {
