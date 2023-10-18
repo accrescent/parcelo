@@ -78,10 +78,21 @@ public class ApkSet private constructor(
                 }
 
                 // Update path to variant number mapping
+                //
+                // Since a split can be included in multiple variants, we map the split to the
+                // highest possible variant number since higher variant numbers contain more
+                // optimized device configurations (see the documentation for Variant.variant_number
+                // in commands.proto) and our current lowest common denominator for supported device
+                // configurations supports all the features we use (i.e., uncompressed native
+                // libraries and uncompressed DEX).
                 bundletoolMetadata.variantList.forEach { variant ->
                     variant.apkSetList.forEach { apkSet ->
                         apkSet.apkDescriptionList.forEach { apkDescription ->
-                            pathToVariantMap[apkDescription.path] = variant.variantNumber
+                            (pathToVariantMap[apkDescription.path] ?: 0).let { variantNumber ->
+                                if (variantNumber <= variant.variantNumber) {
+                                    pathToVariantMap[apkDescription.path] = variant.variantNumber
+                                }
+                            }
                         }
                     }
                 }
