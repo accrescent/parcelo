@@ -20,6 +20,9 @@ import { UpdateCardComponent } from '../update-card/update-card.component';
 import { UpdateFilterPipe } from '../update-filter.pipe';
 import { UpdateService } from '../update.service';
 import {
+    UpdateDeletionDialogComponent,
+} from '../update-deletion-dialog/update-deletion-dialog.component';
+import {
     UpdateSubmissionDialogComponent
 } from '../update-submission-dialog/update-submission-dialog.component';
 
@@ -106,5 +109,24 @@ export class UpdatesScreenComponent implements OnInit {
                 update.status = submittedUpdate.status;
             }
         });
+    }
+
+    deleteUpdate(id: string): void {
+        const update = this.updates.find(update => update.id === id);
+
+        this.dialog
+            .open(UpdateDeletionDialogComponent, { data: update })
+            .afterClosed()
+            .subscribe(confirmed => {
+                if (confirmed) {
+                    this.updateService.deleteUpdate(id).subscribe(() => {
+                        // Remove update from the UI
+                        const i = this.updates.findIndex(update => update.id === id);
+                        if (i > -1) {
+                            this.updates.splice(i, 1);
+                        }
+                    });
+                }
+            });
     }
 }

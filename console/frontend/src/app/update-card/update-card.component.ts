@@ -16,9 +16,14 @@ import { Update, UpdateStatus } from '../update';
 })
 export class UpdateCardComponent {
     @Input({ required: true }) update!: Update;
+    @Output() delete = new EventEmitter<string>();
     @Output() submitForReview = new EventEmitter<string>();
 
     updateStatusEnum = UpdateStatus;
+
+    onDelete(): void {
+        this.delete.emit(this.update.id);
+    }
 
     onSubmitForReview(): void {
         this.submitForReview.emit(this.update.id);

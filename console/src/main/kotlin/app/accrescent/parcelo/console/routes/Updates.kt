@@ -42,6 +42,7 @@ import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.principal
 import io.ktor.server.request.receive
 import io.ktor.server.request.receiveMultipart
+import io.ktor.server.resources.delete
 import io.ktor.server.resources.get
 import io.ktor.server.resources.patch
 import io.ktor.server.resources.post
@@ -80,6 +81,7 @@ fun Route.updateRoutes() {
         createUpdateRoute()
         getUpdatesForAppRoute()
         updateUpdateRoute()
+        deleteUpdateRoute()
 
         getAssignedUpdatesRoute()
         getUpdateApkSetRoute()
@@ -322,6 +324,51 @@ fun Route.updateUpdateRoute() {
             call.respond(statusCode, responseBody)
         } else {
             call.respond(statusCode)
+        }
+    }
+}
+
+/**
+ * Deletes the update with the given ID. The user deleting the update must be its creator and have
+ * the "update" permission for the associated app.
+ */
+fun Route.deleteUpdateRoute() {
+    val storageService: FileStorageService by inject()
+
+    delete<Updates.Id> { route ->
+        val userId = call.principal<Session>()!!.userId
+        val updateId = try {
+            UUID.fromString(route.id)
+        } catch (e: IllegalArgumentException) {
+            call.respond(HttpStatusCode.BadRequest, ApiError.invalidUuid(route.id))
+            return@delete
+        }
+
+        val update = transaction {
+            Update
+                .findById(updateId)
+                ?.takeIf { update ->
+                    AccessControlList.find {
+                        AccessControlLists.appId.eq(update.appId)
+                            .and(AccessControlLists.userId eq userId)
+                            .and(AccessControlLists.update)
+                    }.singleOrNull() != null
+                }
+        }
+        if (update == null) {
+            // Either the update doesn't exist or the user doesn't have the "update" permission for
+            // the associated app
+            call.respond(HttpStatusCode.NotFound, ApiError.updateNotFound(updateId))
+        } else {
+            // If the user is the update's creator, delete the update. Otherwise, inform them they
+            // don't have sufficient permissions to delete the update.
+            if (update.creatorId == userId) {
+                storageService.deleteFile(update.fileId)
+                transaction { update.delete() }
+                call.respond(HttpStatusCode.NoContent)
+            } else {
+                call.respond(HttpStatusCode.Forbidden, ApiError.deleteForbidden())
+            }
         }
     }
 }
