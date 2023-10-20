@@ -166,6 +166,12 @@ class ApiError private constructor(
             "Variant number not found",
             "Variant number not found for $path",
         )
+
+        fun deleteForbidden() = ApiError(
+            43,
+            "Deletion forbidden",
+            "This user does not have sufficient access rights to delete this object",
+        )
     }
 }
 

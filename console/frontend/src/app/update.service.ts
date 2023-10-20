@@ -37,4 +37,8 @@ export class UpdateService {
     submitUpdate(id: string): Observable<Update> {
         return this.http.patch<Update>(`${this.updatesUrl}/${id}`, '');
     }
+
+    deleteUpdate(id: string): Observable<void> {
+        return this.http.delete<void>(`${this.updatesUrl}/${id}`);
+    }
 }
