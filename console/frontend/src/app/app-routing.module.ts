@@ -2,10 +2,12 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only
 
-import { NgModule } from '@angular/core';
+import { ErrorHandler, NgModule } from '@angular/core';
+import { MatSnackBarModule, MAT_SNACK_BAR_DEFAULT_OPTIONS } from '@angular/material/snack-bar';
 import { RouterModule, Routes } from '@angular/router';
 
 import { authGuard } from './auth.guard';
+import { GlobalErrorHandler } from './global-error-handler';
 
 const routes: Routes = [
     {
@@ -57,7 +59,14 @@ const routes: Routes = [
 ];
 
 @NgModule({
-    imports: [RouterModule.forRoot(routes)],
+    providers: [{
+        provide: ErrorHandler,
+        useClass: GlobalErrorHandler,
+    }, {
+        provide: MAT_SNACK_BAR_DEFAULT_OPTIONS,
+        useValue: { duration: 5000 },
+    }],
+    imports: [MatSnackBarModule, RouterModule.forRoot(routes)],
     exports: [RouterModule]
 })
 export class AppRoutingModule { }
