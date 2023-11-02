@@ -17,6 +17,7 @@ import io.ktor.server.application.Application
 import io.ktor.server.application.install
 import io.ktor.server.netty.EngineMain
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.server.plugins.forwardedheaders.XForwardedHeaders
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import org.koin.dsl.module
@@ -72,6 +73,7 @@ fun Application.module() {
             explicitNulls = false
         })
     }
+    install(XForwardedHeaders)
     configureJobRunr(configureDatabase())
     configureAuthentication(
         githubClientId = config.github.clientId,
