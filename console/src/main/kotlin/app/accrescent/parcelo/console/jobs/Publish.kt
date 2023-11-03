@@ -102,16 +102,23 @@ fun registerPublishUpdateJob(updateId: UUID) {
     }
 
     // Account for publication
-    transaction {
-        App.findById(update.appId)?.apply {
+    val oldAppFileId = transaction {
+        App.findById(update.appId)?.run {
             versionCode = update.versionCode
             versionName = update.versionName
 
             val oldAppFileId = fileId
             fileId = update.fileId
-            storageService.deleteFile(oldAppFileId)
 
             update.published = true
+            updating = false
+
+            oldAppFileId
         }
+    }
+
+    // Delete old app file
+    if (oldAppFileId != null) {
+        storageService.deleteFile(oldAppFileId)
     }
 }

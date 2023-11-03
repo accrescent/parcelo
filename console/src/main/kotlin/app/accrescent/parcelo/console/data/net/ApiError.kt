@@ -172,6 +172,12 @@ class ApiError private constructor(
             "Deletion forbidden",
             "This user does not have sufficient access rights to delete this object",
         )
+
+        fun alreadyUpdating(appId: String) = ApiError(
+            44,
+            "Already updating",
+            "The app \"$appId\" is currently updating. Please try again later.",
+        )
     }
 }
 

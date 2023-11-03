@@ -4,7 +4,6 @@
 
 package app.accrescent.parcelo.console.routes
 
-import app.accrescent.parcelo.console.data.Apps as DbApps
 import app.accrescent.parcelo.console.data.Updates as DbUpdates
 import app.accrescent.parcelo.apksparser.ApkSet
 import app.accrescent.parcelo.apksparser.ParseApkSetResult
@@ -280,30 +279,30 @@ fun Route.updateUpdateRoute() {
 
         // Users can only submit an update they've created and which has a versionCode higher than
         // that of the published app
-        val (statusCode, responseBody) = transaction {
-            val publishedApp = App
-                .find { DbApps.id eq appId }
-                .forUpdate() // Lock to prevent race conditions on the version code
-                .singleOrNull()
-                ?: return@transaction Pair(HttpStatusCode.InternalServerError, null)
-            val update = Update
+        val publishedApp = transaction { App.findById(appId) } ?: run {
+            call.respond(HttpStatusCode.InternalServerError)
+            return@patch
+        }
+        val update = transaction {
+            Update
                 .find { DbUpdates.id eq updateId and (DbUpdates.creatorId eq userId) }
                 .singleOrNull()
-                ?: return@transaction Pair(
-                    HttpStatusCode.NotFound,
-                    ApiError.updateNotFound(updateId),
-                )
+        } ?: run {
+            call.respond(HttpStatusCode.NotFound, ApiError.updateNotFound(updateId))
+            return@patch
+        }
 
-            val requiresReview = update.reviewIssueGroupId != null
-            if (update.versionCode <= publishedApp.versionCode) {
-                Pair(
-                    HttpStatusCode.Conflict,
-                    ApiError.updateVersionTooLow(update.versionCode, publishedApp.versionCode),
-                )
-            } else if (requiresReview) {
-                if (update.reviewerId != null) {
-                    Pair(HttpStatusCode.Conflict, ApiError.reviewerAlreadyAssigned())
-                } else {
+        val requiresReview = update.reviewIssueGroupId != null
+        if (update.versionCode <= publishedApp.versionCode) {
+            call.respond(
+                HttpStatusCode.Conflict,
+                ApiError.updateVersionTooLow(update.versionCode, publishedApp.versionCode),
+            )
+        } else if (requiresReview) {
+            if (update.reviewerId != null) {
+                call.respond(HttpStatusCode.Conflict, ApiError.reviewerAlreadyAssigned())
+            } else {
+                transaction {
                     update.submitted = true
                     update.reviewerId = Reviewers
                         .slice(Reviewers.id)
@@ -311,19 +310,18 @@ fun Route.updateUpdateRoute() {
                         .orderBy(Random())
                         .limit(1)
                         .single()[Reviewers.id]
-                    Pair(HttpStatusCode.OK, update.serializable())
                 }
-            } else {
-                update.submitted = true
-                BackgroundJob.enqueue { registerPublishUpdateJob(update.id.value) }
-                Pair(HttpStatusCode.OK, update.serializable())
+                call.respond(HttpStatusCode.OK, update.serializable())
             }
-        }
-
-        if (responseBody != null) {
-            call.respond(statusCode, responseBody)
+        } else if (publishedApp.updating) {
+            call.respond(HttpStatusCode.Conflict, ApiError.alreadyUpdating(publishedApp.id.value))
         } else {
-            call.respond(statusCode)
+            transaction {
+                update.submitted = true
+                publishedApp.updating = true
+            }
+            BackgroundJob.enqueue { registerPublishUpdateJob(update.id.value) }
+            call.respond(HttpStatusCode.OK, update.serializable())
         }
     }
 }
@@ -500,6 +498,12 @@ fun Route.createUpdateReviewRoute() {
                     ApiError.updateVersionTooLow(update.versionCode, publishedApp.versionCode),
                 )
                 return@post
+            } else if (publishedApp.updating) {
+                call.respond(
+                    HttpStatusCode.Conflict,
+                    ApiError.alreadyUpdating(publishedApp.id.value),
+                )
+                return@post
             }
 
             // Create the review
@@ -523,6 +527,7 @@ fun Route.createUpdateReviewRoute() {
 
             // If approved, submit a publishing job for the update
             if (review.approved) {
+                transaction { publishedApp.updating = true }
                 BackgroundJob.enqueue { registerPublishUpdateJob(update.id.value) }
             }
             call.respond(HttpStatusCode.Created, request)
