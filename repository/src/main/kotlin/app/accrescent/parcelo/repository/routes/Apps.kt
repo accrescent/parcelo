@@ -40,6 +40,7 @@ import kotlin.io.path.deleteRecursively
 import kotlin.io.path.forEachDirectoryEntry
 import kotlin.io.path.isDirectory
 import kotlin.io.path.name
+import kotlin.io.path.setPosixFilePermissions
 
 @Resource("/apps")
 class Apps {
@@ -174,14 +175,19 @@ private fun publish(
 ) {
     val appDir = Paths.get(publishDir, metadata.appId.value)
     val apksDir = Paths.get(appDir.toString(), metadata.versionCode.toString())
-    val baseDirAttributes = PosixFilePermissions.asFileAttribute(
-        setOf(
-            PosixFilePermission.OWNER_READ,
-            PosixFilePermission.OWNER_WRITE,
-            PosixFilePermission.OWNER_EXECUTE,
+    apksDir
+        .createDirectories()
+        .setPosixFilePermissions(
+            setOf(
+                PosixFilePermission.OWNER_READ,
+                PosixFilePermission.OWNER_WRITE,
+                PosixFilePermission.OWNER_EXECUTE,
+                PosixFilePermission.GROUP_READ,
+                PosixFilePermission.GROUP_EXECUTE,
+                PosixFilePermission.OTHERS_READ,
+                PosixFilePermission.OTHERS_EXECUTE,
+            )
         )
-    )
-    apksDir.createDirectories(baseDirAttributes)
 
     // Extract split APKs
     generateSequence { zip.nextEntry }.filterNot { it.isDirectory }.forEach { entry ->
@@ -189,15 +195,19 @@ private fun publish(
         val splitName = metadata.entrySplitNames[entry.name] ?: return@forEach
 
         val fileName = if (splitName.isEmpty) "base.apk" else "split.${splitName.get()}.apk"
-        val outFile = File(apksDir.toString(), fileName)
 
-        FileOutputStream(outFile).use { zip.copyTo(it) }
+        File(apksDir.toString(), fileName).apply {
+            FileOutputStream(this).use { zip.copyTo(it) }
+            setReadable(true, false)
+        }
     }
 
     // Copy icon
     if (type is PublicationType.NewApp) {
-        val iconFile = File(appDir.toString(), "icon.png")
-        FileOutputStream(iconFile).use { type.icon.copyTo(it) }
+        File(appDir.toString(), "icon.png").apply {
+            FileOutputStream(this).use { type.icon.copyTo(it) }
+            setReadable(true, false)
+        }
     }
 
     // Publish repodata
@@ -208,17 +218,10 @@ private fun publish(
         langSplits = metadata.langSplits,
         densitySplits = metadata.densitySplits,
     )
-    val repoDataFileAttributes = PosixFilePermissions.asFileAttribute(
-        setOf(
-            PosixFilePermission.OWNER_READ,
-            PosixFilePermission.OWNER_WRITE,
-            PosixFilePermission.GROUP_READ,
-            PosixFilePermission.OTHERS_READ,
-        )
-    )
     val repoDataFile = appDir.resolve("repodata.json").apply {
         if (type is PublicationType.NewApp) {
-            createFile(repoDataFileAttributes)
+            val path = createFile()
+            File(path.toString()).setReadable(true, false)
         }
     }
     repoDataFile.toFile().outputStream().use { outFile ->
