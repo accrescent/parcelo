@@ -29,11 +29,11 @@ import java.io.FileOutputStream
 import java.io.InputStream
 import java.nio.file.Paths
 import java.nio.file.attribute.PosixFilePermission
-import java.nio.file.attribute.PosixFilePermissions
 import java.util.zip.ZipInputStream
 import javax.imageio.IIOException
 import javax.imageio.ImageIO
 import kotlin.io.path.ExperimentalPathApi
+import kotlin.io.path.Path
 import kotlin.io.path.createDirectories
 import kotlin.io.path.createFile
 import kotlin.io.path.deleteRecursively
@@ -175,19 +175,18 @@ private fun publish(
 ) {
     val appDir = Paths.get(publishDir, metadata.appId.value)
     val apksDir = Paths.get(appDir.toString(), metadata.versionCode.toString())
-    apksDir
-        .createDirectories()
-        .setPosixFilePermissions(
-            setOf(
-                PosixFilePermission.OWNER_READ,
-                PosixFilePermission.OWNER_WRITE,
-                PosixFilePermission.OWNER_EXECUTE,
-                PosixFilePermission.GROUP_READ,
-                PosixFilePermission.GROUP_EXECUTE,
-                PosixFilePermission.OTHERS_READ,
-                PosixFilePermission.OTHERS_EXECUTE,
-            )
-        )
+    val directoryPermissions = setOf(
+        PosixFilePermission.OWNER_READ,
+        PosixFilePermission.OWNER_WRITE,
+        PosixFilePermission.OWNER_EXECUTE,
+        PosixFilePermission.GROUP_READ,
+        PosixFilePermission.GROUP_EXECUTE,
+        PosixFilePermission.OTHERS_READ,
+        PosixFilePermission.OTHERS_EXECUTE,
+    )
+    apksDir.createDirectories().setPosixFilePermissions(directoryPermissions)
+    appDir.setPosixFilePermissions(directoryPermissions)
+    Path(publishDir).setPosixFilePermissions(directoryPermissions)
 
     // Extract split APKs
     generateSequence { zip.nextEntry }.filterNot { it.isDirectory }.forEach { entry ->
