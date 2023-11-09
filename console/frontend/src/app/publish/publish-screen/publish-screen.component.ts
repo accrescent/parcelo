@@ -17,7 +17,7 @@ import {
     standalone: true,
     imports: [NgFor, NgIf, PublisherDraftCardComponent],
     templateUrl: './publish-screen.component.html',
-    styleUrls: ['./publish-screen.component.scss']
+    styleUrl: './publish-screen.component.scss'
 })
 export class PublishScreenComponent implements OnInit {
     drafts: Draft[] = [];

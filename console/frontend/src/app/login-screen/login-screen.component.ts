@@ -8,7 +8,7 @@ import { MatButtonModule } from '@angular/material/button';
 @Component({
     selector: 'app-login-screen',
     templateUrl: './login-screen.component.html',
-    styleUrls: ['./login-screen.component.scss'],
+    styleUrl: './login-screen.component.scss',
     standalone: true,
     imports: [MatButtonModule],
 })

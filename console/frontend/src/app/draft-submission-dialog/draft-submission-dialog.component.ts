@@ -13,7 +13,7 @@ import { Draft } from '../draft';
     standalone: true,
     imports: [MatButtonModule, MatDialogModule],
     templateUrl: './draft-submission-dialog.component.html',
-    styleUrls: ['./draft-submission-dialog.component.scss']
+    styleUrl: './draft-submission-dialog.component.scss'
 })
 export class DraftSubmissionDialogComponent {
     constructor(@Inject(MAT_DIALOG_DATA) public data: Draft) {}

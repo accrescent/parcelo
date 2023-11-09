@@ -33,7 +33,7 @@ import { DraftService } from '../draft.service';
         RouterLink,
     ],
     templateUrl: './apps-screen.component.html',
-    styleUrls: ['./apps-screen.component.scss'],
+    styleUrl: './apps-screen.component.scss',
 })
 export class AppsScreenComponent implements OnInit {
     apps: App[] = [];

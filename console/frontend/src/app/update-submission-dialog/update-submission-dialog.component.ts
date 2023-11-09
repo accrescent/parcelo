@@ -14,7 +14,7 @@ import { Update } from '../update';
     standalone: true,
     imports: [MatButtonModule, MatDialogModule],
     templateUrl: './update-submission-dialog.component.html',
-    styleUrls: ['./update-submission-dialog.component.scss']
+    styleUrl: './update-submission-dialog.component.scss'
 })
 export class UpdateSubmissionDialogComponent {
     constructor(@Inject(MAT_DIALOG_DATA) public data: { app: App, update: Update }) {}

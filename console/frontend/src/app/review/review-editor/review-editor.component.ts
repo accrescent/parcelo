@@ -29,7 +29,7 @@ import { Review, ReviewResult } from '../review';
         ReactiveFormsModule,
     ],
     templateUrl: './review-editor.component.html',
-    styleUrls: ['./review-editor.component.scss']
+    styleUrl: './review-editor.component.scss'
 })
 export class ReviewEditorComponent {
     @Output() formSubmit = new EventEmitter<Review>();

@@ -24,7 +24,7 @@ import { NewDraftForm } from '../new-draft-form';
         ReactiveFormsModule,
     ],
     templateUrl: './new-draft-editor.component.html',
-    styleUrls: ['./new-draft-editor.component.scss'],
+    styleUrl: './new-draft-editor.component.scss',
 })
 export class NewDraftEditorComponent {
     @Output() formSubmit = new EventEmitter<NewDraftForm>();

@@ -41,7 +41,7 @@ import {
         UpdateFilterPipe,
     ],
     templateUrl: './updates-screen.component.html',
-    styleUrls: ['./updates-screen.component.scss'],
+    styleUrl: './updates-screen.component.scss',
 })
 export class UpdatesScreenComponent implements OnInit {
     app?: App;

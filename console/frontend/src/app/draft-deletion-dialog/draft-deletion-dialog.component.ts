@@ -13,7 +13,7 @@ import { Draft } from '../draft';
     standalone: true,
     imports: [MatButtonModule, MatDialogModule],
     templateUrl: './draft-deletion-dialog.component.html',
-    styleUrls: ['./draft-deletion-dialog.component.scss']
+    styleUrl: './draft-deletion-dialog.component.scss'
 })
 export class DraftDeletionDialogComponent {
     constructor(@Inject(MAT_DIALOG_DATA) public data: Draft) {}

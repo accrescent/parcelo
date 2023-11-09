@@ -27,7 +27,7 @@ import { UpdateService } from '../update.service';
         ReviewerUpdateCardComponent,
     ],
     templateUrl: './review-screen.component.html',
-    styleUrls: ['./review-screen.component.scss'],
+    styleUrl: './review-screen.component.scss',
 })
 export class ReviewScreenComponent implements OnInit {
     drafts: Draft[] = [];

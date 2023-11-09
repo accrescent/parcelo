@@ -15,7 +15,7 @@ import { NewUpdateForm } from '../new-update-form';
     standalone: true,
     imports: [MatButtonModule, MatCardModule, NgIf, ReactiveFormsModule],
     templateUrl: './new-update-editor.component.html',
-    styleUrls: ['./new-update-editor.component.scss']
+    styleUrl: './new-update-editor.component.scss'
 })
 export class NewUpdateEditorComponent {
     @Output() formSubmit = new EventEmitter<NewUpdateForm>();

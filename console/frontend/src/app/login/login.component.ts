@@ -12,7 +12,7 @@ import { AuthService } from '../auth.service';
 @Component({
     selector: 'app-login',
     templateUrl: './login.component.html',
-    styleUrls: ['./login.component.scss'],
+    styleUrl: './login.component.scss',
     imports: [MatProgressSpinnerModule, NgIf],
     standalone: true,
 })

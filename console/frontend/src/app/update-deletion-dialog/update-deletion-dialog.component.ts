@@ -13,7 +13,7 @@ import { Update } from '../update';
     standalone: true,
     imports: [MatButtonModule, MatDialogModule],
     templateUrl: './update-deletion-dialog.component.html',
-    styleUrls: ['./update-deletion-dialog.component.scss']
+    styleUrl: './update-deletion-dialog.component.scss'
 })
 export class UpdateDeletionDialogComponent {
     constructor(@Inject(MAT_DIALOG_DATA) public data: Update) {}

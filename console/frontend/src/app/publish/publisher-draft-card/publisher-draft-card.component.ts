@@ -13,7 +13,7 @@ import { Draft } from '../../draft';
     standalone: true,
     imports: [MatButtonModule, MatCardModule],
     templateUrl: './publisher-draft-card.component.html',
-    styleUrls: ['./publisher-draft-card.component.scss']
+    styleUrl: './publisher-draft-card.component.scss'
 })
 export class PublisherDraftCardComponent {
     @Input({ required: true }) draft!: Draft;
