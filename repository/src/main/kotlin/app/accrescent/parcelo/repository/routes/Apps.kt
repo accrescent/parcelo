@@ -193,7 +193,11 @@ private fun publish(
         // Don't extract any file that doesn't have an associated split name or explicit lack thereof
         val splitName = metadata.entrySplitNames[entry.name] ?: return@forEach
 
-        val fileName = if (splitName.isEmpty) "base.apk" else "split.${splitName.get()}.apk"
+        val fileName = if (splitName.isEmpty) {
+            "base.apk"
+        } else {
+            "split.${splitName.get().replace('_', '-')}.apk"
+        }
 
         File(apksDir.toString(), fileName).apply {
             FileOutputStream(this).use { zip.copyTo(it) }
