@@ -13,6 +13,7 @@ import app.accrescent.parcelo.console.data.Update
 import app.accrescent.parcelo.console.storage.FileStorageService
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.expectSuccess
+import io.ktor.client.plugins.timeout
 import io.ktor.client.request.forms.formData
 import io.ktor.client.request.forms.submitFormWithBinaryData
 import io.ktor.client.request.header
@@ -25,6 +26,10 @@ import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.koin.java.KoinJavaComponent.inject
 import java.util.UUID
+
+// Socket timeout for publishing the app, since processing occurs in the background before a
+// response is returned. 1 minute.
+private const val SOCKET_TIMEOUT: Long = 60_000
 
 fun registerPublishAppJob(draftId: UUID) {
     val config: Config by inject(Config::class.java)
@@ -52,6 +57,7 @@ fun registerPublishAppJob(draftId: UUID) {
                 })
             }
         }) {
+            timeout { socketTimeoutMillis = SOCKET_TIMEOUT }
             header("Authorization", "token ${config.repository.apiKey}")
             expectSuccess = true
         }
@@ -95,6 +101,7 @@ fun registerPublishUpdateJob(updateId: UUID) {
                 })
             }
         }) {
+            timeout { socketTimeoutMillis = SOCKET_TIMEOUT }
             method = HttpMethod.Put
             header("Authorization", "token ${config.repository.apiKey}")
             expectSuccess = true

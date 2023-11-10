@@ -12,6 +12,7 @@ import app.accrescent.parcelo.console.storage.LocalFileStorageService
 import cc.ekblad.toml.decode
 import cc.ekblad.toml.tomlMapper
 import io.ktor.client.HttpClient
+import io.ktor.client.plugins.HttpTimeout
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
@@ -62,7 +63,7 @@ fun Application.module() {
         val mainModule = module {
             single { config }
             single<FileStorageService> { LocalFileStorageService(Path(config.application.fileStorageDir)) }
-            single { HttpClient() }
+            single { HttpClient() { install(HttpTimeout) } }
         }
 
         modules(mainModule)
