@@ -12,7 +12,7 @@ import java.io.File
 fun cleanDeletedFiles() {
     transaction { FileDao.find { Files.deleted eq true } }.forEach {
         if (File(it.localPath).delete()) {
-            it.delete()
+            transaction { it.delete() }
         }
     }
 }
