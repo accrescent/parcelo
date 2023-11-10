@@ -12,11 +12,13 @@ import java.io.File
 import java.io.IOException
 
 fun cleanFile(fileId: Int) {
-    val file = transaction {
+    val dbFile = transaction {
         FileDao.find { Files.id eq fileId and Files.deleted }.singleOrNull()
     } ?: return
-    if (File(file.localPath).delete()) {
-        transaction { file.delete() }
+    val diskFile = File(dbFile.localPath)
+
+    if (!diskFile.exists() || diskFile.delete()) {
+        transaction { dbFile.delete() }
     } else {
         throw IOException("file cleaning failed")
     }

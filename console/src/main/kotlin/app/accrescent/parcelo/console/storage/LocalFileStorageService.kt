@@ -36,8 +36,7 @@ class LocalFileStorageService(private val baseDirectory: Path) : FileStorageServ
     }
 
     override fun deleteFile(id: EntityID<Int>) {
-        transaction { findFile(id)?.apply { deleted = true } }
-            ?: throw FileNotFoundException("file ID ${id.value} not found (is it already deleted?)")
+        transaction { findFile(id)?.apply { deleted = true } } ?: return
 
         BackgroundJob.enqueue { cleanFile(id.value) }
     }
