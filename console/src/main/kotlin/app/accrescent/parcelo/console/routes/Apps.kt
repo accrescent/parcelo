@@ -35,6 +35,9 @@ import java.util.UUID
 class Apps {
     @Resource("{id}")
     class Id(val parent: Apps = Apps(), val id: String) {
+        @Resource("edits")
+        class Edits(val parent: Id)
+
         @Resource("updates")
         class Updates(val parent: Id)
     }

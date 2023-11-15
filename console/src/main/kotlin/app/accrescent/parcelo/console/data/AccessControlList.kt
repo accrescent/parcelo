@@ -14,6 +14,7 @@ object AccessControlLists : IntIdTable("access_control_lists") {
     val userId = reference("user_id", Users, ReferenceOption.CASCADE)
     val appId = reference("app_id", Apps, ReferenceOption.CASCADE)
     val update = bool("update").default(false)
+    val editMetadata = bool("edit_metadata").default(false)
 
     init {
         uniqueIndex(userId, appId)
@@ -26,4 +27,5 @@ class AccessControlList(id: EntityID<Int>) : IntEntity(id) {
     var userId by AccessControlLists.userId
     var appId by AccessControlLists.appId
     var update by AccessControlLists.update
+    var editMetadata by AccessControlLists.editMetadata
 }

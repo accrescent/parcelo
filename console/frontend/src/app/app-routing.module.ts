@@ -23,9 +23,9 @@ const routes: Routes = [
                     import('./apps-screen/apps-screen.component').then(m => m.AppsScreenComponent),
             },
             {
-                path: 'apps/:id/updates',
-                loadComponent: () => import('./updates-screen/updates-screen.component')
-                    .then(m => m.UpdatesScreenComponent),
+                path: 'apps/:id/details',
+                loadComponent: () => import('./app-details-screen/app-details-screen.component')
+                    .then(m => m.AppDetailsScreenComponent),
             },
             {
                 path: 'drafts/new',

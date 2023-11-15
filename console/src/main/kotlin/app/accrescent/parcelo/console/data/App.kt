@@ -16,6 +16,7 @@ object Apps : IdTable<String>("apps") {
     val label = text("label")
     val versionCode = integer("version_code")
     val versionName = text("version_name")
+    val shortDescription = text("short_description").default("")
     val fileId = reference("file_id", Files, ReferenceOption.NO_ACTION)
     val iconId = reference("icon_id", Icons, ReferenceOption.NO_ACTION)
     val reviewIssueGroupId =
@@ -30,6 +31,7 @@ class App(id: EntityID<String>) : Entity<String>(id), ToSerializable<Serializabl
     var label by Apps.label
     var versionCode by Apps.versionCode
     var versionName by Apps.versionName
+    var shortDescription by Apps.shortDescription
     var fileId by Apps.fileId
     var iconId by Apps.iconId
     var reviewIssueGroupId by Apps.reviewIssueGroupId

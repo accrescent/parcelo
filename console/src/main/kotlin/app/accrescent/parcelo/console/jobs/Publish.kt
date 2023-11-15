@@ -78,6 +78,7 @@ fun registerPublishAppJob(draftId: UUID) {
             this.userId = draft.creatorId
             appId = app.id
             update = true
+            editMetadata = true
         }
     }
 }

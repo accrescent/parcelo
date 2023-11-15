@@ -1,0 +1,20 @@
+<!--
+Copyright 2023 Logan Magee
+
+SPDX-License-Identifier: AGPL-3.0-only
+-->
+
+<mat-card>
+    <mat-card-header>
+        <mat-card-title>{{ edit.app_id }}</mat-card-title>
+        <mat-card-subtitle>{{ edit.id }}</mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content>
+        <br>
+        <h4>Edit info</h4>
+        <ul>
+            <li *ngIf="edit.short_description">Short description: {{ edit.short_description }}</li>
+            <li>Status: {{ edit.status }}</li>
+        </ul>
+    </mat-card-content>
+</mat-card>

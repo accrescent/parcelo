@@ -178,6 +178,12 @@ class ApiError private constructor(
             "Already updating",
             "The app \"$appId\" is currently updating. Please try again later.",
         )
+
+        fun editCreationForbidden() = ApiError(
+            45,
+            "Edit forbidden",
+            "This user does not have sufficient permissions to create an edit for this app",
+        )
     }
 }
 

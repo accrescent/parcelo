@@ -1,0 +1,47 @@
+<!--
+Copyright 2023 Logan Magee
+
+SPDX-License-Identifier: AGPL-3.0-only
+-->
+
+<div class="grid-forms">
+    <app-new-update-editor (formSubmit)="createUpdate($event)">
+        <mat-progress-bar [value]="uploadProgress"/>
+    </app-new-update-editor>
+
+    <app-new-edit-editor (formSubmit)="createEdit($event)"/>
+</div>
+
+<mat-divider/>
+
+<h2 class="section-header">Updates</h2>
+<mat-chip-listbox multiple>
+    <mat-chip-option
+        [selected]="showRejectedUpdates"
+        (selectionChange)="showRejectedUpdates = $event.selected"
+        color="accent">
+        Rejected
+    </mat-chip-option>
+    <mat-chip-option
+        [selected]="showPublishedUpdates"
+        (selectionChange)="showPublishedUpdates = $event.selected"
+        color="accent">
+        Published
+    </mat-chip-option>
+</mat-chip-listbox>
+<div class="grid-cards">
+    <app-update-card
+        *ngFor="let update of updates | updateFilter : showRejectedUpdates : showPublishedUpdates"
+        [update]="update"
+        (delete)="deleteUpdate($event)"
+        (submitForReview)="submitUpdate($event)"/>
+    <p *ngIf="updates.length === 0">No updates</p>
+</div>
+
+<mat-divider/>
+
+<h2 class="section-header">Edits</h2>
+<div class="grid-cards">
+    <app-edit-card *ngFor="let edit of edits" [edit]="edit"/>
+    <p *ngIf="edits.length === 0">No edits</p>
+</div>

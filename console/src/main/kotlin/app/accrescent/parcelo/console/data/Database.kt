@@ -40,6 +40,7 @@ fun Application.configureDatabase(): DataSource {
             AccessControlLists,
             Apps,
             Drafts,
+            Edits,
             Files,
             Icons,
             RejectionReasons,

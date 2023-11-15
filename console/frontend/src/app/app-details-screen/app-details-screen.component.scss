@@ -8,12 +8,21 @@ mat-divider {
     margin-top: 2rem;
 }
 
-.grid-container {
+.grid-base {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
     column-gap: 1rem;
     row-gap: 1rem;
     padding-top: 1rem;
+}
+
+.grid-forms {
+    @extend .grid-base;
+    grid-template-columns: min-content min-content;
+}
+
+.grid-cards {
+    @extend .grid-base;
+    grid-template-columns: repeat(3, 1fr);
 }
 
 .section-header {

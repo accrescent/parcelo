@@ -7,6 +7,7 @@ package app.accrescent.parcelo.console
 import app.accrescent.parcelo.console.routes.appRoutes
 import app.accrescent.parcelo.console.routes.auth.authRoutes
 import app.accrescent.parcelo.console.routes.draftRoutes
+import app.accrescent.parcelo.console.routes.editRoutes
 import app.accrescent.parcelo.console.routes.sessionRoutes
 import app.accrescent.parcelo.console.routes.updateRoutes
 import io.ktor.server.application.Application
@@ -28,6 +29,7 @@ fun Application.configureRouting() {
 
             appRoutes()
             draftRoutes()
+            editRoutes()
             updateRoutes()
         }
     }

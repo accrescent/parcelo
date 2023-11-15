@@ -14,6 +14,11 @@ import { finalize } from 'rxjs';
 
 import { App } from '../app';
 import { AppService } from '../app.service';
+import { Edit } from '../edit';
+import { EditCardComponent } from '../edit-card/edit-card.component';
+import { EditService } from '../edit.service';
+import { NewEditEditorComponent } from '../new-edit-editor/new-edit-editor.component';
+import { NewEditForm } from '../new-edit-form';
 import { NewUpdateEditorComponent } from '../new-update-editor/new-update-editor.component';
 import { NewUpdateForm } from '../new-update-form';
 import { Update, UpdateStatus } from '../update';
@@ -28,35 +33,39 @@ import {
 } from '../update-submission-dialog/update-submission-dialog.component';
 
 @Component({
-    selector: 'app-updates-screen',
+    selector: 'app-app-details-screen',
     standalone: true,
     imports: [
+        EditCardComponent,
         MatChipsModule,
         MatDialogModule,
         MatDividerModule,
         MatProgressBarModule,
+        NewEditEditorComponent,
         NewUpdateEditorComponent,
         NgFor,
         NgIf,
         UpdateCardComponent,
         UpdateFilterPipe,
     ],
-    templateUrl: './updates-screen.component.html',
-    styleUrl: './updates-screen.component.scss',
+    templateUrl: './app-details-screen.component.html',
+    styleUrl: './app-details-screen.component.scss',
 })
-export class UpdatesScreenComponent implements OnInit {
+export class AppDetailsScreenComponent implements OnInit {
     app?: App;
     updates: Update[] = [];
+    edits: Edit[] = [];
     uploadProgress = 0;
 
-    showRejected = false;
-    showPublished = false;
+    showRejectedUpdates = false;
+    showPublishedUpdates = false;
     submitDisabled = false;
 
     constructor(
         private activatedRoute: ActivatedRoute,
         private appService: AppService,
         private dialog: MatDialog,
+        private editService: EditService,
         private router: Router,
         private updateService: UpdateService,
     ) {}
@@ -67,6 +76,7 @@ export class UpdatesScreenComponent implements OnInit {
             const appId = params.get('id');
             if (appId !== null) {
                 this.appService.getApp(appId).subscribe(app => this.app = app);
+                this.editService.getEdits(appId).subscribe(edits => this.edits = edits);
                 this.updateService.getUpdates(appId).subscribe(updates => this.updates = updates);
             }
         });
@@ -134,5 +144,17 @@ export class UpdatesScreenComponent implements OnInit {
                     });
                 }
             });
+    }
+
+    createEdit(form: NewEditForm): void {
+        if (this.app !== undefined) {
+            this.editService.createEdit(this.app.id, form).subscribe(event => {
+                if (event instanceof HttpResponse) {
+                    const edit = event.body!;
+
+                    this.edits.push(edit);
+                }
+            });
+        }
     }
 }
