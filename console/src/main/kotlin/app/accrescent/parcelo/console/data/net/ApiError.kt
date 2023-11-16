@@ -184,6 +184,15 @@ class ApiError private constructor(
             "Edit forbidden",
             "This user does not have sufficient permissions to create an edit for this app",
         )
+
+        fun editNotFound(id: UUID) =
+            ApiError(46, "Edit not found", "An edit with id \"$id\" does not exist")
+
+        fun submissionConflict() = ApiError(
+            47,
+            "Conflict with another submission",
+            "This object cannot be submitted since another is already submitted",
+        )
     }
 }
 

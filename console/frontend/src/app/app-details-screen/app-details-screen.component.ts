@@ -14,7 +14,7 @@ import { finalize } from 'rxjs';
 
 import { App } from '../app';
 import { AppService } from '../app.service';
-import { Edit } from '../edit';
+import { Edit, EditStatus } from '../edit';
 import { EditCardComponent } from '../edit-card/edit-card.component';
 import { EditService } from '../edit.service';
 import { NewEditEditorComponent } from '../new-edit-editor/new-edit-editor.component';
@@ -156,5 +156,17 @@ export class AppDetailsScreenComponent implements OnInit {
                 }
             });
         }
+    }
+
+    submitEdit(id: string): void {
+        this.editService.submitEdit(id).subscribe(() => {
+            // Mark as submitted in the UI
+            const edit = this
+                .edits
+                .find(edit => edit.id === id && edit.status === EditStatus.Unsubmitted);
+            if (edit !== undefined) {
+                edit.status = EditStatus.Submitted;
+            }
+        });
     }
 }

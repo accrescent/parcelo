@@ -42,6 +42,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <h2 class="section-header">Edits</h2>
 <div class="grid-cards">
-    <app-edit-card *ngFor="let edit of edits" [edit]="edit"/>
+    <app-edit-card *ngFor="let edit of edits" [edit]="edit" (submitForReview)="submitEdit($event)"/>
     <p *ngIf="edits.length === 0">No edits</p>
 </div>

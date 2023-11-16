@@ -17,6 +17,7 @@ object Edits : UUIDTable("edits") {
     val appId = reference("app_id", Apps, ReferenceOption.CASCADE)
     val shortDescription = text("short_description").nullable()
     val creationTime = long("creation_time").clientDefault { System.currentTimeMillis() / 1000 }
+    val reviewerId = reference("reviewer_id", Reviewers, ReferenceOption.NO_ACTION).nullable()
 
     init {
         check {
@@ -32,14 +33,20 @@ class Edit(id: EntityID<UUID>) : UUIDEntity(id), ToSerializable<SerializableEdit
     var appId by Edits.appId
     var shortDescription by Edits.shortDescription
     val creationTime by Edits.creationTime
+    var reviewerId by Edits.reviewerId
 
     override fun serializable(): SerializableEdit {
+        val status = when {
+            reviewerId == null -> EditStatus.UNSUBMITTED
+            else -> EditStatus.SUBMITTED
+        }
+
         return SerializableEdit(
             id.value.toString(),
             appId.value,
             shortDescription,
             creationTime,
-            EditStatus.UNSUBMITTED,
+            status,
         )
     }
 }

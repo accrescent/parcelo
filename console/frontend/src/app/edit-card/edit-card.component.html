@@ -17,4 +17,13 @@ SPDX-License-Identifier: AGPL-3.0-only
             <li>Status: {{ edit.status }}</li>
         </ul>
     </mat-card-content>
+    <mat-card-actions align="end">
+        <button
+            (click)="onSubmitForReview()"
+            [disabled]="edit.status !== editStatusEnum.Unsubmitted"
+            mat-flat-button
+            color="primary">
+            Submit
+        </button>
+    </mat-card-actions>
 </mat-card>

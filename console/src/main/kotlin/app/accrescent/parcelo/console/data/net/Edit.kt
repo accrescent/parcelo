@@ -23,4 +23,7 @@ data class Edit(
 enum class EditStatus {
     @SerialName("unsubmitted")
     UNSUBMITTED,
+
+    @SerialName("submitted")
+    SUBMITTED,
 }

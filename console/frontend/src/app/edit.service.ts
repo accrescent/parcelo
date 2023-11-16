@@ -32,4 +32,8 @@ export class EditService {
     getEdits(appId: string): Observable<Edit[]> {
         return this.http.get<Edit[]>(`${this.appsUrl}/${appId}/edits`);
     }
+
+    submitEdit(editId: string): Observable<void> {
+        return this.http.patch<void>(`${this.editsUrl}/${editId}`, '');
+    }
 }

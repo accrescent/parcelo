@@ -4,10 +4,11 @@
 
 package app.accrescent.parcelo.console.routes
 
+import app.accrescent.parcelo.console.data.Edits as DbEdits
 import app.accrescent.parcelo.console.data.AccessControlList
 import app.accrescent.parcelo.console.data.AccessControlLists
 import app.accrescent.parcelo.console.data.Edit
-import app.accrescent.parcelo.console.data.Edits
+import app.accrescent.parcelo.console.data.Reviewers
 import app.accrescent.parcelo.console.data.Session
 import app.accrescent.parcelo.console.data.net.ApiError
 import io.ktor.http.HttpStatusCode
@@ -19,20 +20,28 @@ import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.principal
 import io.ktor.server.request.receiveMultipart
 import io.ktor.server.resources.get
+import io.ktor.server.resources.patch
 import io.ktor.server.resources.post
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
+import org.jetbrains.exposed.sql.Random
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
+import java.util.UUID
 
 @Resource("/edits")
-class Edits
+class Edits {
+    @Resource("{id}")
+    class Id(val parent: Edits, val id: String)
+}
 
 fun Route.editRoutes() {
     authenticate("cookie") {
         createEditRoute()
         getEditsForAppRoute()
+        updateEditRoute()
     }
 }
 
@@ -106,11 +115,73 @@ fun Route.getEditsForAppRoute() {
 
         val edits = transaction {
             Edit
-                .find { Edits.appId eq acl.appId }
-                .orderBy(Edits.creationTime to SortOrder.ASC)
+                .find { DbEdits.appId eq acl.appId }
+                .orderBy(DbEdits.creationTime to SortOrder.ASC)
                 .map { it.serializable() }
         }
 
         call.respond(HttpStatusCode.OK, edits)
+    }
+}
+
+/**
+ * Submits the given edit for review. The user must have the "editMetadata" permission for the
+ * corresponding app to do this.
+ *
+ * For a submission to succeed, there must also be no other edits associated with the same app which
+ * have been submitted.
+ */
+fun Route.updateEditRoute() {
+    patch<Edits.Id> { route ->
+        val userId = call.principal<Session>()!!.userId
+        val editId = try {
+            UUID.fromString(route.id)
+        } catch (e: IllegalArgumentException) {
+            call.respond(HttpStatusCode.BadRequest, ApiError.invalidUuid(route.id))
+            return@patch
+        }
+
+        val edit = transaction { Edit.findById(editId) } ?: run {
+            call.respond(HttpStatusCode.NotFound, ApiError.editNotFound(editId))
+            return@patch
+        }
+
+        // Ensure the user has the editMetadata permission for this app
+        val acl = transaction {
+            AccessControlList
+                .find { AccessControlLists.appId eq edit.appId and (AccessControlLists.userId eq userId) }
+                .singleOrNull()
+        }
+        if (acl == null || !acl.editMetadata) {
+            call.respond(HttpStatusCode.NotFound, ApiError.editNotFound(editId))
+            return@patch
+        } else if (edit.reviewerId != null) {
+            call.respond(HttpStatusCode.Conflict, ApiError.reviewerAlreadyAssigned())
+            return@patch
+        }
+
+        // Submit the edit, assigning a random reviewer. If another edit associated with the same
+        // app has already been submitted, report the conflict.
+        val (httpStatusCode, httpBody) = transaction {
+            val submissionAlreadyExists = !Edit.find { DbEdits.reviewerId neq null }.empty()
+
+            if (submissionAlreadyExists) {
+                return@transaction Pair(HttpStatusCode.Conflict, ApiError.submissionConflict())
+            } else {
+                edit.reviewerId = Reviewers
+                    .slice(Reviewers.id)
+                    .selectAll()
+                    .orderBy(Random())
+                    .limit(1)
+                    .single()[Reviewers.id]
+                return@transaction Pair(HttpStatusCode.NoContent, null)
+            }
+        }
+
+        if (httpBody != null) {
+            call.respond(httpStatusCode, httpBody)
+        } else {
+            call.respond(httpStatusCode)
+        }
     }
 }
