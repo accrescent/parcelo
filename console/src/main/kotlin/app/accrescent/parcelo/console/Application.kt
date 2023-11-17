@@ -63,7 +63,7 @@ fun Application.module() {
         val mainModule = module {
             single { config }
             single<FileStorageService> { LocalFileStorageService(Path(config.application.fileStorageDir)) }
-            single { HttpClient() { install(HttpTimeout) } }
+            single { HttpClient { install(HttpTimeout) } }
         }
 
         modules(mainModule)
