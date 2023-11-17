@@ -255,6 +255,9 @@ fun Route.deleteDraftRoute() {
         }
         if (draft == null) {
             call.respond(HttpStatusCode.NotFound, ApiError.draftNotFound(draftId))
+        } else if (draft.reviewId != null) {
+            // Forbid deletion if the draft has been reviewed
+            call.respond(HttpStatusCode.Forbidden, ApiError.deleteForbidden())
         } else {
             val iconFileId = transaction { Icon.findById(draft.iconId)?.fileId }!!
             storageService.deleteFile(draft.fileId)

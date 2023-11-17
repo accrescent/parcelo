@@ -358,9 +358,11 @@ fun Route.deleteUpdateRoute() {
             // the associated app
             call.respond(HttpStatusCode.NotFound, ApiError.updateNotFound(updateId))
         } else {
-            // If the user is the update's creator, delete the update. Otherwise, inform them they
+            // If the user is the update's creator and the update is neither reviewed, nor
+            // publishing, nor published, then delete the update. Otherwise, inform them that they
             // don't have sufficient permissions to delete the update.
-            if (update.creatorId == userId) {
+            val publishingOrPublished = update.submitted && update.reviewerId == null
+            if (update.creatorId == userId && update.reviewId == null && !publishingOrPublished) {
                 storageService.deleteFile(update.fileId)
                 transaction { update.delete() }
                 call.respond(HttpStatusCode.NoContent)
