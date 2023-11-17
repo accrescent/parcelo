@@ -30,7 +30,7 @@ export class NewDraftScreenComponent {
         private router: Router,
     ) {}
 
-    submitNewDraft(form: NewDraftForm): void {
+    createDraft(form: NewDraftForm): void {
         this.draftService.createDraft(form.apkSet, form.icon, form.label).subscribe(event => {
             if (event.type === HttpEventType.UploadProgress) {
                 this.uploadProgress = 100 * event.loaded / event.total!;

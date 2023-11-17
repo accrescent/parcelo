@@ -70,7 +70,7 @@ export class UpdatesScreenComponent implements OnInit {
         });
     }
 
-    submitNewUpdate(form: NewUpdateForm): void {
+    createUpdate(form: NewUpdateForm): void {
         if (this.app !== undefined) {
             this.updateService.createUpdate(this.app.id, form.apkSet).subscribe(event => {
                 if (event.type === HttpEventType.UploadProgress) {
