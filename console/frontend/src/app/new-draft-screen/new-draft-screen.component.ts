@@ -7,6 +7,7 @@ import { HttpEventType, HttpResponse } from '@angular/common/http';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { Router } from '@angular/router';
+import { finalize } from 'rxjs';
 
 import { DraftService } from '../draft.service';
 import {
@@ -23,6 +24,7 @@ import { NewDraftForm } from '../new-draft-form';
 })
 export class NewDraftScreenComponent {
     uploadProgress = 0;
+    submitDisabled = false;
 
     constructor(
         private dialog: MatDialog,
@@ -31,29 +33,33 @@ export class NewDraftScreenComponent {
     ) {}
 
     createDraft(form: NewDraftForm): void {
-        this.draftService.createDraft(form.apkSet, form.icon, form.label).subscribe(event => {
-            if (event.type === HttpEventType.UploadProgress) {
-                this.uploadProgress = 100 * event.loaded / event.total!;
+        this.submitDisabled = true;
+        this.draftService
+            .createDraft(form.apkSet, form.icon, form.label)
+            .pipe(finalize(() => this.submitDisabled = false))
+            .subscribe(event => {
+                if (event.type === HttpEventType.UploadProgress) {
+                    this.uploadProgress = 100 * event.loaded / event.total!;
 
-                // Clear the progress bar once the upload is complete
-                if (event.loaded === event.total!) {
-                    this.uploadProgress = 0;
-                }
-            } else if (event instanceof HttpResponse) {
-                const draft = event.body!;
-                this.dialog
-                    .open(DraftSubmissionDialogComponent, { data: draft })
-                    .afterClosed()
-                    .subscribe(confirmed => {
-                        if (confirmed) {
-                            this.draftService.submitDraft(draft.id).subscribe(() => {
+                    // Clear the progress bar once the upload is complete
+                    if (event.loaded === event.total!) {
+                        this.uploadProgress = 0;
+                    }
+                } else if (event instanceof HttpResponse) {
+                    const draft = event.body!;
+                    this.dialog
+                        .open(DraftSubmissionDialogComponent, { data: draft })
+                        .afterClosed()
+                        .subscribe(confirmed => {
+                            if (confirmed) {
+                                this.draftService.submitDraft(draft.id).subscribe(() => {
+                                    this.router.navigate(['apps']);
+                                });
+                            } else {
                                 this.router.navigate(['apps']);
-                            });
-                        } else {
-                            this.router.navigate(['apps']);
-                        }
-                    });
-            }
-        });
+                            }
+                        });
+                }
+            });
     }
 }

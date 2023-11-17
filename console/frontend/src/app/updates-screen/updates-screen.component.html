@@ -4,7 +4,7 @@ Copyright 2023 Logan Magee
 SPDX-License-Identifier: AGPL-3.0-only
 -->
 
-<app-new-update-editor (formSubmit)="createUpdate($event)">
+<app-new-update-editor (formSubmit)="createUpdate($event)" [submitDisabled]="submitDisabled">
     <mat-progress-bar [value]="uploadProgress"/>
 </app-new-update-editor>
 

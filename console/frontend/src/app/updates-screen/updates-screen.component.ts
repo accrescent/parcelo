@@ -10,6 +10,7 @@ import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { ActivatedRoute, Router } from '@angular/router';
+import { finalize } from 'rxjs';
 
 import { App } from '../app';
 import { AppService } from '../app.service';
@@ -50,6 +51,7 @@ export class UpdatesScreenComponent implements OnInit {
 
     showRejected = false;
     showPublished = false;
+    submitDisabled = false;
 
     constructor(
         private activatedRoute: ActivatedRoute,
@@ -72,30 +74,34 @@ export class UpdatesScreenComponent implements OnInit {
 
     createUpdate(form: NewUpdateForm): void {
         if (this.app !== undefined) {
-            this.updateService.createUpdate(this.app.id, form.apkSet).subscribe(event => {
-                if (event.type === HttpEventType.UploadProgress) {
-                    this.uploadProgress = 100 * event.loaded / event.total!;
+            this.submitDisabled = true;
+            this.updateService
+                .createUpdate(this.app.id, form.apkSet)
+                .pipe(finalize(() => this.submitDisabled = false))
+                .subscribe(event => {
+                    if (event.type === HttpEventType.UploadProgress) {
+                        this.uploadProgress = 100 * event.loaded / event.total!;
 
-                    // Clear the progress bar once the upload is complete
-                    if (event.loaded === event.total!) {
-                        this.uploadProgress = 0;
+                        // Clear the progress bar once the upload is complete
+                        if (event.loaded === event.total!) {
+                            this.uploadProgress = 0;
+                        }
+                    } else if (event instanceof HttpResponse) {
+                        const update = event.body!;
+
+                        this.updates.push(update);
+                        this.dialog
+                            .open(UpdateSubmissionDialogComponent, {
+                                data: { app: this.app, update: update },
+                            })
+                            .afterClosed()
+                            .subscribe(confirmed => {
+                                if (confirmed) {
+                                    this.submitUpdate(update.id);
+                                }
+                            });
                     }
-                } else if (event instanceof HttpResponse) {
-                    const update = event.body!;
-
-                    this.updates.push(update);
-                    this.dialog
-                        .open(UpdateSubmissionDialogComponent, {
-                            data: { app: this.app, update: update },
-                        })
-                        .afterClosed()
-                        .subscribe(confirmed => {
-                            if (confirmed) {
-                                this.submitUpdate(update.id);
-                            }
-                        });
-                }
-            });
+                });
         }
     }
 

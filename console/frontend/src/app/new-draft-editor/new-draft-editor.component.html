@@ -64,7 +64,7 @@ SPDX-License-Identifier: AGPL-3.0-only
         <mat-card-actions align="end">
             <button
                 type="submit"
-                [disabled]="form.invalid"
+                [disabled]="form.invalid || submitDisabled"
                 mat-flat-button
                 color="primary">
                 Upload
