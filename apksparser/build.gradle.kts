@@ -15,6 +15,10 @@ plugins {
     id("com.google.protobuf")
 }
 
+kotlin {
+    jvmToolchain(17)
+}
+
 dependencies {
     api("com.github.zafarkhaja:java-semver:$semverVersion")
     implementation("com.android.tools.apkparser:apkanalyzer:$androidToolsVersion")

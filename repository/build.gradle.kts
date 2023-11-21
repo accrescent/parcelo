@@ -27,6 +27,10 @@ application {
     applicationDefaultJvmArgs = listOf("-Dio.ktor.development=$isDevelopment")
 }
 
+kotlin {
+    jvmToolchain(17)
+}
+
 dependencies {
     implementation(project(":apksparser"))
     implementation("cc.ekblad:4koma:$fourkomaVersion")

@@ -32,6 +32,10 @@ application {
     applicationDefaultJvmArgs = listOf("-Dio.ktor.development=$isDevelopment")
 }
 
+kotlin {
+    jvmToolchain(17)
+}
+
 node {
     nodeProjectDir.set(file("${project.projectDir}/frontend"))
 }
