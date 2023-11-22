@@ -16,6 +16,7 @@ import { App } from '../app';
 import { AppService } from '../app.service';
 import { Edit, EditStatus } from '../edit';
 import { EditCardComponent } from '../edit-card/edit-card.component';
+import { EditFilterPipe } from '../edit-filter.pipe';
 import { EditService } from '../edit.service';
 import { NewEditEditorComponent } from '../new-edit-editor/new-edit-editor.component';
 import { NewEditForm } from '../new-edit-form';
@@ -37,6 +38,7 @@ import {
     standalone: true,
     imports: [
         EditCardComponent,
+        EditFilterPipe,
         MatChipsModule,
         MatDialogModule,
         MatDividerModule,
@@ -57,6 +59,8 @@ export class AppDetailsScreenComponent implements OnInit {
     edits: Edit[] = [];
     uploadProgress = 0;
 
+    showRejectedEdits = false;
+    showPublishedEdits = false;
     showRejectedUpdates = false;
     showPublishedUpdates = false;
     submitDisabled = false;

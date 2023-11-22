@@ -41,7 +41,24 @@ SPDX-License-Identifier: AGPL-3.0-only
 <mat-divider/>
 
 <h2 class="section-header">Edits</h2>
+<mat-chip-listbox multiple>
+    <mat-chip-option
+        [selected]="showRejectedEdits"
+        (selectionChange)="showRejectedEdits = $event.selected"
+        color="accent">
+        Rejected
+    </mat-chip-option>
+    <mat-chip-option
+        [selected]="showPublishedEdits"
+        (selectionChange)="showPublishedEdits = $event.selected"
+        color="accent">
+        Published
+    </mat-chip-option>
+</mat-chip-listbox>
 <div class="grid-cards">
-    <app-edit-card *ngFor="let edit of edits" [edit]="edit" (submitForReview)="submitEdit($event)"/>
+    <app-edit-card
+        *ngFor="let edit of edits | editFilter : showRejectedEdits : showPublishedEdits"
+        [edit]="edit"
+        (submitForReview)="submitEdit($event)"/>
     <p *ngIf="edits.length === 0">No edits</p>
 </div>
