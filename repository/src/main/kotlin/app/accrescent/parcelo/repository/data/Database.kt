@@ -32,7 +32,9 @@ fun Application.configureDatabase() {
 
         setEnforceForeignKeys(true)
     }
-    Database.connect(dataSource)
+    Database.connect(dataSource, setupConnection = {
+        it.createStatement().executeUpdate("PRAGMA trusted_schema = OFF")
+    })
 
     transaction {
         SchemaUtils.createMissingTablesAndColumns(Consoles)
