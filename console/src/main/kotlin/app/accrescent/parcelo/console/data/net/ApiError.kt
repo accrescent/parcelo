@@ -193,6 +193,12 @@ class ApiError private constructor(
             "Conflict with another submission",
             "This object cannot be submitted since another is already submitted",
         )
+
+        fun shortDescriptionLength() = ApiError(
+            48,
+            "Short description has invalid length",
+            "Short description must be between 3 and 80 characters long (inclusive)",
+        )
     }
 }
 
