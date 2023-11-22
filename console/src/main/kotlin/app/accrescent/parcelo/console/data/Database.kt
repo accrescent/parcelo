@@ -28,6 +28,8 @@ fun Application.configureDatabase(): DataSource {
         } else {
             "jdbc:sqlite:${config.application.databasePath}?journal_mode=wal"
         }
+
+        setEnforceForeignKeys(true)
     }
     Database.connect(dataSource)
 

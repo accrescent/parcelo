@@ -29,6 +29,8 @@ fun Application.configureDatabase() {
         } else {
             "jdbc:sqlite:${config.databasePath}"
         }
+
+        setEnforceForeignKeys(true)
     }
     Database.connect(dataSource)
 
