@@ -6,6 +6,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpEvent, HttpRequest } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
+import { NewUpdateForm } from './new-update-form';
 import { Update } from './update';
 
 @Injectable({
@@ -17,9 +18,9 @@ export class UpdateService {
 
     constructor(private http: HttpClient) {}
 
-    createUpdate(appId: string, apkSet: File): Observable<HttpEvent<Update>> {
+    createUpdate(appId: string, form: NewUpdateForm): Observable<HttpEvent<Update>> {
         const formData = new FormData();
-        formData.append('apk_set', apkSet);
+        formData.append('apk_set', form.apkSet);
 
         const req = new HttpRequest(
             'POST',

@@ -7,6 +7,7 @@ import { HttpClient, HttpEvent, HttpRequest } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 import { Draft } from './draft';
+import { NewDraftForm } from './new-draft-form';
 
 @Injectable({
     providedIn: 'root'
@@ -16,17 +17,12 @@ export class DraftService {
 
     constructor(private http: HttpClient) {}
 
-    createDraft(
-        apkSet: File,
-        icon: File,
-        label: string,
-        shortDescription: string,
-    ): Observable<HttpEvent<Draft>> {
+    createDraft(form: NewDraftForm): Observable<HttpEvent<Draft>> {
         const formData = new FormData();
-        formData.append('apk_set', apkSet);
-        formData.append('icon', icon);
-        formData.append('label', label);
-        formData.append('short_description', shortDescription);
+        formData.append('apk_set', form.apkSet);
+        formData.append('icon', form.icon);
+        formData.append('label', form.label);
+        formData.append('short_description', form.shortDescription);
 
         const req = new HttpRequest('POST', this.draftsUrl, formData, { reportProgress: true });
 

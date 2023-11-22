@@ -35,7 +35,7 @@ export class NewDraftScreenComponent {
     createDraft(form: NewDraftForm): void {
         this.submitDisabled = true;
         this.draftService
-            .createDraft(form.apkSet, form.icon, form.label, form.shortDescription)
+            .createDraft(form)
             .pipe(finalize(() => this.submitDisabled = false))
             .subscribe(event => {
                 if (event.type === HttpEventType.UploadProgress) {

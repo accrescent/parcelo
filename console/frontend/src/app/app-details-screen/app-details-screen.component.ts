@@ -94,7 +94,7 @@ export class AppDetailsScreenComponent implements OnInit {
         if (this.app !== undefined) {
             this.submitDisabled = true;
             this.updateService
-                .createUpdate(this.app.id, form.apkSet)
+                .createUpdate(this.app.id, form)
                 .pipe(finalize(() => this.submitDisabled = false))
                 .subscribe(event => {
                     if (event.type === HttpEventType.UploadProgress) {
