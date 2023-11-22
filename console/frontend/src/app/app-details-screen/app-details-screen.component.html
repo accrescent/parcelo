@@ -59,6 +59,7 @@ SPDX-License-Identifier: AGPL-3.0-only
     <app-edit-card
         *ngFor="let edit of edits | editFilter : showRejectedEdits : showPublishedEdits"
         [edit]="edit"
+        (delete)="deleteEdit($event)"
         (submitForReview)="submitEdit($event)"/>
     <p *ngIf="edits.length === 0">No edits</p>
 </div>

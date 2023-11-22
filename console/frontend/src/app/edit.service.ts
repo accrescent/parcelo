@@ -36,4 +36,8 @@ export class EditService {
     submitEdit(editId: string): Observable<void> {
         return this.http.patch<void>(`${this.editsUrl}/${editId}`, '');
     }
+
+    deleteEdit(id: string): Observable<void> {
+        return this.http.delete<void>(`${this.editsUrl}/${id}`);
+    }
 }

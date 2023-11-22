@@ -28,6 +28,7 @@ import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.principal
 import io.ktor.server.request.receive
 import io.ktor.server.request.receiveMultipart
+import io.ktor.server.resources.delete
 import io.ktor.server.resources.get
 import io.ktor.server.resources.patch
 import io.ktor.server.resources.post
@@ -60,6 +61,7 @@ fun Route.editRoutes() {
         createEditRoute()
         getEditsForAppRoute()
         updateEditRoute()
+        deleteEditRoute()
 
         getAssignedEditsRoute()
 
@@ -212,6 +214,52 @@ fun Route.updateEditRoute() {
             call.respond(httpStatusCode, httpBody)
         } else {
             call.respond(httpStatusCode)
+        }
+    }
+}
+
+/**
+ * Deletes the edit with the given ID. The user deleting the update must have the "editMetadata"
+ * permission for the associated app.
+ */
+fun Route.deleteEditRoute() {
+    delete<Edits.Id> { route ->
+        val userId = call.principal<Session>()!!.userId
+        val editId = try {
+            UUID.fromString(route.id)
+        } catch (e: IllegalArgumentException) {
+            call.respond(HttpStatusCode.BadRequest, ApiError.invalidUuid(route.id))
+            return@delete
+        }
+
+        val edit = transaction {
+            Edit
+                .findById(editId)
+                ?.takeIf { edit ->
+                    AccessControlList.find {
+                        AccessControlLists.appId.eq(edit.appId)
+                            .and(AccessControlLists.userId eq userId)
+                            .and(AccessControlLists.editMetadata)
+                    }.singleOrNull() != null
+                }
+        }
+        if (edit == null) {
+            // Either the update doesn't exist or the user doesn't have the "editMetadata"
+            // permission for the associated app.
+            call.respond(HttpStatusCode.NotFound, ApiError.editNotFound(editId))
+        } else {
+            // If the edit is not yet reviewed, then delete it. Otherwise, inform the user that they
+            // don't have sufficient permissions to delete the edit.
+            //
+            // Note that all edits pass through review (unlike updates), so there is no need to
+            // check whether the edit is publishing or published since the edit must be reviewed
+            // before it can reach those states.
+            if (edit.reviewId == null) {
+                transaction { edit.delete() }
+                call.respond(HttpStatusCode.NoContent)
+            } else {
+                call.respond(HttpStatusCode.Forbidden, ApiError.deleteForbidden())
+            }
         }
     }
 }

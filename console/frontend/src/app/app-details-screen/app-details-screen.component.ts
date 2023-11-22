@@ -16,6 +16,7 @@ import { App } from '../app';
 import { AppService } from '../app.service';
 import { Edit, EditStatus } from '../edit';
 import { EditCardComponent } from '../edit-card/edit-card.component';
+import { EditDeletionDialogComponent } from '../edit-deletion-dialog/edit-deletion-dialog.component';
 import { EditFilterPipe } from '../edit-filter.pipe';
 import { EditService } from '../edit.service';
 import { NewEditEditorComponent } from '../new-edit-editor/new-edit-editor.component';
@@ -172,5 +173,24 @@ export class AppDetailsScreenComponent implements OnInit {
                 edit.status = EditStatus.Submitted;
             }
         });
+    }
+
+    deleteEdit(id: string): void {
+        const edit = this.edits.find(edit => edit.id === id);
+
+        this.dialog
+            .open(EditDeletionDialogComponent, { data: edit })
+            .afterClosed()
+            .subscribe(confirmed => {
+                if (confirmed) {
+                    this.editService.deleteEdit(id).subscribe(() => {
+                        // Remove update from the UI
+                        const i = this.edits.findIndex(edit => edit.id === id);
+                        if (i > -1) {
+                            this.edits.splice(i, 1);
+                        }
+                    });
+                }
+            });
     }
 }

@@ -17,9 +17,19 @@ import { Edit, EditStatus } from '../edit';
 })
 export class EditCardComponent {
     @Input({ required: true }) edit!: Edit;
+    @Output() delete = new EventEmitter<string>();
     @Output() submitForReview = new EventEmitter<string>();
 
     editStatusEnum = EditStatus;
+
+    canDelete(): boolean {
+        return this.edit.status === EditStatus.Unsubmitted ||
+            this.edit.status === EditStatus.Submitted;
+    }
+
+    onDelete(): void {
+        this.delete.emit(this.edit.id);
+    }
 
     onSubmitForReview(): void {
         this.submitForReview.emit(this.edit.id);
