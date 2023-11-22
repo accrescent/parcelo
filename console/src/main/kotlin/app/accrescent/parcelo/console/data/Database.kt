@@ -75,7 +75,13 @@ fun Application.configureDatabase(): DataSource {
         }
     }
 
-    Flyway.configure().dataSource(dataSource).baselineOnMigrate(true).load().migrate()
+    Flyway
+        .configure()
+        .dataSource(dataSource)
+        .baselineOnMigrate(true)
+        .validateMigrationNaming(true)
+        .load()
+        .migrate()
 
     return dataSource
 }
