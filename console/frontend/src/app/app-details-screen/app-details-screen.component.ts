@@ -19,6 +19,9 @@ import { EditCardComponent } from '../edit-card/edit-card.component';
 import { EditDeletionDialogComponent } from '../edit-deletion-dialog/edit-deletion-dialog.component';
 import { EditFilterPipe } from '../edit-filter.pipe';
 import { EditService } from '../edit.service';
+import {
+    EditSubmissionDialogComponent,
+} from '../edit-submission-dialog/edit-submission-dialog.component';
 import { NewEditEditorComponent } from '../new-edit-editor/new-edit-editor.component';
 import { NewEditForm } from '../new-edit-form';
 import { NewUpdateEditorComponent } from '../new-update-editor/new-update-editor.component';
@@ -158,6 +161,16 @@ export class AppDetailsScreenComponent implements OnInit {
                     const edit = event.body!;
 
                     this.edits.push(edit);
+                    this.dialog
+                        .open(EditSubmissionDialogComponent, {
+                            data: { app: this.app, edit: edit },
+                        })
+                        .afterClosed()
+                        .subscribe(confirmed => {
+                            if (confirmed) {
+                                this.submitEdit(edit.id);
+                            }
+                        });
                 }
             });
         }
