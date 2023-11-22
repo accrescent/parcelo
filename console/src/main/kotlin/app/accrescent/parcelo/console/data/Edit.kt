@@ -11,6 +11,7 @@ import org.jetbrains.exposed.dao.UUIDEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.UUIDTable
 import org.jetbrains.exposed.sql.ReferenceOption
+import org.jetbrains.exposed.sql.transactions.transaction
 import java.util.UUID
 
 object Edits : UUIDTable("edits") {
@@ -18,6 +19,8 @@ object Edits : UUIDTable("edits") {
     val shortDescription = text("short_description").nullable()
     val creationTime = long("creation_time").clientDefault { System.currentTimeMillis() / 1000 }
     val reviewerId = reference("reviewer_id", Reviewers, ReferenceOption.NO_ACTION).nullable()
+    val reviewId = reference("review_id", Reviews, ReferenceOption.NO_ACTION).nullable()
+    val published = bool("published").default(false)
 
     init {
         check {
@@ -34,11 +37,25 @@ class Edit(id: EntityID<UUID>) : UUIDEntity(id), ToSerializable<SerializableEdit
     var shortDescription by Edits.shortDescription
     val creationTime by Edits.creationTime
     var reviewerId by Edits.reviewerId
+    var reviewId by Edits.reviewId
+    var published by Edits.published
 
     override fun serializable(): SerializableEdit {
         val status = when {
             reviewerId == null -> EditStatus.UNSUBMITTED
-            else -> EditStatus.SUBMITTED
+            reviewId == null -> EditStatus.SUBMITTED
+            else -> {
+                val review = transaction { Review.findById(reviewId!!)!! }
+                if (review.approved) {
+                    if (published) {
+                        EditStatus.PUBLISHED
+                    } else {
+                        EditStatus.PUBLISHING
+                    }
+                } else {
+                    EditStatus.REJECTED
+                }
+            }
         }
 
         return SerializableEdit(

@@ -377,7 +377,7 @@ fun Route.deleteUpdateRoute() {
  * Returns the list of unreviewed updates assigned to the current user for review. If the user is
  * not a reviewer, this route returns a 403.
  *
- * See also [getAssignedDraftsRoute]
+ * See also [getAssignedDraftsRoute], [getAssignedEditsRoute]
  */
 fun Route.getAssignedUpdatesRoute() {
     get<Updates.Assigned> {

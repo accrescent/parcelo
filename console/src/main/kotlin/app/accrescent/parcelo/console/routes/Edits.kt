@@ -7,10 +7,18 @@ package app.accrescent.parcelo.console.routes
 import app.accrescent.parcelo.console.data.Edits as DbEdits
 import app.accrescent.parcelo.console.data.AccessControlList
 import app.accrescent.parcelo.console.data.AccessControlLists
+import app.accrescent.parcelo.console.data.App
 import app.accrescent.parcelo.console.data.Edit
+import app.accrescent.parcelo.console.data.RejectionReason
+import app.accrescent.parcelo.console.data.Review
+import app.accrescent.parcelo.console.data.Reviewer
 import app.accrescent.parcelo.console.data.Reviewers
+import app.accrescent.parcelo.console.data.Reviews
 import app.accrescent.parcelo.console.data.Session
 import app.accrescent.parcelo.console.data.net.ApiError
+import app.accrescent.parcelo.console.jobs.publishEdit
+import app.accrescent.parcelo.console.validation.ReviewRequest
+import app.accrescent.parcelo.console.validation.ReviewResult
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.PartData
 import io.ktor.http.content.readAllParts
@@ -18,6 +26,7 @@ import io.ktor.resources.Resource
 import io.ktor.server.application.call
 import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.principal
+import io.ktor.server.request.receive
 import io.ktor.server.request.receiveMultipart
 import io.ktor.server.resources.get
 import io.ktor.server.resources.patch
@@ -27,14 +36,23 @@ import io.ktor.server.routing.Route
 import org.jetbrains.exposed.sql.Random
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.not
+import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.jobrunr.scheduling.BackgroundJob
 import java.util.UUID
 
 @Resource("/edits")
 class Edits {
+    @Resource("assigned")
+    class Assigned(val parent: Edits)
+
     @Resource("{id}")
-    class Id(val parent: Edits, val id: String)
+    class Id(val parent: Edits, val id: String) {
+        @Resource("review")
+        class Review(val parent: Id)
+    }
 }
 
 fun Route.editRoutes() {
@@ -42,6 +60,10 @@ fun Route.editRoutes() {
         createEditRoute()
         getEditsForAppRoute()
         updateEditRoute()
+
+        getAssignedEditsRoute()
+
+        createEditReviewRoute()
     }
 }
 
@@ -129,7 +151,7 @@ fun Route.getEditsForAppRoute() {
  * corresponding app to do this.
  *
  * For a submission to succeed, there must also be no other edits associated with the same app which
- * have been submitted.
+ * have been submitted and are neither published nor rejected.
  */
 fun Route.updateEditRoute() {
     patch<Edits.Id> { route ->
@@ -161,9 +183,17 @@ fun Route.updateEditRoute() {
         }
 
         // Submit the edit, assigning a random reviewer. If another edit associated with the same
-        // app has already been submitted, report the conflict.
+        // app has already been submitted and is neither published nor rejected, report the
+        // conflict.
         val (httpStatusCode, httpBody) = transaction {
-            val submissionAlreadyExists = !Edit.find { DbEdits.reviewerId neq null }.empty()
+            val submissionAlreadyExists = !Reviews
+                .innerJoin(DbEdits)
+                .select {
+                    DbEdits.reviewerId.isNotNull()
+                        .and(not(DbEdits.published))
+                        .and(Reviews.approved)
+                }
+                .empty()
 
             if (submissionAlreadyExists) {
                 return@transaction Pair(HttpStatusCode.Conflict, ApiError.submissionConflict())
@@ -182,6 +212,129 @@ fun Route.updateEditRoute() {
             call.respond(httpStatusCode, httpBody)
         } else {
             call.respond(httpStatusCode)
+        }
+    }
+}
+
+/**
+ * Returns the list of unreviewed edits assigned to the current user for review. If the user is not
+ * a reviewer, this route returns a 403.
+ *
+ * See also [getAssignedDraftsRoute], [getAssignedUpdatesRoute]
+ */
+fun Route.getAssignedEditsRoute() {
+    get<Edits.Assigned> {
+        val userId = call.principal<Session>()!!.userId
+
+        val reviewer =
+            transaction { Reviewer.find { Reviewers.userId eq userId }.singleOrNull() } ?: run {
+                call.respond(HttpStatusCode.Forbidden, ApiError.readForbidden())
+                return@get
+            }
+
+        val assignedEdits = transaction {
+            Edit
+                .find { DbEdits.reviewerId eq reviewer.id and (DbEdits.reviewId eq null) }
+                .map { it.serializable() }
+        }
+
+        call.respond(HttpStatusCode.OK, assignedEdits)
+    }
+}
+
+/**
+ * Creates a review for the given edit.
+ */
+fun Route.createEditReviewRoute() {
+    post<Edits.Id.Review> { route ->
+        val userId = call.principal<Session>()!!.userId
+
+        val editId = try {
+            UUID.fromString(route.parent.id)
+        } catch (e: IllegalArgumentException) {
+            call.respond(HttpStatusCode.BadRequest, ApiError.invalidUuid(route.parent.id))
+            return@post
+        }
+        val request = try {
+            call.receive<ReviewRequest>()
+        } catch (e: IllegalArgumentException) {
+            call.respond(HttpStatusCode.BadRequest)
+            return@post
+        }
+
+        val edit = transaction { Edit.findById(editId) } ?: run {
+            call.respond(HttpStatusCode.NotFound, ApiError.editNotFound(editId))
+            return@post
+        }
+
+        val userCanReview =
+            transaction { Reviewer.find { Reviewers.userId eq userId }.singleOrNull() }
+                ?.let { it.id == edit.reviewerId }
+                ?: false
+        if (userCanReview) {
+            // Check whether this update has already been reviewed
+            if (edit.reviewId != null) {
+                call.respond(HttpStatusCode.Conflict, ApiError.alreadyReviewed())
+                return@post
+            }
+
+            // Check whether the app is currently updating to prevent conflicts
+            val publishedApp = transaction { App.findById(edit.appId) } ?: run {
+                call.respond(HttpStatusCode.InternalServerError)
+                return@post
+            }
+            if (request.result == ReviewResult.APPROVED && publishedApp.updating) {
+                call.respond(
+                    HttpStatusCode.Conflict,
+                    ApiError.alreadyUpdating(publishedApp.id.value),
+                )
+                return@post
+            }
+
+            // Create the review
+            val review = transaction {
+                val review = Review.new {
+                    approved = when (request.result) {
+                        ReviewResult.APPROVED -> true
+                        ReviewResult.REJECTED -> false
+                    }
+                    additionalNotes = request.additionalNotes
+                }
+                for (rejectionReason in request.reasons.orEmpty()) {
+                    RejectionReason.new {
+                        reviewId = review.id
+                        reason = rejectionReason
+                    }
+                }
+                edit.reviewId = review.id
+                review
+            }
+
+            // If approved, submit a publishing job for the edit
+            if (review.approved) {
+                transaction { publishedApp.updating = true }
+                BackgroundJob.enqueue { publishEdit(edit.id.value) }
+            }
+
+            call.respond(HttpStatusCode.Created, request)
+        } else {
+            // Check whether the user has read access to this edit. If they do, tell them they're
+            // not allowed to review the edit. Otherwise, don't reveal the edit exists.
+            val userCanRead = transaction {
+                AccessControlList
+                    .find {
+                        AccessControlLists.appId.eq(edit.appId)
+                            .and(AccessControlLists.userId eq userId)
+                    }
+                    .singleOrNull()
+                    ?.editMetadata
+                    ?: false
+            }
+            if (userCanRead) {
+                call.respond(HttpStatusCode.Forbidden, ApiError.reviewForbidden())
+            } else {
+                call.respond(HttpStatusCode.NotFound, ApiError.editNotFound(editId))
+            }
         }
     }
 }

@@ -26,4 +26,13 @@ enum class EditStatus {
 
     @SerialName("submitted")
     SUBMITTED,
+
+    @SerialName("rejected")
+    REJECTED,
+
+    @SerialName("publishing")
+    PUBLISHING,
+
+    @SerialName("published")
+    PUBLISHED,
 }

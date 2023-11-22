@@ -15,4 +15,6 @@ data class App(
     val versionCode: Int,
     @SerialName("version_name")
     val versionName: String,
+    @SerialName("short_description")
+    val shortDescription: String,
 )

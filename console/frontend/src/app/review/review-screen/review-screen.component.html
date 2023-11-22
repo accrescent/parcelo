@@ -13,6 +13,15 @@ SPDX-License-Identifier: AGPL-3.0-only
     <p *ngIf="drafts.length === 0">No drafts to review</p>
 </div>
 
+<h2 class="section-header">Edits</h2>
+<div class="grid-container">
+    <app-reviewer-edit-card
+        *ngFor="let edit of edits"
+        [edit]="edit"
+        (postReview)="openEditReviewDialog($event)"/>
+    <p *ngIf="edits.length === 0">No edits to review</p>
+</div>
+
 <h2 class="section-header">Updates</h2>
 <div class="grid-container">
     <app-reviewer-update-card

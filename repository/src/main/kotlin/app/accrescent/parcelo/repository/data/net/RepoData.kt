@@ -18,4 +18,6 @@ data class RepoData(
     val densitySplits: Set<String>,
     @SerialName("lang_splits")
     val langSplits: Set<String>,
+    @SerialName("short_description")
+    val shortDescription: String,
 )

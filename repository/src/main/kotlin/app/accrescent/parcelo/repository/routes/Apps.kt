@@ -17,12 +17,17 @@ import io.ktor.resources.Resource
 import io.ktor.server.application.call
 import io.ktor.server.auth.authenticate
 import io.ktor.server.request.receiveMultipart
+import io.ktor.server.resources.patch
 import io.ktor.server.resources.post
 import io.ktor.server.resources.put
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
+import io.ktor.utils.io.core.use
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.decodeFromStream
+import kotlinx.serialization.json.encodeToStream
 import org.koin.ktor.ext.inject
 import java.io.File
 import java.io.FileOutputStream
@@ -45,13 +50,17 @@ import kotlin.io.path.setPosixFilePermissions
 @Resource("/apps")
 class Apps {
     @Resource("{id}")
-    class Id(val parent: Apps = Apps(), val id: String)
+    class Id(val parent: Apps = Apps(), val id: String) {
+        @Resource("metadata")
+        class Metadata(val parent: Id)
+    }
 }
 
 fun Route.appRoutes() {
     authenticate(API_KEY_AUTH_PROVIDER) {
         createAppRoute()
         updateAppRoute()
+        updateAppMetadataRoute()
     }
 }
 
@@ -166,7 +175,7 @@ private sealed class PublicationType {
     data object Update : PublicationType()
 }
 
-@OptIn(ExperimentalPathApi::class)
+@OptIn(ExperimentalPathApi::class, ExperimentalSerializationApi::class)
 private fun publish(
     publishDir: String,
     zip: ZipInputStream,
@@ -214,19 +223,31 @@ private fun publish(
     }
 
     // Publish repodata
-    val repoData = RepoData(
-        version = metadata.versionName,
-        versionCode = metadata.versionCode,
-        abiSplits = metadata.abiSplits.map { it.replace("_", "-") }.toSet(),
-        langSplits = metadata.langSplits,
-        densitySplits = metadata.densitySplits,
-    )
     val repoDataFile = appDir.resolve("repodata.json").apply {
         if (type is PublicationType.NewApp) {
             val path = createFile()
             File(path.toString()).setReadable(true, false)
         }
     }
+
+    val shortDescription = if (type is PublicationType.NewApp) {
+        ""
+    } else {
+        repoDataFile
+            .toFile()
+            .inputStream()
+            .use { Json.decodeFromStream<RepoData>(it) }
+            .shortDescription
+    }
+
+    val repoData = RepoData(
+        version = metadata.versionName,
+        versionCode = metadata.versionCode,
+        abiSplits = metadata.abiSplits.map { it.replace("_", "-") }.toSet(),
+        langSplits = metadata.langSplits,
+        densitySplits = metadata.densitySplits,
+        shortDescription = shortDescription,
+    )
     repoDataFile.toFile().outputStream().use { outFile ->
         Json.encodeToString(repoData).byteInputStream().use {
             it.copyTo(outFile)
@@ -244,4 +265,46 @@ private fun publish(
             }
         }
     }
+}
+
+fun Route.updateAppMetadataRoute() {
+    val config: Config by inject()
+
+    patch<Apps.Id.Metadata> {
+        val appId = it.parent.id
+        val multipart = call.receiveMultipart().readAllParts()
+
+        var shortDescription: String? = null
+
+        for (part in multipart) {
+            if (part is PartData.FormItem && part.name == "short_description") {
+                shortDescription = part.value
+            } else {
+                call.respond(HttpStatusCode.BadRequest)
+                return@patch
+            }
+        }
+
+        updateMetadata(config.publishDirectory, appId, shortDescription)
+
+        call.respond(HttpStatusCode.OK)
+    }
+}
+
+@OptIn(ExperimentalSerializationApi::class)
+private fun updateMetadata(publishDir: String, appId: String, shortDescription: String?) {
+    val appDir = Paths.get(publishDir, appId)
+    val repoDataFile = appDir.resolve("repodata.json").toFile()
+
+    val oldRepoData = repoDataFile.inputStream().use { Json.decodeFromStream<RepoData>(it) }
+    val newRepoData = RepoData(
+        version = oldRepoData.version,
+        versionCode = oldRepoData.versionCode,
+        abiSplits = oldRepoData.abiSplits,
+        densitySplits = oldRepoData.densitySplits,
+        langSplits = oldRepoData.langSplits,
+        shortDescription = shortDescription ?: oldRepoData.shortDescription,
+    )
+
+    repoDataFile.outputStream().use { Json.encodeToStream(newRepoData, it) }
 }

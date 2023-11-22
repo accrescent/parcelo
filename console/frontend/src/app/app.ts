@@ -7,4 +7,5 @@ export interface App {
     label: string;
     version_code: number;
     version_name: string;
+    short_description: string;
 }

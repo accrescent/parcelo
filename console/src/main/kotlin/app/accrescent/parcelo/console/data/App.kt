@@ -38,6 +38,6 @@ class App(id: EntityID<String>) : Entity<String>(id), ToSerializable<Serializabl
     var updating by Apps.updating
 
     override fun serializable(): SerializableApp {
-        return SerializableApp(id.value, label, versionCode, versionName)
+        return SerializableApp(id.value, label, versionCode, versionName, shortDescription)
     }
 }
