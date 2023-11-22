@@ -16,11 +16,17 @@ export class DraftService {
 
     constructor(private http: HttpClient) {}
 
-    createDraft(apkSet: File, icon: File, label: string): Observable<HttpEvent<Draft>> {
+    createDraft(
+        apkSet: File,
+        icon: File,
+        label: string,
+        shortDescription: string,
+    ): Observable<HttpEvent<Draft>> {
         const formData = new FormData();
         formData.append('apk_set', apkSet);
         formData.append('icon', icon);
         formData.append('label', label);
+        formData.append('short_description', shortDescription);
 
         const req = new HttpRequest('POST', this.draftsUrl, formData, { reportProgress: true });
 

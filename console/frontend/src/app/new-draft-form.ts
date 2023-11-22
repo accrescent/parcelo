@@ -6,4 +6,5 @@ export interface NewDraftForm {
     apkSet: File;
     icon: File;
     label: string;
+    shortDescription: string;
 }

@@ -14,11 +14,22 @@ SPDX-License-Identifier: AGPL-3.0-only
             <mat-form-field appearance="outline">
                 <mat-label>Display name</mat-label>
                 <input type="text" formControlName="label" matInput>
-                <mat-error *ngIf="shouldShowLengthError()">
+                <mat-error *ngIf="labelLengthError()">
                     Must be between 3 and 30 characters
                 </mat-error>
                 <mat-error *ngIf="form.controls['label'].hasError('required')">
                     Display name is required
+                </mat-error>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+                <mat-label>Short description</mat-label>
+                <input type="text" formControlName="shortDescription" matInput>
+                <mat-error *ngIf="shortDescriptionLengthError()">
+                    Must be between 3 and 80 characters
+                </mat-error>
+                <mat-error *ngIf="form.controls['shortDescription'].hasError('required')">
+                    Short description is required
                 </mat-error>
             </mat-form-field>
 

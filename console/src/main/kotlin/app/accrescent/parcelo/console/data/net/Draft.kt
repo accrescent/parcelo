@@ -17,6 +17,8 @@ data class Draft(
     val versionCode: Int,
     @SerialName("version_name")
     val versionName: String,
+    @SerialName("short_description")
+    val shortDescription: String,
     @SerialName("creation_time")
     val creationTime: Long,
     val status: DraftStatus,

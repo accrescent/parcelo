@@ -95,6 +95,7 @@ fun Route.createDraftRoute() {
 
         var apkSet: ApkSet? = null
         var label: String? = null
+        var shortDescription: String? = null
         var apkSetData: ByteArray? = null
         var iconHash: String? = null
         var iconData: ByteArray? = null
@@ -153,6 +154,16 @@ fun Route.createDraftRoute() {
                     }
                 }
 
+                part is PartData.FormItem && part.name == "short_description" -> {
+                    // Short description must be between 3 and 80 characters in length inclusive
+                    if (part.value.length < 3 || part.value.length > 80) {
+                        call.respond(HttpStatusCode.BadRequest, ApiError.shortDescriptionLength())
+                        return@post
+                    } else {
+                        shortDescription = part.value
+                    }
+                }
+
                 else -> {
                     call.respond(HttpStatusCode.BadRequest, ApiError.unknownPartName(part.name))
                     return@post
@@ -163,6 +174,7 @@ fun Route.createDraftRoute() {
         if (
             apkSet != null &&
             label != null &&
+            shortDescription != null &&
             iconHash != null &&
             iconData != null &&
             apkSetData != null
@@ -218,6 +230,7 @@ fun Route.createDraftRoute() {
                     appId = apkSet.appId.value
                     versionCode = apkSet.versionCode
                     versionName = apkSet.versionName
+                    this.shortDescription = shortDescription
                     this.creatorId = creatorId
                     fileId = appFileId
                     iconId = icon.id

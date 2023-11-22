@@ -23,6 +23,7 @@ object Drafts : UUIDTable("drafts") {
     val label = text("label")
     val versionCode = integer("version_code")
     val versionName = text("version_name")
+    val shortDescription = text("short_description").default("")
     val creatorId = reference("creator_id", Users, ReferenceOption.CASCADE)
     val creationTime = long("creation_time").clientDefault { System.currentTimeMillis() / 1000 }
     val fileId = reference("file_id", Files, ReferenceOption.NO_ACTION)
@@ -47,6 +48,7 @@ class Draft(id: EntityID<UUID>) : UUIDEntity(id), ToSerializable<SerializableDra
     var label by Drafts.label
     var versionCode by Drafts.versionCode
     var versionName by Drafts.versionName
+    var shortDescription by Drafts.shortDescription
     var creatorId by Drafts.creatorId
     val creationTime by Drafts.creationTime
     var fileId by Drafts.fileId
@@ -80,6 +82,7 @@ class Draft(id: EntityID<UUID>) : UUIDEntity(id), ToSerializable<SerializableDra
             label,
             versionCode,
             versionName,
+            shortDescription,
             creationTime,
             status,
         )

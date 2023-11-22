@@ -73,6 +73,7 @@ fun Route.createAppRoute() {
         var apkSetData: ByteArray? = null
         var apkSet: ApkSet? = null
         var iconData: ByteArray? = null
+        var shortDescription: String? = null
 
         for (part in multipart) {
             if (part is PartData.FileItem && part.name == "apk_set") {
@@ -107,6 +108,14 @@ fun Route.createAppRoute() {
                     call.respond(HttpStatusCode.BadRequest)
                     return@post
                 }
+            } else if (part is PartData.FormItem && part.name == "short_description") {
+                // Short description must be between 3 and 80 characters in length inclusive
+                if (part.value.length < 3 || part.value.length > 80) {
+                    call.respond(HttpStatusCode.BadRequest)
+                    return@post
+                } else {
+                    shortDescription = part.value
+                }
             } else {
                 call.respond(HttpStatusCode.BadRequest)
                 return@post
@@ -114,11 +123,16 @@ fun Route.createAppRoute() {
         }
 
         // Publish app to the webserver
-        if (apkSetData != null && apkSet != null && iconData != null) {
+        if (apkSetData != null && apkSet != null && iconData != null && shortDescription != null) {
             apkSetData!!.inputStream().use { apkSetInputStream ->
                 ZipInputStream(apkSetInputStream).use { zip ->
                     iconData.inputStream().use { icon ->
-                        publish(config.publishDirectory, zip, apkSet, PublicationType.NewApp(icon))
+                        publish(
+                            config.publishDirectory,
+                            zip,
+                            apkSet,
+                            PublicationType.NewApp(icon, shortDescription),
+                        )
                     }
                 }
             }
@@ -171,7 +185,7 @@ fun Route.updateAppRoute() {
 }
 
 private sealed class PublicationType {
-    class NewApp(val icon: InputStream) : PublicationType()
+    class NewApp(val icon: InputStream, val shortDescription: String) : PublicationType()
     data object Update : PublicationType()
 }
 
@@ -231,7 +245,7 @@ private fun publish(
     }
 
     val shortDescription = if (type is PublicationType.NewApp) {
-        ""
+        type.shortDescription
     } else {
         repoDataFile
             .toFile()

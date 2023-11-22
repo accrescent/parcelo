@@ -8,6 +8,7 @@ export interface Draft {
     label: string;
     version_code: number;
     version_name: string;
+    short_description: string;
     creation_time: number;
     status: DraftStatus;
 }

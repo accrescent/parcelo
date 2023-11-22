@@ -56,6 +56,7 @@ fun registerPublishAppJob(draftId: UUID) {
                     append(HttpHeaders.ContentDisposition, "filename=\"icon.png\"")
                 })
             }
+            append("short_description", draft.shortDescription)
         }) {
             timeout { socketTimeoutMillis = SOCKET_TIMEOUT }
             header("Authorization", "token ${config.repository.apiKey}")
@@ -70,6 +71,7 @@ fun registerPublishAppJob(draftId: UUID) {
             label = draft.label
             versionCode = draft.versionCode
             versionName = draft.versionName
+            shortDescription = draft.shortDescription
             fileId = draft.fileId
             iconId = draft.iconId
             reviewIssueGroupId = draft.reviewIssueGroupId
