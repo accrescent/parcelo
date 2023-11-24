@@ -10,6 +10,7 @@ import org.flywaydb.core.Flyway
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.insertIgnore
+import org.jetbrains.exposed.sql.insertIgnoreAndGetId
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.koin.ktor.ext.inject
 import org.sqlite.SQLiteDataSource
@@ -56,11 +57,12 @@ fun Application.configureDatabase(): DataSource {
         if (environment.developmentMode) {
             // Create a default superuser
             val debugUserGitHubId = System.getenv("DEBUG_USER_GITHUB_ID").toLong()
-            val userId = Users.insertIgnore {
+            val userId = Users.insertIgnoreAndGetId {
                 it[githubUserId] = debugUserGitHubId
                 it[email] = System.getenv("DEBUG_USER_EMAIL")
                 it[publisher] = true
-            }[Users.id]
+            } ?: User.find { Users.githubUserId eq debugUserGitHubId }.singleOrNull()!!.id
+
             Reviewers.insertIgnore {
                 it[this.userId] = userId
                 it[email] = System.getenv("DEBUG_USER_REVIEWER_EMAIL")
