@@ -37,7 +37,7 @@ fun Application.configureDatabase() {
     })
 
     transaction {
-        SchemaUtils.createMissingTablesAndColumns(Consoles)
+        SchemaUtils.create(Consoles)
 
         if (environment.developmentMode) {
             // Create a default console

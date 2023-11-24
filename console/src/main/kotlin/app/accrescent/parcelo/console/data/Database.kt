@@ -37,7 +37,7 @@ fun Application.configureDatabase(): DataSource {
     })
 
     transaction {
-        SchemaUtils.createMissingTablesAndColumns(
+        SchemaUtils.create(
             AccessControlLists,
             Apps,
             Drafts,
