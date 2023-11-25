@@ -5,6 +5,7 @@
 package app.accrescent.parcelo.repository.data
 
 import app.accrescent.parcelo.repository.Config
+import app.accrescent.parcelo.repository.data.baseline.BaselineConsoles
 import io.ktor.server.application.Application
 import org.flywaydb.core.Flyway
 import org.jetbrains.exposed.sql.Database
@@ -37,7 +38,7 @@ fun Application.configureDatabase() {
     })
 
     transaction {
-        SchemaUtils.create(Consoles)
+        SchemaUtils.create(BaselineConsoles)
 
         if (environment.developmentMode) {
             // Create a default console
@@ -52,6 +53,7 @@ fun Application.configureDatabase() {
         .configure()
         .dataSource(dataSource)
         .baselineOnMigrate(true)
+        .mixed(true)
         .validateMigrationNaming(true)
         .load()
         .migrate()

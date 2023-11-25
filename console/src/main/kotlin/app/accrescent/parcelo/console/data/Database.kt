@@ -5,6 +5,19 @@
 package app.accrescent.parcelo.console.data
 
 import app.accrescent.parcelo.console.Config
+import app.accrescent.parcelo.console.data.baseline.BaselineAccessControlLists
+import app.accrescent.parcelo.console.data.baseline.BaselineApps
+import app.accrescent.parcelo.console.data.baseline.BaselineDrafts
+import app.accrescent.parcelo.console.data.baseline.BaselineFiles
+import app.accrescent.parcelo.console.data.baseline.BaselineIcons
+import app.accrescent.parcelo.console.data.baseline.BaselineRejectionReasons
+import app.accrescent.parcelo.console.data.baseline.BaselineReviewIssues
+import app.accrescent.parcelo.console.data.baseline.BaselineReviewers
+import app.accrescent.parcelo.console.data.baseline.BaselineReviews
+import app.accrescent.parcelo.console.data.baseline.BaselineSessions
+import app.accrescent.parcelo.console.data.baseline.BaselineUpdates
+import app.accrescent.parcelo.console.data.baseline.BaselineUsers
+import app.accrescent.parcelo.console.data.baseline.BaselineWhitelistedGitHubUsers
 import io.ktor.server.application.Application
 import org.flywaydb.core.Flyway
 import org.jetbrains.exposed.sql.Database
@@ -38,20 +51,19 @@ fun Application.configureDatabase(): DataSource {
 
     transaction {
         SchemaUtils.create(
-            AccessControlLists,
-            Apps,
-            Drafts,
-            Edits,
-            Files,
-            Icons,
-            RejectionReasons,
-            Reviewers,
-            ReviewIssues,
-            Reviews,
-            Sessions,
-            Updates,
-            Users,
-            WhitelistedGitHubUsers,
+            BaselineAccessControlLists,
+            BaselineApps,
+            BaselineDrafts,
+            BaselineFiles,
+            BaselineIcons,
+            BaselineRejectionReasons,
+            BaselineReviewers,
+            BaselineReviewIssues,
+            BaselineReviews,
+            BaselineSessions,
+            BaselineUpdates,
+            BaselineUsers,
+            BaselineWhitelistedGitHubUsers,
         )
 
         if (environment.developmentMode) {
@@ -82,6 +94,7 @@ fun Application.configureDatabase(): DataSource {
         .configure()
         .dataSource(dataSource)
         .baselineOnMigrate(true)
+        .mixed(true)
         .validateMigrationNaming(true)
         .load()
         .migrate()
