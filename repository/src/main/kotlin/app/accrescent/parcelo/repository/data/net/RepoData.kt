@@ -19,5 +19,5 @@ data class RepoData(
     @SerialName("lang_splits")
     val langSplits: Set<String>,
     @SerialName("short_description")
-    val shortDescription: String,
+    val shortDescription: String? = null,
 )
