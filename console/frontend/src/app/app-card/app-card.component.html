@@ -15,7 +15,7 @@ SPDX-License-Identifier: AGPL-3.0-only
         <ul>
             <li>Version code: {{ app.version_code }}</li>
             <li>Version name: {{ app.version_name }}</li>
-            <li>Short description: {{ app.short_description }}</li>
+            <li>Short description: {{ app.short_description || "(none)" }}</li>
         </ul>
     </mat-card-content>
     <mat-card-actions align="end">
