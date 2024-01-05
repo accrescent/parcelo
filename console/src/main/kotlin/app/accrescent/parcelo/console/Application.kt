@@ -67,9 +67,6 @@ fun Application.module() {
         }
 
         modules(mainModule)
-
-        // Temporary workaround for https://github.com/InsertKoinIO/koin/issues/1674
-        GlobalContext.startKoin(this)
     }
     val httpClient: HttpClient by inject()
 
