@@ -18,6 +18,7 @@ import app.accrescent.parcelo.console.data.ReviewIssueGroup
 import app.accrescent.parcelo.console.data.Reviewer
 import app.accrescent.parcelo.console.data.Reviewers
 import app.accrescent.parcelo.console.data.Session
+import app.accrescent.parcelo.console.data.User
 import app.accrescent.parcelo.console.data.net.ApiError
 import app.accrescent.parcelo.console.data.net.toApiError
 import app.accrescent.parcelo.console.storage.FileStorageService
@@ -59,6 +60,9 @@ import javax.imageio.ImageIO
 
 @Resource("/drafts")
 class Drafts {
+    @Resource("approved")
+    class Approved(val parent: Drafts)
+
     @Resource("assigned")
     class Assigned(val parent: Drafts)
 
@@ -79,6 +83,7 @@ fun Route.draftRoutes() {
         getDraftsRoute()
         updateDraftRoute()
 
+        getApprovedDraftsRoute()
         getAssignedDraftsRoute()
         getDraftApkSetRoute()
 
@@ -328,6 +333,34 @@ fun Route.updateDraftRoute() {
             }
             call.respond(HttpStatusCode.NoContent)
         }
+    }
+}
+
+/**
+ * Returns the list of approved new drafts ready for publishing. If the user is not a publisher,
+ * this route returns a 403.
+ */
+fun Route.getApprovedDraftsRoute() {
+    get<Drafts.Approved> {
+        val userId = call.principal<Session>()!!.userId
+
+        val userIsPublisher = transaction { User.findById(userId)?.publisher } ?: run {
+            call.respond(HttpStatusCode.Unauthorized)
+            return@get
+        }
+        if (!userIsPublisher) {
+            call.respond(HttpStatusCode.Forbidden, ApiError.readForbidden())
+            return@get
+        }
+
+        val approvedDrafts = transaction {
+            Draft
+                .all()
+                .filter { draft -> draft.reviewId?.let { Review.findById(it)?.approved } == true }
+                .map { it.serializable() }
+        }
+
+        call.respond(HttpStatusCode.OK, approvedDrafts)
     }
 }
 

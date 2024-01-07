@@ -4,20 +4,19 @@
 
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, map } from 'rxjs';
+import { Observable } from 'rxjs';
 
-import { Draft, DraftStatus } from '../draft';
+import { Draft } from '../draft';
 
 @Injectable({
     providedIn: 'root'
 })
 export class DraftService {
-    private readonly draftsUrl = 'api/v1/drafts';
+    private readonly approvedDraftsUrl = 'api/v1/drafts/approved';
 
     constructor(private http: HttpClient) {}
 
     getApproved(): Observable<Draft[]> {
-        return this.http.get<Draft[]>(this.draftsUrl)
-            .pipe(map(drafts => drafts.filter(draft => draft.status === DraftStatus.Approved)));
+        return this.http.get<Draft[]>(this.approvedDraftsUrl);
     }
 }
