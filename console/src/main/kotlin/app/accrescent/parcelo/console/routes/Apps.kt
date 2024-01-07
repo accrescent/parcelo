@@ -26,7 +26,7 @@ import io.ktor.server.routing.Route
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jobrunr.scheduling.BackgroundJob
 import java.util.UUID
@@ -103,7 +103,8 @@ fun Route.getAppRoute() {
         val app = transaction {
             DbApps
                 .innerJoin(AccessControlLists)
-                .select {
+                .selectAll()
+                .where {
                     AccessControlLists.userId.eq(userId)
                         .and(DbApps.id eq AccessControlLists.appId)
                         .and(DbApps.id eq appId)
@@ -128,7 +129,8 @@ fun Route.getAppsRoute() {
         val apps = transaction {
             DbApps
                 .innerJoin(AccessControlLists)
-                .select {
+                .selectAll()
+                .where {
                     AccessControlLists.userId eq userId and (DbApps.id eq AccessControlLists.appId)
                 }
                 .map { App.wrapRow(it).serializable() }

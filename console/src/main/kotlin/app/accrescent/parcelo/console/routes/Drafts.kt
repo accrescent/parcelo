@@ -50,7 +50,6 @@ import io.ktor.server.routing.Route
 import org.jetbrains.exposed.sql.Random
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.koin.ktor.ext.inject
 import java.security.MessageDigest
@@ -325,8 +324,7 @@ fun Route.updateDraftRoute() {
             // Submit the draft by assigning a random reviewer
             transaction {
                 draft.reviewerId = Reviewers
-                    .slice(Reviewers.id)
-                    .selectAll()
+                    .select(Reviewers.id)
                     .orderBy(Random())
                     .limit(1)
                     .single()[Reviewers.id]

@@ -38,7 +38,6 @@ import org.jetbrains.exposed.sql.Random
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.not
-import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jobrunr.scheduling.BackgroundJob
@@ -196,7 +195,8 @@ fun Route.updateEditRoute() {
         val (httpStatusCode, httpBody) = transaction {
             val submissionAlreadyExists = !Reviews
                 .innerJoin(DbEdits)
-                .select {
+                .selectAll()
+                .where {
                     DbEdits.reviewerId.isNotNull()
                         .and(not(DbEdits.published))
                         .and(Reviews.approved)
@@ -207,8 +207,7 @@ fun Route.updateEditRoute() {
                 return@transaction Pair(HttpStatusCode.Conflict, ApiError.submissionConflict())
             } else {
                 edit.reviewerId = Reviewers
-                    .slice(Reviewers.id)
-                    .selectAll()
+                    .select(Reviewers.id)
                     .orderBy(Random())
                     .limit(1)
                     .single()[Reviewers.id]

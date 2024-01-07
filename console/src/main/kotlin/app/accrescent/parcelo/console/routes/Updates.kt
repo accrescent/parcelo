@@ -53,8 +53,6 @@ import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.Random
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.select
-import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jobrunr.scheduling.BackgroundJob
 import org.koin.ktor.ext.inject
@@ -99,8 +97,8 @@ fun Route.createUpdateRoute() {
 
         val updatePermitted = transaction {
             AccessControlLists
-                .slice(AccessControlLists.update)
-                .select { AccessControlLists.userId eq userId and (AccessControlLists.appId eq appId) }
+                .select(AccessControlLists.update)
+                .where { AccessControlLists.userId eq userId and (AccessControlLists.appId eq appId) }
                 .singleOrNull()
                 ?.let { it[AccessControlLists.update] }
                 ?: false
@@ -305,8 +303,7 @@ fun Route.updateUpdateRoute() {
                 transaction {
                     update.submitted = true
                     update.reviewerId = Reviewers
-                        .slice(Reviewers.id)
-                        .selectAll()
+                        .select(Reviewers.id)
                         .orderBy(Random())
                         .limit(1)
                         .single()[Reviewers.id]
