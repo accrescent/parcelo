@@ -18,7 +18,7 @@ plugins {
 }
 
 group = "app.accrescent"
-version = "0.2.1"
+version = "0.3.0"
 
 application {
     mainClass.set("app.accrescent.parcelo.repository.ApplicationKt")
