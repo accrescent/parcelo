@@ -14,7 +14,7 @@ const val MIN_TARGET_SDK = 33
  * The minimum acceptable bundletool version used to generate the APK set. This version is taken
  * from a recent Android Studio release.
  */
-val MIN_BUNDLETOOL_VERSION: Version = Version.Builder("1.11.4").build()
+val MIN_BUNDLETOOL_VERSION: Version = Version.parse("1.11.4")
 
 val PERMISSION_REVIEW_BLACKLIST = setOf(
     "android.permission.ACCESS_BACKGROUND_LOCATION",

@@ -99,7 +99,7 @@ public class ApkSet private constructor(
 
                 // Validate bundletool version
                 bundletoolVersion = try {
-                    Version.Builder(bundletoolMetadata.bundletool.version).build()
+                    Version.parse(bundletoolMetadata.bundletool.version)
                 } catch (e: ParseException) {
                     return ParseApkSetResult.Error.BundletoolVersionError
                 }
