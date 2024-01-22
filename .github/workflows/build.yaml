@@ -19,4 +19,8 @@ jobs:
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       - uses: gradle/gradle-build-action@v2
-      - run: ./gradlew ci
+      - run: ./gradlew build
+      - run: npm install -g @angular/cli && npm ci && ng build
+        working-directory: ./frontend
+      - run: ng lint
+        working-directory: ./frontend

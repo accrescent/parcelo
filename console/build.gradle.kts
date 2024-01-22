@@ -2,8 +2,6 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only
 
-import com.github.gradle.node.npm.task.NpxTask
-
 val exposedVersion: String by project
 val flywayVersion: String by project
 val fourkomaVersion: String by project
@@ -18,7 +16,6 @@ val sqliteVersion: String by project
 plugins {
     kotlin("jvm")
     kotlin("plugin.serialization")
-    id("com.github.node-gradle.node")
     id("io.ktor.plugin")
 }
 
@@ -34,46 +31,6 @@ application {
 
 kotlin {
     jvmToolchain(17)
-}
-
-node {
-    nodeProjectDir.set(file("${project.projectDir}/frontend"))
-}
-
-task("buildFrontendDebug", NpxTask::class) {
-    dependsOn(tasks.npmInstall)
-    command.set("ng")
-    args.set(listOf("build", "--configuration", "development"))
-    inputs.files(
-        "package.json",
-        "package-lock.json",
-        "angular.json",
-        "tsconfig.json",
-        "tsconfig.app.json",
-    )
-    inputs.dir("${project.projectDir}/frontend/src")
-    inputs.dir(fileTree("${project.projectDir}/frontend/node_modules").exclude(".cache"))
-    outputs.dir("dist")
-}
-
-task("buildFrontendRelease", NpxTask::class) {
-    dependsOn(tasks.npmInstall)
-    command.set("ng")
-    args.set(listOf("build"))
-    inputs.files(
-        "package.json",
-        "package-lock.json",
-        "angular.json",
-        "tsconfig.json",
-        "tsconfig.app.json",
-    )
-    inputs.dir("${project.projectDir}/frontend/src")
-    inputs.dir(fileTree("${project.projectDir}/frontend/node_modules").exclude(".cache"))
-    outputs.dir("dist")
-}
-
-task("ci") {
-    dependsOn(tasks.build, "buildFrontendRelease", "npm_run_lint")
 }
 
 dependencies {

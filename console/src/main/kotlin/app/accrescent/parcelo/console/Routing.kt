@@ -12,8 +12,6 @@ import app.accrescent.parcelo.console.routes.sessionRoutes
 import app.accrescent.parcelo.console.routes.updateRoutes
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
-import io.ktor.server.http.content.angular
-import io.ktor.server.http.content.singlePageApplication
 import io.ktor.server.resources.Resources
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
@@ -31,14 +29,6 @@ fun Application.configureRouting() {
             draftRoutes()
             editRoutes()
             updateRoutes()
-        }
-    }
-
-    if (environment.developmentMode) {
-        routing {
-            singlePageApplication {
-                angular("console/frontend/dist/frontend")
-            }
         }
     }
 }
