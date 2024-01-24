@@ -8,6 +8,8 @@ import { HttpEventType, HttpResponse } from '@angular/common/http';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatDividerModule } from '@angular/material/divider';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { ActivatedRoute, Router } from '@angular/router';
 import { finalize } from 'rxjs';
@@ -46,6 +48,8 @@ import {
         MatChipsModule,
         MatDialogModule,
         MatDividerModule,
+        MatFormFieldModule,
+        MatInputModule,
         MatProgressBarModule,
         NewEditEditorComponent,
         NewUpdateEditorComponent,

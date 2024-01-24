@@ -4,6 +4,25 @@ Copyright 2023 Logan Magee
 SPDX-License-Identifier: AGPL-3.0-only
 -->
 
+<h2 class="section-header">Badge</h2>
+
+<img
+    src="https://accrescent.app/badges/get-it-on.png"
+    alt="Get it on Accrescent"
+    width="323"
+    height="125">
+
+<p>Use the following HTML badge to share your app:</p>
+<mat-form-field>
+<textarea rows="4" readonly matInput>
+<a href="https://accrescent.app/app/{{ app?.id }}">
+    <img alt="Get it on Accrescent" src="https://accrescent.app/badges/get-it-on.png" height="80">
+</a>
+</textarea>
+</mat-form-field>
+
+<mat-divider/>
+
 <div class="grid-forms">
     <app-new-update-editor (formSubmit)="createUpdate($event)">
         <mat-progress-bar [value]="uploadProgress"/>

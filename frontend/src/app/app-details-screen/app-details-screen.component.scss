@@ -8,6 +8,14 @@ mat-divider {
     margin-top: 2rem;
 }
 
+mat-form-field {
+    width: 50em;
+}
+
+textarea {
+    resize: none;
+}
+
 .grid-base {
     display: grid;
     column-gap: 1rem;
