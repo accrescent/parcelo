@@ -39,4 +39,10 @@ The environment variables in the included IDEA run configurations may be modifie
 However, we don't recommend doing this unless you know what you're doing. The defaults should work
 fine for most use cases.
 
+## Contributor license agreement
+
+Contributing to Parcelo requires signing a Contributor License Agreement (CLA). To sign [Parcelo's
+CLA], make a PR, and our CLA bot will direct you.
+
 [GitHub developer settings]: https://github.com/settings/developers
+[Parcelo's CLA]: https://gist.github.com/lberrymage/21603f43c6c018001e31d441125ad5de
