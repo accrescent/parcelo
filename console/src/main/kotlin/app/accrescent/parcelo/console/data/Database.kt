@@ -27,21 +27,13 @@ import org.jetbrains.exposed.sql.insertIgnoreAndGetId
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.koin.ktor.ext.inject
 import org.sqlite.SQLiteDataSource
-import java.sql.DriverManager
 import javax.sql.DataSource
 
 fun Application.configureDatabase(): DataSource {
     val config: Config by inject()
 
     val dataSource = SQLiteDataSource().apply {
-        url = if (environment.developmentMode) {
-            "jdbc:sqlite:file::memory:?cache=shared".also {
-                // Keep connection alive. See https://github.com/JetBrains/Exposed/issues/726
-                DriverManager.getConnection(it)
-            }
-        } else {
-            "jdbc:sqlite:${config.application.databasePath}?journal_mode=wal"
-        }
+        url = "jdbc:sqlite:${config.application.databasePath}?journal_mode=wal"
 
         setEnforceForeignKeys(true)
     }
