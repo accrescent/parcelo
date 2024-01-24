@@ -4,8 +4,15 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
+footer {
+    text-align: right;
+    max-width: 900px;
+    margin: auto;
+    color: darkgray;
+}
+
 .center {
-    height: 100vh;
+    height: 95vh;
     display: flex;
     justify-content: center;
     align-items: center;
