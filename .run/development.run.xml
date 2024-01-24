@@ -1,0 +1,13 @@
+<!--
+Copyright 2024 Logan Magee
+
+SPDX-License-Identifier: AGPL-3.0-only
+-->
+
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="development" type="CompoundRunConfigurationType">
+    <toRun name="console" type="JetRunConfigurationType" />
+    <toRun name="repository" type="JetRunConfigurationType" />
+    <method v="2" />
+  </configuration>
+</component>

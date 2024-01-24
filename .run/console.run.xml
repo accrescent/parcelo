@@ -1,0 +1,40 @@
+<!--
+Copyright 2024 Logan Magee
+
+SPDX-License-Identifier: AGPL-3.0-only
+-->
+
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="console" type="JetRunConfigurationType">
+    <envs>
+      <env name="BASE_URL" value="http://localhost:8080" />
+      <env name="CONSOLE_DATABASE_PATH" value="console.db" />
+      <env name="DEBUG_USER_EMAIL" value="example@example.com" />
+      <env name="DEBUG_USER_REVIEWER_EMAIL" value="example@example.com" />
+      <env name="FILE_STORAGE_BASE_DIR" value="appdata/console" />
+      <env name="GITHUB_OAUTH2_REDIRECT_URL" value="http://localhost:4200/auth/github/callback" />
+      <env name="HOST" value="0.0.0.0" />
+      <env name="PORT" value="8080" />
+      <env name="REPOSITORY_API_KEY" value="20F52DE7D116684FDF515529BCA1BFC8" />
+      <env name="REPOSITORY_URL" value="http://localhost:8081" />
+    </envs>
+    <option name="MAIN_CLASS_NAME" value="app.accrescent.parcelo.console.ApplicationKt" />
+    <module name="parcelo.console.main" />
+    <shortenClasspath name="NONE" />
+    <option name="VM_PARAMETERS" value="-Dio.ktor.development=true" />
+    <extension name="net.ashald.envfile">
+      <option name="IS_ENABLED" value="true" />
+      <option name="IS_SUBST" value="false" />
+      <option name="IS_PATH_MACRO_SUPPORTED" value="false" />
+      <option name="IS_IGNORE_MISSING_FILES" value="false" />
+      <option name="IS_ENABLE_EXPERIMENTAL_INTEGRATIONS" value="false" />
+      <ENTRIES>
+        <ENTRY IS_ENABLED="true" PARSER="runconfig" IS_EXECUTABLE="false" />
+        <ENTRY IS_ENABLED="true" PARSER="env" IS_EXECUTABLE="false" PATH=".env" />
+      </ENTRIES>
+    </extension>
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>
