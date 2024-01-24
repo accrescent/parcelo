@@ -60,7 +60,8 @@ fun Application.configureDatabase(): DataSource {
 
         if (environment.developmentMode) {
             // Create a default superuser
-            val debugUserGitHubId = System.getenv("DEBUG_USER_GITHUB_ID").toLong()
+            val debugUserGitHubId = (System.getenv("DEBUG_USER_GITHUB_ID")
+                ?: throw Exception("DEBUG_USER_GITHUB_ID not specified in environment")).toLong()
             val userId = Users.insertIgnoreAndGetId {
                 it[githubUserId] = debugUserGitHubId
                 it[email] = System.getenv("DEBUG_USER_EMAIL")

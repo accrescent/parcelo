@@ -50,8 +50,10 @@ fun Application.module() {
                 apiKey = System.getenv("REPOSITORY_API_KEY"),
             ),
             github = Config.GitHub(
-                clientId = System.getenv("GITHUB_OAUTH2_CLIENT_ID"),
-                clientSecret = System.getenv("GITHUB_OAUTH2_CLIENT_SECRET"),
+                clientId = System.getenv("GITHUB_OAUTH2_CLIENT_ID")
+                    ?: throw Exception("GITHUB_OAUTH2_CLIENT_ID not specified in environment"),
+                clientSecret = System.getenv("GITHUB_OAUTH2_CLIENT_SECRET")
+                    ?: throw Exception("GITHUB_OAUTH2_CLIENT_SECRET not specified in environment"),
                 redirectUrl = System.getenv("GITHUB_OAUTH2_REDIRECT_URL"),
             ),
         )
