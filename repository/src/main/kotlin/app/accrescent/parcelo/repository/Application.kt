@@ -14,7 +14,9 @@ import io.ktor.server.netty.EngineMain
 import org.koin.dsl.module
 import org.koin.ktor.plugin.Koin
 import org.koin.logger.slf4jLogger
+import java.nio.file.Files
 import java.nio.file.Path
+import kotlin.io.path.Path
 
 private const val DEFAULT_CONFIG_PATH = "/etc/prepository/config.toml"
 
@@ -24,9 +26,12 @@ fun main(args: Array<String>) {
 
 fun Application.module() {
     val config = if (environment.developmentMode) {
+        val publishDirectory = System.getenv("REPOSITORY_PUBLISH_DIR")
+        Files.createDirectories(Path(publishDirectory))
+
         Config(
             databasePath = System.getenv("REPOSITORY_DATABASE_PATH"),
-            publishDirectory = System.getenv("REPOSITORY_PUBLISH_DIR"),
+            publishDirectory = publishDirectory,
             repositoryApiKey = System.getenv("REPOSITORY_API_KEY"),
         )
     } else {

@@ -25,6 +25,7 @@ import org.koin.dsl.module
 import org.koin.ktor.ext.inject
 import org.koin.ktor.plugin.Koin
 import org.koin.logger.slf4jLogger
+import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.io.path.Path
 
@@ -35,11 +36,14 @@ fun main(args: Array<String>) = EngineMain.main(args)
 @OptIn(ExperimentalSerializationApi::class)
 fun Application.module() {
     val config = if (environment.developmentMode) {
+        val fileStorageDir = System.getenv("FILE_STORAGE_BASE_DIR")
+        Files.createDirectories(Path(fileStorageDir))
+
         Config(
             application = Config.Application(
                 baseUrl = System.getenv("BASE_URL"),
                 databasePath = System.getenv("CONSOLE_DATABASE_PATH"),
-                fileStorageDir = System.getenv("FILE_STORAGE_BASE_DIR"),
+                fileStorageDir = fileStorageDir,
             ),
             repository = Config.Repository(
                 url = System.getenv("REPOSITORY_URL"),
