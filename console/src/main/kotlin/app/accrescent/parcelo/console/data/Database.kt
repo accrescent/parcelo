@@ -73,13 +73,6 @@ fun Application.configureDatabase(): DataSource {
                 it[email] = System.getenv("DEBUG_USER_REVIEWER_EMAIL")
             }
             WhitelistedGitHubUsers.insertIgnore { it[id] = debugUserGitHubId }
-
-            // Create a session for said superuser for testing
-            Sessions.insertIgnore {
-                it[id] = System.getenv("DEBUG_USER_SESSION_ID")
-                it[this.userId] = userId
-                it[expiryTime] = Long.MAX_VALUE
-            }
         }
     }
 
