@@ -10,6 +10,7 @@ import cc.ekblad.toml.decode
 import cc.ekblad.toml.tomlMapper
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
+import io.ktor.server.application.log
 import io.ktor.server.netty.EngineMain
 import org.koin.dsl.module
 import org.koin.ktor.plugin.Koin
@@ -25,6 +26,8 @@ fun main(args: Array<String>) {
 }
 
 fun Application.module() {
+    log.info("Starting Parcelo repository 0.3.1")
+
     val config = if (environment.developmentMode) {
         val publishDirectory = System.getenv("REPOSITORY_PUBLISH_DIR")
         Files.createDirectories(Path(publishDirectory))
