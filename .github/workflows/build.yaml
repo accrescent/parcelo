@@ -18,7 +18,7 @@ jobs:
       - uses: arduino/setup-protoc@v1
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: gradle/gradle-build-action@v2
+      - uses: gradle/gradle-build-action@v3
       - run: ./gradlew build
       - run: ./gradlew dokkaHtml
       - run: npm install -g @angular/cli && npm ci && ng build
