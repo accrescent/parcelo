@@ -2,6 +2,8 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only
 
+import org.jetbrains.dokka.gradle.DokkaTask
+
 val exposedVersion: String by project
 val flywayVersion: String by project
 val fourkomaVersion: String by project
@@ -17,6 +19,7 @@ plugins {
     kotlin("jvm")
     kotlin("plugin.serialization")
     id("io.ktor.plugin")
+    id("org.jetbrains.dokka")
 }
 
 group = "app.accrescent"
@@ -56,4 +59,20 @@ dependencies {
     implementation("org.xerial:sqlite-jdbc:$sqliteVersion")
     testImplementation("io.ktor:ktor-server-tests:$ktorVersion")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit:$kotlinVersion")
+}
+
+tasks.withType<DokkaTask>().configureEach {
+    failOnWarning.set(true)
+
+    dokkaSourceSets {
+        configureEach {
+            reportUndocumented.set(true)
+
+            perPackageOption {
+                // FIXME(#494): Document console and remove this exclusion
+                matchingRegex.set("""app\.accrescent\.parcelo\.console\.?.*""")
+                reportUndocumented.set(false)
+            }
+        }
+    }
 }
