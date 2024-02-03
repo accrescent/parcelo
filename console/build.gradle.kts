@@ -70,7 +70,7 @@ tasks.withType<DokkaTask>().configureEach {
 
             perPackageOption {
                 // FIXME(#494): Document console and remove this exclusion
-                matchingRegex.set("""app\.accrescent\.parcelo\.console(?:\.(?:data(?:\.baseline)?(?:\.net)?|jobs|routes(?:\.auth)?|storage))?""")
+                matchingRegex.set("""app\.accrescent\.parcelo\.console(?:\.(?:data(?:\.baseline)?(?:\.net)?|jobs|routes(?:\.auth)?))?""")
                 reportUndocumented.set(false)
             }
         }

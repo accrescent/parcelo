@@ -21,6 +21,9 @@ import java.nio.file.attribute.PosixFilePermissions
 import java.util.UUID
 import kotlin.io.path.createFile
 
+/**
+ * An implementation of [FileStorageService] for the local filesystem
+ */
 class LocalFileStorageService(private val baseDirectory: Path) : FileStorageService {
     override fun saveFile(inputStream: InputStream): EntityID<Int> {
         val fileAttributes = PosixFilePermissions.asFileAttribute(
