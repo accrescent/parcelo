@@ -8,6 +8,9 @@ import com.github.zafarkhaja.semver.Version
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
+/**
+ * The minimum target SDK accepted for both drafts and updates
+ */
 const val MIN_TARGET_SDK = 33
 
 /**
@@ -16,6 +19,10 @@ const val MIN_TARGET_SDK = 33
  */
 val MIN_BUNDLETOOL_VERSION: Version = Version.parse("1.11.4")
 
+/**
+ * The blacklist of permissions which, when requested by an update for the first time, trigger a
+ * review which must pass before the update can be published.
+ */
 val PERMISSION_REVIEW_BLACKLIST = setOf(
     "android.permission.ACCESS_BACKGROUND_LOCATION",
     "android.permission.ACCESS_BACKGROUND_LOCATION",
@@ -48,28 +55,62 @@ val PERMISSION_REVIEW_BLACKLIST = setOf(
     "android.permission.SYSTEM_ALERT_WINDOW",
 )
 
+/**
+ * Similar to the permission review blacklist, this list contains service intent filter actions
+ * which trigger a review when requested for the first time by an update.
+ */
 val SERVICE_INTENT_FILTER_REVIEW_BLACKLIST = setOf(
     "android.accessibilityservice.AccessibilityService",
     "android.net.VpnService",
     "android.view.InputMethod"
 )
 
+/**
+ * A convenience union of the permission review blacklist and service intent filter action blacklist
+ */
 val REVIEW_ISSUE_BLACKLIST =
     PERMISSION_REVIEW_BLACKLIST union SERVICE_INTENT_FILTER_REVIEW_BLACKLIST
 
+/**
+ * The possible results of a review
+ */
 @Serializable
 enum class ReviewResult {
+    /**
+     * The review expresses approval
+     */
     @SerialName("approved")
     APPROVED,
 
+    /**
+     * The review expresses rejection
+     */
     @SerialName("rejected")
     REJECTED,
 }
 
+/**
+ * A review object
+ */
 @Serializable
 data class ReviewRequest(
+    /**
+     * The result of the review
+     */
     val result: ReviewResult,
+    /**
+     * A list of reasons for rejection
+     *
+     * Present if and only if [result] is [ReviewResult.REJECTED].
+     */
     val reasons: List<String>?,
+    /**
+     * Additional notes pertaining to the review
+     *
+     * This field is general-purpose, but is intended for supplying helpful information to the user
+     * requesting review. For example, it can be used for detailing reasons for rejection or adding
+     * tips for relevant upcoming policy changes.
+     */
     @SerialName("additional_notes")
     val additionalNotes: String?,
 ) {
