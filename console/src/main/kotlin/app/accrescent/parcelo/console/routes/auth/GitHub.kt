@@ -34,17 +34,40 @@ import kotlinx.serialization.Serializable
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.kohsuke.github.GitHubBuilder
 
+/**
+ * The name of the OAuth2 state cookie for production mode
+ */
 const val COOKIE_OAUTH_STATE_PROD = "__Host-oauth-state"
+
+/**
+ * The name of the OAuth2 state cookie for development mode
+ */
 const val COOKIE_OAUTH_STATE_DEVEL = "oauth-state"
+
+/**
+ * The duration of the OAuth2 state cookie's lifetime
+ */
 const val COOKIE_OAUTH_STATE_LIFETIME = 60 * 60 // 1 hour
 
+/**
+ * A helper method for getting the name of the OAuth2 state cookie name in the current mode
+ */
 val ApplicationEnvironment.oauthStateCookieName
     get() =
         if (!developmentMode) COOKIE_OAUTH_STATE_PROD else COOKIE_OAUTH_STATE_DEVEL
 
+/**
+ * The result of successful authentication
+ *
+ * @property reviewer whether the logged-in user has the reviewer role
+ * @property publisher whether the logged-in user has the publisher role
+ */
 @Serializable
 data class AuthResult(val reviewer: Boolean, val publisher: Boolean)
 
+/**
+ * Registers GitHub OAuth2 authentication configuration
+ */
 fun AuthenticationConfig.github(
     clientId: String,
     clientSecret: String,
@@ -84,6 +107,9 @@ fun AuthenticationConfig.github(
     }
 }
 
+/**
+ * Registers all GitHub authentication routes
+ */
 fun Route.githubRoutes() {
     authenticate("oauth2-github") {
         route("/github") {

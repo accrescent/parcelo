@@ -28,8 +28,14 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 
+/**
+ * The maximum duration of a console login session
+ */
 val SESSION_LIFETIME = 1.days
 
+/**
+ * Configures console authentication
+ */
 fun Application.configureAuthentication(
     githubClientId: String,
     githubClientSecret: String,
@@ -73,6 +79,9 @@ fun Application.configureAuthentication(
     }
 }
 
+/**
+ * Registers all authentication routes
+ */
 fun Route.authRoutes() {
     authenticate("cookie") {
         get("/login/session") {
