@@ -11,6 +11,9 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import java.io.File
 import java.io.IOException
 
+/**
+ * Removes the file with the given ID if it's marked deleted
+ */
 fun cleanFile(fileId: Int) {
     val dbFile = transaction {
         FileDao.find { Files.id eq fileId and Files.deleted }.singleOrNull()

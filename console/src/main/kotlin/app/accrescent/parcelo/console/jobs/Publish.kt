@@ -31,6 +31,9 @@ import java.util.UUID
 // response is returned. 1 minute.
 private const val SOCKET_TIMEOUT: Long = 60_000
 
+/**
+ * Publishes the draft with the given ID, making it available for download
+ */
 fun registerPublishAppJob(draftId: UUID) {
     val config: Config by inject(Config::class.java)
     val httpClient: HttpClient by inject(HttpClient::class.java)
@@ -85,6 +88,9 @@ fun registerPublishAppJob(draftId: UUID) {
     }
 }
 
+/**
+ * Publishes the update with the given ID, making it available for download
+ */
 fun registerPublishUpdateJob(updateId: UUID) {
     val config: Config by inject(Config::class.java)
     val httpClient: HttpClient by inject(HttpClient::class.java)

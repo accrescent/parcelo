@@ -20,6 +20,9 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import org.koin.java.KoinJavaComponent
 import java.util.UUID
 
+/**
+ * Publishes the app metadata changes in the edit with the given ID
+ */
 fun publishEdit(editId: UUID) {
     val config: Config by KoinJavaComponent.inject(Config::class.java)
     val httpClient: HttpClient by KoinJavaComponent.inject(HttpClient::class.java)

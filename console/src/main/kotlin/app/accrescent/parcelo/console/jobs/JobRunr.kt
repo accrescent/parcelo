@@ -13,6 +13,9 @@ import javax.sql.DataSource
 private const val FILE_CLEANING_LABEL = "CLEAN_FILES"
 private val FILE_CLEANING_PERIOD = Duration.ofHours(6)
 
+/**
+ * Configures JobRunr with the given [DataSource]
+ */
 fun configureJobRunr(dataSource: DataSource) {
     JobRunr
         .configure()
