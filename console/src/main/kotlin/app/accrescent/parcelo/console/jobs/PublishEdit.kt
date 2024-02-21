@@ -4,46 +4,24 @@
 
 package app.accrescent.parcelo.console.jobs
 
-import app.accrescent.parcelo.console.Config
+import app.accrescent.parcelo.console.data.Edit as EditDao
 import app.accrescent.parcelo.console.data.App
-import app.accrescent.parcelo.console.data.Edit
-import io.ktor.client.HttpClient
-import io.ktor.client.plugins.expectSuccess
-import io.ktor.client.request.forms.formData
-import io.ktor.client.request.forms.submitFormWithBinaryData
-import io.ktor.client.request.header
-import io.ktor.http.HttpMethod
-import io.ktor.http.URLBuilder
-import io.ktor.http.appendPathSegments
+import app.accrescent.parcelo.console.publish.PublishService
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.koin.java.KoinJavaComponent
+import org.koin.java.KoinJavaComponent.inject
 import java.util.UUID
 
 /**
  * Publishes the app metadata changes in the edit with the given ID
  */
 fun publishEdit(editId: UUID) {
-    val config: Config by KoinJavaComponent.inject(Config::class.java)
-    val httpClient: HttpClient by KoinJavaComponent.inject(HttpClient::class.java)
+    val publishService: PublishService by inject(PublishService::class.java)
 
-    val edit = transaction { Edit.findById(editId) } ?: return
+    val edit = transaction { EditDao.findById(editId) } ?: return
 
     // Publish to the repository server
-    val publishUrl = URLBuilder(config.repository.url)
-        .appendPathSegments("api", "v1", "apps", edit.appId.toString(), "metadata")
-        .buildString()
-    runBlocking {
-        httpClient.submitFormWithBinaryData(publishUrl, formData {
-            if (edit.shortDescription != null) {
-                append("short_description", edit.shortDescription!!)
-            }
-        }) {
-            method = HttpMethod.Patch
-            header("Authorization", "token ${config.repository.apiKey}")
-            expectSuccess = true
-        }
-    }
+    runBlocking { publishService.publishEdit(edit.appId.value, edit.shortDescription) }
 
     // Account for publication
     transaction {

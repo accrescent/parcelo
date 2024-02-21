@@ -6,6 +6,8 @@ package app.accrescent.parcelo.console
 
 import app.accrescent.parcelo.console.data.configureDatabase
 import app.accrescent.parcelo.console.jobs.configureJobRunr
+import app.accrescent.parcelo.console.publish.PublishService
+import app.accrescent.parcelo.console.publish.RepositoryPublishService
 import app.accrescent.parcelo.console.routes.auth.configureAuthentication
 import app.accrescent.parcelo.console.storage.FileStorageService
 import app.accrescent.parcelo.console.storage.LocalFileStorageService
@@ -22,6 +24,8 @@ import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.plugins.forwardedheaders.XForwardedHeaders
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
+import org.koin.core.module.dsl.singleOf
+import org.koin.dsl.bind
 import org.koin.dsl.module
 import org.koin.ktor.ext.inject
 import org.koin.ktor.plugin.Koin
@@ -72,6 +76,7 @@ fun Application.module() {
             single { config }
             single<FileStorageService> { LocalFileStorageService(Path(config.application.fileStorageDir)) }
             single { HttpClient { install(HttpTimeout) } }
+            singleOf(::RepositoryPublishService) bind PublishService::class
         }
 
         modules(mainModule)
