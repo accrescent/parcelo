@@ -22,6 +22,7 @@ import io.ktor.server.resources.post
 import io.ktor.server.resources.put
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
+import io.ktor.util.logging.KtorSimpleLogger
 import io.ktor.utils.io.core.use
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.encodeToString
@@ -189,6 +190,8 @@ private sealed class PublicationType {
     data object Update : PublicationType()
 }
 
+internal val PUBLISH_LOGGER = KtorSimpleLogger("app.accrescent.parcelo.repository")
+
 @OptIn(ExperimentalPathApi::class, ExperimentalSerializationApi::class)
 private fun publish(
     publishDir: String,
@@ -224,7 +227,9 @@ private fun publish(
 
         File(apksDir.toString(), fileName).apply {
             FileOutputStream(this).use { zip.copyTo(it) }
-            setReadable(true, false)
+            if (!setReadable(true, false)) {
+                PUBLISH_LOGGER.error("Failed to set readable bit on file '${name}")
+            }
         }
     }
 
@@ -232,7 +237,9 @@ private fun publish(
     if (type is PublicationType.NewApp) {
         File(appDir.toString(), "icon.png").apply {
             FileOutputStream(this).use { type.icon.copyTo(it) }
-            setReadable(true, false)
+            if (!setReadable(true, false)) {
+                PUBLISH_LOGGER.error("Failed to set readable bit on file '${name}")
+            }
         }
     }
 
@@ -240,7 +247,11 @@ private fun publish(
     val repoDataFile = appDir.resolve("repodata.json").apply {
         if (type is PublicationType.NewApp) {
             val path = createFile()
-            File(path.toString()).setReadable(true, false)
+            File(path.toString()).apply {
+                if (!setReadable(true, false)) {
+                    PUBLISH_LOGGER.error("Failed to set readable bit on file '${name}")
+                }
+            }
         }
     }
 
