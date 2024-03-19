@@ -26,7 +26,7 @@ fun main(args: Array<String>) {
 }
 
 fun Application.module() {
-    log.info("Starting Parcelo repository 0.4.0")
+    log.info("Starting Parcelo repository 0.4.1")
 
     val config = if (environment.developmentMode) {
         val publishDirectory = System.getenv("REPOSITORY_PUBLISH_DIR")

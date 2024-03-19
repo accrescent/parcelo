@@ -39,7 +39,7 @@ fun main(args: Array<String>) = EngineMain.main(args)
 
 @OptIn(ExperimentalSerializationApi::class)
 fun Application.module() {
-    log.info("Starting Parcelo console 0.4.0")
+    log.info("Starting Parcelo console 0.4.1")
 
     val config = if (environment.developmentMode) {
         val fileStorageDir = System.getenv("FILE_STORAGE_BASE_DIR")
