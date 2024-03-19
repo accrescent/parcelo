@@ -48,7 +48,7 @@ fun Application.configureAuthentication(
         cookie<Session>(if (!developmentMode) "__Host-session" else "session") {
             cookie.maxAge = if (!developmentMode) SESSION_LIFETIME else Duration.INFINITE
             cookie.path = "/"
-            cookie.secure = !developmentMode
+            cookie.secure = true
             cookie.httpOnly = true
             cookie.extensions["SameSite"] = "Strict"
         }
