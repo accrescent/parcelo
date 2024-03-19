@@ -12,9 +12,10 @@ steps.
 ## Development setup
 
 The recommended and supported development environment for Parcelo is Intellij IDEA (the community
-edition is fine). You will also need to install npm. This repository comes with convenience IDEA run
-configurations to ease development. However, you will need to configure a few things yourself. After
-installing IDEA and cloning the repository, follow the steps below to get started.
+edition is fine). You will also need to install npm and the protobuf compiler. This repository comes
+with convenience IDEA run configurations to ease development. However, you will need to configure a
+few things yourself. After installing IDEA and cloning the repository, follow the steps below to get
+started.
 
 1. Open the project in IDEA and install the required EnvFile plugin as prompted.
 2. Navigate to your [GitHub developer settings] and click "Register a new application."
