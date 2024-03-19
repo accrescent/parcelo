@@ -30,8 +30,6 @@ public class Apk private constructor(
     public val signerCertificates: List<X509Certificate>,
 ) {
     public companion object {
-        private const val ANDROID_MANIFEST = "AndroidManifest.xml"
-
         /**
          * Parses an APK from the provided data
          */
@@ -62,7 +60,7 @@ public class Apk private constructor(
             // Parse the Android manifest
             val manifest = try {
                 val manifestBytes = ApkUtils.getAndroidManifest(dataSource).moveToByteArray()
-                val decodedManifest = BinaryXmlParser.decodeXml(ANDROID_MANIFEST, manifestBytes)
+                val decodedManifest = BinaryXmlParser.decodeXml(manifestBytes)
                 manifestReader.readValue<AndroidManifest>(decodedManifest)
             } catch (e: ApkFormatException) {
                 return ParseApkResult.Error.ApkFormatError
