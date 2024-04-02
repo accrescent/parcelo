@@ -10,10 +10,10 @@ import org.jetbrains.exposed.dao.EntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.IdTable
 import org.jetbrains.exposed.sql.ReferenceOption
+import org.jetbrains.exposed.sql.and
 
 object Apps : IdTable<String>("apps") {
     override val id = text("id").entityId()
-    val label = text("label")
     val versionCode = integer("version_code")
     val versionName = text("version_name")
     val shortDescription = text("short_description").default("")
@@ -28,7 +28,6 @@ object Apps : IdTable<String>("apps") {
 class App(id: EntityID<String>) : Entity<String>(id), ToSerializable<SerializableApp> {
     companion object : EntityClass<String, App>(Apps)
 
-    var label by Apps.label
     var versionCode by Apps.versionCode
     var versionName by Apps.versionName
     var shortDescription by Apps.shortDescription
@@ -38,6 +37,9 @@ class App(id: EntityID<String>) : Entity<String>(id), ToSerializable<Serializabl
     var updating by Apps.updating
 
     override fun serializable(): SerializableApp {
+        // Use en-US locale by default
+        val label =
+            Listing.find { Listings.appId eq id and (Listings.locale eq "en-US") }.single().label
         return SerializableApp(id.value, label, versionCode, versionName, shortDescription)
     }
 }

@@ -9,6 +9,7 @@ import app.accrescent.parcelo.console.data.Update as UpdateDao
 import app.accrescent.parcelo.console.data.AccessControlList
 import app.accrescent.parcelo.console.data.App
 import app.accrescent.parcelo.console.data.Icon
+import app.accrescent.parcelo.console.data.Listing
 import app.accrescent.parcelo.console.publish.PublishService
 import app.accrescent.parcelo.console.storage.FileStorageService
 import kotlinx.coroutines.runBlocking
@@ -40,13 +41,17 @@ fun registerPublishAppJob(draftId: UUID) {
     transaction {
         draft.delete()
         val app = App.new(draft.appId) {
-            label = draft.label
             versionCode = draft.versionCode
             versionName = draft.versionName
             shortDescription = draft.shortDescription
             fileId = draft.fileId
             iconId = draft.iconId
             reviewIssueGroupId = draft.reviewIssueGroupId
+        }
+        Listing.new {
+            appId = app.id
+            locale = "en-US"
+            label = draft.label
         }
         AccessControlList.new {
             this.userId = draft.creatorId
