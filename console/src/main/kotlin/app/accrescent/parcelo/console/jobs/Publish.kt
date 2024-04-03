@@ -43,7 +43,6 @@ fun registerPublishAppJob(draftId: UUID) {
         val app = App.new(draft.appId) {
             versionCode = draft.versionCode
             versionName = draft.versionName
-            shortDescription = draft.shortDescription
             fileId = draft.fileId
             iconId = draft.iconId
             reviewIssueGroupId = draft.reviewIssueGroupId
@@ -52,6 +51,7 @@ fun registerPublishAppJob(draftId: UUID) {
             appId = app.id
             locale = "en-US"
             label = draft.label
+            shortDescription = draft.shortDescription
         }
         AccessControlList.new {
             this.userId = draft.creatorId

@@ -14,6 +14,7 @@ object Listings : IntIdTable("listings") {
     val appId = reference("app_id", Apps, ReferenceOption.CASCADE)
     val locale = text("locale")
     val label = text("label")
+    val shortDescription = text("short_description")
 
     init {
         uniqueIndex(appId, locale)
@@ -26,4 +27,5 @@ class Listing(id: EntityID<Int>) : IntEntity(id) {
     var appId by Listings.appId
     var locale by Listings.locale
     var label by Listings.label
+    var shortDescription by Listings.shortDescription
 }

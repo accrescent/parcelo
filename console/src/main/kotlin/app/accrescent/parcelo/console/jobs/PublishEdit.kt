@@ -6,8 +6,11 @@ package app.accrescent.parcelo.console.jobs
 
 import app.accrescent.parcelo.console.data.Edit as EditDao
 import app.accrescent.parcelo.console.data.App
+import app.accrescent.parcelo.console.data.Listing
+import app.accrescent.parcelo.console.data.Listings
 import app.accrescent.parcelo.console.publish.PublishService
 import kotlinx.coroutines.runBlocking
+import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.koin.java.KoinJavaComponent.inject
 import java.util.UUID
@@ -25,13 +28,15 @@ fun publishEdit(editId: UUID) {
 
     // Account for publication
     transaction {
-        App.findById(edit.appId)?.run {
-            if (edit.shortDescription != null) {
-                shortDescription = edit.shortDescription!!
+        App.findById(edit.appId)?.run { updating = false }
+        Listing
+            .find { Listings.appId eq edit.appId and (Listings.locale eq "en-US") }
+            .singleOrNull()
+            ?.run {
+                if (edit.shortDescription != null) {
+                    shortDescription = edit.shortDescription!!
+                }
             }
-
-            updating = false
-        }
 
         edit.published = true
     }

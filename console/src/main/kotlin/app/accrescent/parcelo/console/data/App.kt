@@ -16,7 +16,6 @@ object Apps : IdTable<String>("apps") {
     override val id = text("id").entityId()
     val versionCode = integer("version_code")
     val versionName = text("version_name")
-    val shortDescription = text("short_description").default("")
     val fileId = reference("file_id", Files, ReferenceOption.NO_ACTION)
     val iconId = reference("icon_id", Icons, ReferenceOption.NO_ACTION)
     val reviewIssueGroupId =
@@ -30,7 +29,6 @@ class App(id: EntityID<String>) : Entity<String>(id), ToSerializable<Serializabl
 
     var versionCode by Apps.versionCode
     var versionName by Apps.versionName
-    var shortDescription by Apps.shortDescription
     var fileId by Apps.fileId
     var iconId by Apps.iconId
     var reviewIssueGroupId by Apps.reviewIssueGroupId
@@ -38,8 +36,15 @@ class App(id: EntityID<String>) : Entity<String>(id), ToSerializable<Serializabl
 
     override fun serializable(): SerializableApp {
         // Use en-US locale by default
-        val label =
-            Listing.find { Listings.appId eq id and (Listings.locale eq "en-US") }.single().label
-        return SerializableApp(id.value, label, versionCode, versionName, shortDescription)
+        val listing =
+            Listing.find { Listings.appId eq id and (Listings.locale eq "en-US") }.single()
+
+        return SerializableApp(
+            id.value,
+            listing.label,
+            versionCode,
+            versionName,
+            listing.shortDescription,
+        )
     }
 }
