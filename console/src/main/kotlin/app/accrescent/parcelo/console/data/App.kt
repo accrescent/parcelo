@@ -17,7 +17,6 @@ object Apps : IdTable<String>("apps") {
     val versionCode = integer("version_code")
     val versionName = text("version_name")
     val fileId = reference("file_id", Files, ReferenceOption.NO_ACTION)
-    val iconId = reference("icon_id", Icons, ReferenceOption.NO_ACTION)
     val reviewIssueGroupId =
         reference("review_issue_group_id", ReviewIssueGroups, ReferenceOption.NO_ACTION).nullable()
     val updating = bool("updating").default(false)
@@ -30,7 +29,6 @@ class App(id: EntityID<String>) : Entity<String>(id), ToSerializable<Serializabl
     var versionCode by Apps.versionCode
     var versionName by Apps.versionName
     var fileId by Apps.fileId
-    var iconId by Apps.iconId
     var reviewIssueGroupId by Apps.reviewIssueGroupId
     var updating by Apps.updating
 

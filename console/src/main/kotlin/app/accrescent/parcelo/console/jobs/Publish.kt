@@ -44,12 +44,12 @@ fun registerPublishAppJob(draftId: UUID) {
             versionCode = draft.versionCode
             versionName = draft.versionName
             fileId = draft.fileId
-            iconId = draft.iconId
             reviewIssueGroupId = draft.reviewIssueGroupId
         }
         Listing.new {
             appId = app.id
             locale = "en-US"
+            iconId = draft.iconId
             label = draft.label
             shortDescription = draft.shortDescription
         }
