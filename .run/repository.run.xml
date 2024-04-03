@@ -10,7 +10,7 @@ SPDX-License-Identifier: AGPL-3.0-only
       <env name="HOST" value="0.0.0.0" />
       <env name="PORT" value="8081" />
       <env name="REPOSITORY_API_KEY" value="20F52DE7D116684FDF515529BCA1BFC8" />
-      <env name="REPOSITORY_DATABASE_PATH" value="repository.db" />
+      <env name="REPOSITORY_DATABASE_PATH" value="appdata/repository.db" />
       <env name="REPOSITORY_PUBLISH_DIR" value="appdata/repository" />
     </envs>
     <option name="MAIN_CLASS_NAME" value="app.accrescent.parcelo.repository.ApplicationKt" />
