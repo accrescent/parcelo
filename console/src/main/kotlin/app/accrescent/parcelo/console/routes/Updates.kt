@@ -291,34 +291,46 @@ fun Route.updateUpdateRoute() {
         }
 
         val requiresReview = update.reviewIssueGroupId != null
-        if (update.versionCode <= publishedApp.versionCode) {
-            call.respond(
-                HttpStatusCode.Conflict,
-                ApiError.updateVersionTooLow(update.versionCode, publishedApp.versionCode),
-            )
-        } else if (requiresReview) {
-            if (update.reviewerId != null) {
-                call.respond(HttpStatusCode.Conflict, ApiError.reviewerAlreadyAssigned())
-            } else {
+
+        when {
+            update.versionCode <= publishedApp.versionCode -> {
+                call.respond(
+                    HttpStatusCode.Conflict,
+                    ApiError.updateVersionTooLow(update.versionCode, publishedApp.versionCode),
+                )
+            }
+
+            requiresReview -> {
+                if (update.reviewerId != null) {
+                    call.respond(HttpStatusCode.Conflict, ApiError.reviewerAlreadyAssigned())
+                } else {
+                    transaction {
+                        update.submitted = true
+                        update.reviewerId = Reviewers
+                            .select(Reviewers.id)
+                            .orderBy(Random())
+                            .limit(1)
+                            .single()[Reviewers.id]
+                    }
+                    call.respond(HttpStatusCode.OK, update.serializable())
+                }
+            }
+
+            publishedApp.updating -> {
+                call.respond(
+                    HttpStatusCode.Conflict,
+                    ApiError.alreadyUpdating(publishedApp.id.value)
+                )
+            }
+
+            else -> {
                 transaction {
                     update.submitted = true
-                    update.reviewerId = Reviewers
-                        .select(Reviewers.id)
-                        .orderBy(Random())
-                        .limit(1)
-                        .single()[Reviewers.id]
+                    publishedApp.updating = true
                 }
+                BackgroundJob.enqueue { registerPublishUpdateJob(update.id.value) }
                 call.respond(HttpStatusCode.OK, update.serializable())
             }
-        } else if (publishedApp.updating) {
-            call.respond(HttpStatusCode.Conflict, ApiError.alreadyUpdating(publishedApp.id.value))
-        } else {
-            transaction {
-                update.submitted = true
-                publishedApp.updating = true
-            }
-            BackgroundJob.enqueue { registerPublishUpdateJob(update.id.value) }
-            call.respond(HttpStatusCode.OK, update.serializable())
         }
     }
 }
