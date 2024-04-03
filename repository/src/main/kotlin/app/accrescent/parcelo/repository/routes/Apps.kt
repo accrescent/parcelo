@@ -77,70 +77,78 @@ fun Route.createAppRoute() {
         var shortDescription: String? = null
 
         for (part in multipart) {
-            if (part is PartData.FileItem && part.name == "apk_set") {
-                val parseResult = run {
-                    apkSetData = part.streamProvider().use { it.readBytes() }
-                    apkSetData!!.inputStream().use { ApkSet.parse(it) }
+            when {
+                part is PartData.FileItem && part.name == "apk_set" -> {
+                    val parseResult = run {
+                        apkSetData = part.streamProvider().use { it.readBytes() }
+                        apkSetData!!.inputStream().use { ApkSet.parse(it) }
+                    }
+                    part.dispose()
+                    apkSet = when (parseResult) {
+                        is ParseApkSetResult.Ok -> parseResult.apkSet
+                        is ParseApkSetResult.Error -> run {
+                            call.respond(HttpStatusCode.BadRequest)
+                            return@post
+                        }
+                    }
                 }
-                part.dispose()
-                apkSet = when (parseResult) {
-                    is ParseApkSetResult.Ok -> parseResult.apkSet
-                    is ParseApkSetResult.Error -> run {
+
+                part is PartData.FileItem && part.name == "icon" -> {
+                    iconData = part.streamProvider().use { it.readBytes() }
+
+                    // Icon must be a 512 x 512 PNG
+                    val pngReader = ImageIO.getImageReadersByFormatName("PNG").next()
+                    val image = try {
+                        iconData.inputStream().use { ImageIO.createImageInputStream(it) }.use {
+                            pngReader.input = it
+                            pngReader.read(0)
+                        }
+                    } catch (e: IIOException) {
+                        // Assume this is a format error
+                        call.respond(HttpStatusCode.BadRequest)
+                        return@post
+                    }
+                    if (image.width != 512 || image.height != 512) {
                         call.respond(HttpStatusCode.BadRequest)
                         return@post
                     }
                 }
-            } else if (part is PartData.FileItem && part.name == "icon") {
-                iconData = part.streamProvider().use { it.readBytes() }
 
-                // Icon must be a 512 x 512 PNG
-                val pngReader = ImageIO.getImageReadersByFormatName("PNG").next()
-                val image = try {
-                    iconData.inputStream().use { ImageIO.createImageInputStream(it) }.use {
-                        pngReader.input = it
-                        pngReader.read(0)
+                part is PartData.FormItem && part.name == "short_description" -> {
+                    // Short description must be between 3 and 80 characters in length inclusive
+                    if (part.value.length < 3 || part.value.length > 80) {
+                        call.respond(HttpStatusCode.BadRequest)
+                        return@post
+                    } else {
+                        shortDescription = part.value
                     }
-                } catch (e: IIOException) {
-                    // Assume this is a format error
+                }
+
+                else -> {
                     call.respond(HttpStatusCode.BadRequest)
                     return@post
                 }
-                if (image.width != 512 || image.height != 512) {
-                    call.respond(HttpStatusCode.BadRequest)
-                    return@post
+            }
+
+            // Publish app to the webserver
+            if (apkSetData != null && apkSet != null && iconData != null && shortDescription != null) {
+                apkSetData!!.inputStream().use { apkSetInputStream ->
+                    ZipInputStream(apkSetInputStream).use { zip ->
+                        iconData.inputStream().use { icon ->
+                            publish(
+                                config.publishDirectory,
+                                zip,
+                                apkSet,
+                                PublicationType.NewApp(icon, shortDescription),
+                            )
+                        }
+                    }
                 }
-            } else if (part is PartData.FormItem && part.name == "short_description") {
-                // Short description must be between 3 and 80 characters in length inclusive
-                if (part.value.length < 3 || part.value.length > 80) {
-                    call.respond(HttpStatusCode.BadRequest)
-                    return@post
-                } else {
-                    shortDescription = part.value
-                }
+
+                call.respond(HttpStatusCode.OK)
             } else {
                 call.respond(HttpStatusCode.BadRequest)
-                return@post
             }
-        }
-
-        // Publish app to the webserver
-        if (apkSetData != null && apkSet != null && iconData != null && shortDescription != null) {
-            apkSetData!!.inputStream().use { apkSetInputStream ->
-                ZipInputStream(apkSetInputStream).use { zip ->
-                    iconData.inputStream().use { icon ->
-                        publish(
-                            config.publishDirectory,
-                            zip,
-                            apkSet,
-                            PublicationType.NewApp(icon, shortDescription),
-                        )
-                    }
-                }
-            }
-
-            call.respond(HttpStatusCode.OK)
-        } else {
-            call.respond(HttpStatusCode.BadRequest)
         }
     }
 }
