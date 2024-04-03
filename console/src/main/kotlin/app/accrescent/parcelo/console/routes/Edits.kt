@@ -204,14 +204,14 @@ fun Route.updateEditRoute() {
                 .empty()
 
             if (submissionAlreadyExists) {
-                return@transaction Pair(HttpStatusCode.Conflict, ApiError.submissionConflict())
+                Pair(HttpStatusCode.Conflict, ApiError.submissionConflict())
             } else {
                 edit.reviewerId = Reviewers
                     .select(Reviewers.id)
                     .orderBy(Random())
                     .limit(1)
                     .single()[Reviewers.id]
-                return@transaction Pair(HttpStatusCode.NoContent, null)
+                Pair(HttpStatusCode.NoContent, null)
             }
         }
 
