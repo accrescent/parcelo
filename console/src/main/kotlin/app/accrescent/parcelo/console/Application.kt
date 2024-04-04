@@ -25,8 +25,6 @@ import io.ktor.server.netty.EngineMain
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
-import org.koin.core.module.dsl.singleOf
-import org.koin.dsl.bind
 import org.koin.dsl.module
 import org.koin.ktor.ext.inject
 import org.koin.ktor.plugin.Koin
@@ -81,7 +79,14 @@ fun Application.module() {
             single<FileStorageService> { LocalFileStorageService(Path(config.application.fileStorageDir)) }
             single { HttpClient { install(HttpTimeout) } }
             when {
-                config.repository != null -> singleOf(::RepositoryPublishService) bind PublishService::class
+                config.repository != null -> single<PublishService> {
+                    RepositoryPublishService(
+                        config.repository.url,
+                        config.repository.apiKey,
+                        get(),
+                    )
+                }
+
                 config.s3 != null -> single<PublishService> {
                     S3PublishService(
                         Url.parse(config.s3.endpointUrl),
