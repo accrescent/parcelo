@@ -3,9 +3,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 plugins {
-    kotlin("jvm") version "1.9.23" apply false
-    kotlin("plugin.serialization") version "1.9.23" apply false
-    id("com.google.protobuf") version "0.9.4" apply false
-    id("io.ktor.plugin") version "2.3.9" apply false
-    id("org.jetbrains.dokka") version "1.9.20" apply false
+    alias(libs.plugins.dokka) apply false
+    alias(libs.plugins.kotlin.jvm) apply false
+    alias(libs.plugins.kotlin.serialization) apply false
+    alias(libs.plugins.ktor) apply false
+    alias(libs.plugins.protobuf) apply false
 }

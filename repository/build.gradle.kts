@@ -2,19 +2,10 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only
 
-val exposedVersion: String by project
-val flywayVersion: String by project
-val fourkomaVersion: String by project
-val koinVersion: String by project
-val ktorVersion: String by project
-val kotlinVersion: String by project
-val logbackVersion: String by project
-val sqliteVersion: String by project
-
 plugins {
-    kotlin("jvm")
-    kotlin("plugin.serialization")
-    id("io.ktor.plugin")
+    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.ktor)
 }
 
 group = "app.accrescent"
@@ -33,17 +24,17 @@ kotlin {
 
 dependencies {
     implementation(project(":apksparser"))
-    implementation("cc.ekblad:4koma:$fourkomaVersion")
-    implementation("ch.qos.logback:logback-classic:$logbackVersion")
-    implementation("io.insert-koin:koin-ktor:$koinVersion")
-    implementation("io.insert-koin:koin-logger-slf4j:$koinVersion")
-    implementation("io.ktor:ktor-server-auth:$ktorVersion")
-    implementation("io.ktor:ktor-server-core:$ktorVersion")
-    implementation("io.ktor:ktor-server-netty:$ktorVersion")
-    implementation("io.ktor:ktor-server-resources:$ktorVersion")
-    implementation("org.flywaydb:flyway-core:$flywayVersion")
-    implementation("org.jetbrains.exposed:exposed-core:$exposedVersion")
-    implementation("org.jetbrains.exposed:exposed-dao:$exposedVersion")
-    implementation("org.jetbrains.exposed:exposed-jdbc:$exposedVersion")
-    implementation("org.xerial:sqlite-jdbc:$sqliteVersion")
+    implementation(libs.exposed.core)
+    implementation(libs.exposed.dao)
+    implementation(libs.exposed.jdbc)
+    implementation(libs.flyway)
+    implementation(libs.fourkoma)
+    implementation(libs.logback)
+    implementation(libs.koin.ktor)
+    implementation(libs.koin.logger)
+    implementation(libs.ktor.server.auth)
+    implementation(libs.ktor.server.core)
+    implementation(libs.ktor.server.netty)
+    implementation(libs.ktor.server.resources)
+    implementation(libs.sqlite)
 }

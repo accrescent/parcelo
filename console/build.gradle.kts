@@ -4,23 +4,11 @@
 
 import org.jetbrains.dokka.gradle.DokkaTask
 
-val exposedVersion: String by project
-val flywayVersion: String by project
-val fourkomaVersion: String by project
-val githubApiVersion: String by project
-val jobrunrVersion: String by project
-val koinVersion: String by project
-val ktorVersion: String by project
-val kotlinVersion: String by project
-val logbackVersion: String by project
-val s3Version: String by project
-val sqliteVersion: String by project
-
 plugins {
-    kotlin("jvm")
-    kotlin("plugin.serialization")
-    id("io.ktor.plugin")
-    id("org.jetbrains.dokka")
+    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.ktor)
+    alias(libs.plugins.dokka)
 }
 
 group = "app.accrescent"
@@ -39,27 +27,27 @@ kotlin {
 
 dependencies {
     implementation(project(":apksparser"))
-    implementation("aws.sdk.kotlin:s3:$s3Version")
-    implementation("cc.ekblad:4koma:$fourkomaVersion")
-    implementation("io.insert-koin:koin-ktor:$koinVersion")
-    implementation("io.insert-koin:koin-logger-slf4j:$koinVersion")
-    implementation("io.ktor:ktor-client-apache5:$ktorVersion")
-    implementation("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
-    implementation("io.ktor:ktor-server-auth:$ktorVersion")
-    implementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
-    implementation("io.ktor:ktor-server-core:$ktorVersion")
-    implementation("io.ktor:ktor-server-netty:$ktorVersion")
-    implementation("io.ktor:ktor-server-resources:$ktorVersion")
-    implementation("ch.qos.logback:logback-classic:$logbackVersion")
-    implementation("org.flywaydb:flyway-core:$flywayVersion")
-    implementation("org.jetbrains.exposed:exposed-core:$exposedVersion")
-    implementation("org.jetbrains.exposed:exposed-dao:$exposedVersion")
-    implementation("org.jetbrains.exposed:exposed-jdbc:$exposedVersion")
-    implementation("org.jobrunr:jobrunr:$jobrunrVersion")
-    implementation("org.kohsuke:github-api:$githubApiVersion")
-    implementation("org.xerial:sqlite-jdbc:$sqliteVersion")
-    testImplementation("io.ktor:ktor-server-tests:$ktorVersion")
-    testImplementation("org.jetbrains.kotlin:kotlin-test-junit:$kotlinVersion")
+    implementation(libs.s3)
+    implementation(libs.exposed.core)
+    implementation(libs.exposed.dao)
+    implementation(libs.exposed.jdbc)
+    implementation(libs.flyway)
+    implementation(libs.fourkoma)
+    implementation(libs.github)
+    implementation(libs.jobrunr)
+    implementation(libs.koin.ktor)
+    implementation(libs.koin.logger)
+    implementation(libs.ktor.client)
+    implementation(libs.ktor.serialization)
+    implementation(libs.ktor.server.auth)
+    implementation(libs.ktor.server.core)
+    implementation(libs.ktor.server.negotiation)
+    implementation(libs.ktor.server.netty)
+    implementation(libs.ktor.server.resources)
+    implementation(libs.logback)
+    implementation(libs.sqlite)
+    testImplementation(libs.ktor.server.tests)
+    testImplementation(libs.kotlin.test)
 }
 
 tasks.withType<DokkaTask>().configureEach {
