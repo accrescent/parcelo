@@ -4,7 +4,6 @@
 
 package app.accrescent.parcelo.console.publish
 
-import app.accrescent.parcelo.console.Config
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.expectSuccess
 import io.ktor.client.plugins.timeout
@@ -26,7 +25,8 @@ private const val SOCKET_TIMEOUT: Long = 60_000
  * A [PublishService] that publishes to a remote repository application server
  */
 class RepositoryPublishService(
-    private val config: Config,
+    private val url: String,
+    private val apiKey: String,
     private val httpClient: HttpClient,
 ) : PublishService {
     override suspend fun publishDraft(
@@ -34,7 +34,7 @@ class RepositoryPublishService(
         icon: InputStream,
         shortDescription: String,
     ) {
-        val publishUrl = URLBuilder(config.repository.url)
+        val publishUrl = URLBuilder(url)
             .appendPathSegments("api", "v1", "apps")
             .buildString()
 
@@ -48,13 +48,13 @@ class RepositoryPublishService(
             append("short_description", shortDescription)
         }) {
             timeout { socketTimeoutMillis = SOCKET_TIMEOUT }
-            header("Authorization", "token ${config.repository.apiKey}")
+            header("Authorization", "token $apiKey")
             expectSuccess = true
         }
     }
 
     override suspend fun publishUpdate(apkSet: InputStream, appId: String) {
-        val publishUrl = URLBuilder(config.repository.url)
+        val publishUrl = URLBuilder(url)
             .appendPathSegments("api", "v1", "apps", appId)
             .buildString()
 
@@ -65,13 +65,13 @@ class RepositoryPublishService(
         }) {
             timeout { socketTimeoutMillis = SOCKET_TIMEOUT }
             method = HttpMethod.Put
-            header("Authorization", "token ${config.repository.apiKey}")
+            header("Authorization", "token $apiKey")
             expectSuccess = true
         }
     }
 
     override suspend fun publishEdit(appId: String, shortDescription: String?) {
-        val publishUrl = URLBuilder(config.repository.url)
+        val publishUrl = URLBuilder(url)
             .appendPathSegments("api", "v1", "apps", appId, "metadata")
             .buildString()
 
@@ -81,7 +81,7 @@ class RepositoryPublishService(
             }
         }) {
             method = HttpMethod.Patch
-            header("Authorization", "token ${config.repository.apiKey}")
+            header("Authorization", "token $apiKey")
             expectSuccess = true
         }
     }

@@ -17,6 +17,9 @@ SPDX-License-Identifier: AGPL-3.0-only
       <env name="PORT" value="8080" />
       <env name="REPOSITORY_API_KEY" value="20F52DE7D116684FDF515529BCA1BFC8" />
       <env name="REPOSITORY_URL" value="http://localhost:8081" />
+      <env name="S3_ENDPOINT_URL" value="http://127.0.0.1:9000" />
+      <env name="S3_REGION" value="us-east-1" />
+      <env name="S3_BUCKET" value="parcelo-repo" />
     </envs>
     <option name="MAIN_CLASS_NAME" value="app.accrescent.parcelo.console.ApplicationKt" />
     <module name="parcelo.console.main" />

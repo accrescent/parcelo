@@ -8,9 +8,11 @@ import app.accrescent.parcelo.console.data.configureDatabase
 import app.accrescent.parcelo.console.jobs.configureJobRunr
 import app.accrescent.parcelo.console.publish.PublishService
 import app.accrescent.parcelo.console.publish.RepositoryPublishService
+import app.accrescent.parcelo.console.publish.S3PublishService
 import app.accrescent.parcelo.console.routes.auth.configureAuthentication
 import app.accrescent.parcelo.console.storage.FileStorageService
 import app.accrescent.parcelo.console.storage.LocalFileStorageService
+import aws.smithy.kotlin.runtime.net.url.Url
 import cc.ekblad.toml.decode
 import cc.ekblad.toml.tomlMapper
 import io.ktor.client.HttpClient
@@ -51,9 +53,12 @@ fun Application.module() {
                 databasePath = System.getenv("CONSOLE_DATABASE_PATH"),
                 fileStorageDir = fileStorageDir,
             ),
-            repository = Config.Repository(
-                url = System.getenv("REPOSITORY_URL"),
-                apiKey = System.getenv("REPOSITORY_API_KEY"),
+            s3 = Config.S3(
+                endpointUrl = System.getenv("S3_ENDPOINT_URL"),
+                region = System.getenv("S3_REGION"),
+                bucket = System.getenv("S3_BUCKET"),
+                accessKeyId = System.getenv("S3_ACCESS_KEY_ID"),
+                secretAccessKey = System.getenv("S3_SECRET_ACCESS_KEY"),
             ),
             github = Config.GitHub(
                 clientId = System.getenv("GITHUB_OAUTH2_CLIENT_ID")
@@ -75,7 +80,20 @@ fun Application.module() {
             single { config }
             single<FileStorageService> { LocalFileStorageService(Path(config.application.fileStorageDir)) }
             single { HttpClient { install(HttpTimeout) } }
-            singleOf(::RepositoryPublishService) bind PublishService::class
+            when {
+                config.repository != null -> singleOf(::RepositoryPublishService) bind PublishService::class
+                config.s3 != null -> single<PublishService> {
+                    S3PublishService(
+                        Url.parse(config.s3.endpointUrl),
+                        config.s3.region,
+                        config.s3.bucket,
+                        config.s3.accessKeyId,
+                        config.s3.secretAccessKey,
+                    )
+                }
+
+                else -> throw Exception("Publishing backend not configured")
+            }
         }
 
         modules(mainModule)

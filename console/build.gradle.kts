@@ -13,6 +13,7 @@ val koinVersion: String by project
 val ktorVersion: String by project
 val kotlinVersion: String by project
 val logbackVersion: String by project
+val s3Version: String by project
 val sqliteVersion: String by project
 
 plugins {
@@ -38,6 +39,7 @@ kotlin {
 
 dependencies {
     implementation(project(":apksparser"))
+    implementation("aws.sdk.kotlin:s3:$s3Version")
     implementation("cc.ekblad:4koma:$fourkomaVersion")
     implementation("io.insert-koin:koin-ktor:$koinVersion")
     implementation("io.insert-koin:koin-logger-slf4j:$koinVersion")

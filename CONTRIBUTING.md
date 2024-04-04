@@ -12,10 +12,15 @@ steps.
 ## Development setup
 
 The recommended and supported development environment for Parcelo is Intellij IDEA (the community
-edition is fine). You will also need to install npm and the protobuf compiler. This repository comes
-with convenience IDEA run configurations to ease development. However, you will need to configure a
-few things yourself. After installing IDEA and cloning the repository, follow the steps below to get
-started.
+edition is fine). You will also need to install the following tools:
+
+- npm
+- protoc
+- minio
+
+This repository comes with convenience IDEA run configurations to ease development. However, you will
+need to configure a few things yourself. After installing IDEA and cloning the repository, follow the
+steps below to get started.
 
 1. Open the project in IDEA and install the required EnvFile plugin as prompted.
 2. Navigate to your [GitHub developer settings] and click "Register a new application."
@@ -30,7 +35,10 @@ started.
 7. Navigate to `https://api.github.com/users/${username}` where `${username}` is your GitHub
    username. Copy the `id` field into a new line in `.env` as `DEBUG_USER_GITHUB_ID=${id}` where
    `${id}` is the ID you copied.
-8. Change to the `frontend directory` and run `npm ci`.
+8. Start MinIO with `minio server`
+9. Log in to the MinIO console and create a new access key. Copy the access key ID and secret access
+   key into `.env` as `S3_ACCESS_KEY_ID` and `S3_SECRET_ACCESS_KEY` respectively.
+10. Change to the `frontend directory` and run `npm ci`.
 
 You should now be able to run the console and repository servers in IDEA by selecting the
 "development" run configuration and running the project. The frontend can be served locally by
