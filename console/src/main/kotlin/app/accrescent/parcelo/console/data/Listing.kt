@@ -13,7 +13,7 @@ import org.jetbrains.exposed.sql.ReferenceOption
 object Listings : IntIdTable("listings") {
     val appId = reference("app_id", Apps, ReferenceOption.CASCADE)
     val locale = text("locale")
-    val iconId = Apps.reference("icon_id", Icons, ReferenceOption.NO_ACTION)
+    val iconId = reference("icon_id", Icons, ReferenceOption.NO_ACTION)
     val label = text("label")
     val shortDescription = text("short_description")
 
