@@ -23,7 +23,7 @@ fun publishEdit(editId: UUID) {
 
     val edit = transaction { EditDao.findById(editId) } ?: return
 
-    // Publish to the repository server
+    // Publish to the repository
     runBlocking { publishService.publishEdit(edit.appId.value, edit.shortDescription) }
 
     // Account for publication

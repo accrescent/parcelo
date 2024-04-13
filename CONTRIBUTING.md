@@ -40,9 +40,9 @@ steps below to get started.
    key into `.env` as `S3_ACCESS_KEY_ID` and `S3_SECRET_ACCESS_KEY` respectively.
 10. Change to the `frontend directory` and run `npm ci`.
 
-You should now be able to run the console and repository servers in IDEA by selecting the
-"development" run configuration and running the project. The frontend can be served locally by
-running `ng serve` in the `frontend` directory.
+You should now be able to run the console in IDEA by selecting the "console" run configuration and
+running the project. The frontend can be served locally by running `ng serve` in the `frontend`
+directory.
 
 The environment variables in the included IDEA run configurations may be modified as needed.
 However, we don't recommend doing this unless you know what you're doing. The defaults should work

@@ -28,7 +28,7 @@ fun registerPublishAppJob(draftId: UUID) {
     val iconFileId =
         transaction { Icon.findById(draft.iconId)?.fileId } ?: throw IllegalStateException()
 
-    // Publish to the repository server
+    // Publish to the repository
     storageService.loadFile(draft.fileId).use { draftStream ->
         storageService.loadFile(iconFileId).use { iconStream ->
             runBlocking {
@@ -71,7 +71,7 @@ fun registerPublishUpdateJob(updateId: UUID) {
 
     val update = transaction { UpdateDao.findById(updateId) } ?: return
 
-    // Publish to the repository server
+    // Publish to the repository
     storageService.loadFile(update.fileId).use {
         runBlocking { publishService.publishUpdate(it, update.appId.value) }
     }

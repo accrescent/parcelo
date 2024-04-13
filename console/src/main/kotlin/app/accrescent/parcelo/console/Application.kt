@@ -7,7 +7,6 @@ package app.accrescent.parcelo.console
 import app.accrescent.parcelo.console.data.configureDatabase
 import app.accrescent.parcelo.console.jobs.configureJobRunr
 import app.accrescent.parcelo.console.publish.PublishService
-import app.accrescent.parcelo.console.publish.RepositoryPublishService
 import app.accrescent.parcelo.console.publish.S3PublishService
 import app.accrescent.parcelo.console.routes.auth.configureAuthentication
 import app.accrescent.parcelo.console.storage.FileStorageService
@@ -78,26 +77,14 @@ fun Application.module() {
             single { config }
             single<FileStorageService> { LocalFileStorageService(Path(config.application.fileStorageDir)) }
             single { HttpClient { install(HttpTimeout) } }
-            when {
-                config.repository != null -> single<PublishService> {
-                    RepositoryPublishService(
-                        config.repository.url,
-                        config.repository.apiKey,
-                        get(),
-                    )
-                }
-
-                config.s3 != null -> single<PublishService> {
-                    S3PublishService(
-                        Url.parse(config.s3.endpointUrl),
-                        config.s3.region,
-                        config.s3.bucket,
-                        config.s3.accessKeyId,
-                        config.s3.secretAccessKey,
-                    )
-                }
-
-                else -> throw Exception("Publishing backend not configured")
+            single<PublishService> {
+                S3PublishService(
+                    Url.parse(config.s3.endpointUrl),
+                    config.s3.region,
+                    config.s3.bucket,
+                    config.s3.accessKeyId,
+                    config.s3.secretAccessKey,
+                )
             }
         }
 
