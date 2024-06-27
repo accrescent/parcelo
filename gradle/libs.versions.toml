@@ -18,7 +18,7 @@ ktor = "2.3.11"
 logback = "1.5.6"
 protobuf = "3.25.3"
 protobuf-plugin = "0.9.4"
-s3 = "1.2.15"
+s3 = "1.2.41"
 semver = "0.10.2"
 sqlite = "3.45.2.0"
 
