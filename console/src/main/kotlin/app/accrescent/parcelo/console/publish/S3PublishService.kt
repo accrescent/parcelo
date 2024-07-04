@@ -135,9 +135,11 @@ class S3PublishService(
                     val fileName = if (splitName.isEmpty) {
                         "base.apk"
                     } else {
-                        val splitName = splitName.get().apply {
+                        val splitName = splitName.get().run {
                             if (this == "armeabi_v7a" || this == "arm64_v8a") {
                                 this.replace('_', '-')
+                            } else {
+                                this
                             }
                         }
                         "split.$splitName.apk"
