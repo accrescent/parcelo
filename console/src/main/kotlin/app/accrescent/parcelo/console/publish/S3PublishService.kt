@@ -135,7 +135,12 @@ class S3PublishService(
                     val fileName = if (splitName.isEmpty) {
                         "base.apk"
                     } else {
-                        "split.${splitName.get().replace('_', '-')}.apk"
+                        val splitName = splitName.get().apply {
+                            if (this == "armeabi_v7a" || this == "arm64_v8a") {
+                                this.replace('_', '-')
+                            }
+                        }
+                        "split.$splitName.apk"
                     }
 
                     val request = PutObjectRequest {
@@ -170,7 +175,13 @@ class S3PublishService(
             val repoData = RepoData(
                 version = metadata.versionName,
                 versionCode = metadata.versionCode,
-                abiSplits = metadata.abiSplits.map { it.replace("_", "-") }.toSet(),
+                abiSplits = metadata.abiSplits.map {
+                    if (it == "armeabi_v7a" || it == "arm64_v8a") {
+                        it.replace('_', '-')
+                    } else {
+                        it
+                    }
+                }.toSet(),
                 langSplits = metadata.langSplits,
                 densitySplits = metadata.densitySplits,
                 shortDescription = shortDescription,
