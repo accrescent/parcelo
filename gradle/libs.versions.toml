@@ -4,7 +4,7 @@
 
 [versions]
 apkanalyzer = "31.5.0"
-apksig = "8.5.0"
+apksig = "8.5.1"
 dokka = "1.9.20"
 exposed = "0.52.0"
 flyway = "10.15.2"
