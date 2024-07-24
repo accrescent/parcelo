@@ -110,113 +110,121 @@ fun Route.createUpdateRoute() {
 
         var apkSet: ApkSet? = null
 
-        TempFile().use { tempApkSet ->
-            for (part in call.receiveMultipart().readAllParts()) {
-                if (part is PartData.FileItem && part.name == "apk_set") {
-                    val parseResult = run {
-                        tempApkSet.outputStream().use { fileOutputStream ->
-                            part.streamProvider().use { it.copyTo(fileOutputStream) }
+        val multipart = call.receiveMultipart().readAllParts()
+
+        try {
+            TempFile().use { tempApkSet ->
+                for (part in multipart) {
+                    if (part is PartData.FileItem && part.name == "apk_set") {
+                        val parseResult = run {
+                            tempApkSet.outputStream().use { fileOutputStream ->
+                                part.streamProvider().use { it.copyTo(fileOutputStream) }
+                            }
+                            ApkSet.parse(tempApkSet.path.toFile())
                         }
-                        ApkSet.parse(tempApkSet.path.toFile())
-                    }
-                    part.dispose()
-                    apkSet = when (parseResult) {
-                        is ParseApkSetResult.Ok -> parseResult.apkSet
-                        is ParseApkSetResult.Error -> run {
-                            call.respond(HttpStatusCode.BadRequest, toApiError(parseResult))
-                            return@post
-                        }
-                    }
-                } else {
-                    call.respond(HttpStatusCode.BadRequest, ApiError.unknownPartName(part.name))
-                    return@post
-                }
-            }
-            if (apkSet == null) {
-                call.respond(HttpStatusCode.BadRequest, ApiError.missingPartName())
-                return@post
-            }
-
-            if (apkSet.metadata.packageName != appId) {
-                call.respond(
-                    HttpStatusCode.UnprocessableEntity,
-                    ApiError.updateAppIdDoesntMatch(appId, apkSet.metadata.packageName),
-                )
-                return@post
-            }
-
-            val app = transaction { App.findById(apkSet.metadata.packageName) } ?: run {
-                call.respond(HttpStatusCode.NotFound, ApiError.appNotFound(apkSet.metadata.packageName))
-                return@post
-            }
-            if (apkSet.versionCode <= app.versionCode) {
-                call.respond(
-                    HttpStatusCode.UnprocessableEntity,
-                    ApiError.updateVersionTooLow(apkSet.versionCode, app.versionCode),
-                )
-                return@post
-            }
-            if (apkSet.targetSdk < MIN_TARGET_SDK) {
-                call.respond(
-                    HttpStatusCode.UnprocessableEntity,
-                    ApiError.minTargetSdk(MIN_TARGET_SDK, apkSet.targetSdk)
-                )
-                return@post
-            }
-
-            val apkSetFileId = tempApkSet.inputStream().use { storageService.saveFile(it) }
-
-            // There exists:
-            //
-            // 1. The review issue blacklist
-            // 2. The list of review issues the update contains
-            // 3. The list of review issues the published app has been approved for
-            //
-            // Only updates adding review issues not previously approved should require review, and
-            // then only for those review issues not previously approved. Therefore, all review issues
-            // which exist in both (1) and (2) and do not exist in (3) should be stored with the update
-            // for review. If there are none, we don't assign a reviewer.
-            val update = transaction {
-                REVIEW_ISSUE_BLACKLIST
-                    .intersect(apkSet.reviewIssues)
-                    .let { reviewIssues ->
-                        if (app.reviewIssueGroupId != null) {
-                            reviewIssues.subtract(ReviewIssue.find {
-                                ReviewIssues.reviewIssueGroupId eq app.reviewIssueGroupId!!
-                            }.map { it.rawValue }.toSet())
-                        } else {
-                            reviewIssues
-                        }
-                    }
-                    .let { reviewIssues ->
-                        var issueGroupId: EntityID<Int>? = null
-                        if (reviewIssues.isNotEmpty()) {
-                            issueGroupId = ReviewIssueGroup.new {}.id
-                            reviewIssues.forEach {
-                                ReviewIssue.new {
-                                    reviewIssueGroupId = issueGroupId
-                                    rawValue = it
-                                }
+                        apkSet = when (parseResult) {
+                            is ParseApkSetResult.Ok -> parseResult.apkSet
+                            is ParseApkSetResult.Error -> run {
+                                call.respond(HttpStatusCode.BadRequest, toApiError(parseResult))
+                                return@post
                             }
                         }
-                        Update.new {
-                            this.appId = app.id
-                            versionCode = apkSet.versionCode
-                            versionName = apkSet.versionName
-                            creatorId = userId
-                            fileId = apkSetFileId
-                            reviewIssueGroupId = issueGroupId
-                        }
+                    } else {
+                        call.respond(HttpStatusCode.BadRequest, ApiError.unknownPartName(part.name))
+                        return@post
                     }
-            }.serializable()
+                }
+                if (apkSet == null) {
+                    call.respond(HttpStatusCode.BadRequest, ApiError.missingPartName())
+                    return@post
+                }
 
-            call.apply {
-                response.header(
-                    HttpHeaders.Location,
-                    "${config.application.baseUrl}/api/v1/updates/${update.id}",
-                )
-                respond(HttpStatusCode.Created, update)
+                if (apkSet.metadata.packageName != appId) {
+                    call.respond(
+                        HttpStatusCode.UnprocessableEntity,
+                        ApiError.updateAppIdDoesntMatch(appId, apkSet.metadata.packageName),
+                    )
+                    return@post
+                }
+
+                val app = transaction { App.findById(apkSet.metadata.packageName) } ?: run {
+                    call.respond(
+                        HttpStatusCode.NotFound,
+                        ApiError.appNotFound(apkSet.metadata.packageName)
+                    )
+                    return@post
+                }
+                if (apkSet.versionCode <= app.versionCode) {
+                    call.respond(
+                        HttpStatusCode.UnprocessableEntity,
+                        ApiError.updateVersionTooLow(apkSet.versionCode, app.versionCode),
+                    )
+                    return@post
+                }
+                if (apkSet.targetSdk < MIN_TARGET_SDK) {
+                    call.respond(
+                        HttpStatusCode.UnprocessableEntity,
+                        ApiError.minTargetSdk(MIN_TARGET_SDK, apkSet.targetSdk)
+                    )
+                    return@post
+                }
+
+                val apkSetFileId = tempApkSet.inputStream().use { storageService.saveFile(it) }
+
+                // There exists:
+                //
+                // 1. The review issue blacklist
+                // 2. The list of review issues the update contains
+                // 3. The list of review issues the published app has been approved for
+                //
+                // Only updates adding review issues not previously approved should require review,
+                // and then only for those review issues not previously approved. Therefore, all
+                // review issues which exist in both (1) and (2) and do not exist in (3) should be
+                // stored with the update for review. If there are none, we don't assign a reviewer.
+                val update = transaction {
+                    REVIEW_ISSUE_BLACKLIST
+                        .intersect(apkSet.reviewIssues)
+                        .let { reviewIssues ->
+                            if (app.reviewIssueGroupId != null) {
+                                reviewIssues.subtract(ReviewIssue.find {
+                                    ReviewIssues.reviewIssueGroupId eq app.reviewIssueGroupId!!
+                                }.map { it.rawValue }.toSet())
+                            } else {
+                                reviewIssues
+                            }
+                        }
+                        .let { reviewIssues ->
+                            var issueGroupId: EntityID<Int>? = null
+                            if (reviewIssues.isNotEmpty()) {
+                                issueGroupId = ReviewIssueGroup.new {}.id
+                                reviewIssues.forEach {
+                                    ReviewIssue.new {
+                                        reviewIssueGroupId = issueGroupId
+                                        rawValue = it
+                                    }
+                                }
+                            }
+                            Update.new {
+                                this.appId = app.id
+                                versionCode = apkSet.versionCode
+                                versionName = apkSet.versionName
+                                creatorId = userId
+                                fileId = apkSetFileId
+                                reviewIssueGroupId = issueGroupId
+                            }
+                        }
+                }.serializable()
+
+                call.apply {
+                    response.header(
+                        HttpHeaders.Location,
+                        "${config.application.baseUrl}/api/v1/updates/${update.id}",
+                    )
+                    respond(HttpStatusCode.Created, update)
+                }
             }
+        } finally {
+            multipart.forEach { it.dispose() }
         }
     }
 }

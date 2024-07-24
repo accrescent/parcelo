@@ -90,20 +90,28 @@ fun Route.createEditRoute() {
         }
 
         var shortDescription: String? = null
-        for (part in call.receiveMultipart().readAllParts()) {
-            if (part is PartData.FormItem && part.name == "short_description") {
-                // Short description must be between 3 and 80 characters in length inclusive
-                if (part.value.length < 3 || part.value.length > 80) {
-                    call.respond(HttpStatusCode.BadRequest, ApiError.shortDescriptionLength())
-                    return@post
+
+        val multipart = call.receiveMultipart().readAllParts()
+
+        try {
+            for (part in multipart) {
+                if (part is PartData.FormItem && part.name == "short_description") {
+                    // Short description must be between 3 and 80 characters in length inclusive
+                    if (part.value.length < 3 || part.value.length > 80) {
+                        call.respond(HttpStatusCode.BadRequest, ApiError.shortDescriptionLength())
+                        return@post
+                    } else {
+                        shortDescription = part.value
+                    }
                 } else {
-                    shortDescription = part.value
+                    call.respond(HttpStatusCode.BadRequest, ApiError.unknownPartName(part.name))
+                    return@post
                 }
-            } else {
-                call.respond(HttpStatusCode.BadRequest, ApiError.unknownPartName(part.name))
-                return@post
             }
+        } finally {
+            multipart.forEach { it.dispose() }
         }
+
         if (shortDescription == null) {
             call.respond(HttpStatusCode.BadRequest, ApiError.missingPartName())
             return@post

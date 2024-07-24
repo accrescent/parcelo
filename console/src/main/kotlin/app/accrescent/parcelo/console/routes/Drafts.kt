@@ -104,150 +104,155 @@ fun Route.createDraftRoute() {
         var iconData: ByteArray? = null
 
         val multipart = call.receiveMultipart().readAllParts()
-        TempFile().use { tempApkSet ->
-            for (part in multipart) {
-                when {
-                    part is PartData.FileItem && part.name == "apk_set" -> {
-                        val parseResult = run {
-                            tempApkSet.outputStream().use { fileOutputStream ->
-                                part.streamProvider().use { it.copyTo(fileOutputStream) }
+
+        try {
+            TempFile().use { tempApkSet ->
+                for (part in multipart) {
+                    when {
+                        part is PartData.FileItem && part.name == "apk_set" -> {
+                            val parseResult = run {
+                                tempApkSet.outputStream().use { fileOutputStream ->
+                                    part.streamProvider().use { it.copyTo(fileOutputStream) }
+                                }
+                                ApkSet.parse(tempApkSet.path.toFile())
                             }
-                            ApkSet.parse(tempApkSet.path.toFile())
+                            apkSet = when (parseResult) {
+                                is ParseApkSetResult.Ok -> parseResult.apkSet
+                                is ParseApkSetResult.Error -> run {
+                                    call.respond(HttpStatusCode.BadRequest, toApiError(parseResult))
+                                    return@post
+                                }
+                            }
                         }
-                        part.dispose()
-                        apkSet = when (parseResult) {
-                            is ParseApkSetResult.Ok -> parseResult.apkSet
-                            is ParseApkSetResult.Error -> run {
-                                call.respond(HttpStatusCode.BadRequest, toApiError(parseResult))
+
+                        part is PartData.FileItem && part.name == "icon" -> {
+                            iconData = part.streamProvider().use { it.readBytes() }
+
+                            // Icon must be a 512 x 512 PNG
+                            val pngReader = ImageIO.getImageReadersByFormatName("PNG").next()
+                            val image = try {
+                                iconData.inputStream().use { ImageIO.createImageInputStream(it) }
+                                    .use {
+                                        pngReader.input = it
+                                        pngReader.read(0)
+                                    }
+                            } catch (e: IIOException) {
+                                // Assume this is a format error
+                                call.respond(HttpStatusCode.BadRequest, ApiError.iconImageFormat())
                                 return@post
                             }
-                        }
-                    }
+                            if (image.width != 512 || image.height != 512) {
+                                call.respond(HttpStatusCode.BadRequest, ApiError.imageResolution())
+                                return@post
+                            }
 
-                    part is PartData.FileItem && part.name == "icon" -> {
-                        iconData = part.streamProvider().use { it.readBytes() }
-
-                        // Icon must be a 512 x 512 PNG
-                        val pngReader = ImageIO.getImageReadersByFormatName("PNG").next()
-                        val image = try {
-                            iconData.inputStream().use { ImageIO.createImageInputStream(it) }
-                                .use {
-                                    pngReader.input = it
-                                    pngReader.read(0)
-                                }
-                        } catch (e: IIOException) {
-                            // Assume this is a format error
-                            call.respond(HttpStatusCode.BadRequest, ApiError.iconImageFormat())
-                            return@post
-                        }
-                        if (image.width != 512 || image.height != 512) {
-                            call.respond(HttpStatusCode.BadRequest, ApiError.imageResolution())
-                            return@post
+                            iconHash = MessageDigest
+                                .getInstance("SHA-256")
+                                .digest(iconData)
+                                .joinToString("") { "%02x".format(it) }
                         }
 
-                        iconHash = MessageDigest
-                            .getInstance("SHA-256")
-                            .digest(iconData)
-                            .joinToString("") { "%02x".format(it) }
-                    }
-
-                    part is PartData.FormItem && part.name == "label" -> {
-                        // Label must be between 3 and 30 characters in length inclusive
-                        if (part.value.length < 3 || part.value.length > 30) {
-                            call.respond(HttpStatusCode.BadRequest, ApiError.labelLength())
-                            return@post
-                        } else {
-                            label = part.value
+                        part is PartData.FormItem && part.name == "label" -> {
+                            // Label must be between 3 and 30 characters in length inclusive
+                            if (part.value.length < 3 || part.value.length > 30) {
+                                call.respond(HttpStatusCode.BadRequest, ApiError.labelLength())
+                                return@post
+                            } else {
+                                label = part.value
+                            }
                         }
-                    }
 
-                    part is PartData.FormItem && part.name == "short_description" -> {
-                        // Short description must be between 3 and 80 characters in length inclusive
-                        if (part.value.length < 3 || part.value.length > 80) {
+                        part is PartData.FormItem && part.name == "short_description" -> {
+                            // Short description must be between 3 and 80 characters in length
+                            // inclusive
+                            if (part.value.length < 3 || part.value.length > 80) {
+                                call.respond(
+                                    HttpStatusCode.BadRequest,
+                                    ApiError.shortDescriptionLength()
+                                )
+                                return@post
+                            } else {
+                                shortDescription = part.value
+                            }
+                        }
+
+                        else -> {
                             call.respond(
                                 HttpStatusCode.BadRequest,
-                                ApiError.shortDescriptionLength()
+                                ApiError.unknownPartName(part.name)
                             )
                             return@post
-                        } else {
-                            shortDescription = part.value
                         }
                     }
+                }
 
-                    else -> {
+                if (
+                    apkSet != null &&
+                    label != null &&
+                    shortDescription != null &&
+                    iconHash != null &&
+                    iconData != null
+                ) {
+                    // Check that there isn't already a published app with this ID
+                    if (transaction { App.findById(apkSet.metadata.packageName) } != null) {
+                        call.respond(HttpStatusCode.Conflict, ApiError.appAlreadyExists())
+                        return@post
+                    }
+
+                    if (apkSet.targetSdk < MIN_TARGET_SDK) {
                         call.respond(
-                            HttpStatusCode.BadRequest,
-                            ApiError.unknownPartName(part.name)
+                            HttpStatusCode.UnprocessableEntity,
+                            ApiError.minTargetSdk(MIN_TARGET_SDK, apkSet.targetSdk)
                         )
                         return@post
                     }
-                }
-            }
 
-            if (
-                apkSet != null &&
-                label != null &&
-                shortDescription != null &&
-                iconHash != null &&
-                iconData != null
-            ) {
-                // Check that there isn't already a published app with this ID
-                if (transaction { App.findById(apkSet.metadata.packageName) } != null) {
-                    call.respond(HttpStatusCode.Conflict, ApiError.appAlreadyExists())
-                    return@post
-                }
-
-                if (apkSet.targetSdk < MIN_TARGET_SDK) {
-                    call.respond(
-                        HttpStatusCode.UnprocessableEntity,
-                        ApiError.minTargetSdk(MIN_TARGET_SDK, apkSet.targetSdk)
-                    )
-                    return@post
-                }
-
-                val reviewIssues = REVIEW_ISSUE_BLACKLIST intersect apkSet.reviewIssues
-                val draft = transaction {
-                    // Associate review issues with draft as necessary
-                    val issueGroupId = if (reviewIssues.isNotEmpty()) {
-                        val issueGroupId = ReviewIssueGroup.new {}.id
-                        for (reviewIssue in reviewIssues) {
-                            ReviewIssue.new {
-                                reviewIssueGroupId = issueGroupId
-                                rawValue = reviewIssue
+                    val reviewIssues = REVIEW_ISSUE_BLACKLIST intersect apkSet.reviewIssues
+                    val draft = transaction {
+                        // Associate review issues with draft as necessary
+                        val issueGroupId = if (reviewIssues.isNotEmpty()) {
+                            val issueGroupId = ReviewIssueGroup.new {}.id
+                            for (reviewIssue in reviewIssues) {
+                                ReviewIssue.new {
+                                    reviewIssueGroupId = issueGroupId
+                                    rawValue = reviewIssue
+                                }
                             }
+                            issueGroupId
+                        } else {
+                            null
                         }
-                        issueGroupId
-                    } else {
-                        null
+
+                        val iconFileId = iconData.inputStream().use { storageService.saveFile(it) }
+                        val appFileId = tempApkSet.inputStream().use { storageService.saveFile(it) }
+                        val icon = Icon.new {
+                            hash = iconHash
+                            fileId = iconFileId
+                        }
+                        Draft.new {
+                            this.label = label
+                            appId = apkSet.metadata.packageName
+                            versionCode = apkSet.versionCode
+                            versionName = apkSet.versionName
+                            this.shortDescription = shortDescription
+                            this.creatorId = creatorId
+                            fileId = appFileId
+                            iconId = icon.id
+                            reviewIssueGroupId = issueGroupId
+                        }.serializable()
                     }
 
-                    val iconFileId = iconData.inputStream().use { storageService.saveFile(it) }
-                    val appFileId = tempApkSet.inputStream().use { storageService.saveFile(it) }
-                    val icon = Icon.new {
-                        hash = iconHash
-                        fileId = iconFileId
-                    }
-                    Draft.new {
-                        this.label = label
-                        appId = apkSet.metadata.packageName
-                        versionCode = apkSet.versionCode
-                        versionName = apkSet.versionName
-                        this.shortDescription = shortDescription
-                        this.creatorId = creatorId
-                        fileId = appFileId
-                        iconId = icon.id
-                        reviewIssueGroupId = issueGroupId
-                    }.serializable()
+                    call.response.header(
+                        HttpHeaders.Location,
+                        "${config.application.baseUrl}/api/v1/drafts/${draft.id}"
+                    )
+                    call.respond(HttpStatusCode.Created, draft)
+                } else {
+                    call.respond(HttpStatusCode.BadRequest, ApiError.missingPartName())
                 }
-
-                call.response.header(
-                    HttpHeaders.Location,
-                    "${config.application.baseUrl}/api/v1/drafts/${draft.id}"
-                )
-                call.respond(HttpStatusCode.Created, draft)
-            } else {
-                call.respond(HttpStatusCode.BadRequest, ApiError.missingPartName())
             }
+        } finally {
+            multipart.forEach { it.dispose() }
         }
     }
 }
