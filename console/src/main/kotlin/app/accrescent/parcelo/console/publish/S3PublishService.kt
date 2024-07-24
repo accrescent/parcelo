@@ -9,6 +9,7 @@ import app.accrescent.parcelo.apksparser.ParseApkSetResult
 import app.accrescent.parcelo.console.data.Listing
 import app.accrescent.parcelo.console.data.Listings
 import app.accrescent.parcelo.console.repo.RepoData
+import app.accrescent.parcelo.console.util.TempFile
 import aws.sdk.kotlin.runtime.auth.credentials.StaticCredentialsProvider
 import aws.sdk.kotlin.services.s3.S3Client
 import aws.sdk.kotlin.services.s3.model.Delete
@@ -20,6 +21,7 @@ import aws.sdk.kotlin.services.s3.model.PutObjectRequest
 import aws.smithy.kotlin.runtime.content.ByteStream
 import aws.smithy.kotlin.runtime.content.toInputStream
 import aws.smithy.kotlin.runtime.net.url.Url
+import com.android.bundle.Targeting
 import io.ktor.utils.io.core.toByteArray
 import io.ktor.utils.io.core.use
 import kotlinx.serialization.ExperimentalSerializationApi
@@ -30,7 +32,27 @@ import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.io.FileNotFoundException
 import java.io.InputStream
-import java.util.zip.ZipInputStream
+import java.util.zip.ZipFile
+
+private const val BASE_MODULE_NAME = "base"
+
+/**
+ * A namespace for various screen densities
+ *
+ * See the corresponding
+ * [Android developer documentation](https://developer.android.com/reference/android/util/DisplayMetrics)
+ * for reference.
+ */
+private class DisplayMetrics {
+    companion object {
+        const val DENSITY_LOW = 120
+        const val DENSITY_MEDIUM = 160
+        const val DENSITY_TV = 213
+        const val DENSITY_HIGH = 240
+        const val DENSITY_XHIGH = 320
+        const val DENSITY_XXHIGH = 480
+    }
+}
 
 /**
  * A [PublishService] that publishes to a remote S3 object storage bucket
@@ -47,32 +69,34 @@ class S3PublishService(
         icon: InputStream,
         shortDescription: String,
     ) {
-        val apkSetData = apkSet.readBytes()
-        val parseResult = apkSetData.inputStream().use { ApkSet.parse(it) }
-        val metadata = when (parseResult) {
-            is ParseApkSetResult.Ok -> parseResult.apkSet
-            is ParseApkSetResult.Error -> throw Exception("APK set parsing failed")
-        }
+        TempFile().use { tempApkSet ->
+            tempApkSet.outputStream().use { apkSet.copyTo(it) }
 
-        apkSetData.inputStream().use { apkSetInputStream ->
-            ZipInputStream(apkSetInputStream).use { zip ->
-                publish(zip, metadata, PublicationType.NewApp(icon, shortDescription))
+            val parseResult = ApkSet.parse(tempApkSet.path.toFile())
+            val metadata = when (parseResult) {
+                is ParseApkSetResult.Ok -> parseResult.apkSet
+                is ParseApkSetResult.Error -> throw Exception("APK set parsing failed")
             }
+
+            publish(
+                ZipFile(tempApkSet.path.toFile()),
+                metadata,
+                PublicationType.NewApp(icon, shortDescription),
+            )
         }
     }
 
     override suspend fun publishUpdate(apkSet: InputStream, appId: String) {
-        val apkSetData = apkSet.readBytes()
-        val parseResult = apkSetData.inputStream().use { ApkSet.parse(it) }
-        val metadata = when (parseResult) {
-            is ParseApkSetResult.Ok -> parseResult.apkSet
-            is ParseApkSetResult.Error -> throw Exception("APK set parsing failed")
-        }
+        TempFile().use { tempApkSet ->
+            tempApkSet.outputStream().use { apkSet.copyTo(it) }
 
-        apkSetData.inputStream().use { apkSetInputStream ->
-            ZipInputStream(apkSetInputStream).use { zip ->
-                publish(zip, metadata, PublicationType.Update)
+            val parseResult = ApkSet.parse(tempApkSet.path.toFile())
+            val metadata = when (parseResult) {
+                is ParseApkSetResult.Ok -> parseResult.apkSet
+                is ParseApkSetResult.Error -> throw Exception("APK set parsing failed")
             }
+
+            publish(ZipFile(tempApkSet.path.toFile()), metadata, PublicationType.Update)
         }
     }
 
@@ -113,8 +137,10 @@ class S3PublishService(
         }
     }
 
-    private suspend fun publish(zip: ZipInputStream, metadata: ApkSet, type: PublicationType) {
-        val appId = metadata.appId.value
+    // Note that APKs which target multiple ABIs, multiple languages, or multiple screen densities
+    // are not currently supported
+    private suspend fun publish(apkSetZip: ZipFile, metadata: ApkSet, type: PublicationType) {
+        val appId = metadata.metadata.packageName
 
         S3Client {
             endpointUrl = s3EndpointUrl
@@ -124,35 +150,100 @@ class S3PublishService(
                 secretAccessKey = s3SecretAccessKey
             }
         }.use { s3Client ->
-            // Extract split APKs
-            generateSequence { zip.nextEntry }
-                .filterNot { it.isDirectory }
-                .forEach { entry ->
-                    // Don't extract any file that doesn't have an associated split name or explicit
-                    // lack thereof
-                    val splitName = metadata.entrySplitNames[entry.name] ?: return@forEach
+            // Publish split APKs
 
-                    val fileName = if (splitName.isEmpty) {
+            val abiSplits = mutableSetOf<String>()
+            val langSplits = mutableSetOf<String>()
+            val densitySplits = mutableSetOf<String>()
+
+            // Assume for now that the variant with the largest variant number is compatible with
+            // all devices. This behavior will change with the migration to the new repository
+            // format.
+            metadata.metadata.variantList
+                // The variant list will never be empty since we successfully parsed the ApkSet
+                .maxByOrNull { it.variantNumber }!!
+                .apkSetList
+                .find { it.moduleMetadata.name == BASE_MODULE_NAME }
+                ?.apkDescriptionList
+                ?.forEach { apkDescription ->
+                    val outputFileName = if (!apkDescription.hasSplitApkMetadata()) {
+                        return@forEach
+                    } else if (apkDescription.splitApkMetadata.isMasterSplit) {
                         "base.apk"
-                    } else {
-                        val splitName = splitName.get().run {
-                            if (this == "armeabi_v7a" || this == "arm64_v8a") {
-                                this.replace('_', '-')
-                            } else {
-                                this
-                            }
+                    } else if (apkDescription.targeting.hasAbiTargeting()) {
+                        if (apkDescription.targeting.abiTargeting.valueCount != 1) {
+                            throw Exception("unsupported ABI targeting")
                         }
-                        "split.$splitName.apk"
+
+                        val abi = apkDescription.targeting.abiTargeting.valueList[0]!!.alias
+                        val config = when (abi) {
+                            Targeting.Abi.AbiAlias.ARMEABI_V7A -> "armeabi-v7a"
+                            Targeting.Abi.AbiAlias.ARM64_V8A -> "arm64-v8a"
+                            Targeting.Abi.AbiAlias.X86 -> "x86"
+                            Targeting.Abi.AbiAlias.X86_64 -> "x86_64"
+                            else -> throw Exception("Unsupported ABI targeting")
+                        }
+                        abiSplits.add(config)
+
+                        "split.$config.apk"
+                    } else if (apkDescription.targeting.hasLanguageTargeting()) {
+                        if (apkDescription.targeting.languageTargeting.valueCount != 1) {
+                            throw Exception("unsupported language targeting")
+                        }
+
+                        val lang = apkDescription.targeting.languageTargeting.valueList[0]!!
+                        langSplits.add(lang)
+
+                        "split.$lang.apk"
+                    } else if (apkDescription.targeting.hasScreenDensityTargeting()) {
+                        if (apkDescription.targeting.screenDensityTargeting.valueCount != 1) {
+                            throw Exception("unsupported screen density targeting")
+                        }
+
+                        val screenDensity =
+                            apkDescription.targeting.screenDensityTargeting.valueList[0]!!
+                        val config = when (screenDensity.densityOneofCase) {
+                            Targeting.ScreenDensity.DensityOneofCase.DENSITY_ALIAS -> when (screenDensity.densityAlias) {
+                                Targeting.ScreenDensity.DensityAlias.NODPI -> "nodpi"
+                                Targeting.ScreenDensity.DensityAlias.LDPI -> "ldpi"
+                                Targeting.ScreenDensity.DensityAlias.MDPI -> "mdpi"
+                                Targeting.ScreenDensity.DensityAlias.TVDPI -> "tvdpi"
+                                Targeting.ScreenDensity.DensityAlias.HDPI -> "hdpi"
+                                Targeting.ScreenDensity.DensityAlias.XHDPI -> "xhdpi"
+                                Targeting.ScreenDensity.DensityAlias.XXHDPI -> "xxhdpi"
+                                Targeting.ScreenDensity.DensityAlias.XXXHDPI -> "xxxhdpi"
+                                else -> throw Exception("unsupported screen density targeting")
+                            }
+
+                            Targeting.ScreenDensity.DensityOneofCase.DENSITY_DPI -> when {
+                                screenDensity.densityDpi <= DisplayMetrics.DENSITY_LOW -> "ldpi"
+                                screenDensity.densityDpi <= DisplayMetrics.DENSITY_MEDIUM -> "mdpi"
+                                screenDensity.densityDpi <= DisplayMetrics.DENSITY_TV -> "tvdpi"
+                                screenDensity.densityDpi <= DisplayMetrics.DENSITY_HIGH -> "hdpi"
+                                screenDensity.densityDpi <= DisplayMetrics.DENSITY_XHIGH -> "xhdpi"
+                                screenDensity.densityDpi <= DisplayMetrics.DENSITY_XXHIGH -> "xxhdpi"
+                                else -> "xxxhdpi"
+                            }
+
+                            Targeting.ScreenDensity.DensityOneofCase.DENSITYONEOF_NOT_SET ->
+                                throw Exception("unsupported screen density targeting")
+                        }
+                        densitySplits.add(config)
+
+                        "split.$config.apk"
+                    } else {
+                        throw Exception("unsupported APK targeting")
                     }
+                    val entry = apkSetZip.getEntry(apkDescription.path)
 
                     val request = PutObjectRequest {
                         bucket = s3Bucket
-                        key = "apps/$appId/${metadata.versionCode}/$fileName"
-                        body = ByteStream.fromBytes(zip.readBytes())
+                        key = "apps/$appId/${metadata.versionCode}/$outputFileName"
+                        body = ByteStream.fromBytes(apkSetZip.getInputStream(entry).readBytes())
                     }
-
                     s3Client.putObject(request)
                 }
+                ?: throw Exception("no base module found")
 
             // Copy icon
             if (type is PublicationType.NewApp) {
@@ -177,15 +268,9 @@ class S3PublishService(
             val repoData = RepoData(
                 version = metadata.versionName,
                 versionCode = metadata.versionCode,
-                abiSplits = metadata.abiSplits.map {
-                    if (it == "armeabi_v7a" || it == "arm64_v8a") {
-                        it.replace('_', '-')
-                    } else {
-                        it
-                    }
-                }.toSet(),
-                langSplits = metadata.langSplits,
-                densitySplits = metadata.densitySplits,
+                abiSplits = abiSplits,
+                langSplits = langSplits,
+                densitySplits = densitySplits,
                 shortDescription = shortDescription,
             )
             val repoDataString = Json.encodeToString(repoData)

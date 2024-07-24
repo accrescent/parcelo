@@ -25,28 +25,7 @@ class ApiError private constructor(
 
         fun signatureVersion(message: String) = ApiError(5, "Signature version(s) invalid", message)
         fun zipFormat(message: String) = ApiError(6, "ZIP format error", message)
-        fun apksNotFound(message: String) = ApiError(7, "APKs not found", message)
-        fun baseApkNotFound(message: String) = ApiError(8, "Base APK not found", message)
-        fun baseApkTargetSdkNotFound(message: String) =
-            ApiError(9, "Base APK target SDK not found", message)
-
-        fun baseApkVersionNameNotFound(message: String) =
-            ApiError(10, "Base APK version name not found", message)
-
-        fun bundletoolMetadata(message: String) =
-            ApiError(11, "Invalid bundletool metadata", message)
-
-        fun bundletoolVersion(message: String) = ApiError(12, "Invalid bundletool version", message)
-        fun bundletoolVersionNotFound(message: String) =
-            ApiError(13, "Bundletool vesrion not found", message)
-
         fun debuggable(message: String) = ApiError(14, "Application is debuggable", message)
-        fun duplicateSplits(message: String) =
-            ApiError(15, "Duplicate split APKs detected", message)
-
-        fun invalidSplitName(message: String) =
-            ApiError(16, "Invalid split name encountered", message)
-
         fun manifestInfoInconsistent(message: String) =
             ApiError(17, "Inconsistent manifest info", message)
 
@@ -81,12 +60,6 @@ class ApiError private constructor(
             27,
             "Target SDK is too small",
             "Target SDK $actual is smaller than the minimum $min",
-        )
-
-        fun minBundletoolVersion(min: String, actual: String) = ApiError(
-            28,
-            "Bundletool version is too small",
-            "Bundletool version $actual is smaller than the minimum $min",
         )
 
         fun missingPartName() = ApiError(
@@ -161,12 +134,6 @@ class ApiError private constructor(
             "This user does not have sufficient access rights to download this object",
         )
 
-        fun variantNumberNotFound(path: String) = ApiError(
-            43,
-            "Variant number not found",
-            "Variant number not found for $path",
-        )
-
         fun deleteForbidden() = ApiError(
             43,
             "Deletion forbidden",
@@ -199,6 +166,9 @@ class ApiError private constructor(
             "Short description has invalid length",
             "Short description must be between 3 and 80 characters long (inclusive)",
         )
+
+        fun ioError(message: String) = ApiError(49, "I/O error", message)
+        fun apkSetFormat(message: String) = ApiError(50, "Invalid APK set format", message)
     }
 }
 
@@ -216,34 +186,21 @@ fun toApiError(error: ParseApkResult.Error): ApiError = with(error) {
 fun toApiError(error: ParseApkSetResult.Error): ApiError = with(error) {
     when (this) {
         is ParseApkSetResult.Error.ApkParseError -> toApiError(this.error)
-        ParseApkSetResult.Error.ApksNotFoundError -> ApiError.apksNotFound(message)
-        ParseApkSetResult.Error.BaseApkNotFoundError -> ApiError.baseApkNotFound(message)
-        ParseApkSetResult.Error.BaseApkTargetSdkUnspecifiedError -> ApiError.baseApkTargetSdkNotFound(
-            message
-        )
-
-        ParseApkSetResult.Error.BaseApkVersionNameUnspecifiedError -> ApiError.baseApkVersionNameNotFound(
-            message
-        )
-
-        ParseApkSetResult.Error.BundletoolMetadataError -> ApiError.bundletoolMetadata(message)
-        ParseApkSetResult.Error.BundletoolVersionError -> ApiError.bundletoolVersion(message)
-        ParseApkSetResult.Error.BundletoolVersionNotFoundError -> ApiError.bundletoolVersionNotFound(
-            message
-        )
-
         ParseApkSetResult.Error.DebuggableError -> ApiError.debuggable(message)
-        ParseApkSetResult.Error.DuplicateSplitError -> ApiError.duplicateSplits(message)
-        is ParseApkSetResult.Error.InvalidSplitNameError -> ApiError.invalidSplitName(message)
-        ParseApkSetResult.Error.ManifestInfoInconsistentError -> ApiError.manifestInfoInconsistent(
+        is ParseApkSetResult.Error.IoError -> ApiError.ioError(message)
+        is ParseApkSetResult.Error.MismatchedAppIdError -> ApiError.manifestInfoInconsistent(message)
+        is ParseApkSetResult.Error.MismatchedVersionCodeError -> ApiError.manifestInfoInconsistent(
             message
         )
 
+        is ParseApkSetResult.Error.MissingApkError -> ApiError.apkSetFormat(message)
+        ParseApkSetResult.Error.MissingPathError -> ApiError.apkSetFormat(message)
+        ParseApkSetResult.Error.MissingVersionCodeError -> ApiError.apkSetFormat(message)
         ParseApkSetResult.Error.SigningCertMismatchError -> ApiError.signingCertMismatch(message)
         ParseApkSetResult.Error.TargetSdkNotFoundError -> ApiError.targetSdkNotFound(message)
         ParseApkSetResult.Error.TestOnlyError -> ApiError.testOnly(message)
+        ParseApkSetResult.Error.TocNotFound -> ApiError.apkSetFormat(message)
         ParseApkSetResult.Error.VersionNameNotFoundError -> ApiError.versionNameNotFound(message)
-        is ParseApkSetResult.Error.VariantNumberNotFoundError -> ApiError.variantNumberNotFound(path)
         ParseApkSetResult.Error.ZipFormatError -> ApiError.zipFormat(message)
     }
 }

@@ -5,29 +5,22 @@
 package app.accrescent.parcelo.apksparser
 
 import com.android.bundle.Commands.BuildApksResult
-import com.github.zafarkhaja.semver.ParseException
-import com.github.zafarkhaja.semver.Version
-import com.google.protobuf.InvalidProtocolBufferException
-import java.io.InputStream
+import java.io.File
+import java.io.IOException
 import java.security.MessageDigest
 import java.security.cert.X509Certificate
-import java.util.Optional
-import java.util.zip.ZipInputStream
+import java.util.zip.ZipException
+import java.util.zip.ZipFile
+
+private const val TOC_PATH = "toc.pb"
 
 public class ApkSet private constructor(
-    public val appId: AppId,
     public val versionCode: Int,
     public val versionName: String,
     public val targetSdk: Int,
-    public val bundletoolVersion: Version,
+    public val metadata: BuildApksResult,
     public val reviewIssues: Set<String>,
-    public val abiSplits: Set<String>,
-    public val densitySplits: Set<String>,
-    public val langSplits: Set<String>,
-    public val entrySplitNames: Map<String, Optional<String>>,
 ) {
-    private data class Split(val name: String?, val variantNumber: Int)
-
     public companion object {
         /**
          * Parses an APK set into its metadata
@@ -38,209 +31,167 @@ public class ApkSet private constructor(
          * file as a valid APK set according to the following criteria:
          *
          * - the input file is a valid ZIP
-         * - no ZIP entry names are duplicates
-         * - the first entry is a valid BuildApksResult protocol buffer
-         * - all non-directory entries after the first are valid APKs
+         * - the entry with name "toc.pb" is a valid BuildApksResult protocol buffer
          * - the input ZIP contains at least one APK
-         * - all APKs must not be debuggable
-         * - all APKs must not be marked test only
          * - all APKs have the same signing certificates
          * - all APKs have the same app ID and version code
-         * - all APKs have unique split names
-         * - at least one APK is a base APK (i.e., has an empty split name)
-         * - the base APKs specify a version name
+         * - the app ID of the APKs matches the package name of the BuildApksResult
+         * - all APKs must not be debuggable
+         * - all APKs must not be marked test only
          *
          * @return metadata describing the APK set and the app it represents
          */
-        public fun parse(file: InputStream): ParseApkSetResult {
-            var appId: AppId? = null
-            var versionCode: Int? = null
-            var versionName: String? = null
-            var targetSdk: Int? = null
-            var bundletoolVersion: Version? = null
-            val pathToVariantMap = mutableMapOf<String, Int>()
-            val reviewIssues = mutableSetOf<String>()
-            val splits = mutableSetOf<Split>()
-            val entrySplitNames = mutableMapOf<String, Optional<String>>()
-
-            ZipInputStream(file).use { zip ->
-                var pinnedCertHashes = emptyList<String>()
-                val encounteredEntryNames = mutableSetOf<String>()
-
-                // Position stream at beginning of first entry data
-                zip.nextEntry
-
-                // Parse metadata
-                val bundletoolMetadata = try {
-                    BuildApksResult.newBuilder().mergeFrom(zip.readBytes()).build()
-                } catch (e: InvalidProtocolBufferException) {
-                    return ParseApkSetResult.Error.BundletoolMetadataError
+        public fun parse(file: File): ParseApkSetResult {
+            try {
+                ZipFile(file)
+            } catch (_: ZipException) {
+                return ParseApkSetResult.Error.ZipFormatError
+            } catch (e: IOException) {
+                return ParseApkSetResult.Error.IoError(e)
+            }.use { zip ->
+                val tocEntry = zip.getEntry(TOC_PATH) ?: return ParseApkSetResult.Error.TocNotFound
+                val buildApksResult = try {
+                    zip.getInputStream(tocEntry).use { entryStream ->
+                        try {
+                            BuildApksResult.newBuilder().mergeFrom(entryStream).build()
+                        } catch (e: IOException) {
+                            return ParseApkSetResult.Error.IoError(e)
+                        }
+                    }
+                } catch (_: ZipException) {
+                    return ParseApkSetResult.Error.ZipFormatError
+                } catch (e: IOException) {
+                    return ParseApkSetResult.Error.IoError(e)
                 }
 
-                // Update path to variant number mapping
-                //
-                // Since a split can be included in multiple variants, we map the split to the
-                // highest possible variant number since higher variant numbers contain more
-                // optimized device configurations (see the documentation for Variant.variant_number
-                // in commands.proto) and our current lowest common denominator for supported device
-                // configurations supports all the features we use (i.e., uncompressed native
-                // libraries and uncompressed DEX).
-                bundletoolMetadata.variantList.forEach { variant ->
+                var versionCode: Int? = null
+                var pinnedCertHashes = emptyList<String>()
+                val reviewIssues = mutableSetOf<String>()
+                var versionName: String? = null
+                var targetSdk: Int? = null
+
+                buildApksResult.variantList.forEach { variant ->
                     variant.apkSetList.forEach { apkSet ->
                         apkSet.apkDescriptionList.forEach { apkDescription ->
-                            (pathToVariantMap[apkDescription.path] ?: 0).let { variantNumber ->
-                                if (variantNumber <= variant.variantNumber) {
-                                    pathToVariantMap[apkDescription.path] = variant.variantNumber
+                            val apkPath = apkDescription.path
+                                ?: return ParseApkSetResult.Error.MissingPathError
+                            // Fail if a missing APK is a split APK.
+                            //
+                            // Because bundletool unconditionally generates standalone APKs for apps
+                            // with a low enough minSdk, some developers are forced to use a tool
+                            // such as apkstripper (https://github.com/lberrymage/apkstripper) to
+                            // remove them so their APK set fits under Parcelo's size limit.
+                            // However, apkstripper only naively removes standalone APKs from the
+                            // APK set without updating its table of contents, which means that if
+                            // we require all APKs listed in the table of contents to be present,
+                            // developers using apkstripper will be unable to upload their app.
+                            //
+                            // Parcelo makes no use of APK types besides split APKs, so we can
+                            // safely ignore missing APKs of any other type.
+                            val apkEntry = zip.getEntry(apkPath)
+                                ?: if (apkDescription.hasSplitApkMetadata()) {
+                                    return ParseApkSetResult.Error.MissingApkError(apkPath)
+                                } else {
+                                    return@forEach
                                 }
+                            val apkBytes = try {
+                                zip.getInputStream(apkEntry).use { it.readBytes() }
+                            } catch (_: ZipException) {
+                                return ParseApkSetResult.Error.ZipFormatError
+                            } catch (e: IOException) {
+                                return ParseApkSetResult.Error.IoError(e)
+                            }
+                            val apk = when (val result = Apk.parse(apkBytes)) {
+                                is ParseApkResult.Ok -> result.apk
+                                is ParseApkResult.Error -> return ParseApkSetResult.Error.ApkParseError(
+                                    result
+                                )
+                            }
+
+                            // Verify that all APKs have the same cert hashes
+                            if (pinnedCertHashes.isEmpty()) {
+                                pinnedCertHashes = apk.signerCertificates.map { it.fingerprint() }
+                            } else {
+                                // Check against pinned certificates
+                                val theseCertHashes =
+                                    apk.signerCertificates.map { it.fingerprint() }
+                                if (theseCertHashes != pinnedCertHashes) {
+                                    return ParseApkSetResult.Error.SigningCertMismatchError
+                                }
+                            }
+
+                            // Verify that all APKs have the same package name as the metadata
+                            if (apk.manifest.`package`.value != buildApksResult.packageName) {
+                                return ParseApkSetResult.Error.MismatchedAppIdError(
+                                    buildApksResult.packageName,
+                                    apk.manifest.`package`.value,
+                                )
+                            }
+
+                            // Verify that all APKs have the same version code
+                            if (versionCode == null) {
+                                versionCode = apk.manifest.versionCode
+                            } else {
+                                if (apk.manifest.versionCode != versionCode) {
+                                    return ParseApkSetResult.Error.MismatchedVersionCodeError(
+                                        versionCode,
+                                        apk.manifest.versionCode,
+                                    )
+                                }
+                            }
+
+                            // Verify the apk is not debuggable
+                            // https://accrescent.app/docs/guide/appendix/requirements.html#androiddebuggable
+                            if (apk.manifest.application.debuggable == true) {
+                                return ParseApkSetResult.Error.DebuggableError
+                            }
+
+                            // Verify the apk is not test-only
+                            // https://accrescent.app/docs/guide/appendix/requirements.html#androidtestonly
+                            if (apk.manifest.application.testOnly == true) {
+                                return ParseApkSetResult.Error.TestOnlyError
+                            }
+
+                            // Update the review issues, version name, and target SDK if present
+
+                            // Permissions
+                            apk.manifest.usesPermissions?.let { permissions ->
+                                reviewIssues.addAll(permissions.map { it.name })
+                            }
+
+                            // Service intent filter actions
+                            apk.manifest.application.services?.let { services ->
+                                services
+                                    .flatMap { it.intentFilters.orEmpty() }
+                                    .flatMap { it.actions }
+                                    .map { it.name }
+                                    .forEach { reviewIssues.add(it) }
+                            }
+
+                            // Version name
+                            apk.manifest.versionName?.let { versionName = it }
+
+                            // Target SDK
+                            apk.manifest.usesSdk?.let {
+                                targetSdk = it.targetSdkVersion ?: it.minSdkVersion
                             }
                         }
                     }
                 }
 
-                // Validate bundletool version
-                bundletoolVersion = try {
-                    Version.parse(bundletoolMetadata.bundletool.version)
-                } catch (e: ParseException) {
-                    return ParseApkSetResult.Error.BundletoolVersionError
-                }
-
-                // Parse APKs
-                generateSequence { zip.nextEntry }.filterNot { it.isDirectory }.forEach { entry ->
-                    // Forbid duplicate entry names so that we can rely on them being unique
-                    if (!encounteredEntryNames.add(entry.name)) {
-                        return ParseApkSetResult.Error.ZipFormatError
-                    }
-
-                    val apk = when (val result = Apk.parse(zip.readBytes())) {
-                        is ParseApkResult.Ok -> result.apk
-                        is ParseApkResult.Error -> return ParseApkSetResult.Error.ApkParseError(
-                            result
-                        )
-                    }
-
-                    // Pin the APK signing certificates on the first APK encountered to ensure split APKs
-                    // can actually be installed.
-                    if (pinnedCertHashes.isEmpty()) {
-                        pinnedCertHashes = apk.signerCertificates.map { it.fingerprint() }
-                    } else {
-                        // Check against pinned certificates
-                        val theseCertHashes = apk.signerCertificates.map { it.fingerprint() }
-                        if (theseCertHashes != pinnedCertHashes) {
-                            return ParseApkSetResult.Error.SigningCertMismatchError
-                        }
-                    }
-
-                    val variantNumber = pathToVariantMap[entry.name]
-                        ?: return ParseApkSetResult.Error.VariantNumberNotFoundError(entry.name)
-                    if (!splits.add(Split(apk.manifest.split, variantNumber))) {
-                        return ParseApkSetResult.Error.DuplicateSplitError
-                    }
-
-                    if (apk.manifest.application.debuggable == true) {
-                        return ParseApkSetResult.Error.DebuggableError
-                    }
-                    if (apk.manifest.application.testOnly == true) {
-                        return ParseApkSetResult.Error.TestOnlyError
-                    }
-
-                    // Pin common data on the first manifest parsed to ensure all split APKs have
-                    // the same app ID and version code.
-                    if (appId == null) {
-                        appId = apk.manifest.`package`
-                        versionCode = apk.manifest.versionCode
-                    } else {
-                        // Check that the app ID and version code are the same as previously pinned
-                        if (
-                            apk.manifest.`package` != appId ||
-                            apk.manifest.versionCode != versionCode
-                        ) {
-                            return ParseApkSetResult.Error.ManifestInfoInconsistentError
-                        }
-                    }
-
-                    // Update the review issues, version name, and target SDK if this is the base APK
-                    if (apk.manifest.split == null) {
-                        // Permissions
-                        apk.manifest.usesPermissions?.let { permissions ->
-                            reviewIssues.addAll(permissions.map { it.name })
-                        }
-
-                        // Service intent filter actions
-                        apk.manifest.application.services?.let { services ->
-                            services
-                                .flatMap { it.intentFilters.orEmpty() }
-                                .flatMap { it.actions }
-                                .map { it.name }
-                                .forEach { reviewIssues.add(it) }
-                        }
-
-                        // Version name
-                        apk.manifest.versionName
-                            ?.let { versionName = it }
-                            ?: return ParseApkSetResult.Error.BaseApkVersionNameUnspecifiedError
-
-                        // Target SDK
-                        apk.manifest.usesSdk
-                            ?.let { targetSdk = it.targetSdkVersion ?: it.minSdkVersion }
-                            ?: return ParseApkSetResult.Error.BaseApkTargetSdkUnspecifiedError
-                    }
-
-                    // Update the entry name -> split mapping
-                    entrySplitNames[entry.name] = apk.manifest.split
-                        ?.let { Optional.of(it.substringAfter("config.")) }
-                        ?: Optional.empty()
-                }
+                return ParseApkSetResult.Ok(
+                    ApkSet(
+                        versionCode = versionCode
+                            ?: return ParseApkSetResult.Error.MissingVersionCodeError,
+                        versionName = versionName
+                            ?: return ParseApkSetResult.Error.VersionNameNotFoundError,
+                        targetSdk = targetSdk
+                            ?: return ParseApkSetResult.Error.VersionNameNotFoundError,
+                        reviewIssues = reviewIssues,
+                        metadata = buildApksResult,
+                    )
+                )
             }
-
-            // Update metadata with split config names
-            val (abiSplits, langSplits, densitySplits) = run {
-                val abiSplits = mutableSetOf<String>()
-                val langSplits = mutableSetOf<String>()
-                val densitySplits = mutableSetOf<String>()
-
-                for (splitName in splits.map { it.name }) {
-                    splitName?.let {
-                        try {
-                            when (getSplitTypeForName(splitName)) {
-                                SplitType.ABI -> abiSplits
-                                SplitType.LANGUAGE -> langSplits
-                                SplitType.SCREEN_DENSITY -> densitySplits
-                            }.add(splitName.substringAfter("config."))
-                        } catch (e: SplitNameNotConfigException) {
-                            return ParseApkSetResult.Error.InvalidSplitNameError(splitName)
-                        }
-                    }
-                }
-
-                Triple(abiSplits.toSet(), langSplits.toSet(), densitySplits.toSet())
-            }
-
-            // If there isn't a base APK, freak out
-            if (splits.none { it.name == null }) {
-                return ParseApkSetResult.Error.BaseApkNotFoundError
-            }
-
-            when {
-                appId == null || versionCode == null -> return ParseApkSetResult.Error.ApksNotFoundError
-                versionName == null -> return ParseApkSetResult.Error.VersionNameNotFoundError
-                targetSdk == null -> return ParseApkSetResult.Error.TargetSdkNotFoundError
-                bundletoolVersion == null -> return ParseApkSetResult.Error.BundletoolVersionNotFoundError
-            }
-
-            val apkSet = ApkSet(
-                appId!!,
-                versionCode!!,
-                versionName!!,
-                targetSdk!!,
-                bundletoolVersion!!,
-                reviewIssues,
-                abiSplits,
-                densitySplits,
-                langSplits,
-                entrySplitNames,
-            )
-
-            return ParseApkSetResult.Ok(apkSet)
         }
     }
 }
@@ -271,31 +222,10 @@ public sealed class ParseApkSetResult {
         }
 
         /**
-         * An error was encountered in parsing the bundletool metadata
-         */
-        public data object BundletoolMetadataError : Error() {
-            override val message: String = "bundletool metadata not valid"
-        }
-
-        /**
-         * An error was encountered in parsing the bundletool version
-         */
-        public data object BundletoolVersionError : Error() {
-            override val message: String = "invalid bundletool version"
-        }
-
-        /**
          * A mismatch exists between APK signing certificates
          */
         public data object SigningCertMismatchError : Error() {
             override val message: String = "APK signing certificates don't match each other"
-        }
-
-        /**
-         * A duplicate split APK name was detected
-         */
-        public data object DuplicateSplitError : Error() {
-            override val message: String = "duplicate split names found"
         }
 
         /**
@@ -313,38 +243,18 @@ public sealed class ParseApkSetResult {
         }
 
         /**
-         * Android manifest info (app ID and version name) isn't the same across all APKs
+         * The app ID of an APK does not match the app ID in the metadata
          */
-        public data object ManifestInfoInconsistentError : Error() {
-            override val message: String = "APK manifest info is not consistent across all APKs"
+        public data class MismatchedAppIdError(val expected: String, val found: String) : Error() {
+            override val message: String = "expected app ID $expected, found $found"
         }
 
         /**
-         * The base APK doesn't specify a version name
+         * The version codes across all APKs are not consistent
          */
-        public data object BaseApkVersionNameUnspecifiedError : Error() {
-            override val message: String = "base APK doesn't specify a version name"
-        }
-
-        /**
-         * The base APK doesn't specify a target SDK
-         */
-        public data object BaseApkTargetSdkUnspecifiedError : Error() {
-            override val message: String = "base APK doesn't specify a target SDK"
-        }
-
-        /**
-         * No base APK was found
-         */
-        public data object BaseApkNotFoundError : Error() {
-            override val message: String = "no base APK found"
-        }
-
-        /**
-         * No APKs were found
-         */
-        public data object ApksNotFoundError : Error() {
-            override val message: String = "no APKs found"
+        public data class MismatchedVersionCodeError(val pinned: Int, val other: Int) : Error() {
+            override val message: String =
+                "encountered version code $other doesn't match pinned version $pinned"
         }
 
         /**
@@ -362,24 +272,31 @@ public sealed class ParseApkSetResult {
         }
 
         /**
-         * No bundletool version was found in the APK set
+         * An I/O error occurred
          */
-        public data object BundletoolVersionNotFoundError : Error() {
-            override val message: String = "no bundletool version found"
+        public data class IoError(val e: IOException) : Error() {
+            override val message: String = "I/O error: ${e.message}"
         }
 
         /**
-         * Parsing encountered an invalid configuration split APK name
+         * The table of contents metadata was not found
          */
-        public data class InvalidSplitNameError(val splitName: String) : Error() {
-            override val message: String = "$splitName is not a valid configuration split name"
+        public data object TocNotFound : Error() {
+            override val message: String = "table of contents not found"
         }
 
         /**
-         * No variant number was found for the APK at the given path
+         * APK was missing a required path field
          */
-        public data class VariantNumberNotFoundError(val path: String) : Error() {
-            override val message: String = "no variant number found for $path"
+        public data object MissingPathError : Error() {
+            override val message: String = "missing required APK path field"
+        }
+
+        /**
+         * The APK at the supplied path was not found
+         */
+        public data class MissingApkError(val path: String) : Error() {
+            override val message: String = "missing APK at path $path"
         }
 
         /**
@@ -387,6 +304,13 @@ public sealed class ParseApkSetResult {
          */
         public data object ZipFormatError : Error() {
             override val message: String = "file is not a valid ZIP"
+        }
+
+        /**
+         * The application is missing a version code
+         */
+        public data object MissingVersionCodeError : Error() {
+            override val message: String = "no version code found"
         }
     }
 }
@@ -400,32 +324,3 @@ private fun X509Certificate.fingerprint(): String {
         .digest(this.encoded)
         .joinToString("") { "%02x".format(it) }
 }
-
-public enum class SplitType { ABI, LANGUAGE, SCREEN_DENSITY }
-
-private val abiSplitNames = setOf("arm64_v8a", "armeabi_v7a", "x86", "x86_64")
-private val densitySplitNames =
-    setOf("ldpi", "mdpi", "hdpi", "xhdpi", "xxhdpi", "xxxhdpi", "nodpi", "tvdpi")
-
-/**
- * Detects the configuration split API type based on its name
- *
- * @throws SplitNameNotConfigException the split name is not a valid configuration split name
- */
-private fun getSplitTypeForName(splitName: String): SplitType {
-    val configName = splitName.substringAfter("config.")
-    if (configName == splitName) {
-        throw SplitNameNotConfigException(splitName)
-    }
-
-    return if (abiSplitNames.contains(configName)) {
-        SplitType.ABI
-    } else if (densitySplitNames.contains(configName)) {
-        SplitType.SCREEN_DENSITY
-    } else {
-        SplitType.LANGUAGE
-    }
-}
-
-private class SplitNameNotConfigException(splitName: String) :
-    Exception("split name $splitName is not a config split name")

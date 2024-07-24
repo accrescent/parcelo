@@ -13,12 +13,11 @@ kotlin {
 }
 
 dependencies {
-    api(libs.semver)
     implementation(libs.apkanalyzer)
     implementation(libs.apksig)
     implementation(libs.jackson.xml)
     implementation(libs.jackson.kotlin)
-    implementation(libs.protobuf)
+    api(libs.protobuf)
 }
 
 kotlin {

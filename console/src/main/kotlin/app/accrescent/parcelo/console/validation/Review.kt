@@ -4,7 +4,6 @@
 
 package app.accrescent.parcelo.console.validation
 
-import com.github.zafarkhaja.semver.Version
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -12,12 +11,6 @@ import kotlinx.serialization.Serializable
  * The minimum target SDK accepted for both drafts and updates
  */
 const val MIN_TARGET_SDK = 33
-
-/**
- * The minimum acceptable bundletool version used to generate the APK set. This version is taken
- * from a recent Android Studio release.
- */
-val MIN_BUNDLETOOL_VERSION: Version = Version.parse("1.11.4")
 
 /**
  * The blacklist of permissions which, when requested by an update for the first time, trigger a

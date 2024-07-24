@@ -19,7 +19,6 @@ logback = "1.5.6"
 protobuf = "4.27.2"
 protobuf-plugin = "0.9.4"
 s3 = "1.2.46"
-semver = "0.10.2"
 sqlite = "3.46.0.0"
 
 [libraries]
@@ -48,7 +47,6 @@ ktor-server-tests = { module = "io.ktor:ktor-server-tests", version.ref = "ktor"
 logback = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
 protobuf = { module = "com.google.protobuf:protobuf-java", version.ref = "protobuf" }
 s3 = { module = "aws.sdk.kotlin:s3", version.ref = "s3" }
-semver = { module = "com.github.zafarkhaja:java-semver", version.ref = "semver" }
 sqlite = { module = "org.xerial:sqlite-jdbc", version.ref = "sqlite" }
 
 [plugins]
