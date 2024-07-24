@@ -52,7 +52,6 @@ import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.koin.ktor.ext.inject
-import java.security.MessageDigest
 import java.util.UUID
 import javax.imageio.IIOException
 import javax.imageio.ImageIO
@@ -100,7 +99,6 @@ fun Route.createDraftRoute() {
         var apkSet: ApkSet? = null
         var label: String? = null
         var shortDescription: String? = null
-        var iconHash: String? = null
         var iconData: ByteArray? = null
 
         val multipart = call.receiveMultipart().readAllParts()
@@ -145,11 +143,6 @@ fun Route.createDraftRoute() {
                                 call.respond(HttpStatusCode.BadRequest, ApiError.imageResolution())
                                 return@post
                             }
-
-                            iconHash = MessageDigest
-                                .getInstance("SHA-256")
-                                .digest(iconData)
-                                .joinToString("") { "%02x".format(it) }
                         }
 
                         part is PartData.FormItem && part.name == "label" -> {
@@ -190,7 +183,6 @@ fun Route.createDraftRoute() {
                     apkSet != null &&
                     label != null &&
                     shortDescription != null &&
-                    iconHash != null &&
                     iconData != null
                 ) {
                     // Check that there isn't already a published app with this ID
@@ -225,10 +217,7 @@ fun Route.createDraftRoute() {
 
                         val iconFileId = iconData.inputStream().use { storageService.saveFile(it) }
                         val appFileId = tempApkSet.inputStream().use { storageService.saveFile(it) }
-                        val icon = Icon.new {
-                            hash = iconHash
-                            fileId = iconFileId
-                        }
+                        val icon = Icon.new { fileId = iconFileId }
                         Draft.new {
                             this.label = label
                             appId = apkSet.metadata.packageName
