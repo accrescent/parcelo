@@ -78,7 +78,7 @@ fun Route.createAppRoute() {
         val draft = transaction {
             Draft
                 .findById(draftId)
-                .takeIf { draft -> draft?.reviewId?.let { Review.findById(it)?.approved } ?: false }
+                .takeIf { draft -> draft?.reviewId?.let { Review.findById(it)?.approved } == true }
                 ?.takeIf { draft -> !draft.publishing }
                 // Update publishing status if found
                 ?.apply { publishing = true }

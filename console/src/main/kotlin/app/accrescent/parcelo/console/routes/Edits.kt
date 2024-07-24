@@ -330,8 +330,7 @@ fun Route.createEditReviewRoute() {
 
         val userCanReview =
             transaction { Reviewer.find { Reviewers.userId eq userId }.singleOrNull() }
-                ?.let { it.id == edit.reviewerId }
-                ?: false
+                ?.let { it.id == edit.reviewerId } == true
         if (userCanReview) {
             // Check whether this update has already been reviewed
             if (edit.reviewId != null) {
@@ -388,8 +387,7 @@ fun Route.createEditReviewRoute() {
                             .and(AccessControlLists.userId eq userId)
                     }
                     .singleOrNull()
-                    ?.editMetadata
-                    ?: false
+                    ?.editMetadata == true
             }
             if (userCanRead) {
                 call.respond(HttpStatusCode.Forbidden, ApiError.reviewForbidden())

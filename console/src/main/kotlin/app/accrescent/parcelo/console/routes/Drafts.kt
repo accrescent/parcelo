@@ -409,8 +409,7 @@ fun Route.getDraftApkSetRoute() {
         }
         val userIsDraftReviewer =
             transaction { Reviewer.find { Reviewers.userId eq userId }.singleOrNull() }
-                ?.let { it.id == draft.reviewerId }
-                ?: false
+                ?.let { it.id == draft.reviewerId } == true
 
         if (userIsDraftReviewer) {
             call.response.header(
@@ -462,8 +461,7 @@ fun Route.createDraftReviewRoute() {
 
         val userCanReview =
             transaction { Reviewer.find { Reviewers.userId eq userId }.singleOrNull() }
-                ?.let { it.id == draft.reviewerId }
-                ?: false
+                ?.let { it.id == draft.reviewerId } == true
         if (userCanReview) {
             // Check whether this draft has already been reviewed
             if (draft.reviewId != null) {

@@ -100,8 +100,7 @@ fun Route.createUpdateRoute() {
                 .select(AccessControlLists.update)
                 .where { AccessControlLists.userId eq userId and (AccessControlLists.appId eq appId) }
                 .singleOrNull()
-                ?.let { it[AccessControlLists.update] }
-                ?: false
+                ?.let { it[AccessControlLists.update] } == true
         }
         if (!updatePermitted) {
             call.respond(HttpStatusCode.Forbidden, ApiError.updateCreationForbidden())
@@ -438,8 +437,7 @@ fun Route.getUpdateApkSetRoute() {
         }
         val userIsUpdateReviewer =
             transaction { Reviewer.find { Reviewers.userId eq userId }.singleOrNull() }
-                ?.let { it.id == update.reviewerId }
-                ?: false
+                ?.let { it.id == update.reviewerId } == true
 
         if (userIsUpdateReviewer) {
             call.response.header(
@@ -491,8 +489,7 @@ fun Route.createUpdateReviewRoute() {
 
         val userCanReview =
             transaction { Reviewer.find { Reviewers.userId eq userId }.singleOrNull() }
-                ?.let { it.id == update.reviewerId }
-                ?: false
+                ?.let { it.id == update.reviewerId } == true
         if (userCanReview) {
             // Check whether this update has already been reviewed
             if (update.reviewId != null) {
