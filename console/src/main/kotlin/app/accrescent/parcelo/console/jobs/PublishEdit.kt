@@ -11,6 +11,7 @@ import app.accrescent.parcelo.console.data.Listings
 import app.accrescent.parcelo.console.publish.PublishService
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.statements.api.ExposedBlob
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.koin.java.KoinJavaComponent.inject
 import java.util.UUID
@@ -24,11 +25,15 @@ fun publishEdit(editId: UUID) {
     val edit = transaction { EditDao.findById(editId) } ?: return
 
     // Publish to the repository
-    runBlocking { publishService.publishEdit(edit.appId.value, edit.shortDescription) }
+    val updatedMetadata =
+        runBlocking { publishService.publishEdit(edit.appId.value, edit.shortDescription) }
 
     // Account for publication
     transaction {
-        App.findById(edit.appId)?.run { updating = false }
+        App.findById(edit.appId)?.run {
+            repositoryMetadata = ExposedBlob(updatedMetadata)
+            updating = false
+        }
         Listing
             .find { Listings.appId eq edit.appId and (Listings.locale eq "en-US") }
             .singleOrNull()

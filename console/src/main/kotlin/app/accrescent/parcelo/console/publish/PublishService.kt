@@ -13,16 +13,26 @@ import java.io.InputStream
 interface PublishService {
     /**
      * Publishes a draft
+     *
+     * @return the repository metadata
      */
-    suspend fun publishDraft(apkSet: InputStream, icon: InputStream, shortDescription: String)
+    suspend fun publishDraft(
+        apkSet: InputStream,
+        icon: InputStream,
+        shortDescription: String,
+    ): ByteArray
 
     /**
      * Publishes an app update
+     *
+     * @return the updated repository metadata
      */
-    suspend fun publishUpdate(apkSet: InputStream, appId: String)
+    suspend fun publishUpdate(apkSet: InputStream, appId: String): ByteArray
 
     /**
      * Publishes an edit
+     *
+     * @return the updated repository metadata
      */
-    suspend fun publishEdit(appId: String, shortDescription: String?)
+    suspend fun publishEdit(appId: String, shortDescription: String?): ByteArray
 }

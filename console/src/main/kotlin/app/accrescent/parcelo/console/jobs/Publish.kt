@@ -13,6 +13,7 @@ import app.accrescent.parcelo.console.data.Listing
 import app.accrescent.parcelo.console.publish.PublishService
 import app.accrescent.parcelo.console.storage.FileStorageService
 import kotlinx.coroutines.runBlocking
+import org.jetbrains.exposed.sql.statements.api.ExposedBlob
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.koin.java.KoinJavaComponent.inject
 import java.util.UUID
@@ -29,7 +30,7 @@ fun registerPublishAppJob(draftId: UUID) {
         transaction { Icon.findById(draft.iconId)?.fileId } ?: throw IllegalStateException()
 
     // Publish to the repository
-    storageService.loadFile(draft.fileId).use { draftStream ->
+    val metadata = storageService.loadFile(draft.fileId).use { draftStream ->
         storageService.loadFile(iconFileId).use { iconStream ->
             runBlocking {
                 publishService.publishDraft(draftStream, iconStream, draft.shortDescription)
@@ -45,6 +46,7 @@ fun registerPublishAppJob(draftId: UUID) {
             versionName = draft.versionName
             fileId = draft.fileId
             reviewIssueGroupId = draft.reviewIssueGroupId
+            repositoryMetadata = ExposedBlob(metadata)
         }
         Listing.new {
             appId = app.id
@@ -72,7 +74,7 @@ fun registerPublishUpdateJob(updateId: UUID) {
     val update = transaction { UpdateDao.findById(updateId) } ?: return
 
     // Publish to the repository
-    storageService.loadFile(update.fileId).use {
+    val updatedMetadata = storageService.loadFile(update.fileId).use {
         runBlocking { publishService.publishUpdate(it, update.appId.value) }
     }
 
@@ -81,6 +83,7 @@ fun registerPublishUpdateJob(updateId: UUID) {
         App.findById(update.appId)?.run {
             versionCode = update.versionCode
             versionName = update.versionName
+            repositoryMetadata = ExposedBlob(updatedMetadata)
 
             val oldAppFileId = fileId
             fileId = update.fileId

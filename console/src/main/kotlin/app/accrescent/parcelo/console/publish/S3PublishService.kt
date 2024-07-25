@@ -6,6 +6,7 @@ package app.accrescent.parcelo.console.publish
 
 import app.accrescent.parcelo.apksparser.ApkSet
 import app.accrescent.parcelo.apksparser.ParseApkSetResult
+import app.accrescent.parcelo.console.data.App
 import app.accrescent.parcelo.console.data.Listing
 import app.accrescent.parcelo.console.data.Listings
 import app.accrescent.parcelo.console.repo.RepoData
@@ -14,12 +15,10 @@ import aws.sdk.kotlin.runtime.auth.credentials.StaticCredentialsProvider
 import aws.sdk.kotlin.services.s3.S3Client
 import aws.sdk.kotlin.services.s3.model.Delete
 import aws.sdk.kotlin.services.s3.model.DeleteObjectsRequest
-import aws.sdk.kotlin.services.s3.model.GetObjectRequest
 import aws.sdk.kotlin.services.s3.model.ListObjectsRequest
 import aws.sdk.kotlin.services.s3.model.ObjectIdentifier
 import aws.sdk.kotlin.services.s3.model.PutObjectRequest
 import aws.smithy.kotlin.runtime.content.ByteStream
-import aws.smithy.kotlin.runtime.content.toInputStream
 import aws.smithy.kotlin.runtime.net.url.Url
 import com.android.bundle.Targeting
 import io.ktor.utils.io.core.toByteArray
@@ -29,8 +28,8 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
 import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.statements.api.ExposedBlob
 import org.jetbrains.exposed.sql.transactions.transaction
-import java.io.FileNotFoundException
 import java.io.InputStream
 import java.util.zip.ZipFile
 
@@ -68,7 +67,7 @@ class S3PublishService(
         apkSet: InputStream,
         icon: InputStream,
         shortDescription: String,
-    ) {
+    ): ByteArray {
         TempFile().use { tempApkSet ->
             tempApkSet.outputStream().use { apkSet.copyTo(it) }
 
@@ -78,7 +77,7 @@ class S3PublishService(
                 is ParseApkSetResult.Error -> throw Exception("APK set parsing failed")
             }
 
-            publish(
+            return publish(
                 ZipFile(tempApkSet.path.toFile()),
                 metadata,
                 PublicationType.NewApp(icon, shortDescription),
@@ -86,7 +85,7 @@ class S3PublishService(
         }
     }
 
-    override suspend fun publishUpdate(apkSet: InputStream, appId: String) {
+    override suspend fun publishUpdate(apkSet: InputStream, appId: String): ByteArray {
         TempFile().use { tempApkSet ->
             tempApkSet.outputStream().use { apkSet.copyTo(it) }
 
@@ -96,16 +95,12 @@ class S3PublishService(
                 is ParseApkSetResult.Error -> throw Exception("APK set parsing failed")
             }
 
-            publish(ZipFile(tempApkSet.path.toFile()), metadata, PublicationType.Update)
+            return publish(ZipFile(tempApkSet.path.toFile()), metadata, PublicationType.Update)
         }
     }
 
     @OptIn(ExperimentalSerializationApi::class)
-    override suspend fun publishEdit(appId: String, shortDescription: String?) {
-        val getOldDataReq = GetObjectRequest {
-            bucket = s3Bucket
-            key = "apps/$appId/repodata.json"
-        }
+    override suspend fun publishEdit(appId: String, shortDescription: String?): ByteArray {
         S3Client {
             endpointUrl = s3EndpointUrl
             region = s3Region
@@ -114,32 +109,40 @@ class S3PublishService(
                 secretAccessKey = s3SecretAccessKey
             }
         }.use { s3Client ->
-            val newRepoData = s3Client.getObject(getOldDataReq) { resp ->
-                val oldRepoData =
-                    resp.body?.toInputStream()?.use { Json.decodeFromStream<RepoData>(it) }
-                        ?: throw FileNotFoundException()
-                RepoData(
-                    version = oldRepoData.version,
-                    versionCode = oldRepoData.versionCode,
-                    abiSplits = oldRepoData.abiSplits,
-                    densitySplits = oldRepoData.densitySplits,
-                    langSplits = oldRepoData.langSplits,
-                    shortDescription = shortDescription ?: oldRepoData.shortDescription
-                )
-            }
+            // Fetch the old app metadata from the database
+            val app = transaction { App.findById(appId) } ?: throw Exception("app not found")
+            val oldRepoData = app.repositoryMetadata.inputStream
+                .use { Json.decodeFromStream<RepoData>(it) }
 
+            // Modify the old app metadata to produce the new app metadata
+            val newRepoData = RepoData(
+                version = oldRepoData.version,
+                versionCode = oldRepoData.versionCode,
+                abiSplits = oldRepoData.abiSplits,
+                densitySplits = oldRepoData.densitySplits,
+                langSplits = oldRepoData.langSplits,
+                shortDescription = shortDescription ?: oldRepoData.shortDescription
+            ).let { Json.encodeToString(it) }.toByteArray()
+
+            // Publish the new app metadata
             val updateDataReq = PutObjectRequest {
                 bucket = s3Bucket
                 key = "apps/$appId/repodata.json"
-                body = ByteStream.fromString(Json.encodeToString(newRepoData))
+                body = ByteStream.fromBytes(newRepoData)
             }
             s3Client.putObject(updateDataReq)
+
+            return newRepoData
         }
     }
 
     // Note that APKs which target multiple ABIs, multiple languages, or multiple screen densities
     // are not currently supported
-    private suspend fun publish(apkSetZip: ZipFile, metadata: ApkSet, type: PublicationType) {
+    private suspend fun publish(
+        apkSetZip: ZipFile,
+        metadata: ApkSet,
+        type: PublicationType,
+    ): ByteArray {
         val appId = metadata.metadata.packageName
 
         S3Client {
@@ -273,12 +276,12 @@ class S3PublishService(
                 densitySplits = densitySplits,
                 shortDescription = shortDescription,
             )
-            val repoDataString = Json.encodeToString(repoData)
+            val repoDataBytes = Json.encodeToString(repoData).toByteArray()
 
             val publishRepoDataRequest = PutObjectRequest {
                 bucket = s3Bucket
                 key = "apps/$appId/repodata.json"
-                body = ByteStream.fromBytes(repoDataString.toByteArray())
+                body = ByteStream.fromBytes(repoDataBytes)
             }
             s3Client.putObject(publishRepoDataRequest)
 
@@ -306,6 +309,8 @@ class S3PublishService(
                     s3Client.deleteObjects(deleteRequest)
                 }
             }
+
+            return repoDataBytes
         }
     }
 }

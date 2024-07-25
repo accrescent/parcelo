@@ -20,6 +20,7 @@ object Apps : IdTable<String>("apps") {
     val reviewIssueGroupId =
         reference("review_issue_group_id", ReviewIssueGroups, ReferenceOption.NO_ACTION).nullable()
     val updating = bool("updating").default(false)
+    val repositoryMetadata = blob("repository_metadata")
     override val primaryKey = PrimaryKey(id)
 }
 
@@ -31,6 +32,7 @@ class App(id: EntityID<String>) : Entity<String>(id), ToSerializable<Serializabl
     var fileId by Apps.fileId
     var reviewIssueGroupId by Apps.reviewIssueGroupId
     var updating by Apps.updating
+    var repositoryMetadata by Apps.repositoryMetadata
 
     override fun serializable(): SerializableApp {
         // Use en-US locale by default
