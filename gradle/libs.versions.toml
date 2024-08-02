@@ -14,6 +14,7 @@ jackson = "2.17.2"
 jobrunr = "7.2.2"
 koin = "3.5.6"
 kotlin = "2.0.0"
+ksp = "2.0.0-1.0.24"
 ktor = "2.3.12"
 logback = "1.5.6"
 protobuf = "4.27.2"
@@ -54,5 +55,6 @@ dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
 java-library = { id = "java-library" }
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 ktor = { id = "io.ktor.plugin", version.ref = "ktor" }
 protobuf = { id = "com.google.protobuf", version.ref = "protobuf-plugin" }

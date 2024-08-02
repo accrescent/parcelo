@@ -7,6 +7,7 @@ import org.jetbrains.dokka.gradle.DokkaTask
 plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.ksp)
     alias(libs.plugins.ktor)
     alias(libs.plugins.dokka)
 }
@@ -23,6 +24,10 @@ application {
 
 kotlin {
     jvmToolchain(17)
+}
+
+ksp {
+    arg("KOIN_CONFIG_CHECK", "true")
 }
 
 dependencies {
