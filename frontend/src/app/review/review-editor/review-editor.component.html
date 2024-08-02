@@ -17,14 +17,14 @@ SPDX-License-Identifier: AGPL-3.0-only
             </mat-radio-group>
 
             <div formArrayName="reasons">
-                <ng-container *ngIf="reasons.enabled">
-                    <div *ngFor="let reason of reasons.controls; let i = index">
+                @if (reasons.enabled) {
+                    @for (reason of reasons.controls; track reason; let i = $index) {
                         <mat-form-field class="text-field">
                             <mat-label>Reason</mat-label>
                             <input type="text" [formControlName]="i" matInput>
-                            <mat-error *ngIf="form.controls['reasons'].controls[i].hasError('required')">
-                                Reason must not be empty
-                            </mat-error>
+                            @if (form.controls['reasons'].controls[i].hasError('required')) {
+                                <mat-error>Reason must not be empty</mat-error>
+                            }
                         </mat-form-field>
                         <button
                             type="button"
@@ -34,13 +34,13 @@ SPDX-License-Identifier: AGPL-3.0-only
                             class="btn-delete">
                             <mat-icon>delete</mat-icon>
                         </button>
-                    </div>
+                    }
                     <div class="center">
                         <button type="button" (click)="addReason()" mat-mini-fab class="btn-add">
                             <mat-icon>add</mat-icon>
                         </button>
                     </div>
-                </ng-container>
+                }
             </div>
 
             <mat-form-field class="text-field">

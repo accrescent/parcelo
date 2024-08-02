@@ -2,7 +2,6 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only
 
-import { NgIf } from '@angular/common';
 import { Component, Inject } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialogModule, MAT_DIALOG_DATA } from '@angular/material/dialog';
@@ -13,7 +12,7 @@ import { Edit } from '../edit';
 @Component({
     selector: 'app-edit-submission-dialog',
     standalone: true,
-    imports: [MatButtonModule, MatDialogModule, NgIf],
+    imports: [MatButtonModule, MatDialogModule],
     templateUrl: './edit-submission-dialog.component.html',
     styleUrl: './edit-submission-dialog.component.scss'
 })

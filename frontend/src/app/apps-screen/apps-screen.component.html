@@ -16,16 +16,21 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <h2 class="section-header">Apps</h2>
 <div class="grid-container">
-    <app-app-card *ngFor="let app of apps" [app]="app"/>
-    <p *ngIf="apps.length === 0">No published apps</p>
+    @for (app of apps; track app) {
+        <app-app-card [app]="app"/>
+    } @empty {
+        <p>No published apps</p>
+    }
 </div>
 
 <h2 class="section-header">Drafts</h2>
 <div class="grid-container">
-    <app-draft-card
-        *ngFor="let draft of drafts"
-        [draft]="draft"
-        (delete)="deleteDraft($event)"
-        (submitForReview)="submitDraft($event)"/>
-    <p *ngIf="drafts.length === 0">No drafts</p>
+    @for (draft of drafts; track draft) {
+        <app-draft-card
+            [draft]="draft"
+            (delete)="deleteDraft($event)"
+            (submitForReview)="submitDraft($event)"/>
+    } @empty {
+        <p>No drafts</p>
+    }
 </div>

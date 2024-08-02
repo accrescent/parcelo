@@ -2,7 +2,6 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only
 
-import { NgFor, NgIf } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
@@ -28,8 +27,6 @@ import { DraftService } from '../draft.service';
         MatCardModule,
         MatDialogModule,
         MatDividerModule,
-        NgFor,
-        NgIf,
         RouterLink,
     ],
     templateUrl: './apps-screen.component.html',

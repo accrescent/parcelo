@@ -12,7 +12,9 @@ SPDX-License-Identifier: AGPL-3.0-only
         <br>
         <h4>Edit info</h4>
         <ul>
-            <li *ngIf="edit.short_description">Short description: {{ edit.short_description }}</li>
+            @if (edit.short_description) {
+                <li>Short description: {{ edit.short_description }}</li>
+            }
         </ul>
     </mat-card-content>
     <mat-card-actions align="end">

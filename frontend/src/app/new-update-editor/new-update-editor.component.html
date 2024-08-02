@@ -14,12 +14,14 @@ SPDX-License-Identifier: AGPL-3.0-only
             <h3 class="no-spacing">APK set</h3>
             <h5>Must comply with <a href="https://accrescent.app/docs/guide/publish/requirements.html">app requirements</a></h5>
             <input id="apkset" #apksetinput type="file" accept=".apks" formControlName="apkSet">
-            <p class="no-spacing" *ngIf="form.value.apkSet else noApkSet">
-                {{ form.value.apkSet!!.replace('C:\\fakepath\\', '') }}
-            </p>
-            <ng-template #noApkSet>
+            @if (form.value.apkSet) {
+                <p class="no-spacing">
+                    {{ form.value.apkSet!!.replace('C:\\fakepath\\', '') }}
+                </p>
+            } @else {
                 <i>No APK set selected</i>
-            </ng-template>
+            }
+
             <button
                 type="button"
                 mat-flat-button

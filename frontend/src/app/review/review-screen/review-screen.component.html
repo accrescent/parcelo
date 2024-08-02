@@ -6,27 +6,27 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <h2>Drafts</h2>
 <div class="grid-container">
-    <app-reviewer-draft-card
-        *ngFor="let draft of drafts"
-        [draft]="draft"
-        (postReview)="openDraftReviewDialog($event)"/>
-    <p *ngIf="drafts.length === 0">No drafts to review</p>
+    @for (draft of drafts; track draft) {
+        <app-reviewer-draft-card [draft]="draft" (postReview)="openDraftReviewDialog($event)"/>
+    } @empty {
+        <p>No drafts to review</p>
+    }
 </div>
 
 <h2 class="section-header">Edits</h2>
 <div class="grid-container">
-    <app-reviewer-edit-card
-        *ngFor="let edit of edits"
-        [edit]="edit"
-        (postReview)="openEditReviewDialog($event)"/>
-    <p *ngIf="edits.length === 0">No edits to review</p>
+    @for (edit of edits; track edit) {
+        <app-reviewer-edit-card [edit]="edit" (postReview)="openEditReviewDialog($event)"/>
+    } @empty {
+        <p>No edits to review</p>
+    }
 </div>
 
 <h2 class="section-header">Updates</h2>
 <div class="grid-container">
-    <app-reviewer-update-card
-        *ngFor="let update of updates"
-        [update]="update"
-        (postReview)="openUpdateReviewDialog($event)"/>
-    <p *ngIf="updates.length === 0">No updates to review</p>
+    @for (update of updates; track update) {
+        <app-reviewer-update-card [update]="update" (postReview)="openUpdateReviewDialog($event)"/>
+    } @empty {
+        <p>No updates to review</p>
+    }
 </div>

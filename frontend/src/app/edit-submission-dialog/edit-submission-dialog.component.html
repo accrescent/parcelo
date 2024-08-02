@@ -8,12 +8,16 @@ SPDX-License-Identifier: AGPL-3.0-only
 <mat-dialog-content>
     <h2>Edit info for {{ data.app.label }}</h2>
     <ul>
-        <li *ngIf="data.edit.short_description">
-            Current short description: {{ data.app.short_description || "(none)" }}
-        </li>
-        <li *ngIf="data.edit.short_description">
-            New short description: {{ data.edit.short_description }}
-        </li>
+        @if (data.edit.short_description) {
+            <li>
+                Current short description: {{ data.app.short_description || "(none)" }}
+            </li>
+        }
+        @if (data.edit.short_description) {
+            <li>
+                New short description: {{ data.edit.short_description }}
+            </li>
+        }
     </ul>
 </mat-dialog-content>
 <mat-dialog-actions align="end">

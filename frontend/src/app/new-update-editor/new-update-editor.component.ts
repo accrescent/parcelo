@@ -2,7 +2,6 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only
 
-import { NgIf } from '@angular/common';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -13,7 +12,7 @@ import { NewUpdateForm } from '../new-update-form';
 @Component({
     selector: 'app-new-update-editor',
     standalone: true,
-    imports: [MatButtonModule, MatCardModule, NgIf, ReactiveFormsModule],
+    imports: [MatButtonModule, MatCardModule, ReactiveFormsModule],
     templateUrl: './new-update-editor.component.html',
     styleUrl: './new-update-editor.component.scss'
 })

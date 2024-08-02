@@ -53,12 +53,14 @@ SPDX-License-Identifier: AGPL-3.0-only
     </mat-chip-option>
 </mat-chip-listbox>
 <div class="grid-cards">
-    <app-update-card
-        *ngFor="let update of updates | updateFilter : showRejectedUpdates : showPublishedUpdates"
-        [update]="update"
-        (delete)="deleteUpdate($event)"
-        (submitForReview)="submitUpdate($event)"/>
-    <p *ngIf="updates.length === 0">No updates</p>
+    @for (update of updates | updateFilter : showRejectedUpdates : showPublishedUpdates; track update) {
+        <app-update-card
+            [update]="update"
+            (delete)="deleteUpdate($event)"
+            (submitForReview)="submitUpdate($event)"/>
+    } @empty {
+        <p>No updates</p>
+    }
 </div>
 
 <mat-divider/>
@@ -79,10 +81,14 @@ SPDX-License-Identifier: AGPL-3.0-only
     </mat-chip-option>
 </mat-chip-listbox>
 <div class="grid-cards">
-    <app-edit-card
-        *ngFor="let edit of edits | editFilter : showRejectedEdits : showPublishedEdits"
+    @for (edit of edits | editFilter : showRejectedEdits : showPublishedEdits; track edit) {
+<app-edit-card
+       
         [edit]="edit"
         (delete)="deleteEdit($event)"
         (submitForReview)="submitEdit($event)"/>
-    <p *ngIf="edits.length === 0">No edits</p>
+}
+    @if (edits.length === 0) {
+<p>No edits</p>
+}
 </div>

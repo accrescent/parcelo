@@ -2,7 +2,6 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only
 
-import { NgIf } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -13,7 +12,7 @@ import { AuthService } from '../auth.service';
     selector: 'app-login',
     templateUrl: './login.component.html',
     styleUrl: './login.component.scss',
-    imports: [MatProgressSpinnerModule, NgIf],
+    imports: [MatProgressSpinnerModule],
     standalone: true,
 })
 export class LoginComponent implements OnInit {

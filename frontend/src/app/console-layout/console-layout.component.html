@@ -19,8 +19,12 @@ SPDX-License-Identifier: AGPL-3.0-only
     <mat-sidenav #sidenav mode="side" opened="true">
         <mat-nav-list>
             <a mat-list-item routerLink="apps">My apps</a>
-            <a mat-list-item routerLink="review" *ngIf="reviewer">Review</a>
-            <a mat-list-item routerLink="publish" *ngIf="publisher">Publish</a>
+            @if (reviewer) {
+                <a mat-list-item routerLink="review">Review</a>
+            }
+            @if (publisher) {
+                <a mat-list-item routerLink="publish">Publish</a>
+            }
         </mat-nav-list>
     </mat-sidenav>
 

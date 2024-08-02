@@ -2,7 +2,6 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only
 
-import { NgFor, NgIf } from '@angular/common';
 import { Component, EventEmitter, Output } from '@angular/core';
 import { FormArray, NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -24,8 +23,6 @@ import { Review, ReviewResult } from '../review';
         MatIconModule,
         MatInputModule,
         MatRadioModule,
-        NgFor,
-        NgIf,
         ReactiveFormsModule,
     ],
     templateUrl: './review-editor.component.html',

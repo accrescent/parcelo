@@ -9,7 +9,9 @@ SPDX-License-Identifier: AGPL-3.0-only
     <h2>Edit info</h2>
     <ul>
         <li>App ID: {{ data.app_id }}</li>
-        <li *ngIf="data.short_description">Short description: {{ data.short_description }}</li>
+        @if (data.short_description) {
+            <li>Short description: {{ data.short_description }}</li>
+        }
     </ul>
 </mat-dialog-content>
 <mat-dialog-actions align="end">

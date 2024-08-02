@@ -2,7 +2,6 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only
 
-import { NgFor, NgIf } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { HttpEventType, HttpResponse } from '@angular/common/http';
 import { MatChipsModule } from '@angular/material/chips';
@@ -53,8 +52,6 @@ import {
         MatProgressBarModule,
         NewEditEditorComponent,
         NewUpdateEditorComponent,
-        NgFor,
-        NgIf,
         UpdateCardComponent,
         UpdateFilterPipe,
     ],

@@ -14,9 +14,9 @@ SPDX-License-Identifier: AGPL-3.0-only
             <mat-form-field appearance="outline">
                 <mat-label>Short description</mat-label>
                 <input type="text" formControlName="shortDescription" matInput>
-                <mat-error *ngIf="shouldShowLengthError()">
-                    Must be between 3 and 80 characters
-                </mat-error>
+                @if (shouldShowLengthError()) {
+                    <mat-error>Must be between 3 and 80 characters</mat-error>
+                }
             </mat-form-field>
         </mat-card-content>
 

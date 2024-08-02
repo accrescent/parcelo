@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 import { Component, OnInit } from '@angular/core';
-import { NgFor, NgIf } from '@angular/common';
 
 import { AppService } from '../app.service';
 import { Draft } from '../../draft';
@@ -15,7 +14,7 @@ import {
 @Component({
     selector: 'app-publish-screen',
     standalone: true,
-    imports: [NgFor, NgIf, PublisherDraftCardComponent],
+    imports: [PublisherDraftCardComponent],
     templateUrl: './publish-screen.component.html',
     styleUrl: './publish-screen.component.scss'
 })

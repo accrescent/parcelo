@@ -2,7 +2,6 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only
 
-import { NgIf } from '@angular/common';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -20,7 +19,6 @@ import { NewDraftForm } from '../new-draft-form';
         MatCardModule,
         MatFormFieldModule,
         MatInputModule,
-        NgIf,
         ReactiveFormsModule,
     ],
     templateUrl: './new-draft-editor.component.html',
