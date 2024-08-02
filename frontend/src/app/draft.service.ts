@@ -19,8 +19,8 @@ export class DraftService {
 
     createDraft(form: NewDraftForm): Observable<HttpEvent<Draft>> {
         const formData = new FormData();
-        formData.append('apk_set', form.apkSet);
         formData.append('icon', form.icon);
+        formData.append('apk_set', form.apkSet);
         formData.append('label', form.label);
         formData.append('short_description', form.shortDescription);
 
