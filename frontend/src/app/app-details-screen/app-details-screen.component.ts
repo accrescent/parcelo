@@ -65,7 +65,7 @@ export class AppDetailsScreenComponent implements OnInit {
     app?: App;
     updates: Update[] = [];
     edits: Edit[] = [];
-    uploadProgress = 0;
+    uploadProgress?: number = undefined;
 
     showRejectedEdits = false;
     showPublishedEdits = false;
@@ -106,7 +106,7 @@ export class AppDetailsScreenComponent implements OnInit {
 
                         // Clear the progress bar once the upload is complete
                         if (event.loaded === event.total!) {
-                            this.uploadProgress = 0;
+                            this.uploadProgress = undefined;
                         }
                     } else if (event instanceof HttpResponse) {
                         const update = event.body!;

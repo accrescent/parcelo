@@ -25,7 +25,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <div class="grid-forms">
     <app-new-update-editor (formSubmit)="createUpdate($event)">
-        <mat-progress-bar [value]="uploadProgress"/>
+        @if (uploadProgress !== undefined) {
+            <mat-progress-bar [value]="uploadProgress"/>
+        } @else if (submitDisabled) {
+            <mat-progress-bar mode="indeterminate"/>
+        }
     </app-new-update-editor>
 
     <app-new-edit-editor (formSubmit)="createEdit($event)"/>

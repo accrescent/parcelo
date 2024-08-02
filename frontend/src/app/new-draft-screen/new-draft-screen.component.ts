@@ -23,7 +23,7 @@ import { NewDraftForm } from '../new-draft-form';
     templateUrl: './new-draft-screen.component.html',
 })
 export class NewDraftScreenComponent {
-    uploadProgress = 0;
+    uploadProgress?: number = undefined;
     submitDisabled = false;
 
     constructor(
@@ -43,7 +43,7 @@ export class NewDraftScreenComponent {
 
                     // Clear the progress bar once the upload is complete
                     if (event.loaded === event.total!) {
-                        this.uploadProgress = 0;
+                        this.uploadProgress = undefined;
                     }
                 } else if (event instanceof HttpResponse) {
                     const draft = event.body!;
