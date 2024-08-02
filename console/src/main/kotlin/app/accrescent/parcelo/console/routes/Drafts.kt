@@ -45,7 +45,7 @@ import io.ktor.server.resources.patch
 import io.ktor.server.resources.post
 import io.ktor.server.response.header
 import io.ktor.server.response.respond
-import io.ktor.server.response.respondBytes
+import io.ktor.server.response.respondOutputStream
 import io.ktor.server.routing.Route
 import org.jetbrains.exposed.sql.Random
 import org.jetbrains.exposed.sql.SortOrder
@@ -419,7 +419,9 @@ fun Route.getDraftApkSetRoute() {
                     "draft-${draft.appId}-${draft.versionCode}.apks",
                 ).toString(),
             )
-            call.respondBytes { storageService.loadFile(draft.fileId).use { it.readBytes() } }
+            call.respondOutputStream {
+                storageService.loadFile(draft.fileId).use { it.copyTo(this) }
+            }
         } else {
             // Check whether the user has read access to this draft. If they do, tell them they're
             // not allowed to download the APK set. Otherwise, don't reveal that the draft exists.

@@ -47,7 +47,7 @@ import io.ktor.server.resources.patch
 import io.ktor.server.resources.post
 import io.ktor.server.response.header
 import io.ktor.server.response.respond
-import io.ktor.server.response.respondBytes
+import io.ktor.server.response.respondOutputStream
 import io.ktor.server.routing.Route
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.Random
@@ -447,7 +447,9 @@ fun Route.getUpdateApkSetRoute() {
                     "update-${update.appId}-${update.versionCode}.apks",
                 ).toString(),
             )
-            call.respondBytes { storageService.loadFile(update.fileId).use { it.readBytes() } }
+            call.respondOutputStream {
+                storageService.loadFile(update.fileId).use { it.copyTo(this) }
+            }
         } else {
             // Check whether the user has read access to this update. If they do, tell them they're
             // not allowed to download the APK set. Otherwise, don't reveal that the update exists.
