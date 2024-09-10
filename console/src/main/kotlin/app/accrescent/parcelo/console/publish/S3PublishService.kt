@@ -183,9 +183,10 @@ class S3PublishService(
                             Targeting.Abi.AbiAlias.ARM64_V8A -> "arm64-v8a"
                             Targeting.Abi.AbiAlias.X86 -> "x86"
                             Targeting.Abi.AbiAlias.X86_64 -> "x86_64"
-                            else -> throw Exception("Unsupported ABI targeting")
+                            // Simply don't publish ABI splits for architectures we don't support
+                            else -> null
                         }
-                        abiSplits.add(config)
+                        config?.let { abiSplits.add(it) }
 
                         "split.$config.apk"
                     } else if (apkDescription.targeting.hasLanguageTargeting()) {
