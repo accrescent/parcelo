@@ -5,6 +5,7 @@
 package app.accrescent.parcelo.apksparser
 
 import com.android.bundle.Commands.BuildApksResult
+import com.android.bundle.Targeting
 import java.io.File
 import java.io.IOException
 import java.security.MessageDigest
@@ -38,6 +39,12 @@ public class ApkSet private constructor(
          * - the app ID of the APKs matches the package name of the BuildApksResult
          * - all APKs must not be debuggable
          * - all APKs must not be marked test only
+         * - all modules containing an APK with ABI targeting contain at least one APK targeting at
+         *   least one of the following ABIs:
+         *     - arm64-v8a
+         *     - x86_64
+         * - all modules containing an APK targeting x86 also contain at least one targeting x86_64,
+         *   and likewise for armeabi-v7a and arm64-v8a respectively
          *
          * @return metadata describing the APK set and the app it represents
          */
@@ -72,9 +79,37 @@ public class ApkSet private constructor(
 
                 buildApksResult.variantList.forEach { variant ->
                     variant.apkSetList.forEach { apkSet ->
+                        var moduleHasAbiTargeting = false
+                        var moduleHasX86Targeting = false
+                        var moduleHasX8664Targeting = false
+                        var moduleHasArm32Targeting = false
+                        var moduleHasArm64Targeting = false
+
                         apkSet.apkDescriptionList.forEach { apkDescription ->
                             val apkPath = apkDescription.path
                                 ?: return ParseApkSetResult.Error.MissingPathError
+
+                            // Collect information on ABI targeting for this module
+                            if (apkDescription.targeting.hasAbiTargeting()) {
+                                moduleHasAbiTargeting = true
+
+                                for (abi in apkDescription.targeting.abiTargeting.valueList) {
+                                    when (abi.alias) {
+                                        Targeting.Abi.AbiAlias.ARMEABI_V7A -> moduleHasArm32Targeting =
+                                            true
+
+                                        Targeting.Abi.AbiAlias.ARM64_V8A -> moduleHasArm64Targeting =
+                                            true
+
+                                        Targeting.Abi.AbiAlias.X86 -> moduleHasX86Targeting = true
+                                        Targeting.Abi.AbiAlias.X86_64 -> moduleHasX8664Targeting =
+                                            true
+
+                                        else -> {}
+                                    }
+                                }
+                            }
+
                             // Fail if a missing APK is a split APK.
                             //
                             // Because bundletool unconditionally generates standalone APKs for apps
@@ -174,6 +209,27 @@ public class ApkSet private constructor(
                             // Target SDK
                             apk.manifest.usesSdk?.let {
                                 targetSdk = it.targetSdkVersion ?: it.minSdkVersion
+                            }
+                        }
+
+                        if (moduleHasAbiTargeting) {
+                            // Verify that the module supports at least one architecture which is
+                            // both 64-bit and in our set of supported architectures
+                            if (!(moduleHasArm64Targeting || moduleHasX8664Targeting)) {
+                                return ParseApkSetResult.Error.NoSupportedArchitectures(
+                                    apkSet.moduleMetadata.name,
+                                )
+                            }
+
+                            // Verify that the module contains 64-bit counterparts for every
+                            // targeted 32-bit architecture in our set of supported architectures
+                            if (
+                                moduleHasArm32Targeting && !moduleHasArm64Targeting ||
+                                moduleHasX86Targeting && !moduleHasX8664Targeting
+                            ) {
+                                return ParseApkSetResult.Error.Missing64BitLibraries(
+                                    apkSet.moduleMetadata.name,
+                                )
                             }
                         }
                     }
@@ -311,6 +367,23 @@ public sealed class ParseApkSetResult {
          */
         public data object MissingVersionCodeError : Error() {
             override val message: String = "no version code found"
+        }
+
+        /**
+         * The module supports a specific ABI but doesn't include support for a required
+         * architecture
+         */
+        public data class NoSupportedArchitectures(val module: String) : Error() {
+            override val message: String =
+                "module \"$module\" does not support a required architecture"
+        }
+
+        /**
+         * The module includes 32-bit native code but not corresponding 64-bit native code
+         */
+        public data class Missing64BitLibraries(val module: String) : Error() {
+            override val message: String =
+                "module \"$module\" includes 32-bit native code but does not include 64-bit native code"
         }
     }
 }

@@ -169,6 +169,11 @@ class ApiError private constructor(
 
         fun ioError(message: String) = ApiError(49, "I/O error", message)
         fun apkSetFormat(message: String) = ApiError(50, "Invalid APK set format", message)
+        fun missing64BitLibraries(message: String) =
+            ApiError(51, "Missing 64-bit libraries", message)
+
+        fun noSupportedArchitectures(message: String) =
+            ApiError(52, "No supported architectures", message)
     }
 }
 
@@ -193,9 +198,15 @@ fun toApiError(error: ParseApkSetResult.Error): ApiError = with(error) {
             message
         )
 
+        is ParseApkSetResult.Error.Missing64BitLibraries -> ApiError.missing64BitLibraries(message)
+
         is ParseApkSetResult.Error.MissingApkError -> ApiError.apkSetFormat(message)
         ParseApkSetResult.Error.MissingPathError -> ApiError.apkSetFormat(message)
         ParseApkSetResult.Error.MissingVersionCodeError -> ApiError.apkSetFormat(message)
+        is ParseApkSetResult.Error.NoSupportedArchitectures -> ApiError.noSupportedArchitectures(
+            message,
+        )
+
         ParseApkSetResult.Error.SigningCertMismatchError -> ApiError.signingCertMismatch(message)
         ParseApkSetResult.Error.TargetSdkNotFoundError -> ApiError.targetSdkNotFound(message)
         ParseApkSetResult.Error.TestOnlyError -> ApiError.testOnly(message)
