@@ -15,6 +15,7 @@ import app.accrescent.parcelo.console.storage.FileStorageService
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.sql.statements.api.ExposedBlob
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.jobrunr.scheduling.BackgroundJob
 import org.koin.java.KoinJavaComponent.inject
 import java.util.UUID
 
@@ -30,9 +31,9 @@ fun registerPublishAppJob(draftId: UUID) {
         transaction { Icon.findById(draft.iconId)?.fileId } ?: throw IllegalStateException()
 
     // Publish to the repository
-    val metadata = storageService.loadFile(draft.fileId).use { draftStream ->
-        storageService.loadFile(iconFileId).use { iconStream ->
-            runBlocking {
+    val metadata = runBlocking {
+        storageService.loadFile(draft.fileId) { draftStream ->
+            storageService.loadFile(iconFileId) { iconStream ->
                 publishService.publishDraft(draftStream, iconStream, draft.shortDescription)
             }
         }
@@ -74,8 +75,10 @@ fun registerPublishUpdateJob(updateId: UUID) {
     val update = transaction { UpdateDao.findById(updateId) } ?: return
 
     // Publish to the repository
-    val updatedMetadata = storageService.loadFile(update.fileId).use {
-        runBlocking { publishService.publishUpdate(it, update.appId.value) }
+    val updatedMetadata = runBlocking {
+        storageService.loadFile(update.fileId) {
+            runBlocking { publishService.publishUpdate(it, update.appId.value) }
+        }
     }
 
     // Account for publication
@@ -97,6 +100,7 @@ fun registerPublishUpdateJob(updateId: UUID) {
 
     // Delete old app file
     if (oldAppFileId != null) {
-        storageService.deleteFile(oldAppFileId)
+        runBlocking { storageService.markDeleted(oldAppFileId.value) }
+        BackgroundJob.enqueue { cleanFile(oldAppFileId.value) }
     }
 }

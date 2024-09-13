@@ -22,6 +22,7 @@ import app.accrescent.parcelo.console.data.Session
 import app.accrescent.parcelo.console.data.Update
 import app.accrescent.parcelo.console.data.net.ApiError
 import app.accrescent.parcelo.console.data.net.toApiError
+import app.accrescent.parcelo.console.jobs.cleanFile
 import app.accrescent.parcelo.console.jobs.registerPublishUpdateJob
 import app.accrescent.parcelo.console.storage.FileStorageService
 import app.accrescent.parcelo.console.util.TempFile
@@ -373,8 +374,10 @@ fun Route.deleteUpdateRoute() {
             // don't have sufficient permissions to delete the update.
             val publishingOrPublished = update.submitted && update.reviewerId == null
             if (update.creatorId == userId && update.reviewId == null && !publishingOrPublished) {
-                storageService.deleteFile(update.fileId)
+                storageService.markDeleted(update.fileId.value)
+                BackgroundJob.enqueue { cleanFile(update.fileId.value) }
                 transaction { update.delete() }
+
                 call.respond(HttpStatusCode.NoContent)
             } else {
                 call.respond(HttpStatusCode.Forbidden, ApiError.deleteForbidden())
@@ -448,7 +451,7 @@ fun Route.getUpdateApkSetRoute() {
                 ).toString(),
             )
             call.respondOutputStream {
-                storageService.loadFile(update.fileId).use { it.copyTo(this) }
+                storageService.loadFile(update.fileId) { it.copyTo(this) }
             }
         } else {
             // Check whether the user has read access to this update. If they do, tell them they're

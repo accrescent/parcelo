@@ -12,6 +12,7 @@ import org.jetbrains.exposed.dao.id.IntIdTable
 object Files : IntIdTable("files") {
     val localPath = text("local_path")
     val deleted = bool("deleted").default(false)
+    val s3ObjectKey = text("s3_object_key").nullable()
 }
 
 class File(id: EntityID<Int>) : IntEntity(id) {
@@ -19,4 +20,5 @@ class File(id: EntityID<Int>) : IntEntity(id) {
 
     var localPath by Files.localPath
     var deleted by Files.deleted
+    var s3ObjectKey by Files.s3ObjectKey
 }

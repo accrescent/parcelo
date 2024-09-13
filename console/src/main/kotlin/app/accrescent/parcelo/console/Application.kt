@@ -10,7 +10,7 @@ import app.accrescent.parcelo.console.publish.PublishService
 import app.accrescent.parcelo.console.publish.S3PublishService
 import app.accrescent.parcelo.console.routes.auth.configureAuthentication
 import app.accrescent.parcelo.console.storage.FileStorageService
-import app.accrescent.parcelo.console.storage.LocalFileStorageService
+import app.accrescent.parcelo.console.storage.S3FileStorageService
 import aws.smithy.kotlin.runtime.net.url.Url
 import cc.ekblad.toml.decode
 import cc.ekblad.toml.tomlMapper
@@ -28,9 +28,7 @@ import org.koin.dsl.module
 import org.koin.ktor.ext.inject
 import org.koin.ktor.plugin.Koin
 import org.koin.logger.slf4jLogger
-import java.nio.file.Files
 import java.nio.file.Path
-import kotlin.io.path.Path
 
 private const val DEFAULT_CONFIG_PATH = "/etc/pconsole/config.toml"
 
@@ -41,14 +39,17 @@ fun Application.module() {
     log.info("Starting Parcelo console 0.8.0")
 
     val config = if (environment.developmentMode) {
-        val fileStorageDir = System.getenv("FILE_STORAGE_BASE_DIR")
-        Files.createDirectories(Path(fileStorageDir))
-
         Config(
             application = Config.Application(
                 baseUrl = System.getenv("BASE_URL"),
                 databasePath = System.getenv("CONSOLE_DATABASE_PATH"),
-                fileStorageDir = fileStorageDir,
+            ),
+            privateStorage = Config.S3(
+                endpointUrl = System.getenv("PRIVATE_STORAGE_ENDPOINT_URL"),
+                region = System.getenv("PRIVATE_STORAGE_REGION"),
+                bucket = System.getenv("PRIVATE_STORAGE_BUCKET"),
+                accessKeyId = System.getenv("PRIVATE_STORAGE_ACCESS_KEY_ID"),
+                secretAccessKey = System.getenv("PRIVATE_STORAGE_SECRET_ACCESS_KEY"),
             ),
             s3 = Config.S3(
                 endpointUrl = System.getenv("S3_ENDPOINT_URL"),
@@ -75,7 +76,15 @@ fun Application.module() {
 
         val mainModule = module {
             single { config }
-            single<FileStorageService> { LocalFileStorageService(Path(config.application.fileStorageDir)) }
+            single<FileStorageService> {
+                S3FileStorageService(
+                    Url.parse(config.privateStorage.endpointUrl),
+                    config.privateStorage.region,
+                    config.privateStorage.bucket,
+                    config.privateStorage.accessKeyId,
+                    config.privateStorage.secretAccessKey,
+                )
+            }
             single { HttpClient { install(HttpTimeout) } }
             single<PublishService> {
                 S3PublishService(

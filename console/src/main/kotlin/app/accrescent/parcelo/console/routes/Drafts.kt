@@ -21,6 +21,7 @@ import app.accrescent.parcelo.console.data.Session
 import app.accrescent.parcelo.console.data.User
 import app.accrescent.parcelo.console.data.net.ApiError
 import app.accrescent.parcelo.console.data.net.toApiError
+import app.accrescent.parcelo.console.jobs.cleanFile
 import app.accrescent.parcelo.console.storage.FileStorageService
 import app.accrescent.parcelo.console.util.TempFile
 import app.accrescent.parcelo.console.validation.MIN_TARGET_SDK
@@ -47,10 +48,12 @@ import io.ktor.server.response.header
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondOutputStream
 import io.ktor.server.routing.Route
+import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.sql.Random
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.jobrunr.scheduling.BackgroundJob
 import org.koin.ktor.ext.inject
 import java.util.UUID
 import javax.imageio.IIOException
@@ -215,8 +218,10 @@ fun Route.createDraftRoute() {
                             null
                         }
 
-                        val iconFileId = iconData.inputStream().use { storageService.saveFile(it) }
-                        val appFileId = tempApkSet.inputStream().use { storageService.saveFile(it) }
+                        val iconFileId = iconData.inputStream()
+                            .use { runBlocking { storageService.saveFile(it) } }
+                        val appFileId = tempApkSet.inputStream()
+                            .use { runBlocking { storageService.saveFile(it) } }
                         val icon = Icon.new { fileId = iconFileId }
                         Draft.new {
                             this.label = label
@@ -269,10 +274,17 @@ fun Route.deleteDraftRoute() {
             // Forbid deletion if the draft has been reviewed
             call.respond(HttpStatusCode.Forbidden, ApiError.deleteForbidden())
         } else {
-            val iconFileId = transaction { Icon.findById(draft.iconId)?.fileId }!!
-            storageService.deleteFile(draft.fileId)
-            storageService.deleteFile(iconFileId)
-            transaction { draft.delete() }
+            val iconFileId = transaction {
+                val icon = Icon.findById(draft.iconId)!!
+                draft.delete()
+                icon.delete()
+                icon.fileId
+            }
+            storageService.markDeleted(draft.fileId.value)
+            storageService.markDeleted(iconFileId.value)
+            BackgroundJob.enqueue { cleanFile(draft.fileId.value) }
+            BackgroundJob.enqueue { cleanFile(iconFileId.value) }
+
             call.respond(HttpStatusCode.NoContent)
         }
     }
@@ -420,7 +432,7 @@ fun Route.getDraftApkSetRoute() {
                 ).toString(),
             )
             call.respondOutputStream {
-                storageService.loadFile(draft.fileId).use { it.copyTo(this) }
+                storageService.loadFile(draft.fileId) { it.copyTo(this) }
             }
         } else {
             // Check whether the user has read access to this draft. If they do, tell them they're

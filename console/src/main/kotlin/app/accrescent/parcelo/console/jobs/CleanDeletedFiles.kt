@@ -4,18 +4,18 @@
 
 package app.accrescent.parcelo.console.jobs
 
-import app.accrescent.parcelo.console.data.File as FileDao
-import app.accrescent.parcelo.console.data.Files
-import org.jetbrains.exposed.sql.transactions.transaction
-import java.io.File
+import app.accrescent.parcelo.console.storage.FileStorageService
+import kotlinx.coroutines.runBlocking
+import org.koin.java.KoinJavaComponent.inject
+import kotlin.getValue
 
 /**
  * Removes all files marked deleted
  */
 fun cleanDeletedFiles() {
-    transaction { FileDao.find { Files.deleted eq true } }.forEach {
-        if (File(it.localPath).delete()) {
-            transaction { it.delete() }
-        }
+    val storageService: FileStorageService by inject(FileStorageService::class.java)
+
+    runBlocking {
+        storageService.cleanAllFiles()
     }
 }

@@ -11,13 +11,15 @@ SPDX-License-Identifier: AGPL-3.0-only
       <env name="CONSOLE_DATABASE_PATH" value="appdata/console.db" />
       <env name="DEBUG_USER_EMAIL" value="example@example.com" />
       <env name="DEBUG_USER_REVIEWER_EMAIL" value="example@example.com" />
-      <env name="FILE_STORAGE_BASE_DIR" value="appdata/console" />
       <env name="GITHUB_OAUTH2_REDIRECT_URL" value="http://localhost:4200/auth/github/callback" />
       <env name="HOST" value="0.0.0.0" />
       <env name="PORT" value="8080" />
       <env name="S3_ENDPOINT_URL" value="http://127.0.0.1:9000" />
       <env name="S3_REGION" value="us-east-1" />
       <env name="S3_BUCKET" value="parcelo-repo" />
+      <env name="PRIVATE_STORAGE_ENDPOINT_URL" value="http://127.0.0.1:9000" />
+      <env name="PRIVATE_STORAGE_REGION" value="us-east-1" />
+      <env name="PRIVATE_STORAGE_BUCKET" value="parcelo-privatestorage" />
     </envs>
     <option name="MAIN_CLASS_NAME" value="app.accrescent.parcelo.console.ApplicationKt" />
     <module name="parcelo.console.main" />
