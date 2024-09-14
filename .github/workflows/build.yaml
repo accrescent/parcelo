@@ -19,7 +19,7 @@ jobs:
         with:
           version: "28.x"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: gradle/actions/setup-gradle@v3
+      - uses: gradle/actions/setup-gradle@v4
       - run: ./gradlew build
       - run: ./gradlew dokkaHtml
       - run: npm install -g @angular/cli && npm ci && ng build
