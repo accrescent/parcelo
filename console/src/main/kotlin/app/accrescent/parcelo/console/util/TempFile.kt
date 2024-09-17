@@ -46,6 +46,13 @@ class TempFile : AutoCloseable {
     }
 
     /**
+     * Returns the size of this file in bytes
+     */
+    fun size(): Long {
+        return path.toFile().length()
+    }
+
+    /**
      * Deletes the underlying file
      */
     override fun close() {

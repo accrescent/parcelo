@@ -10,7 +10,6 @@ import app.accrescent.parcelo.console.data.Files.deleted
 import aws.sdk.kotlin.runtime.auth.credentials.StaticCredentialsProvider
 import aws.sdk.kotlin.runtime.auth.credentials.StaticCredentialsProvider.Companion.invoke
 import aws.sdk.kotlin.services.s3.S3Client
-import aws.sdk.kotlin.services.s3.model.ChecksumAlgorithm
 import aws.sdk.kotlin.services.s3.model.Delete
 import aws.sdk.kotlin.services.s3.model.DeleteObjectRequest
 import aws.sdk.kotlin.services.s3.model.DeleteObjectsRequest
@@ -40,7 +39,7 @@ class S3FileStorageService(
     private val s3AccessKeyId: String,
     private val s3SecretAccessKey: String,
 ) : FileStorageService {
-    override suspend fun saveFile(inputStream: InputStream): EntityID<Int> {
+    override suspend fun saveFile(inputStream: InputStream, size: Long): EntityID<Int> {
         S3Client {
             endpointUrl = s3EndpointUrl
             region = s3Region
@@ -54,9 +53,7 @@ class S3FileStorageService(
             val req = PutObjectRequest {
                 bucket = s3Bucket
                 key = objectKey
-                body = inputStream.asByteStream()
-                // Necessary to specify so the S3 library can calculate a body hash from a stream
-                checksumAlgorithm = ChecksumAlgorithm.Sha256
+                body = inputStream.asByteStream(size)
             }
             s3Client.putObject(req)
 

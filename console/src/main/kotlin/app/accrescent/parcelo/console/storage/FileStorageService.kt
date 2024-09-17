@@ -16,7 +16,7 @@ interface FileStorageService {
      *
      * @return the database ID of the new file
      */
-    suspend fun saveFile(inputStream: InputStream): EntityID<Int>
+    suspend fun saveFile(inputStream: InputStream, size: Long): EntityID<Int>
 
     /**
      * Marks the given file deleted
