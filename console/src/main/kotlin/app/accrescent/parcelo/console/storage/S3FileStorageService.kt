@@ -57,12 +57,7 @@ class S3FileStorageService(
             }
             s3Client.putObject(req)
 
-            val fileId = transaction {
-                File.new {
-                    s3ObjectKey = objectKey
-                    localPath = ""
-                }.id
-            }
+            val fileId = transaction { File.new { s3ObjectKey = objectKey }.id }
 
             return fileId
         }
