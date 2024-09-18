@@ -8,9 +8,12 @@ import app.accrescent.parcelo.console.Config
 import app.accrescent.parcelo.console.data.baseline.BaselineAccessControlLists
 import app.accrescent.parcelo.console.data.baseline.BaselineApps
 import app.accrescent.parcelo.console.data.baseline.BaselineDrafts
+import app.accrescent.parcelo.console.data.baseline.BaselineEdits
 import app.accrescent.parcelo.console.data.baseline.BaselineFiles
 import app.accrescent.parcelo.console.data.baseline.BaselineIcons
+import app.accrescent.parcelo.console.data.baseline.BaselineListings
 import app.accrescent.parcelo.console.data.baseline.BaselineRejectionReasons
+import app.accrescent.parcelo.console.data.baseline.BaselineReviewIssueGroups
 import app.accrescent.parcelo.console.data.baseline.BaselineReviewIssues
 import app.accrescent.parcelo.console.data.baseline.BaselineReviewers
 import app.accrescent.parcelo.console.data.baseline.BaselineReviews
@@ -26,32 +29,36 @@ import org.jetbrains.exposed.sql.insertIgnore
 import org.jetbrains.exposed.sql.insertIgnoreAndGetId
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.koin.ktor.ext.inject
-import org.sqlite.SQLiteDataSource
+import org.postgresql.ds.PGSimpleDataSource
 import javax.sql.DataSource
 
 fun Application.configureDatabase(): DataSource {
     val config: Config by inject()
 
-    val dataSource = SQLiteDataSource().apply {
-        url = "jdbc:sqlite:${config.application.databasePath}?journal_mode=wal"
-
-        setEnforceForeignKeys(true)
+    val dataSource = PGSimpleDataSource().apply {
+        serverNames = arrayOf(config.postgresql.serverName)
+        databaseName = config.postgresql.databaseName
+        portNumbers = intArrayOf(config.postgresql.portNumber)
+        user = config.postgresql.user
+        password = config.postgresql.password
+        ssl = config.postgresql.ssl
     }
-    Database.connect(dataSource, setupConnection = {
-        it.createStatement().executeUpdate("PRAGMA trusted_schema = OFF")
-    })
+    Database.connect(dataSource)
 
     transaction {
         SchemaUtils.create(
             BaselineAccessControlLists,
             BaselineApps,
             BaselineDrafts,
+            BaselineEdits,
             BaselineFiles,
             BaselineIcons,
+            BaselineListings,
             BaselineRejectionReasons,
             BaselineReviewers,
             BaselineReviewIssues,
             BaselineReviews,
+            BaselineReviewIssueGroups,
             BaselineSessions,
             BaselineUpdates,
             BaselineUsers,

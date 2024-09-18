@@ -6,13 +6,20 @@ package app.accrescent.parcelo.console
 
 data class Config(
     val application: Application,
+    val postgresql: Postgresql,
     val privateStorage: S3,
     val s3: S3,
     val github: GitHub,
 ) {
-    data class Application(
-        val baseUrl: String,
-        val databasePath: String,
+    data class Application(val baseUrl: String)
+
+    data class Postgresql(
+        val serverName: String,
+        val databaseName: String,
+        val portNumber: Int,
+        val user: String,
+        val password: String,
+        val ssl: Boolean,
     )
 
     data class S3(

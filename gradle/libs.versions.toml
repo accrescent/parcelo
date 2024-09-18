@@ -17,10 +17,10 @@ kotlin = "2.0.20"
 ksp = "2.0.20-1.0.25"
 ktor = "2.3.12"
 logback = "1.5.8"
+postgresql = "42.7.4"
 protobuf = "4.28.1"
 protobuf-plugin = "0.9.4"
 s3 = "1.3.32"
-sqlite = "3.46.1.0"
 
 [libraries]
 apkanalyzer = { module = "com.android.tools.apkparser:apkanalyzer", version.ref = "apkanalyzer" }
@@ -29,6 +29,7 @@ exposed-core = { module = "org.jetbrains.exposed:exposed-core", version.ref = "e
 exposed-dao = { module = "org.jetbrains.exposed:exposed-dao", version.ref = "exposed" }
 exposed-jdbc = { module = "org.jetbrains.exposed:exposed-jdbc", version.ref = "exposed" }
 flyway = { module = "org.flywaydb:flyway-core", version.ref = "flyway" }
+flyway-postgresql = { module = "org.flywaydb:flyway-database-postgresql", version.ref = "flyway" }
 fourkoma = { module = "cc.ekblad:4koma", version.ref = "fourkoma" }
 github = { module = "org.kohsuke:github-api", version.ref = "github" }
 jackson-kotlin = { module = "com.fasterxml.jackson.module:jackson-module-kotlin", version.ref = "jackson" }
@@ -46,9 +47,9 @@ ktor-server-netty = { module = "io.ktor:ktor-server-netty", version.ref = "ktor"
 ktor-server-resources = { module = "io.ktor:ktor-server-resources", version.ref = "ktor" }
 ktor-server-tests = { module = "io.ktor:ktor-server-tests", version.ref = "ktor" }
 logback = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
+postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresql" }
 protobuf = { module = "com.google.protobuf:protobuf-java", version.ref = "protobuf" }
 s3 = { module = "aws.sdk.kotlin:s3", version.ref = "s3" }
-sqlite = { module = "org.xerial:sqlite-jdbc", version.ref = "sqlite" }
 
 [plugins]
 dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }

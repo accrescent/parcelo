@@ -9,6 +9,6 @@ package app.accrescent.parcelo.console.data.baseline
 import org.jetbrains.exposed.dao.id.IntIdTable
 
 object BaselineFiles : IntIdTable("files") {
-    val localPath = text("local_path")
     val deleted = bool("deleted").default(false)
+    val s3ObjectKey = text("s3_object_key").nullable()
 }

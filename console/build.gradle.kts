@@ -37,6 +37,7 @@ dependencies {
     implementation(libs.exposed.dao)
     implementation(libs.exposed.jdbc)
     implementation(libs.flyway)
+    implementation(libs.flyway.postgresql)
     implementation(libs.fourkoma)
     implementation(libs.github)
     implementation(libs.jobrunr)
@@ -50,7 +51,7 @@ dependencies {
     implementation(libs.ktor.server.netty)
     implementation(libs.ktor.server.resources)
     implementation(libs.logback)
-    implementation(libs.sqlite)
+    implementation(libs.postgresql)
     testImplementation(libs.ktor.server.tests)
     testImplementation(libs.kotlin.test)
 }

@@ -6,7 +6,7 @@ package app.accrescent.parcelo.console.jobs
 
 import org.jobrunr.configuration.JobRunr
 import org.jobrunr.scheduling.BackgroundJob
-import org.jobrunr.storage.sql.sqlite.SqLiteStorageProvider
+import org.jobrunr.storage.sql.postgres.PostgresStorageProvider
 import java.time.Duration
 import javax.sql.DataSource
 
@@ -19,7 +19,7 @@ private val FILE_CLEANING_PERIOD = Duration.ofHours(6)
 fun configureJobRunr(dataSource: DataSource) {
     JobRunr
         .configure()
-        .useStorageProvider(SqLiteStorageProvider(dataSource))
+        .useStorageProvider(PostgresStorageProvider(dataSource))
         .useBackgroundJobServer()
         .initialize()
 

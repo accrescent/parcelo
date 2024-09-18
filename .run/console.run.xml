@@ -8,9 +8,10 @@ SPDX-License-Identifier: AGPL-3.0-only
   <configuration default="false" name="console" type="JetRunConfigurationType">
     <envs>
       <env name="BASE_URL" value="http://localhost:8080" />
-      <env name="CONSOLE_DATABASE_PATH" value="appdata/console.db" />
       <env name="DEBUG_USER_EMAIL" value="example@example.com" />
       <env name="DEBUG_USER_REVIEWER_EMAIL" value="example@example.com" />
+      <env name="POSTGRESQL_PASSWORD" value="password" />
+      <env name="POSTGRESQL_SSL" value="false" />
       <env name="GITHUB_OAUTH2_REDIRECT_URL" value="http://localhost:4200/auth/github/callback" />
       <env name="HOST" value="0.0.0.0" />
       <env name="PORT" value="8080" />

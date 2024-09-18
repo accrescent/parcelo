@@ -18,6 +18,7 @@ object BaselineDrafts : UUIDTable("drafts") {
     val label = text("label")
     val versionCode = integer("version_code")
     val versionName = text("version_name")
+    val shortDescription = text("short_description").default("")
     val creatorId = reference("creator_id", BaselineUsers, ReferenceOption.CASCADE)
     val creationTime = long("creation_time").clientDefault { System.currentTimeMillis() / 1000 }
     val fileId = reference("file_id", BaselineFiles, ReferenceOption.NO_ACTION)

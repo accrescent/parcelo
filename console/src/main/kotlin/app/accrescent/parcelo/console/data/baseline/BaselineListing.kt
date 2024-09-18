@@ -1,4 +1,4 @@
-// Copyright 2023-2024 Logan Magee
+// Copyright 2024 Logan Magee
 //
 // SPDX-License-Identifier: AGPL-3.0-only
 //
@@ -9,13 +9,14 @@ package app.accrescent.parcelo.console.data.baseline
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.ReferenceOption
 
-object BaselineAccessControlLists : IntIdTable("access_control_lists") {
-    val userId = reference("user_id", BaselineUsers, ReferenceOption.CASCADE)
+object BaselineListings : IntIdTable("listings") {
     val appId = reference("app_id", BaselineApps, ReferenceOption.CASCADE)
-    val update = bool("update").default(false)
-    val editMetadata = bool("edit_metadata").default(false)
+    val locale = text("locale")
+    val iconId = reference("icon_id", BaselineIcons, ReferenceOption.NO_ACTION)
+    val label = text("label")
+    val shortDescription = text("short_description")
 
     init {
-        uniqueIndex(userId, appId)
+        uniqueIndex(appId, locale)
     }
 }

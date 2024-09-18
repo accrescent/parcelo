@@ -10,6 +10,5 @@ import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.ReferenceOption
 
 object BaselineIcons : IntIdTable("icons") {
-    val hash = text("hash")
     val fileId = reference("file_id", BaselineFiles, ReferenceOption.NO_ACTION)
 }
