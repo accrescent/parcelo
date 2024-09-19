@@ -76,7 +76,7 @@ fun registerPublishUpdateJob(updateId: UUID) {
 
     // Publish to the repository
     val updatedMetadata = runBlocking {
-        storageService.loadFile(update.fileId) {
+        storageService.loadFile(update.fileId!!) {
             runBlocking { publishService.publishUpdate(it, update.appId.value) }
         }
     }
@@ -89,7 +89,7 @@ fun registerPublishUpdateJob(updateId: UUID) {
             repositoryMetadata = ExposedBlob(updatedMetadata)
 
             val oldAppFileId = fileId
-            fileId = update.fileId
+            fileId = update.fileId!!
 
             update.published = true
             updating = false

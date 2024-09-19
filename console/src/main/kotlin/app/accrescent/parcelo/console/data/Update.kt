@@ -22,7 +22,7 @@ object Updates : UUIDTable("updates") {
     val versionName = text("version_name")
     val creatorId = reference("creator_id", Users, ReferenceOption.CASCADE)
     val creationTime = long("creation_time").clientDefault { System.currentTimeMillis() / 1000 }
-    val fileId = reference("file_id", Files, ReferenceOption.NO_ACTION)
+    val fileId = reference("file_id", Files, ReferenceOption.SET_NULL).nullable()
     val reviewerId = reference("reviewer_id", Reviewers).nullable()
     val reviewIssueGroupId =
         reference("review_issue_group_id", ReviewIssueGroups, ReferenceOption.NO_ACTION).nullable()

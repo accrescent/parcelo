@@ -17,7 +17,7 @@ object BaselineUpdates : UUIDTable("updates") {
     val versionName = text("version_name")
     val creatorId = reference("creator_id", BaselineUsers, ReferenceOption.CASCADE)
     val creationTime = long("creation_time").clientDefault { System.currentTimeMillis() / 1000 }
-    val fileId = reference("file_id", BaselineFiles, ReferenceOption.NO_ACTION)
+    val fileId = reference("file_id", BaselineFiles, ReferenceOption.SET_NULL).nullable()
     val reviewerId = reference("reviewer_id", BaselineReviewers).nullable()
     val reviewIssueGroupId =
         reference(
