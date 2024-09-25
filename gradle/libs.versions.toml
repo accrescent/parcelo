@@ -6,7 +6,7 @@
 apkanalyzer = "31.6.1"
 apksig = "8.6.1"
 dokka = "1.9.20"
-exposed = "0.54.0"
+exposed = "0.55.0"
 flyway = "10.18.0"
 fourkoma = "1.2.0"
 github = "1.326"
