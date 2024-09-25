@@ -138,7 +138,9 @@ fun Route.githubRoutes() {
                 val user = transaction {
                     User.find { Users.githubUserId eq githubUserId }.firstOrNull()
                 } ?: run {
-                    val email = githubUser.myself.emails2.find { it.isPrimary && it.isVerified }
+                    val email = githubUser.myself
+                        .listEmails()
+                        .find { it.isPrimary && it.isVerified }
                         ?.email
                         ?: run {
                             call.respond(HttpStatusCode.Forbidden)
