@@ -38,7 +38,6 @@ dependencies {
     implementation(libs.exposed.jdbc)
     implementation(libs.flyway)
     implementation(libs.flyway.postgresql)
-    implementation(libs.fourkoma)
     implementation(libs.github)
     implementation(libs.jobrunr)
     implementation(libs.koin.ktor)

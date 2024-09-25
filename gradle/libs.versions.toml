@@ -8,7 +8,6 @@ apksig = "8.6.1"
 dokka = "1.9.20"
 exposed = "0.55.0"
 flyway = "10.18.1"
-fourkoma = "1.2.0"
 github = "1.326"
 jackson = "2.17.2"
 jobrunr = "7.2.3"
@@ -30,7 +29,6 @@ exposed-dao = { module = "org.jetbrains.exposed:exposed-dao", version.ref = "exp
 exposed-jdbc = { module = "org.jetbrains.exposed:exposed-jdbc", version.ref = "exposed" }
 flyway = { module = "org.flywaydb:flyway-core", version.ref = "flyway" }
 flyway-postgresql = { module = "org.flywaydb:flyway-database-postgresql", version.ref = "flyway" }
-fourkoma = { module = "cc.ekblad:4koma", version.ref = "fourkoma" }
 github = { module = "org.kohsuke:github-api", version.ref = "github" }
 jackson-kotlin = { module = "com.fasterxml.jackson.module:jackson-module-kotlin", version.ref = "jackson" }
 jackson-xml = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-xml", version.ref = "jackson" }
