@@ -1,0 +1,13 @@
+# Copyright 2024 Logan Magee
+#
+# SPDX-License-Identifier: AGPL-3.0-only
+
+*
+
+!/apksparser
+!/build.gradle.kts
+!/console
+!/gradle
+!/gradle.properties
+!/gradlew
+!/settings.gradle.kts
