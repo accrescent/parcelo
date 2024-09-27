@@ -5,6 +5,8 @@
 import { Component } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 
+import { environment } from '../../environments/environment';
+
 @Component({
     selector: 'app-login-screen',
     templateUrl: './login-screen.component.html',
@@ -12,4 +14,6 @@ import { MatButtonModule } from '@angular/material/button';
     standalone: true,
     imports: [MatButtonModule],
 })
-export class LoginScreenComponent { }
+export class LoginScreenComponent {
+    readonly loginUrl = `${environment.developerApiUrl}/auth/github/login`;
+}

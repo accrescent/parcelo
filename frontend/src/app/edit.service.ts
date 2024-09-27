@@ -8,13 +8,14 @@ import { Observable } from 'rxjs';
 
 import { Edit } from './edit';
 import { NewEditForm } from './new-edit-form';
+import { environment } from '../environments/environment';
 
 @Injectable({
     providedIn: 'root'
 })
 export class EditService {
-    private readonly appsUrl = 'api/v1/apps';
-    private readonly editsUrl = 'api/v1/edits';
+    private readonly appsUrl = `${environment.developerApiUrl}/api/v1/apps`;
+    private readonly editsUrl = `${environment.developerApiUrl}/api/v1/edits`;
 
     constructor(private http: HttpClient) {}
 

@@ -8,6 +8,8 @@ SPDX-License-Identifier: AGPL-3.0-only
   <configuration default="false" name="console" type="JetRunConfigurationType">
     <envs>
       <env name="BASE_URL" value="http://localhost:8080" />
+      <env name="CORS_ALLOWED_HOST" value="localhost:4200" />
+      <env name="CORS_ALLOWED_SCHEME" value="http" />
       <env name="DEBUG_USER_EMAIL" value="example@example.com" />
       <env name="DEBUG_USER_REVIEWER_EMAIL" value="example@example.com" />
       <env name="POSTGRESQL_PASSWORD" value="password" />

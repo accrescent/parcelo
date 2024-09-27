@@ -46,6 +46,7 @@ dependencies {
     implementation(libs.ktor.serialization)
     implementation(libs.ktor.server.auth)
     implementation(libs.ktor.server.core)
+    implementation(libs.ktor.server.cors)
     implementation(libs.ktor.server.negotiation)
     implementation(libs.ktor.server.netty)
     implementation(libs.ktor.server.resources)

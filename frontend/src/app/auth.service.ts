@@ -8,13 +8,14 @@ import { HttpClient, HttpParams, HttpStatusCode } from '@angular/common/http';
 import { Observable, catchError, map, of, tap, throwError } from 'rxjs';
 
 import { AuthResult } from './auth-result';
+import { environment } from '../environments/environment';
 
 @Injectable({
     providedIn: 'root'
 })
 export class AuthService {
-    private readonly callbackUrl = 'auth/github/callback2';
-    private readonly sessionUrl = 'api/v1/session';
+    private readonly callbackUrl = `${environment.developerApiUrl}/auth/github/callback2`;
+    private readonly sessionUrl = `${environment.developerApiUrl}/api/v1/session`;
     private readonly loggedInStorageKey = 'loggedIn';
     private readonly reviewerStorageKey = 'reviewer';
     private readonly publisherStorageKey = 'publisher';

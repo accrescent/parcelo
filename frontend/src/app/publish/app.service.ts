@@ -6,11 +6,13 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
+import { environment } from '../../environments/environment';
+
 @Injectable({
     providedIn: 'root'
 })
 export class AppService {
-    private readonly appsUrl = 'api/v1/apps';
+    private readonly appsUrl = `${environment.developerApiUrl}/api/v1/apps`;
 
     constructor(private http: HttpClient) {}
 

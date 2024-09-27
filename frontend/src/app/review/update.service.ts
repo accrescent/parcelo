@@ -8,12 +8,13 @@ import { Observable } from 'rxjs';
 
 import { Review } from './review';
 import { Update } from '../update';
+import { environment } from '../../environments/environment';
 
 @Injectable({
     providedIn: 'root'
 })
 export class UpdateService {
-    private readonly updatesUrl = 'api/v1/updates';
+    private readonly updatesUrl = `${environment.developerApiUrl}/api/v1/updates`;
     private readonly assignedUpdatesUrl = `${this.updatesUrl}/assigned`;
 
     constructor(private http: HttpClient) {}

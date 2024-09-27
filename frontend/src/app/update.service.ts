@@ -8,13 +8,14 @@ import { Observable } from 'rxjs';
 
 import { NewUpdateForm } from './new-update-form';
 import { Update } from './update';
+import { environment } from '../environments/environment';
 
 @Injectable({
     providedIn: 'root'
 })
 export class UpdateService {
-    private readonly appsUrl = 'api/v1/apps';
-    private readonly updatesUrl = 'api/v1/updates';
+    private readonly appsUrl = `${environment.developerApiUrl}/api/v1/apps`;
+    private readonly updatesUrl = `${environment.developerApiUrl}/api/v1/updates`;
 
     constructor(private http: HttpClient) {}
 

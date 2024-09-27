@@ -8,12 +8,13 @@ import { Observable } from 'rxjs';
 
 import { Draft } from './draft';
 import { NewDraftForm } from './new-draft-form';
+import { environment } from '../environments/environment';
 
 @Injectable({
     providedIn: 'root'
 })
 export class DraftService {
-    private readonly draftsUrl = 'api/v1/drafts';
+    private readonly draftsUrl = `${environment.developerApiUrl}/api/v1/drafts`;
 
     constructor(private http: HttpClient) {}
 

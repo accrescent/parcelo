@@ -6,12 +6,15 @@ package app.accrescent.parcelo.console
 
 data class Config(
     val application: Application,
+    val cors: Cors,
     val postgresql: Postgresql,
     val privateStorage: S3,
     val s3: S3,
     val github: GitHub,
 ) {
     data class Application(val baseUrl: String)
+
+    data class Cors(val allowedHost: String, val allowedScheme: String)
 
     data class Postgresql(
         val serverName: String,

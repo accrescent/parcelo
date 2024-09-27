@@ -14,12 +14,15 @@ import app.accrescent.parcelo.console.storage.S3FileStorageService
 import aws.smithy.kotlin.runtime.net.url.Url
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.HttpTimeout
+import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpMethod
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
 import io.ktor.server.application.log
 import io.ktor.server.netty.EngineMain
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.server.plugins.cors.routing.CORS
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import org.koin.dsl.module
@@ -42,6 +45,10 @@ fun Application.module() {
     val config = Config(
         application = Config.Application(
             baseUrl = System.getenv("BASE_URL"),
+        ),
+        cors = Config.Cors(
+            allowedHost = System.getenv("CORS_ALLOWED_HOST"),
+            allowedScheme = System.getenv("CORS_ALLOWED_SCHEME"),
         ),
         postgresql = Config.Postgresql(
             serverName = System.getenv("POSTGRESQL_SERVER_NAME")
@@ -111,6 +118,15 @@ fun Application.module() {
         json(Json {
             explicitNulls = false
         })
+    }
+    install(CORS) {
+        allowCredentials = true
+
+        allowHost(config.cors.allowedHost, schemes = listOf(config.cors.allowedScheme))
+        allowHeader(HttpHeaders.ContentType)
+        allowMethod(HttpMethod.Delete)
+        allowMethod(HttpMethod.Patch)
+        allowMethod(HttpMethod.Post)
     }
     configureJobRunr(configureDatabase())
     configureAuthentication(

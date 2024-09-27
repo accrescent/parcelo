@@ -7,12 +7,13 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 import { Draft } from '../draft';
+import { environment } from '../../environments/environment';
 
 @Injectable({
     providedIn: 'root'
 })
 export class DraftService {
-    private readonly approvedDraftsUrl = 'api/v1/drafts/approved';
+    private readonly approvedDraftsUrl = `${environment.developerApiUrl}/api/v1/drafts/approved`;
 
     constructor(private http: HttpClient) {}
 
