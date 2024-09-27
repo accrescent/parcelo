@@ -52,6 +52,7 @@ import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.sql.Random
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.not
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jobrunr.scheduling.BackgroundJob
 import org.koin.ktor.ext.inject
@@ -362,7 +363,7 @@ fun Route.getApprovedDraftsRoute() {
 
         val approvedDrafts = transaction {
             Draft
-                .all()
+                .find { not(DbDrafts.publishing) }
                 .filter { draft -> draft.reviewId?.let { Review.findById(it)?.approved } == true }
                 .map { it.serializable() }
         }
