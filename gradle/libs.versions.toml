@@ -19,7 +19,7 @@ logback = "1.5.8"
 postgresql = "42.7.4"
 protobuf = "4.28.2"
 protobuf-plugin = "0.9.4"
-s3 = "1.3.49"
+s3 = "1.3.50"
 
 [libraries]
 apkanalyzer = { module = "com.android.tools.apkparser:apkanalyzer", version.ref = "apkanalyzer" }
