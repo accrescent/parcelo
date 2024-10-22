@@ -41,7 +41,7 @@ fun Application.configureDatabase(): DataSource {
         portNumbers = intArrayOf(config.postgresql.portNumber)
         user = config.postgresql.user
         password = config.postgresql.password
-        ssl = config.postgresql.ssl
+        sslMode = config.postgresql.sslMode
     }
     Database.connect(dataSource)
 

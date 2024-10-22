@@ -34,7 +34,7 @@ private const val POSTGRESQL_DEFAULT_SERVER_NAME = "localhost"
 private const val POSTGRESQL_DEFAULT_DATABASE_NAME = "postgres"
 private const val POSTGRESQL_DEFAULT_PORT = 5432
 private const val POSTGRESQL_DEFAULT_USER = "postgres"
-private const val POSTGRESQL_DEFAULT_SSL = true
+private const val POSTGRESQL_DEFAULT_SSL_MODE = "verify-full"
 
 fun main(args: Array<String>) = EngineMain.main(args)
 
@@ -59,7 +59,7 @@ fun Application.module() {
                 ?: POSTGRESQL_DEFAULT_PORT,
             user = System.getenv("POSTGRESQL_USER") ?: POSTGRESQL_DEFAULT_USER,
             password = System.getenv("POSTGRESQL_PASSWORD"),
-            ssl = System.getenv("POSTGRESQL_SSL")?.toBooleanStrict() ?: POSTGRESQL_DEFAULT_SSL,
+            sslMode = System.getenv("POSTGRESQL_SSL_MODE") ?: POSTGRESQL_DEFAULT_SSL_MODE,
         ),
         privateStorage = Config.S3(
             endpointUrl = System.getenv("PRIVATE_STORAGE_ENDPOINT_URL"),

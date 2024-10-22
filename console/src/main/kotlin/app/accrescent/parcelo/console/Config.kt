@@ -22,7 +22,7 @@ data class Config(
         val portNumber: Int,
         val user: String,
         val password: String,
-        val ssl: Boolean,
+        val sslMode: String,
     )
 
     data class S3(
