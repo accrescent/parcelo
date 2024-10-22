@@ -8,6 +8,7 @@ import app.accrescent.parcelo.console.routes.appRoutes
 import app.accrescent.parcelo.console.routes.auth.authRoutes
 import app.accrescent.parcelo.console.routes.draftRoutes
 import app.accrescent.parcelo.console.routes.editRoutes
+import app.accrescent.parcelo.console.routes.healthRoutes
 import app.accrescent.parcelo.console.routes.sessionRoutes
 import app.accrescent.parcelo.console.routes.updateRoutes
 import io.ktor.server.application.Application
@@ -21,6 +22,7 @@ fun Application.configureRouting() {
 
     routing {
         authRoutes()
+        healthRoutes()
 
         route("/api/v1") {
             sessionRoutes()
