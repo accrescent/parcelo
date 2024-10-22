@@ -13,7 +13,7 @@ SPDX-License-Identifier: AGPL-3.0-only
       <env name="DEBUG_USER_EMAIL" value="example@example.com" />
       <env name="DEBUG_USER_REVIEWER_EMAIL" value="example@example.com" />
       <env name="POSTGRESQL_PASSWORD" value="password" />
-      <env name="POSTGRESQL_SSL" value="false" />
+      <env name="POSTGRESQL_SSL_MODE" value="disable" />
       <env name="GITHUB_OAUTH2_REDIRECT_URL" value="http://localhost:4200/auth/github/callback" />
       <env name="HOST" value="0.0.0.0" />
       <env name="PORT" value="8080" />
