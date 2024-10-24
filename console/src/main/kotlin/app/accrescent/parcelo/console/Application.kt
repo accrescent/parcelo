@@ -61,13 +61,20 @@ fun Application.module() {
             password = System.getenv("POSTGRESQL_PASSWORD"),
             sslMode = System.getenv("POSTGRESQL_SSL_MODE") ?: POSTGRESQL_DEFAULT_SSL_MODE,
         ),
-        privateStorage = Config.S3(
-            endpointUrl = System.getenv("PRIVATE_STORAGE_ENDPOINT_URL"),
-            region = System.getenv("PRIVATE_STORAGE_REGION"),
-            bucket = System.getenv("PRIVATE_STORAGE_BUCKET"),
-            accessKeyId = System.getenv("PRIVATE_STORAGE_ACCESS_KEY_ID"),
-            secretAccessKey = System.getenv("PRIVATE_STORAGE_SECRET_ACCESS_KEY"),
-        ),
+        privateStorage = System.getenv("PRIVATE_STORAGE_BACKEND")?.let {
+            when (it) {
+                "S3" -> Config.ObjectStorage.S3(
+                    endpointUrl = System.getenv("PRIVATE_STORAGE_ENDPOINT_URL"),
+                    region = System.getenv("PRIVATE_STORAGE_REGION"),
+                    bucket = System.getenv("PRIVATE_STORAGE_BUCKET"),
+                    accessKeyId = System.getenv("PRIVATE_STORAGE_ACCESS_KEY_ID"),
+                    secretAccessKey = System.getenv("PRIVATE_STORAGE_SECRET_ACCESS_KEY"),
+                )
+
+                else ->
+                    throw Exception("invalid private storage backend $it; must be one of [S3]")
+            }
+        } ?: throw Exception("PRIVATE_STORAGE_BACKEND is not specified in the environment"),
         s3 = Config.S3(
             endpointUrl = System.getenv("S3_ENDPOINT_URL"),
             region = System.getenv("S3_REGION"),
@@ -90,13 +97,15 @@ fun Application.module() {
         val mainModule = module {
             single { config }
             single<FileStorageService> {
-                S3FileStorageService(
-                    Url.parse(config.privateStorage.endpointUrl),
-                    config.privateStorage.region,
-                    config.privateStorage.bucket,
-                    config.privateStorage.accessKeyId,
-                    config.privateStorage.secretAccessKey,
-                )
+                when (config.privateStorage) {
+                    is Config.ObjectStorage.S3 -> S3FileStorageService(
+                        Url.parse(config.privateStorage.endpointUrl),
+                        config.privateStorage.region,
+                        config.privateStorage.bucket,
+                        config.privateStorage.accessKeyId,
+                        config.privateStorage.secretAccessKey,
+                    )
+                }
             }
             single { HttpClient { install(HttpTimeout) } }
             single<PublishService> {
