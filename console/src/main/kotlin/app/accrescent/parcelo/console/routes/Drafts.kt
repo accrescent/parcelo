@@ -219,16 +219,8 @@ fun Route.createDraftRoute() {
                             null
                         }
 
-                        val iconFileId = iconData.inputStream()
-                            .use {
-                                runBlocking {
-                                    storageService.saveObject(it, iconData.size.toLong())
-                                }
-                            }
-                        val appFileId = tempApkSet.inputStream()
-                            .use {
-                                runBlocking { storageService.saveObject(it, tempApkSet.size()) }
-                            }
+                        val iconFileId = runBlocking { storageService.uploadBytes(iconData) }
+                        val appFileId = runBlocking { storageService.uploadFile(tempApkSet.path) }
                         val icon = Icon.new { fileId = iconFileId }
                         Draft.new {
                             this.label = label
