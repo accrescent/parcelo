@@ -11,7 +11,7 @@ import app.accrescent.parcelo.console.data.App
 import app.accrescent.parcelo.console.data.Icon
 import app.accrescent.parcelo.console.data.Listing
 import app.accrescent.parcelo.console.publish.PublishService
-import app.accrescent.parcelo.console.storage.FileStorageService
+import app.accrescent.parcelo.console.storage.ObjectStorageService
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.sql.statements.api.ExposedBlob
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -23,7 +23,7 @@ import java.util.UUID
  * Publishes the draft with the given ID, making it available for download
  */
 fun registerPublishAppJob(draftId: UUID) {
-    val storageService: FileStorageService by inject(FileStorageService::class.java)
+    val storageService: ObjectStorageService by inject(ObjectStorageService::class.java)
     val publishService: PublishService by inject(PublishService::class.java)
 
     val draft = transaction { DraftDao.findById(draftId) } ?: return
@@ -32,8 +32,8 @@ fun registerPublishAppJob(draftId: UUID) {
 
     // Publish to the repository
     val metadata = runBlocking {
-        storageService.loadFile(draft.fileId) { draftStream ->
-            storageService.loadFile(iconFileId) { iconStream ->
+        storageService.loadObject(draft.fileId) { draftStream ->
+            storageService.loadObject(iconFileId) { iconStream ->
                 publishService.publishDraft(draftStream, iconStream, draft.shortDescription)
             }
         }
@@ -69,14 +69,14 @@ fun registerPublishAppJob(draftId: UUID) {
  * Publishes the update with the given ID, making it available for download
  */
 fun registerPublishUpdateJob(updateId: UUID) {
-    val storageService: FileStorageService by inject(FileStorageService::class.java)
+    val storageService: ObjectStorageService by inject(ObjectStorageService::class.java)
     val publishService: PublishService by inject(PublishService::class.java)
 
     val update = transaction { UpdateDao.findById(updateId) } ?: return
 
     // Publish to the repository
     val updatedMetadata = runBlocking {
-        storageService.loadFile(update.fileId!!) {
+        storageService.loadObject(update.fileId!!) {
             runBlocking { publishService.publishUpdate(it, update.appId.value) }
         }
     }

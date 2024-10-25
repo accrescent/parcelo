@@ -9,8 +9,8 @@ import app.accrescent.parcelo.console.jobs.configureJobRunr
 import app.accrescent.parcelo.console.publish.PublishService
 import app.accrescent.parcelo.console.publish.S3PublishService
 import app.accrescent.parcelo.console.routes.auth.configureAuthentication
-import app.accrescent.parcelo.console.storage.FileStorageService
-import app.accrescent.parcelo.console.storage.S3FileStorageService
+import app.accrescent.parcelo.console.storage.ObjectStorageService
+import app.accrescent.parcelo.console.storage.S3ObjectStorageService
 import aws.smithy.kotlin.runtime.net.url.Url
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.HttpTimeout
@@ -96,9 +96,9 @@ fun Application.module() {
 
         val mainModule = module {
             single { config }
-            single<FileStorageService> {
+            single<ObjectStorageService> {
                 when (config.privateStorage) {
-                    is Config.ObjectStorage.S3 -> S3FileStorageService(
+                    is Config.ObjectStorage.S3 -> S3ObjectStorageService(
                         Url.parse(config.privateStorage.endpointUrl),
                         config.privateStorage.region,
                         config.privateStorage.bucket,

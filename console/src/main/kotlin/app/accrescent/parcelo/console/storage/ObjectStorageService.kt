@@ -8,21 +8,21 @@ import org.jetbrains.exposed.dao.id.EntityID
 import java.io.InputStream
 
 /**
- * Abstraction of file storage
+ * Abstraction of object storage
  */
-interface FileStorageService {
+interface ObjectStorageService {
     /**
      * Save a file to the file storage service
      *
      * @return the database ID of the new file
      */
-    suspend fun saveFile(inputStream: InputStream, size: Long): EntityID<Int>
+    suspend fun saveObject(inputStream: InputStream, size: Long): EntityID<Int>
 
     /**
      * Marks the given file deleted
      *
      * This method does not guarantee that the file has been deleted from the underlying storage
-     * medium. However, all future calls to [loadFile] for the same file with throw
+     * medium. However, all future calls to [loadObject] for the same file with throw
      * [NoSuchFileException], and the file should be considered deleted for all purposes besides
      * cleaning.
      */
@@ -34,17 +34,17 @@ interface FileStorageService {
      * The file must be previously marked deleted by [markDeleted], otherwise this function does
      * nothing.
      */
-    suspend fun cleanFile(id: Int)
+    suspend fun cleanObject(id: Int)
 
     /**
      * Deletes all files marked deleted from persistent storage
      */
-    suspend fun cleanAllFiles()
+    suspend fun cleanAllObjects()
 
     /**
      * Load the file with the given ID
      *
      * @return the file's data stream
      */
-    suspend fun <T> loadFile(id: EntityID<Int>, block: suspend (InputStream) -> T): T
+    suspend fun <T> loadObject(id: EntityID<Int>, block: suspend (InputStream) -> T): T
 }
