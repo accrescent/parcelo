@@ -24,7 +24,7 @@ import app.accrescent.parcelo.console.data.net.ApiError
 import app.accrescent.parcelo.console.data.net.toApiError
 import app.accrescent.parcelo.console.jobs.cleanFile
 import app.accrescent.parcelo.console.jobs.registerPublishUpdateJob
-import app.accrescent.parcelo.console.storage.FileStorageService
+import app.accrescent.parcelo.console.storage.ObjectStorageService
 import app.accrescent.parcelo.console.util.TempFile
 import app.accrescent.parcelo.console.validation.MIN_TARGET_SDK
 import app.accrescent.parcelo.console.validation.REVIEW_ISSUE_BLACKLIST
@@ -90,7 +90,7 @@ fun Route.updateRoutes() {
 
 fun Route.createUpdateRoute() {
     val config: Config by inject()
-    val storageService: FileStorageService by inject()
+    val storageService: ObjectStorageService by inject()
 
     post<Apps.Id.Updates> { route ->
         val userId = call.principal<Session>()!!.userId
@@ -169,8 +169,8 @@ fun Route.createUpdateRoute() {
                     return@post
                 }
 
-                val apkSetFileId =
-                    tempApkSet.inputStream().use { storageService.saveFile(it, tempApkSet.size()) }
+                val apkSetFileId = tempApkSet.inputStream()
+                    .use { storageService.saveObject(it, tempApkSet.size()) }
 
                 // There exists:
                 //
@@ -343,7 +343,7 @@ fun Route.updateUpdateRoute() {
  * the "update" permission for the associated app.
  */
 fun Route.deleteUpdateRoute() {
-    val storageService: FileStorageService by inject()
+    val storageService: ObjectStorageService by inject()
 
     delete<Updates.Id> { route ->
         val userId = call.principal<Session>()!!.userId
@@ -419,7 +419,7 @@ fun Route.getAssignedUpdatesRoute() {
  * See also [getDraftApkSetRoute].
  */
 fun Route.getUpdateApkSetRoute() {
-    val storageService: FileStorageService by inject()
+    val storageService: ObjectStorageService by inject()
 
     get<Updates.Id.ApkSet> { route ->
         val userId = call.principal<Session>()!!.userId
@@ -452,7 +452,7 @@ fun Route.getUpdateApkSetRoute() {
                 ).toString(),
             )
             call.respondOutputStream {
-                storageService.loadFile(update.fileId!!) { it.copyTo(this) }
+                storageService.loadObject(update.fileId!!) { it.copyTo(this) }
             }
         } else {
             // Check whether the user has read access to this update. If they do, tell them they're

@@ -4,7 +4,7 @@
 
 package app.accrescent.parcelo.console.jobs
 
-import app.accrescent.parcelo.console.storage.FileStorageService
+import app.accrescent.parcelo.console.storage.ObjectStorageService
 import kotlinx.coroutines.runBlocking
 import org.koin.java.KoinJavaComponent.inject
 import kotlin.getValue
@@ -13,9 +13,9 @@ import kotlin.getValue
  * Removes all files marked deleted
  */
 fun cleanDeletedFiles() {
-    val storageService: FileStorageService by inject(FileStorageService::class.java)
+    val storageService: ObjectStorageService by inject(ObjectStorageService::class.java)
 
     runBlocking {
-        storageService.cleanAllFiles()
+        storageService.cleanAllObjects()
     }
 }

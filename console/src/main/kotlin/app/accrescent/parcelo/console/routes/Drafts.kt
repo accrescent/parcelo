@@ -22,7 +22,7 @@ import app.accrescent.parcelo.console.data.User
 import app.accrescent.parcelo.console.data.net.ApiError
 import app.accrescent.parcelo.console.data.net.toApiError
 import app.accrescent.parcelo.console.jobs.cleanFile
-import app.accrescent.parcelo.console.storage.FileStorageService
+import app.accrescent.parcelo.console.storage.ObjectStorageService
 import app.accrescent.parcelo.console.util.TempFile
 import app.accrescent.parcelo.console.validation.MIN_TARGET_SDK
 import app.accrescent.parcelo.console.validation.REVIEW_ISSUE_BLACKLIST
@@ -95,7 +95,7 @@ fun Route.draftRoutes() {
 
 fun Route.createDraftRoute() {
     val config: Config by inject()
-    val storageService: FileStorageService by inject()
+    val storageService: ObjectStorageService by inject()
 
     post<Drafts> {
         val creatorId = call.principal<Session>()!!.userId
@@ -222,11 +222,13 @@ fun Route.createDraftRoute() {
                         val iconFileId = iconData.inputStream()
                             .use {
                                 runBlocking {
-                                    storageService.saveFile(it, iconData.size.toLong())
+                                    storageService.saveObject(it, iconData.size.toLong())
                                 }
                             }
                         val appFileId = tempApkSet.inputStream()
-                            .use { runBlocking { storageService.saveFile(it, tempApkSet.size()) } }
+                            .use {
+                                runBlocking { storageService.saveObject(it, tempApkSet.size()) }
+                            }
                         val icon = Icon.new { fileId = iconFileId }
                         Draft.new {
                             this.label = label
@@ -257,7 +259,7 @@ fun Route.createDraftRoute() {
 }
 
 fun Route.deleteDraftRoute() {
-    val storageService: FileStorageService by inject()
+    val storageService: ObjectStorageService by inject()
 
     delete<Drafts.Id> { route ->
         val userId = call.principal<Session>()!!.userId
@@ -404,7 +406,7 @@ fun Route.getAssignedDraftsRoute() {
  * See also [getUpdateApkSetRoute].
  */
 fun Route.getDraftApkSetRoute() {
-    val storageService: FileStorageService by inject()
+    val storageService: ObjectStorageService by inject()
 
     get<Drafts.Id.ApkSet> { route ->
         val userId = call.principal<Session>()!!.userId
@@ -437,7 +439,7 @@ fun Route.getDraftApkSetRoute() {
                 ).toString(),
             )
             call.respondOutputStream {
-                storageService.loadFile(draft.fileId) { it.copyTo(this) }
+                storageService.loadObject(draft.fileId) { it.copyTo(this) }
             }
         } else {
             // Check whether the user has read access to this draft. If they do, tell them they're

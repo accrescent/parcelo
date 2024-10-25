@@ -30,16 +30,16 @@ import java.io.InputStream
 import java.util.UUID
 
 /**
- * Implementation of [FileStorageService] using S3-compatible storage as the backing store
+ * Implementation of [ObjectStorageService] using S3-compatible storage as the backing store
  */
-class S3FileStorageService(
+class S3ObjectStorageService(
     private val s3EndpointUrl: Url,
     private val s3Region: String,
     private val s3Bucket: String,
     private val s3AccessKeyId: String,
     private val s3SecretAccessKey: String,
-) : FileStorageService {
-    override suspend fun saveFile(inputStream: InputStream, size: Long): EntityID<Int> {
+) : ObjectStorageService {
+    override suspend fun saveObject(inputStream: InputStream, size: Long): EntityID<Int> {
         S3Client {
             endpointUrl = s3EndpointUrl
             region = s3Region
@@ -67,7 +67,7 @@ class S3FileStorageService(
         transaction { findFile(id)?.apply { deleted = true } } ?: return
     }
 
-    override suspend fun cleanFile(id: Int) {
+    override suspend fun cleanObject(id: Int) {
         val file = transaction { File.findById(id) } ?: return
         val s3ObjectKey = file.s3ObjectKey
 
@@ -89,7 +89,7 @@ class S3FileStorageService(
         transaction { file.delete() }
     }
 
-    override suspend fun cleanAllFiles() {
+    override suspend fun cleanAllObjects() {
         val files = transaction { File.find { deleted eq true } }
 
         val deleteObjectsRequest = transaction {
@@ -118,7 +118,7 @@ class S3FileStorageService(
         }
     }
 
-    override suspend fun <T> loadFile(id: EntityID<Int>, block: suspend (InputStream) -> T): T {
+    override suspend fun <T> loadObject(id: EntityID<Int>, block: suspend (InputStream) -> T): T {
         val s3ObjectKey =
             transaction { findFile(id.value)?.s3ObjectKey } ?: throw FileNotFoundException()
 
