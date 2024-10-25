@@ -6,17 +6,27 @@ package app.accrescent.parcelo.console.storage
 
 import org.jetbrains.exposed.dao.id.EntityID
 import java.io.InputStream
+import java.nio.file.Path
 
 /**
  * Abstraction of object storage
  */
 interface ObjectStorageService {
     /**
-     * Save a file to the file storage service
+     * Upload an object from a file to the object storage service
      *
-     * @return the database ID of the new file
+     * @param path the path of the file to upload
+     * @return the database ID of the new object
      */
-    suspend fun saveObject(inputStream: InputStream, size: Long): EntityID<Int>
+    suspend fun uploadFile(path: Path): EntityID<Int>
+
+    /**
+     * Upload an object from memory to the object storage service
+     *
+     * @param bytes the object data to upload
+     * @return the database ID of the new object
+     */
+    suspend fun uploadBytes(bytes: ByteArray): EntityID<Int>
 
     /**
      * Marks the given file deleted

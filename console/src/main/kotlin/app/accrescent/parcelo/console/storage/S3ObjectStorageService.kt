@@ -16,6 +16,7 @@ import aws.sdk.kotlin.services.s3.model.DeleteObjectsRequest
 import aws.sdk.kotlin.services.s3.model.GetObjectRequest
 import aws.sdk.kotlin.services.s3.model.ObjectIdentifier
 import aws.sdk.kotlin.services.s3.model.PutObjectRequest
+import aws.smithy.kotlin.runtime.content.ByteStream
 import aws.smithy.kotlin.runtime.content.asByteStream
 import aws.smithy.kotlin.runtime.content.toInputStream
 import aws.smithy.kotlin.runtime.net.url.Url
@@ -27,6 +28,7 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import java.io.FileNotFoundException
 import java.io.IOException
 import java.io.InputStream
+import java.nio.file.Path
 import java.util.UUID
 
 /**
@@ -39,7 +41,7 @@ class S3ObjectStorageService(
     private val s3AccessKeyId: String,
     private val s3SecretAccessKey: String,
 ) : ObjectStorageService {
-    override suspend fun saveObject(inputStream: InputStream, size: Long): EntityID<Int> {
+    override suspend fun uploadFile(path: Path): EntityID<Int> {
         S3Client {
             endpointUrl = s3EndpointUrl
             region = s3Region
@@ -53,7 +55,31 @@ class S3ObjectStorageService(
             val req = PutObjectRequest {
                 bucket = s3Bucket
                 key = objectKey
-                body = inputStream.asByteStream(size)
+                body = path.asByteStream()
+            }
+            s3Client.putObject(req)
+
+            val fileId = transaction { File.new { s3ObjectKey = objectKey }.id }
+
+            return fileId
+        }
+    }
+
+    override suspend fun uploadBytes(bytes: ByteArray): EntityID<Int> {
+        S3Client {
+            endpointUrl = s3EndpointUrl
+            region = s3Region
+            credentialsProvider = StaticCredentialsProvider {
+                accessKeyId = s3AccessKeyId
+                secretAccessKey = s3SecretAccessKey
+            }
+        }.use { s3Client ->
+            val objectKey = UUID.randomUUID().toString()
+
+            val req = PutObjectRequest {
+                bucket = s3Bucket
+                key = objectKey
+                body = ByteStream.fromBytes(bytes)
             }
             s3Client.putObject(req)
 

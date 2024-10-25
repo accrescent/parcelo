@@ -169,8 +169,7 @@ fun Route.createUpdateRoute() {
                     return@post
                 }
 
-                val apkSetFileId = tempApkSet.inputStream()
-                    .use { storageService.saveObject(it, tempApkSet.size()) }
+                val apkSetFileId = storageService.uploadFile(tempApkSet.path)
 
                 // There exists:
                 //
