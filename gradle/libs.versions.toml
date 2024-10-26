@@ -9,6 +9,7 @@ dokka = "1.9.20"
 exposed = "0.55.0"
 flyway = "10.19.0"
 github = "1.326"
+google-cloud = "26.49.0"
 jackson = "2.17.2"
 jobrunr = "7.2.3"
 koin = "4.0.0"
@@ -30,6 +31,8 @@ exposed-jdbc = { module = "org.jetbrains.exposed:exposed-jdbc", version.ref = "e
 flyway = { module = "org.flywaydb:flyway-core", version.ref = "flyway" }
 flyway-postgresql = { module = "org.flywaydb:flyway-database-postgresql", version.ref = "flyway" }
 github = { module = "org.kohsuke:github-api", version.ref = "github" }
+google-cloud-bom = { module = "com.google.cloud:libraries-bom", version.ref = "google-cloud" }
+google-cloud-storage = { module = "com.google.cloud:google-cloud-storage" }
 jackson-kotlin = { module = "com.fasterxml.jackson.module:jackson-module-kotlin", version.ref = "jackson" }
 jackson-xml = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-xml", version.ref = "jackson" }
 jobrunr = { module = "org.jobrunr:jobrunr", version.ref = "jobrunr" }

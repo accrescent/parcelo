@@ -23,13 +23,11 @@ import aws.smithy.kotlin.runtime.net.url.Url
 import io.ktor.utils.io.core.use
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.not
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.io.FileNotFoundException
 import java.io.IOException
 import java.io.InputStream
 import java.nio.file.Path
-import java.util.UUID
 
 /**
  * Implementation of [ObjectStorageService] using S3-compatible storage as the backing store
@@ -50,7 +48,7 @@ class S3ObjectStorageService(
                 secretAccessKey = s3SecretAccessKey
             }
         }.use { s3Client ->
-            val objectKey = UUID.randomUUID().toString()
+            val objectKey = generateObjectId()
 
             val req = PutObjectRequest {
                 bucket = s3Bucket
@@ -74,7 +72,7 @@ class S3ObjectStorageService(
                 secretAccessKey = s3SecretAccessKey
             }
         }.use { s3Client ->
-            val objectKey = UUID.randomUUID().toString()
+            val objectKey = generateObjectId()
 
             val req = PutObjectRequest {
                 bucket = s3Bucket
@@ -168,16 +166,5 @@ class S3ObjectStorageService(
 
             return result
         }
-    }
-
-    /**
-     * Finds the given non-deleted file
-     *
-     * If the file is marked deleted, returns null.
-     *
-     * Note: This function requires being wrapped in a transaction context.
-     */
-    private fun findFile(id: Int): File? {
-        return File.find { Files.id eq id and not(deleted) }.singleOrNull()
     }
 }

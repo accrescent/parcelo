@@ -9,6 +9,7 @@ import app.accrescent.parcelo.console.jobs.configureJobRunr
 import app.accrescent.parcelo.console.publish.PublishService
 import app.accrescent.parcelo.console.publish.S3PublishService
 import app.accrescent.parcelo.console.routes.auth.configureAuthentication
+import app.accrescent.parcelo.console.storage.GCSObjectStorageService
 import app.accrescent.parcelo.console.storage.ObjectStorageService
 import app.accrescent.parcelo.console.storage.S3ObjectStorageService
 import aws.smithy.kotlin.runtime.net.url.Url
@@ -63,6 +64,11 @@ fun Application.module() {
         ),
         privateStorage = System.getenv("PRIVATE_STORAGE_BACKEND")?.let {
             when (it) {
+                "GCS" -> Config.ObjectStorage.GCS(
+                    projectId = System.getenv("GCS_PROJECT_ID"),
+                    bucket = System.getenv("PRIVATE_STORAGE_BUCKET"),
+                )
+
                 "S3" -> Config.ObjectStorage.S3(
                     endpointUrl = System.getenv("PRIVATE_STORAGE_ENDPOINT_URL"),
                     region = System.getenv("PRIVATE_STORAGE_REGION"),
@@ -72,7 +78,7 @@ fun Application.module() {
                 )
 
                 else ->
-                    throw Exception("invalid private storage backend $it; must be one of [S3]")
+                    throw Exception("invalid private storage backend $it; must be one of [GCS, S3]")
             }
         } ?: throw Exception("PRIVATE_STORAGE_BACKEND is not specified in the environment"),
         s3 = Config.S3(
@@ -98,6 +104,11 @@ fun Application.module() {
             single { config }
             single<ObjectStorageService> {
                 when (config.privateStorage) {
+                    is Config.ObjectStorage.GCS -> GCSObjectStorageService(
+                        projectId = config.privateStorage.projectId,
+                        bucket = config.privateStorage.bucket,
+                    )
+
                     is Config.ObjectStorage.S3 -> S3ObjectStorageService(
                         Url.parse(config.privateStorage.endpointUrl),
                         config.privateStorage.region,
