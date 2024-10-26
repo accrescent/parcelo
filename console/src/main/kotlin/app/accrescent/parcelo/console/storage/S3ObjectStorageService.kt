@@ -94,7 +94,9 @@ class S3ObjectStorageService(
     }
 
     override suspend fun cleanObject(id: Int) {
-        val file = transaction { File.findById(id) } ?: return
+        val file = transaction {
+            File.find { Files.id eq id and (deleted eq true) }.singleOrNull()
+        } ?: return
         val s3ObjectKey = file.s3ObjectKey
 
         S3Client {
