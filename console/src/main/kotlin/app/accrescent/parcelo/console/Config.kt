@@ -26,6 +26,7 @@ data class Config(
     )
 
     sealed class ObjectStorage {
+        data class GCS(val projectId: String, val bucket: String) : ObjectStorage()
         data class S3(
             val endpointUrl: String,
             val region: String,

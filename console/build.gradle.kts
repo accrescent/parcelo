@@ -39,6 +39,8 @@ dependencies {
     implementation(libs.flyway)
     implementation(libs.flyway.postgresql)
     implementation(libs.github)
+    implementation(platform(libs.google.cloud.bom))
+    implementation(libs.google.cloud.storage)
     implementation(libs.jobrunr)
     implementation(libs.koin.ktor)
     implementation(libs.koin.logger)
