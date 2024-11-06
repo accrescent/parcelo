@@ -19,7 +19,7 @@ SPDX-License-Identifier: AGPL-3.0-only
         </ul>
     </mat-card-content>
     <mat-card-actions align="end">
-        <a [href]="'/api/v1/drafts/' + draft.id + '/apkset'" mat-stroked-button>
+        <a [href]="apkSetLink" mat-stroked-button>
             Download APK set
         </a>
         <button type="button" (click)="onPostReview()" mat-flat-button color="primary">
