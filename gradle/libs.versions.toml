@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 [versions]
-apkanalyzer = "31.7.0"
+apkanalyzer = "31.7.2"
 apksig = "8.7.0"
 dokka = "1.9.20"
 exposed = "0.55.0"
