@@ -16,7 +16,7 @@ FROM eclipse-temurin:21-jdk AS builder
 
 ARG DEBIAN_FRONTEND=noninteractive
 ARG BUILD_SYSTEM=linux-x86_64
-ARG PROTOBUF_VERSION=28.2
+ARG PROTOBUF_VERSION=28.3
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends unzip \
