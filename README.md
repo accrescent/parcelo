@@ -10,8 +10,7 @@ The next-generation Accrescent developer console.
 
 ## About
 
-Parcelo is the server technology that powers [Accrescent]. It includes the developer console server
-and the console web frontend. Parcelo currently features:
+Parcelo is the backend server technology that powers [Accrescent]. Parcelo currently features:
 
 - GitHub account login
 - User registration whitelisting
