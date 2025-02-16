@@ -10,7 +10,7 @@ import kotlinx.serialization.Serializable
 /**
  * The minimum target SDK accepted for both drafts and updates
  */
-const val MIN_TARGET_SDK = 33
+const val MIN_TARGET_SDK = 34
 
 /**
  * The blacklist of permissions which, when requested by an update for the first time, trigger a
