@@ -1,0 +1,484 @@
+openapi: 3.1.0
+info:
+  title: Accrescent Developer Console API
+  version: 1.0.0
+servers:
+  - url: https://dev.accrescent.app/api/v1
+paths:
+  /apps:
+    post:
+      requestBody:
+        $ref: '#/components/requestBodies/create_app'
+      responses:
+        '202':
+          description: The app publish job has been accepted for processing
+        '400':
+          $ref: '#/components/responses/bad_request'
+        '401':
+          $ref: '#/components/responses/requires_authentication'
+        '403':
+          $ref: '#/components/responses/forbidden'
+        '404':
+          $ref: '#/components/responses/not_found'
+        '409':
+          $ref: '#/components/responses/conflict'
+  /apps/{app_id}:
+    parameters:
+      - $ref: '#/components/parameters/app_id'
+    get:
+      responses:
+        '200':
+          description: An app created by the authenticated user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/app'
+        '401':
+          $ref: '#/components/responses/requires_authentication'
+        '404':
+          $ref: '#/components/responses/not_found'
+  /apps/{app_id}/updates:
+    parameters:
+      - $ref: '#/components/parameters/app_id'
+    post:
+      requestBody:
+        $ref: '#/components/requestBodies/create_update'
+      responses:
+        '201':
+          description: An update for the given app was successfully created
+          headers:
+            Location:
+              $ref: '#/components/headers/Location'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/update'
+        '400':
+          $ref: '#/components/responses/bad_request'
+        '401':
+          $ref: '#/components/responses/requires_authentication'
+        '403':
+          $ref: '#/components/responses/forbidden'
+        '404':
+          $ref: '#/components/responses/not_found'
+        '422':
+          $ref: '#/components/responses/validation_failed'
+    get:
+      responses:
+        '200':
+          description: A list of unpublished updates for the given app
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/update'
+        '401':
+          $ref: '#/components/responses/requires_authentication'
+        '403':
+          $ref: '#/components/responses/forbidden'
+        '404':
+          $ref: '#/components/responses/not_found'
+  /drafts:
+    post:
+      requestBody:
+        $ref: '#/components/requestBodies/create_draft'
+      responses:
+        '201':
+          description: A draft was successfully created
+          headers:
+            Location:
+              $ref: '#/components/headers/Location'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/draft'
+        '400':
+          $ref: '#/components/responses/bad_request'
+        '401':
+          $ref: '#/components/responses/requires_authentication'
+        '403':
+          $ref: '#/components/responses/forbidden'
+        '409':
+          $ref: '#/components/responses/conflict'
+        '422':
+          $ref: '#/components/responses/validation_failed'
+    get:
+      responses:
+        '200':
+          description: A list of drafts created by the authenticated user
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/draft'
+        '401':
+          $ref: '#/components/responses/requires_authentication'
+  /drafts/{draft_id}:
+    parameters:
+      - $ref: '#/components/parameters/draft_id'
+      - $ref: '#/components/parameters/if_match'
+    patch:
+      responses:
+        '204':
+          $ref: '#/components/responses/no_content'
+        '400':
+          $ref: '#/components/responses/bad_request'
+        '401':
+          $ref: '#/components/responses/requires_authentication'
+        '404':
+          $ref: '#/components/responses/not_found'
+        '409':
+          $ref: '#/components/responses/conflict'
+        '412':
+          $ref: '#/components/responses/precondition_failed'
+    delete:
+      responses:
+        '204':
+          $ref: '#/components/responses/no_content'
+        '400':
+          $ref: '#/components/responses/bad_request'
+        '404':
+          $ref: '#/components/responses/not_found'
+  /drafts/{draft_id}/review:
+    parameters:
+      - $ref: '#/components/parameters/draft_id'
+      - $ref: '#/components/parameters/if_match'
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/review'
+      responses:
+        '201':
+          description: Review successfully created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/review'
+        '400':
+          $ref: '#/components/responses/bad_request'
+        '401':
+          $ref: '#/components/responses/requires_authentication'
+        '403':
+          $ref: '#/components/responses/forbidden'
+        '404':
+          $ref: '#/components/responses/not_found'
+        '409':
+          $ref: '#/components/responses/conflict'
+  /updates/{update_id}:
+    parameters:
+      - $ref: '#/components/parameters/update_id'
+      - $ref: '#/components/parameters/if_match'
+    patch:
+      responses:
+        '200':
+          $ref: TODO
+        '204':
+          $ref: '#/components/responses/no_content'
+        '400':
+          $ref: '#/components/responses/bad_request'
+        '401':
+          $ref: '#/components/responses/requires_authentication'
+        '403':
+          $ref: '#/components/responses/forbidden'
+        '404':
+          $ref: '#/components/responses/not_found'
+        '409':
+          $ref: '#/components/responses/conflict'
+        '412':
+          $ref: '#/components/responses/precondition_failed'
+    delete:
+      responses:
+        '204':
+          $ref: '#/components/responses/no_content'
+        '401':
+          $ref: '#/components/responses/requires_authentication'
+        '404':
+          $ref: '#/components/responses/not_found'
+  /updates/{update_id}/review:
+    parameters:
+      - $ref: '#/components/parameters/update_id'
+      - $ref: '#/components/parameters/if_match'
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/review'
+      responses:
+        '201':
+          description: Review successfully created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/review'
+        '400':
+          $ref: '#/components/responses/bad_request'
+        '401':
+          $ref: '#/components/responses/requires_authentication'
+        '403':
+          $ref: '#/components/responses/forbidden'
+        '404':
+          $ref: '#/components/responses/not_found'
+        '409':
+          $ref: '#/components/responses/conflict'
+components:
+  schemas:
+    app:
+      type: object
+      properties:
+        id:
+          type: string
+        label:
+          type: string
+        version_code:
+          type: integer
+        version_name:
+          type: string
+      required:
+        - id
+        - label
+        - version_code
+        - version_name
+    base_error:
+      type: object
+      properties:
+        error_code:
+          type: integer
+        title:
+          type: string
+        message:
+          type: string
+      required:
+        - error_code
+        - title
+        - message
+    base_review:
+      type: object
+      discriminator:
+        propertyName: result
+      properties:
+        result:
+          type: string
+          enum:
+            - approved
+            - rejected
+        additional_notes:
+          type: string
+      required:
+        - result
+    draft:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        app_id:
+          type: string
+        label:
+          type: string
+        version_code:
+          type: integer
+        version_name:
+          type: string
+        creation_time:
+          type: integer
+        status:
+          $ref: '#/components/schemas/draft_status'
+      required:
+        - id
+        - app_id
+        - label
+        - version_code
+        - version_name
+        - creation_time
+        - status
+    draft_status:
+      type: string
+      enum:
+        - unsubmitted
+        - submitted
+        - approved
+    update:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        app_id:
+          type: string
+        version_code:
+          type: integer
+        version_name:
+          type: string
+        creation_time:
+          type: integer
+        requires_review:
+          type: boolean
+        status:
+          $ref: '#/components/schemas/update_status'
+      required:
+        - id
+        - app_id
+        - version_code
+        - version_name
+        - creation_time
+        - requires_review
+        - status
+    update_status:
+      type: string
+      enum:
+        - unsubmitted
+        - pending-review
+        - publishing
+        - published
+    review:
+      oneOf:
+        - $ref: '#/components/schemas/review_approved'
+        - $ref: '#/components/schemas/review_rejected'
+    review_approved:
+      allOf:
+        - $ref: '#/components/schemas/base_review'
+    review_rejected:
+      allOf:
+        - $ref: '#/components/schemas/base_review'
+        - type: object
+          properties:
+            reasons:
+              type: array
+              items:
+                type: string
+          required:
+            - reasons
+  responses:
+    bad_request:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/base_error'
+    conflict:
+      description: Conflict
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/base_error'
+    forbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/base_error'
+    no_content:
+      description: No content
+    not_found:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/base_error'
+    precondition_failed:
+      description: Precondition failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/base_error'
+    requires_authentication:
+      description: Requires authentication
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/base_error'
+    validation_failed:
+      description: Validation failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/base_error'
+  parameters:
+    app_id:
+      name: app_id
+      in: path
+      required: true
+      schema:
+        type: string
+    draft_id:
+      name: draft_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    if_match:
+      name: if_match
+      in: header
+      required: true
+      schema:
+        type: string
+    update_id:
+      name: update_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  requestBodies:
+    create_app:
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              draft_id:
+                type: string
+                format: uuid
+    create_draft:
+      content:
+        multipart/form-data:
+          schema:
+            type: object
+            properties:
+              apk_set:
+                type: string
+                format: binary
+              icon:
+                type: string
+                format: binary
+              label:
+                type: string
+            required:
+              - apk_set
+              - icon
+              - label
+      required: true
+    create_update:
+      content:
+        multipart/form-data:
+          schema:
+            type: object
+            properties:
+              apk_set:
+                type: string
+                format: binary
+            required:
+              - apk_set
+      required: true
+  headers:
+    Location:
+      schema:
+        type: string
+  securitySchemes:
+    api_key:
+      type: apiKey
+      name: ACC-CONSOLE-API-KEY
+      in: header
+    session:
+      type: apiKey
+      name: __Host-session
+      in: cookie
+security:
+  - api_key: []
+  - session: []
