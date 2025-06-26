@@ -49,8 +49,8 @@ fine for most use cases.
 
 ## Contributor license agreement
 
-Contributing to Parcelo requires signing a Contributor License Agreement (CLA). To sign [Parcelo's
-CLA], make a PR, and our CLA bot will direct you.
+Contributing to Parcelo requires signing a Contributor License Agreement (CLA). To sign
+[Accrescent's CLA], make a PR, and our CLA bot will direct you.
 
+[Accrescent's CLA]: https://gist.github.com/lberrymage/1be5c6a041131b9fd0b54b442023ad21
 [GitHub developer settings]: https://github.com/settings/developers
-[Parcelo's CLA]: https://gist.github.com/lberrymage/21603f43c6c018001e31d441125ad5de
