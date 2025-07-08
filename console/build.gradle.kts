@@ -32,37 +32,6 @@ ksp {
 }
 
 dependencies {
-    // Workaround for regressed Jackson 2.18.0 being pulled in by GCS library
-    implementation("com.fasterxml.jackson:jackson-bom") {
-        version { strictly("2.17.2") }
-    }
-    implementation("com.fasterxml.jackson.core:jackson-annotations") {
-        version { strictly("2.17.2") }
-    }
-    implementation("com.fasterxml.jackson.core:jackson-core") {
-        version { strictly("2.17.2") }
-    }
-    implementation("com.fasterxml.jackson.core:jackson-databind") {
-        version { strictly("2.17.2") }
-    }
-    implementation("com.fasterxml.jackson.dataformat:jackson-dataformats-text") {
-        version { strictly("2.17.2") }
-    }
-    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-toml") {
-        version { strictly("2.17.2") }
-    }
-    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-xml") {
-        version { strictly("2.17.2") }
-    }
-    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310") {
-        version { strictly("2.17.2") }
-    }
-    implementation("com.fasterxml.jackson.module:jackson-modules-java8") {
-        version { strictly("2.17.2") }
-    }
-    implementation("com.fasterxml.jackson.module:jackson-module-kotlin") {
-        version { strictly("2.17.2") }
-    }
     implementation(project(":apksparser"))
     implementation(libs.s3)
     implementation(libs.exposed.core)
