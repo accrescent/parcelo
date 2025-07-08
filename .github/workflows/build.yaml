@@ -15,10 +15,6 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
-      - uses: arduino/setup-protoc@v3
-        with:
-          version: "28.x"
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - uses: gradle/actions/setup-gradle@v4
       - run: ./gradlew build
       - run: ./gradlew dokkaHtml

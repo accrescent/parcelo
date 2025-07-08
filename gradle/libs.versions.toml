@@ -5,6 +5,7 @@
 [versions]
 apkanalyzer = "31.7.2"
 apksig = "8.7.2"
+bundletool = "1.18.1"
 dokka = "1.9.20"
 exposed = "0.55.0"
 flyway = "10.21.0"
@@ -19,12 +20,12 @@ ktor = "2.3.12"
 logback = "1.5.12"
 postgresql = "42.7.4"
 protobuf = "4.28.3"
-protobuf-plugin = "0.9.4"
 s3 = "1.3.72"
 
 [libraries]
 apkanalyzer = { module = "com.android.tools.apkparser:apkanalyzer", version.ref = "apkanalyzer" }
 apksig = { module = "com.android.tools.build:apksig", version.ref = "apksig" }
+bundletool = { module = "com.android.tools.build:bundletool", version.ref = "bundletool" }
 exposed-core = { module = "org.jetbrains.exposed:exposed-core", version.ref = "exposed" }
 exposed-dao = { module = "org.jetbrains.exposed:exposed-dao", version.ref = "exposed" }
 exposed-jdbc = { module = "org.jetbrains.exposed:exposed-jdbc", version.ref = "exposed" }
@@ -60,4 +61,3 @@ kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 ktor = { id = "io.ktor.plugin", version.ref = "ktor" }
-protobuf = { id = "com.google.protobuf", version.ref = "protobuf-plugin" }

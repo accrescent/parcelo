@@ -14,20 +14,6 @@ RUN ./gradlew clean build --no-daemon
 
 FROM eclipse-temurin:21-jdk AS builder
 
-ARG DEBIAN_FRONTEND=noninteractive
-ARG BUILD_SYSTEM=linux-x86_64
-ARG PROTOBUF_VERSION=28.3
-
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends unzip \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
-RUN curl -Lo protoc.zip \
-    https://github.com/protocolbuffers/protobuf/releases/download/v$PROTOBUF_VERSION/protoc-$PROTOBUF_VERSION-$BUILD_SYSTEM.zip \
-    && unzip -o protoc.zip -d /usr/local bin/protoc \
-    && unzip -o protoc.zip -d /usr/local 'include/*' \
-    && rm -f protoc.zip
-
 WORKDIR /build
 COPY --from=cache /cache /root/.gradle
 COPY . /build

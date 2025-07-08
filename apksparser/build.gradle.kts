@@ -5,7 +5,6 @@
 plugins {
     id(libs.plugins.java.library.get().pluginId)
     alias(libs.plugins.kotlin.jvm)
-    alias(libs.plugins.protobuf)
 }
 
 kotlin {
@@ -15,6 +14,7 @@ kotlin {
 dependencies {
     implementation(libs.apkanalyzer)
     implementation(libs.apksig)
+    api(libs.bundletool)
     implementation(libs.jackson.xml)
     implementation(libs.jackson.kotlin)
     api(libs.protobuf)

@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only
 
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import org.jetbrains.dokka.gradle.DokkaTask
 
 plugins {
@@ -87,6 +88,10 @@ dependencies {
     implementation(libs.postgresql)
     testImplementation(libs.ktor.server.tests)
     testImplementation(libs.kotlin.test)
+}
+
+tasks.withType<ShadowJar>().configureEach {
+    isZip64 = true
 }
 
 tasks.withType<DokkaTask>().configureEach {

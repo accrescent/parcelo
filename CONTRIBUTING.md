@@ -15,7 +15,6 @@ The recommended and supported development environment for Parcelo is Intellij ID
 edition is fine). You will also need to install the following tools:
 
 - npm
-- protoc
 - minio
 
 This repository comes with convenience IDEA run configurations to ease development. However, you will
