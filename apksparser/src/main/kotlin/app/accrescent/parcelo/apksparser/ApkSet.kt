@@ -242,7 +242,7 @@ public class ApkSet private constructor(
                         versionName = versionName
                             ?: return ParseApkSetResult.Error.VersionNameNotFoundError,
                         targetSdk = targetSdk
-                            ?: return ParseApkSetResult.Error.VersionNameNotFoundError,
+                            ?: return ParseApkSetResult.Error.TargetSdkNotFoundError,
                         reviewIssues = reviewIssues,
                         metadata = buildApksResult,
                     )
