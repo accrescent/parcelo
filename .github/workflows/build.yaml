@@ -17,4 +17,4 @@ jobs:
           java-version: 21
       - uses: gradle/actions/setup-gradle@v4
       - run: ./gradlew build
-      - run: ./gradlew dokkaHtml
+      - run: ./gradlew dokkaGeneratePublicationHtml
