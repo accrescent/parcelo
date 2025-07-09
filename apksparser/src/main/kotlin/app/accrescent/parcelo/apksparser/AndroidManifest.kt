@@ -13,7 +13,7 @@ public class AndroidManifest private constructor(
     public val versionName: String?,
     public val split: String?,
     public val application: Application,
-    @JacksonXmlProperty(localName = "uses-sdk")
+    @field:JacksonXmlProperty(localName = "uses-sdk")
     public val usesSdk: UsesSdk?,
 ) {
     /**
