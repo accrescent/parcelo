@@ -10,6 +10,8 @@ import java.lang.AutoCloseable
 import java.nio.file.Path
 import java.nio.file.attribute.PosixFilePermission
 import java.nio.file.attribute.PosixFilePermissions
+import kotlin.Long
+import kotlin.arrayOf
 import kotlin.io.path.createTempFile
 import kotlin.io.path.deleteExisting
 

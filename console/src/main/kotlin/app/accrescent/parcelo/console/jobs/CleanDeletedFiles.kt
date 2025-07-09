@@ -7,7 +7,6 @@ package app.accrescent.parcelo.console.jobs
 import app.accrescent.parcelo.console.storage.ObjectStorageService
 import kotlinx.coroutines.runBlocking
 import org.koin.java.KoinJavaComponent.inject
-import kotlin.getValue
 
 /**
  * Removes all files marked deleted

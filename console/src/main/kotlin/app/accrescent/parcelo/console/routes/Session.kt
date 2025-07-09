@@ -4,11 +4,10 @@
 
 package app.accrescent.parcelo.console.routes
 
-import app.accrescent.parcelo.console.routes.auth.Session as CookieSession
 import app.accrescent.parcelo.console.data.Session
 import app.accrescent.parcelo.console.data.Sessions
+import app.accrescent.parcelo.console.routes.auth.Session as CookieSession
 import io.ktor.http.HttpStatusCode
-import io.ktor.server.application.call
 import io.ktor.server.auth.principal
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route

@@ -4,8 +4,8 @@
 
 package app.accrescent.parcelo.console.jobs
 
-import app.accrescent.parcelo.console.data.Edit as EditDao
 import app.accrescent.parcelo.console.data.App
+import app.accrescent.parcelo.console.data.Edit as EditDao
 import app.accrescent.parcelo.console.data.Listing
 import app.accrescent.parcelo.console.data.Listings
 import app.accrescent.parcelo.console.publish.PublishService

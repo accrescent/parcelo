@@ -8,7 +8,6 @@ import app.accrescent.parcelo.console.data.File
 import app.accrescent.parcelo.console.data.Files
 import app.accrescent.parcelo.console.data.Files.deleted
 import aws.sdk.kotlin.runtime.auth.credentials.StaticCredentialsProvider
-import aws.sdk.kotlin.runtime.auth.credentials.StaticCredentialsProvider.Companion.invoke
 import aws.sdk.kotlin.services.s3.S3Client
 import aws.sdk.kotlin.services.s3.model.Delete
 import aws.sdk.kotlin.services.s3.model.DeleteObjectRequest

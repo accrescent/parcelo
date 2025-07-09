@@ -16,8 +16,6 @@ import io.ktor.http.Cookie
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
-import io.ktor.server.application.ApplicationEnvironment
-import io.ktor.server.application.call
 import io.ktor.server.auth.AuthenticationConfig
 import io.ktor.server.auth.OAuthAccessTokenResponse
 import io.ktor.server.auth.OAuthServerSettings

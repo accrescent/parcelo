@@ -4,9 +4,9 @@
 
 package app.accrescent.parcelo.console.routes
 
-import app.accrescent.parcelo.console.data.Apps as DbApps
 import app.accrescent.parcelo.console.data.AccessControlLists
 import app.accrescent.parcelo.console.data.App
+import app.accrescent.parcelo.console.data.Apps as DbApps
 import app.accrescent.parcelo.console.data.Draft
 import app.accrescent.parcelo.console.data.Review
 import app.accrescent.parcelo.console.data.Session
@@ -15,7 +15,6 @@ import app.accrescent.parcelo.console.data.net.ApiError
 import app.accrescent.parcelo.console.jobs.registerPublishAppJob
 import io.ktor.http.HttpStatusCode
 import io.ktor.resources.Resource
-import io.ktor.server.application.call
 import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.principal
 import io.ktor.server.request.receive

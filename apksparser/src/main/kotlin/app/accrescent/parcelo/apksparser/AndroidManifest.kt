@@ -26,7 +26,7 @@ public class AndroidManifest private constructor(
         versionName: String?,
         split: String?,
         application: Application,
-        usesSdk: UsesSdk?
+        usesSdk: UsesSdk?,
     ) : this(
         AppId.parseFromString(`package`) ?: throw IllegalArgumentException(),
         versionCode,
