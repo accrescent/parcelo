@@ -21,7 +21,6 @@ import app.accrescent.parcelo.console.validation.ReviewRequest
 import app.accrescent.parcelo.console.validation.ReviewResult
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.PartData
-import io.ktor.http.content.readAllParts
 import io.ktor.resources.Resource
 import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.principal
@@ -90,11 +89,12 @@ fun Route.createEditRoute() {
 
         var shortDescription: String? = null
 
-        @Suppress("DEPRECATION_ERROR")
-        val multipart = call.receiveMultipart().readAllParts()
+        val multipart = call.receiveMultipart()
 
-        try {
-            for (part in multipart) {
+        do {
+            val part = multipart.readPart()
+            try {
+
                 if (part is PartData.FormItem && part.name == "short_description") {
                     // Short description must be between 3 and 80 characters in length inclusive
                     if (part.value.length < 3 || part.value.length > 80) {
@@ -103,14 +103,16 @@ fun Route.createEditRoute() {
                     } else {
                         shortDescription = part.value
                     }
+                } else if (part == null) {
+                    break
                 } else {
                     call.respond(HttpStatusCode.BadRequest, ApiError.unknownPartName(part.name))
                     return@post
                 }
+            } finally {
+                part?.dispose()
             }
-        } finally {
-            multipart.forEach { it.dispose() }
-        }
+        } while (true)
 
         if (shortDescription == null) {
             call.respond(HttpStatusCode.BadRequest, ApiError.missingPartName())

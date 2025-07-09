@@ -32,7 +32,6 @@ import io.ktor.http.ContentDisposition
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.PartData
-import io.ktor.http.content.readAllParts
 import io.ktor.http.content.streamProvider
 import io.ktor.resources.Resource
 import io.ktor.server.auth.authenticate
@@ -104,12 +103,12 @@ fun Route.createDraftRoute() {
         var shortDescription: String? = null
         var iconData: ByteArray? = null
 
-        @Suppress("DEPRECATION_ERROR")
-        val multipart = call.receiveMultipart().readAllParts()
+        val multipart = call.receiveMultipart()
 
-        try {
-            TempFile().use { tempApkSet ->
-                for (part in multipart) {
+        TempFile().use { tempApkSet ->
+            do {
+                val part = multipart.readPart()
+                try {
                     when (part) {
                         is PartData.FileItem if part.name == "apk_set" -> {
                             val parseResult = run {
@@ -173,6 +172,7 @@ fun Route.createDraftRoute() {
                             }
                         }
 
+                        null -> break
                         else -> {
                             call.respond(
                                 HttpStatusCode.BadRequest,
@@ -181,71 +181,71 @@ fun Route.createDraftRoute() {
                             return@post
                         }
                     }
+                } finally {
+                    part?.dispose()
+                }
+            } while (true)
+
+            if (
+                apkSet != null &&
+                label != null &&
+                shortDescription != null &&
+                iconData != null
+            ) {
+                // Check that there isn't already a published app with this ID
+                if (transaction { App.findById(apkSet.metadata.packageName) } != null) {
+                    call.respond(HttpStatusCode.Conflict, ApiError.appAlreadyExists())
+                    return@post
                 }
 
-                if (
-                    apkSet != null &&
-                    label != null &&
-                    shortDescription != null &&
-                    iconData != null
-                ) {
-                    // Check that there isn't already a published app with this ID
-                    if (transaction { App.findById(apkSet.metadata.packageName) } != null) {
-                        call.respond(HttpStatusCode.Conflict, ApiError.appAlreadyExists())
-                        return@post
-                    }
-
-                    if (apkSet.targetSdk < MIN_TARGET_SDK) {
-                        call.respond(
-                            HttpStatusCode.UnprocessableEntity,
-                            ApiError.minTargetSdk(MIN_TARGET_SDK, apkSet.targetSdk)
-                        )
-                        return@post
-                    }
-
-                    val reviewIssues = REVIEW_ISSUE_BLACKLIST intersect apkSet.reviewIssues
-                    val draft = transaction {
-                        // Associate review issues with draft as necessary
-                        val issueGroupId = if (reviewIssues.isNotEmpty()) {
-                            val issueGroupId = ReviewIssueGroup.new {}.id
-                            for (reviewIssue in reviewIssues) {
-                                ReviewIssue.new {
-                                    reviewIssueGroupId = issueGroupId
-                                    rawValue = reviewIssue
-                                }
-                            }
-                            issueGroupId
-                        } else {
-                            null
-                        }
-
-                        val iconFileId = runBlocking { storageService.uploadBytes(iconData) }
-                        val appFileId = runBlocking { storageService.uploadFile(tempApkSet.path) }
-                        val icon = Icon.new { fileId = iconFileId }
-                        Draft.new {
-                            this.label = label
-                            appId = apkSet.metadata.packageName
-                            versionCode = apkSet.versionCode
-                            versionName = apkSet.versionName
-                            this.shortDescription = shortDescription
-                            this.creatorId = creatorId
-                            fileId = appFileId
-                            iconId = icon.id
-                            reviewIssueGroupId = issueGroupId
-                        }.serializable()
-                    }
-
-                    call.response.header(
-                        HttpHeaders.Location,
-                        "${config.application.baseUrl}/api/v1/drafts/${draft.id}"
+                if (apkSet.targetSdk < MIN_TARGET_SDK) {
+                    call.respond(
+                        HttpStatusCode.UnprocessableEntity,
+                        ApiError.minTargetSdk(MIN_TARGET_SDK, apkSet.targetSdk)
                     )
-                    call.respond(HttpStatusCode.Created, draft)
-                } else {
-                    call.respond(HttpStatusCode.BadRequest, ApiError.missingPartName())
+                    return@post
                 }
+
+                val reviewIssues = REVIEW_ISSUE_BLACKLIST intersect apkSet.reviewIssues
+                val draft = transaction {
+                    // Associate review issues with draft as necessary
+                    val issueGroupId = if (reviewIssues.isNotEmpty()) {
+                        val issueGroupId = ReviewIssueGroup.new {}.id
+                        for (reviewIssue in reviewIssues) {
+                            ReviewIssue.new {
+                                reviewIssueGroupId = issueGroupId
+                                rawValue = reviewIssue
+                            }
+                        }
+                        issueGroupId
+                    } else {
+                        null
+                    }
+
+                    val iconFileId = runBlocking { storageService.uploadBytes(iconData) }
+                    val appFileId = runBlocking { storageService.uploadFile(tempApkSet.path) }
+                    val icon = Icon.new { fileId = iconFileId }
+                    Draft.new {
+                        this.label = label
+                        appId = apkSet.metadata.packageName
+                        versionCode = apkSet.versionCode
+                        versionName = apkSet.versionName
+                        this.shortDescription = shortDescription
+                        this.creatorId = creatorId
+                        fileId = appFileId
+                        iconId = icon.id
+                        reviewIssueGroupId = issueGroupId
+                    }.serializable()
+                }
+
+                call.response.header(
+                    HttpHeaders.Location,
+                    "${config.application.baseUrl}/api/v1/drafts/${draft.id}"
+                )
+                call.respond(HttpStatusCode.Created, draft)
+            } else {
+                call.respond(HttpStatusCode.BadRequest, ApiError.missingPartName())
             }
-        } finally {
-            multipart.forEach { it.dispose() }
         }
     }
 }
