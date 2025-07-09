@@ -110,8 +110,8 @@ fun Route.createDraftRoute() {
         try {
             TempFile().use { tempApkSet ->
                 for (part in multipart) {
-                    when {
-                        part is PartData.FileItem && part.name == "apk_set" -> {
+                    when (part) {
+                        is PartData.FileItem if part.name == "apk_set" -> {
                             val parseResult = run {
                                 tempApkSet.outputStream().use { fileOutputStream ->
                                     part.streamProvider().use { it.copyTo(fileOutputStream) }
@@ -127,7 +127,7 @@ fun Route.createDraftRoute() {
                             }
                         }
 
-                        part is PartData.FileItem && part.name == "icon" -> {
+                        is PartData.FileItem if part.name == "icon" -> {
                             iconData = part.streamProvider().use { it.readBytes() }
 
                             // Icon must be a 512 x 512 PNG
@@ -149,7 +149,7 @@ fun Route.createDraftRoute() {
                             }
                         }
 
-                        part is PartData.FormItem && part.name == "label" -> {
+                        is PartData.FormItem if part.name == "label" -> {
                             // Label must be between 3 and 30 characters in length inclusive
                             if (part.value.length < 3 || part.value.length > 30) {
                                 call.respond(HttpStatusCode.BadRequest, ApiError.labelLength())
@@ -159,7 +159,7 @@ fun Route.createDraftRoute() {
                             }
                         }
 
-                        part is PartData.FormItem && part.name == "short_description" -> {
+                        is PartData.FormItem if part.name == "short_description" -> {
                             // Short description must be between 3 and 80 characters in length
                             // inclusive
                             if (part.value.length < 3 || part.value.length > 80) {
