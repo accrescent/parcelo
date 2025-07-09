@@ -4,7 +4,6 @@
 
 package app.accrescent.parcelo.console.routes.auth
 
-import io.ktor.server.auth.Principal
 import kotlinx.serialization.Serializable
 
 /**
@@ -13,4 +12,4 @@ import kotlinx.serialization.Serializable
  * @property id the session ID
  */
 @Serializable
-data class Session(val id: String) : Principal
+data class Session(val id: String)
