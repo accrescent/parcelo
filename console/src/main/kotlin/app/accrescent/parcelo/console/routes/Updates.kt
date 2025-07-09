@@ -110,6 +110,7 @@ fun Route.createUpdateRoute() {
 
         var apkSet: ApkSet? = null
 
+        @Suppress("DEPRECATION_ERROR")
         val multipart = call.receiveMultipart().readAllParts()
 
         try {

@@ -42,7 +42,7 @@ fun Application.configureAuthentication(
     githubRedirectUrl: String,
     httpClient: HttpClient = HttpClient(),
 ) {
-    val developmentMode = environment.developmentMode
+    val developmentMode = developmentMode
 
     install(Sessions) {
         cookie<Session>(if (!developmentMode) "__Host-session" else "session") {

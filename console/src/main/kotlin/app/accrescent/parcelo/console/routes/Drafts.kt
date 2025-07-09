@@ -35,7 +35,6 @@ import io.ktor.http.content.PartData
 import io.ktor.http.content.readAllParts
 import io.ktor.http.content.streamProvider
 import io.ktor.resources.Resource
-import io.ktor.server.application.call
 import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.principal
 import io.ktor.server.request.receive
@@ -105,6 +104,7 @@ fun Route.createDraftRoute() {
         var shortDescription: String? = null
         var iconData: ByteArray? = null
 
+        @Suppress("DEPRECATION_ERROR")
         val multipart = call.receiveMultipart().readAllParts()
 
         try {

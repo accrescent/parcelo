@@ -15,6 +15,7 @@ import io.ktor.client.HttpClient
 import io.ktor.http.Cookie
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
+import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationEnvironment
 import io.ktor.server.application.call
 import io.ktor.server.auth.AuthenticationConfig
@@ -52,7 +53,7 @@ const val COOKIE_OAUTH_STATE_LIFETIME = 60 * 60 // 1 hour
 /**
  * A helper method for getting the name of the OAuth2 state cookie name in the current mode
  */
-val ApplicationEnvironment.oauthStateCookieName
+val Application.oauthStateCookieName
     get() =
         if (!developmentMode) COOKIE_OAUTH_STATE_PROD else COOKIE_OAUTH_STATE_DEVEL
 
@@ -90,7 +91,7 @@ fun AuthenticationConfig.github(
                     // See https://datatracker.ietf.org/doc/html/draft-ietf-oauth-v2-30#section-10.12
                     call.response.cookies.append(
                         Cookie(
-                            name = call.application.environment.oauthStateCookieName,
+                            name = call.application.oauthStateCookieName,
                             value = state,
                             maxAge = COOKIE_OAUTH_STATE_LIFETIME,
                             path = "/",
@@ -118,7 +119,7 @@ fun Route.githubRoutes() {
                 // Cross-site request forgery (CSRF) protection.
                 // See https://datatracker.ietf.org/doc/html/draft-ietf-oauth-v2-30#section-10.12
                 val oauthCookie =
-                    call.request.cookies[call.application.environment.oauthStateCookieName]
+                    call.request.cookies[call.application.oauthStateCookieName]
                 if (oauthCookie == null) {
                     call.respond(HttpStatusCode.Forbidden)
                     return@get

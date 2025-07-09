@@ -91,6 +91,7 @@ fun Route.createEditRoute() {
 
         var shortDescription: String? = null
 
+        @Suppress("DEPRECATION_ERROR")
         val multipart = call.receiveMultipart().readAllParts()
 
         try {

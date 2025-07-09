@@ -55,7 +55,6 @@ dependencies {
     implementation(libs.ktor.server.resources)
     implementation(libs.logback)
     implementation(libs.postgresql)
-    testImplementation(libs.ktor.server.tests)
     testImplementation(libs.kotlin.test)
 }
 

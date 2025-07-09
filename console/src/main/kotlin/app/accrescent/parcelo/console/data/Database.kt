@@ -65,7 +65,7 @@ fun Application.configureDatabase(): DataSource {
             BaselineWhitelistedGitHubUsers,
         )
 
-        if (environment.developmentMode) {
+        if (developmentMode) {
             // Create a default superuser
             val debugUserGitHubId = (System.getenv("DEBUG_USER_GITHUB_ID")
                 ?: throw Exception("DEBUG_USER_GITHUB_ID not specified in environment")).toLong()
