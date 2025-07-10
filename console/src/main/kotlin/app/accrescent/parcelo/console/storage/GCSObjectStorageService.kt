@@ -72,9 +72,11 @@ class GCSObjectStorageService(
 
         val blobsToDelete = transaction { files.map { BlobId.of(bucket, it.s3ObjectKey) } }
 
-        storage.delete(blobsToDelete)
+        if (blobsToDelete.isNotEmpty()) {
+            storage.delete(blobsToDelete)
 
-        transaction { files.forEach { it.delete() } }
+            transaction { files.forEach { it.delete() } }
+        }
     }
 
     override suspend fun <T> loadObject(id: EntityID<Int>, block: suspend (InputStream) -> T): T {

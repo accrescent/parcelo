@@ -115,10 +115,11 @@ class S3ObjectStorageService(
 
     override suspend fun cleanAllObjects() {
         val files = transaction { File.find { deleted eq true } }
+        val objectsToDelete =
+            transaction { files.map { ObjectIdentifier { key = it.s3ObjectKey } } }
 
-        val deleteObjectsRequest = transaction {
-            files
-                .map { ObjectIdentifier { key = it.s3ObjectKey } }
+        if (objectsToDelete.isNotEmpty()) {
+            val deleteObjectsRequest = objectsToDelete
                 .let { Delete { objects = it } }
                 .let {
                     DeleteObjectsRequest {
@@ -126,19 +127,19 @@ class S3ObjectStorageService(
                         delete = it
                     }
                 }
-        }
 
-        S3Client {
-            endpointUrl = s3EndpointUrl
-            region = s3Region
-            credentialsProvider = StaticCredentialsProvider {
-                accessKeyId = s3AccessKeyId
-                secretAccessKey = s3SecretAccessKey
+            S3Client {
+                endpointUrl = s3EndpointUrl
+                region = s3Region
+                credentialsProvider = StaticCredentialsProvider {
+                    accessKeyId = s3AccessKeyId
+                    secretAccessKey = s3SecretAccessKey
+                }
+            }.use { s3Client ->
+                s3Client.deleteObjects(deleteObjectsRequest)
+
+                transaction { files.forEach { it.delete() } }
             }
-        }.use { s3Client ->
-            s3Client.deleteObjects(deleteObjectsRequest)
-
-            transaction { files.forEach { it.delete() } }
         }
     }
 
