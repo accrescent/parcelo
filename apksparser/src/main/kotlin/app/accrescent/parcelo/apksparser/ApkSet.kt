@@ -105,7 +105,7 @@ public class ApkSet private constructor(
                                         Targeting.Abi.AbiAlias.X86_64 -> moduleHasX8664Targeting =
                                             true
 
-                                        else -> {}
+                                        else -> Unit
                                     }
                                 }
                             }
