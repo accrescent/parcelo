@@ -19,7 +19,6 @@ import aws.smithy.kotlin.runtime.content.ByteStream
 import aws.smithy.kotlin.runtime.content.asByteStream
 import aws.smithy.kotlin.runtime.content.toInputStream
 import aws.smithy.kotlin.runtime.net.url.Url
-import io.ktor.utils.io.core.use
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.transactions.transaction

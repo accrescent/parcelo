@@ -22,7 +22,6 @@ import aws.smithy.kotlin.runtime.content.ByteStream
 import aws.smithy.kotlin.runtime.net.url.Url
 import com.android.bundle.Targeting
 import io.ktor.utils.io.core.toByteArray
-import io.ktor.utils.io.core.use
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
