@@ -86,6 +86,9 @@ fun Route.updateRoutes() {
     }
 }
 
+// 1 GiB
+private const val MAX_UPLOAD_SIZE: Long = 1 * 1024 * 1024 * 1024
+
 fun Route.createUpdateRoute() {
     val config: Config by inject()
     val storageService: ObjectStorageService by inject()
@@ -108,7 +111,8 @@ fun Route.createUpdateRoute() {
 
         var apkSet: ApkSet? = null
 
-        val multipart = call.receiveMultipart()
+        // Limit is in bytes as per manual testing
+        val multipart = call.receiveMultipart(formFieldLimit = MAX_UPLOAD_SIZE)
 
         TempFile().use { tempApkSet ->
             do {
