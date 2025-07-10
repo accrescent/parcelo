@@ -4,7 +4,7 @@
 
 [versions]
 apkanalyzer = "31.11.0"
-apksig = "8.11.0"
+apksig = "8.11.1"
 bundletool = "1.18.1"
 dokka = "2.0.0"
 exposed = "0.61.0"
