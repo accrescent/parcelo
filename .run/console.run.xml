@@ -21,9 +21,13 @@ SPDX-License-Identifier: AGPL-3.0-only
       <env name="S3_ENDPOINT_URL" value="http://127.0.0.1:9000" />
       <env name="S3_REGION" value="us-east-1" />
       <env name="S3_BUCKET" value="parcelo-repo" />
+      <env name="S3_ACCESS_KEY_ID" value="minioadmin" />
+      <env name="S3_SECRET_ACCESS_KEY" value="minioadmin" />
       <env name="PRIVATE_STORAGE_ENDPOINT_URL" value="http://127.0.0.1:9000" />
       <env name="PRIVATE_STORAGE_REGION" value="us-east-1" />
       <env name="PRIVATE_STORAGE_BUCKET" value="parcelo-privatestorage" />
+      <env name="PRIVATE_STORAGE_ACCESS_KEY_ID" value="minioadmin" />
+      <env name="PRIVATE_STORAGE_SECRET_ACCESS_KEY" value="minioadmin" />
     </envs>
     <option name="MAIN_CLASS_NAME" value="app.accrescent.parcelo.console.ApplicationKt" />
     <module name="parcelo.console.main" />

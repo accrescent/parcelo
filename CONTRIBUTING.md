@@ -34,9 +34,6 @@ steps below to get started.
    username. Copy the `id` field into a new line in `.env` as `DEBUG_USER_GITHUB_ID=${id}` where
    `${id}` is the ID you copied.
 8. Start MinIO with `minio server`
-9. Log in to the MinIO console and create a new access key. Copy the access key ID and secret access
-   key into `.env` as `S3_ACCESS_KEY_ID` and `S3_SECRET_ACCESS_KEY` respectively.
-10. TODO: Add secrets for private storage bucket
 
 You should now be able to run the console in IDEA by selecting the "console" run configuration and
 running the project.
