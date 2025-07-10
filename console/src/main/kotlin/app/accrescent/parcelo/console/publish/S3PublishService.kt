@@ -61,6 +61,11 @@ class S3PublishService(
     private val s3AccessKeyId: String,
     private val s3SecretAccessKey: String,
 ) : PublishService {
+    private companion object {
+        private const val UNSUPPORTED_SCREEN_DENSITY_MESSAGE =
+            "unsupported screen density targeting"
+    }
+
     override suspend fun publishDraft(
         apkSet: InputStream,
         icon: InputStream,
@@ -199,7 +204,7 @@ class S3PublishService(
                         "split.$lang.apk"
                     } else if (apkDescription.targeting.hasScreenDensityTargeting()) {
                         if (apkDescription.targeting.screenDensityTargeting.valueCount != 1) {
-                            throw Exception("unsupported screen density targeting")
+                            throw Exception(UNSUPPORTED_SCREEN_DENSITY_MESSAGE)
                         }
 
                         val screenDensity =
@@ -214,7 +219,7 @@ class S3PublishService(
                                 Targeting.ScreenDensity.DensityAlias.XHDPI -> "xhdpi"
                                 Targeting.ScreenDensity.DensityAlias.XXHDPI -> "xxhdpi"
                                 Targeting.ScreenDensity.DensityAlias.XXXHDPI -> "xxxhdpi"
-                                else -> throw Exception("unsupported screen density targeting")
+                                else -> throw Exception(UNSUPPORTED_SCREEN_DENSITY_MESSAGE)
                             }
 
                             Targeting.ScreenDensity.DensityOneofCase.DENSITY_DPI -> when {
@@ -228,7 +233,7 @@ class S3PublishService(
                             }
 
                             Targeting.ScreenDensity.DensityOneofCase.DENSITYONEOF_NOT_SET ->
-                                throw Exception("unsupported screen density targeting")
+                                throw Exception(UNSUPPORTED_SCREEN_DENSITY_MESSAGE)
                         }
                         densitySplits.add(config)
 
