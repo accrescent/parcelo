@@ -172,74 +172,79 @@ class S3PublishService(
                 .find { it.moduleMetadata.name == BASE_MODULE_NAME }
                 ?.apkDescriptionList
                 ?.forEach { apkDescription ->
-                    val outputFileName = if (!apkDescription.hasSplitApkMetadata()) {
-                        return@forEach
-                    } else if (apkDescription.splitApkMetadata.isMasterSplit) {
-                        "base.apk"
-                    } else if (apkDescription.targeting.hasAbiTargeting()) {
-                        if (apkDescription.targeting.abiTargeting.valueCount != 1) {
-                            throw Exception("unsupported ABI targeting")
-                        }
-
-                        val abi = apkDescription.targeting.abiTargeting.valueList[0]!!.alias
-                        val config = when (abi) {
-                            Targeting.Abi.AbiAlias.ARMEABI_V7A -> "armeabi-v7a"
-                            Targeting.Abi.AbiAlias.ARM64_V8A -> "arm64-v8a"
-                            Targeting.Abi.AbiAlias.X86 -> "x86"
-                            Targeting.Abi.AbiAlias.X86_64 -> "x86_64"
-                            // Simply don't publish ABI splits for architectures we don't support
-                            else -> null
-                        }
-                        config?.let { abiSplits.add(it) }
-
-                        "split.$config.apk"
-                    } else if (apkDescription.targeting.hasLanguageTargeting()) {
-                        if (apkDescription.targeting.languageTargeting.valueCount != 1) {
-                            throw Exception("unsupported language targeting")
-                        }
-
-                        val lang = apkDescription.targeting.languageTargeting.valueList[0]!!
-                        langSplits.add(lang)
-
-                        "split.$lang.apk"
-                    } else if (apkDescription.targeting.hasScreenDensityTargeting()) {
-                        if (apkDescription.targeting.screenDensityTargeting.valueCount != 1) {
-                            throw Exception(UNSUPPORTED_SCREEN_DENSITY_MESSAGE)
-                        }
-
-                        val screenDensity =
-                            apkDescription.targeting.screenDensityTargeting.valueList[0]!!
-                        val config = when (screenDensity.densityOneofCase) {
-                            Targeting.ScreenDensity.DensityOneofCase.DENSITY_ALIAS -> when (screenDensity.densityAlias) {
-                                Targeting.ScreenDensity.DensityAlias.NODPI -> "nodpi"
-                                Targeting.ScreenDensity.DensityAlias.LDPI -> "ldpi"
-                                Targeting.ScreenDensity.DensityAlias.MDPI -> "mdpi"
-                                Targeting.ScreenDensity.DensityAlias.TVDPI -> "tvdpi"
-                                Targeting.ScreenDensity.DensityAlias.HDPI -> "hdpi"
-                                Targeting.ScreenDensity.DensityAlias.XHDPI -> "xhdpi"
-                                Targeting.ScreenDensity.DensityAlias.XXHDPI -> "xxhdpi"
-                                Targeting.ScreenDensity.DensityAlias.XXXHDPI -> "xxxhdpi"
-                                else -> throw Exception(UNSUPPORTED_SCREEN_DENSITY_MESSAGE)
+                    val outputFileName = when {
+                        !apkDescription.hasSplitApkMetadata() -> return@forEach
+                        apkDescription.splitApkMetadata.isMasterSplit -> "base.apk"
+                        apkDescription.targeting.hasAbiTargeting() -> {
+                            if (apkDescription.targeting.abiTargeting.valueCount != 1) {
+                                throw Exception("unsupported ABI targeting")
                             }
 
-                            Targeting.ScreenDensity.DensityOneofCase.DENSITY_DPI -> when {
-                                screenDensity.densityDpi <= DisplayMetrics.DENSITY_LOW -> "ldpi"
-                                screenDensity.densityDpi <= DisplayMetrics.DENSITY_MEDIUM -> "mdpi"
-                                screenDensity.densityDpi <= DisplayMetrics.DENSITY_TV -> "tvdpi"
-                                screenDensity.densityDpi <= DisplayMetrics.DENSITY_HIGH -> "hdpi"
-                                screenDensity.densityDpi <= DisplayMetrics.DENSITY_XHIGH -> "xhdpi"
-                                screenDensity.densityDpi <= DisplayMetrics.DENSITY_XXHIGH -> "xxhdpi"
-                                else -> "xxxhdpi"
+                            val abi = apkDescription.targeting.abiTargeting.valueList[0]!!.alias
+                            val config = when (abi) {
+                                Targeting.Abi.AbiAlias.ARMEABI_V7A -> "armeabi-v7a"
+                                Targeting.Abi.AbiAlias.ARM64_V8A -> "arm64-v8a"
+                                Targeting.Abi.AbiAlias.X86 -> "x86"
+                                Targeting.Abi.AbiAlias.X86_64 -> "x86_64"
+                                // Simply don't publish ABI splits for architectures we don't support
+                                else -> null
+                            }
+                            config?.let { abiSplits.add(it) }
+
+                            "split.$config.apk"
+                        }
+
+                        apkDescription.targeting.hasLanguageTargeting() -> {
+                            if (apkDescription.targeting.languageTargeting.valueCount != 1) {
+                                throw Exception("unsupported language targeting")
                             }
 
-                            Targeting.ScreenDensity.DensityOneofCase.DENSITYONEOF_NOT_SET ->
+                            val lang = apkDescription.targeting.languageTargeting.valueList[0]!!
+                            langSplits.add(lang)
+
+                            "split.$lang.apk"
+                        }
+
+                        apkDescription.targeting.hasScreenDensityTargeting() -> {
+                            if (apkDescription.targeting.screenDensityTargeting.valueCount != 1) {
                                 throw Exception(UNSUPPORTED_SCREEN_DENSITY_MESSAGE)
-                        }
-                        densitySplits.add(config)
+                            }
 
-                        "split.$config.apk"
-                    } else {
-                        throw Exception("unsupported APK targeting")
+                            val screenDensity =
+                                apkDescription.targeting.screenDensityTargeting.valueList[0]!!
+                            val config = when (screenDensity.densityOneofCase) {
+                                Targeting.ScreenDensity.DensityOneofCase.DENSITY_ALIAS ->
+                                    when (screenDensity.densityAlias) {
+                                        Targeting.ScreenDensity.DensityAlias.NODPI -> "nodpi"
+                                        Targeting.ScreenDensity.DensityAlias.LDPI -> "ldpi"
+                                        Targeting.ScreenDensity.DensityAlias.MDPI -> "mdpi"
+                                        Targeting.ScreenDensity.DensityAlias.TVDPI -> "tvdpi"
+                                        Targeting.ScreenDensity.DensityAlias.HDPI -> "hdpi"
+                                        Targeting.ScreenDensity.DensityAlias.XHDPI -> "xhdpi"
+                                        Targeting.ScreenDensity.DensityAlias.XXHDPI -> "xxhdpi"
+                                        Targeting.ScreenDensity.DensityAlias.XXXHDPI -> "xxxhdpi"
+                                        else -> throw Exception(UNSUPPORTED_SCREEN_DENSITY_MESSAGE)
+                                    }
+
+                                Targeting.ScreenDensity.DensityOneofCase.DENSITY_DPI -> when {
+                                    screenDensity.densityDpi <= DisplayMetrics.DENSITY_LOW -> "ldpi"
+                                    screenDensity.densityDpi <= DisplayMetrics.DENSITY_MEDIUM -> "mdpi"
+                                    screenDensity.densityDpi <= DisplayMetrics.DENSITY_TV -> "tvdpi"
+                                    screenDensity.densityDpi <= DisplayMetrics.DENSITY_HIGH -> "hdpi"
+                                    screenDensity.densityDpi <= DisplayMetrics.DENSITY_XHIGH -> "xhdpi"
+                                    screenDensity.densityDpi <= DisplayMetrics.DENSITY_XXHIGH -> "xxhdpi"
+                                    else -> "xxxhdpi"
+                                }
+
+                                Targeting.ScreenDensity.DensityOneofCase.DENSITYONEOF_NOT_SET ->
+                                    throw Exception(UNSUPPORTED_SCREEN_DENSITY_MESSAGE)
+                            }
+                            densitySplits.add(config)
+
+                            "split.$config.apk"
+                        }
+
+                        else -> throw Exception("unsupported APK targeting")
                     }
                     val entry = apkSetZip.getEntry(apkDescription.path)
 
