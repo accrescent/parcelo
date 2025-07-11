@@ -4,6 +4,7 @@
 
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import org.jetbrains.dokka.gradle.DokkaTask
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.kotlin.jvm)
@@ -25,6 +26,10 @@ application {
 
 kotlin {
     jvmToolchain(21)
+
+    compilerOptions {
+        jvmTarget = JvmTarget.JVM_21
+    }
 }
 
 ksp {
