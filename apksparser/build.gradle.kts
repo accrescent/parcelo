@@ -9,6 +9,8 @@ plugins {
 
 kotlin {
     jvmToolchain(21)
+
+    explicitApi()
 }
 
 dependencies {
@@ -18,8 +20,4 @@ dependencies {
     implementation(libs.jackson.xml)
     implementation(libs.jackson.kotlin)
     api(libs.protobuf)
-}
-
-kotlin {
-    explicitApi()
 }
