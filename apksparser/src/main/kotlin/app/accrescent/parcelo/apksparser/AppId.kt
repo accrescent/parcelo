@@ -22,7 +22,7 @@ public class AppId private constructor(public val value: String) {
          * If any of these conditions are not met, this function returns null.
          */
         public fun parseFromString(s: String): AppId? {
-            val segments = s.split(".")
+            val segments = s.split('.')
             if (segments.size < 2) {
                 return null
             }
