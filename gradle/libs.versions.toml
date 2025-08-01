@@ -20,7 +20,7 @@ ktor = "3.2.3"
 logback = "1.5.18"
 postgresql = "42.7.7"
 protobuf = "4.31.1"
-s3 = "1.5.8"
+s3 = "1.5.9"
 
 [libraries]
 apkanalyzer = { module = "com.android.tools.apkparser:apkanalyzer", version.ref = "apkanalyzer" }
