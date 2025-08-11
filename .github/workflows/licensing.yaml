@@ -6,6 +6,9 @@ name: Check licensing
 
 on: [push, pull_request]
 
+permissions:
+  contents: read
+
 jobs:
   license-check:
     runs-on: ubuntu-latest
