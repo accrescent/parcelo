@@ -19,7 +19,7 @@ ksp = "2.2.0-2.0.2"
 ktor = "3.2.3"
 logback = "1.5.18"
 postgresql = "42.7.7"
-protobuf = "4.31.1"
+protobuf = "4.32.0"
 s3 = "1.5.9"
 
 [libraries]
