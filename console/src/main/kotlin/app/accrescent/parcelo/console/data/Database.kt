@@ -87,7 +87,6 @@ fun Application.configureDatabase(): DataSource {
         .configure()
         .dataSource(dataSource)
         .baselineOnMigrate(true)
-        .mixed(true)
         .validateMigrationNaming(true)
         .load()
         .migrate()
