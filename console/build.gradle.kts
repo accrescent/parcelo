@@ -65,6 +65,8 @@ dependencies {
 
 tasks.withType<ShadowJar>().configureEach {
     isZip64 = true
+    // Needed because of https://github.com/flyway/flyway/issues/3594
+    mergeServiceFiles()
 }
 
 tasks.withType<DokkaTask>().configureEach {
