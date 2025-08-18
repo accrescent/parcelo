@@ -47,7 +47,8 @@ fun registerPublishAppJob(draftId: UUID) {
             versionName = draft.versionName
             fileId = draft.fileId
             reviewIssueGroupId = draft.reviewIssueGroupId
-            repositoryMetadata = ExposedBlob(metadata)
+            repositoryMetadata = ExposedBlob(metadata.jsonMetadata)
+            buildApksResult = ExposedBlob(metadata.apkSetMetadata)
         }
         Listing.new {
             appId = app.id
@@ -86,7 +87,8 @@ fun registerPublishUpdateJob(updateId: UUID) {
         App.findById(update.appId)?.run {
             versionCode = update.versionCode
             versionName = update.versionName
-            repositoryMetadata = ExposedBlob(updatedMetadata)
+            repositoryMetadata = ExposedBlob(updatedMetadata.jsonMetadata)
+            buildApksResult = ExposedBlob(updatedMetadata.apkSetMetadata)
 
             val oldAppFileId = fileId
             fileId = update.fileId!!

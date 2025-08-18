@@ -69,7 +69,7 @@ class S3PublishService(
         apkSet: InputStream,
         icon: InputStream,
         shortDescription: String,
-    ): ByteArray {
+    ): AppMetadata {
         TempFile().use { tempApkSet ->
             tempApkSet.outputStream().use { apkSet.copyTo(it) }
 
@@ -87,7 +87,7 @@ class S3PublishService(
         }
     }
 
-    override suspend fun publishUpdate(apkSet: InputStream, appId: String): ByteArray {
+    override suspend fun publishUpdate(apkSet: InputStream, appId: String): AppMetadata {
         TempFile().use { tempApkSet ->
             tempApkSet.outputStream().use { apkSet.copyTo(it) }
 
@@ -144,7 +144,7 @@ class S3PublishService(
         apkSetZip: ZipFile,
         metadata: ApkSet,
         type: PublicationType,
-    ): ByteArray {
+    ): AppMetadata {
         val appId = metadata.metadata.packageName
 
         S3Client {
@@ -318,7 +318,7 @@ class S3PublishService(
                 }
             }
 
-            return repoDataBytes
+            return AppMetadata(repoDataBytes, metadata.metadata.toByteArray())
         }
     }
 }

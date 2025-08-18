@@ -20,14 +20,14 @@ interface PublishService {
         apkSet: InputStream,
         icon: InputStream,
         shortDescription: String,
-    ): ByteArray
+    ): AppMetadata
 
     /**
      * Publishes an app update
      *
      * @return the updated repository metadata
      */
-    suspend fun publishUpdate(apkSet: InputStream, appId: String): ByteArray
+    suspend fun publishUpdate(apkSet: InputStream, appId: String): AppMetadata
 
     /**
      * Publishes an edit

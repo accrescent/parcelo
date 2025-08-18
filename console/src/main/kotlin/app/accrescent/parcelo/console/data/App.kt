@@ -21,6 +21,7 @@ object Apps : IdTable<String>("apps") {
         reference("review_issue_group_id", ReviewIssueGroups, ReferenceOption.NO_ACTION).nullable()
     val updating = bool("updating").default(false)
     val repositoryMetadata = blob("repository_metadata")
+    val buildApksResult = blob("build_apks_result").nullable()
     override val primaryKey = PrimaryKey(id)
 }
 
@@ -33,6 +34,7 @@ class App(id: EntityID<String>) : Entity<String>(id), ToSerializable<Serializabl
     var reviewIssueGroupId by Apps.reviewIssueGroupId
     var updating by Apps.updating
     var repositoryMetadata by Apps.repositoryMetadata
+    var buildApksResult by Apps.buildApksResult
 
     override fun serializable(): SerializableApp {
         // Use en-US locale by default
