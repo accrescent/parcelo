@@ -14,6 +14,7 @@ import org.jetbrains.exposed.sql.and
 
 object Apps : IdTable<String>("apps") {
     override val id = text("id").entityId()
+    val defaultListingLanguage = text("default_listing_language").default("en-US")
     val versionCode = integer("version_code")
     val versionName = text("version_name")
     val fileId = reference("file_id", Files, ReferenceOption.NO_ACTION)
@@ -28,6 +29,7 @@ object Apps : IdTable<String>("apps") {
 class App(id: EntityID<String>) : Entity<String>(id), ToSerializable<SerializableApp> {
     companion object : EntityClass<String, App>(Apps)
 
+    var defaultListingLanguage by Apps.defaultListingLanguage
     var versionCode by Apps.versionCode
     var versionName by Apps.versionName
     var fileId by Apps.fileId
@@ -43,6 +45,7 @@ class App(id: EntityID<String>) : Entity<String>(id), ToSerializable<Serializabl
 
         return SerializableApp(
             id.value,
+            defaultListingLanguage,
             listing.label,
             versionCode,
             versionName,

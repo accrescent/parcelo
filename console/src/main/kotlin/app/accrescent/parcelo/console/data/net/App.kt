@@ -10,6 +10,8 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class App(
     val id: String,
+    @SerialName("default_listing_language")
+    val defaultListingLanguage: String,
     val label: String,
     @SerialName("version_code")
     val versionCode: Int,
