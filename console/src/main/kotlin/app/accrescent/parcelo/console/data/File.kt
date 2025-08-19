@@ -11,7 +11,7 @@ import org.jetbrains.exposed.dao.id.IntIdTable
 
 object Files : IntIdTable("files") {
     val deleted = bool("deleted").default(false)
-    val s3ObjectKey = text("s3_object_key").nullable()
+    val s3ObjectKey = text("s3_object_key")
 }
 
 class File(id: EntityID<Int>) : IntEntity(id) {
