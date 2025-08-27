@@ -13,6 +13,7 @@ github = "1.329"
 google-cloud = "26.66.0"
 jackson = "2.19.2"
 jobrunr = "8.0.2"
+kafka = "4.0.0"
 koin = "4.1.0"
 kotlin = "2.2.10"
 ksp = "2.2.10-2.0.2"
@@ -20,7 +21,9 @@ ktor = "3.2.3"
 logback = "1.5.18"
 postgresql = "42.7.7"
 protobuf = "4.32.0"
+protovalidate = "0.13.0"
 s3 = "1.5.19"
+server-events = "32.0.0.1.20250822234457.c28626e0bf3f"
 
 [libraries]
 apkanalyzer = { module = "com.android.tools.apkparser:apkanalyzer", version.ref = "apkanalyzer" }
@@ -37,6 +40,7 @@ google-cloud-storage = { module = "com.google.cloud:google-cloud-storage" }
 jackson-kotlin = { module = "com.fasterxml.jackson.module:jackson-module-kotlin", version.ref = "jackson" }
 jackson-xml = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-xml", version.ref = "jackson" }
 jobrunr = { module = "org.jobrunr:jobrunr", version.ref = "jobrunr" }
+kafka-clients = { module = "org.apache.kafka:kafka-clients", version.ref = "kafka" }
 koin-ktor = { module = "io.insert-koin:koin-ktor", version.ref = "koin" }
 koin-logger = { module = "io.insert-koin:koin-logger-slf4j", version.ref = "koin" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
@@ -51,7 +55,9 @@ ktor-server-resources = { module = "io.ktor:ktor-server-resources", version.ref 
 logback = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
 postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresql" }
 protobuf = { module = "com.google.protobuf:protobuf-java", version.ref = "protobuf" }
+protovalidate = { module = "build.buf:protovalidate", version.ref = "protovalidate" }
 s3 = { module = "aws.sdk.kotlin:s3", version.ref = "s3" }
+server-events = { module = "build.buf.gen:accrescent_server-events_protocolbuffers_kotlin", version.ref = "server-events" }
 
 [plugins]
 dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }

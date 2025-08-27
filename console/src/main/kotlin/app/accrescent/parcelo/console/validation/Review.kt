@@ -111,7 +111,7 @@ data class ReviewRequest(
     init {
         require(
             result == ReviewResult.APPROVED && reasons == null ||
-                result == ReviewResult.REJECTED && reasons != null
+                    result == ReviewResult.REJECTED && reasons != null
         )
     }
 }

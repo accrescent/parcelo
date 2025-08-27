@@ -8,7 +8,6 @@ import app.accrescent.parcelo.console.data.AccessControlList
 import app.accrescent.parcelo.console.data.AccessControlLists
 import app.accrescent.parcelo.console.data.App
 import app.accrescent.parcelo.console.data.Edit
-import app.accrescent.parcelo.console.data.Edits as DbEdits
 import app.accrescent.parcelo.console.data.RejectionReason
 import app.accrescent.parcelo.console.data.Review
 import app.accrescent.parcelo.console.data.Reviewer
@@ -40,6 +39,7 @@ import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jobrunr.scheduling.BackgroundJob
 import java.util.UUID
+import app.accrescent.parcelo.console.data.Edits as DbEdits
 
 @Resource("/edits")
 class Edits {

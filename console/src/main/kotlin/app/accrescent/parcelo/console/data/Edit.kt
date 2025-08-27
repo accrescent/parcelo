@@ -4,7 +4,6 @@
 
 package app.accrescent.parcelo.console.data
 
-import app.accrescent.parcelo.console.data.net.Edit as SerializableEdit
 import app.accrescent.parcelo.console.data.net.EditStatus
 import org.jetbrains.exposed.dao.UUIDEntity
 import org.jetbrains.exposed.dao.UUIDEntityClass
@@ -13,6 +12,7 @@ import org.jetbrains.exposed.dao.id.UUIDTable
 import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.util.UUID
+import app.accrescent.parcelo.console.data.net.Edit as SerializableEdit
 
 object Edits : UUIDTable("edits") {
     val appId = reference("app_id", Apps, ReferenceOption.CASCADE)

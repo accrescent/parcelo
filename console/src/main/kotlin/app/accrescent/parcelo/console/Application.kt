@@ -6,8 +6,12 @@ package app.accrescent.parcelo.console
 
 import app.accrescent.parcelo.console.data.configureDatabase
 import app.accrescent.parcelo.console.jobs.configureJobRunr
+import app.accrescent.parcelo.console.kafka.configureKafkaConsumers
+import app.accrescent.parcelo.console.kafka.configureKafkaProducers
+import app.accrescent.parcelo.console.kafka.startAppEditPublishedConsumerLoop
+import app.accrescent.parcelo.console.kafka.startAppPublishedConsumerLoop
+import app.accrescent.parcelo.console.publish.DirectoryPublishService
 import app.accrescent.parcelo.console.publish.PublishService
-import app.accrescent.parcelo.console.publish.S3PublishService
 import app.accrescent.parcelo.console.routes.auth.configureAuthentication
 import app.accrescent.parcelo.console.storage.GCSObjectStorageService
 import app.accrescent.parcelo.console.storage.ObjectStorageService
@@ -24,6 +28,8 @@ import io.ktor.server.application.log
 import io.ktor.server.netty.EngineMain
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.plugins.cors.routing.CORS
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import org.koin.dsl.module
@@ -95,6 +101,13 @@ fun Application.module() {
                 ?: throw Exception("GITHUB_OAUTH2_CLIENT_SECRET not specified in environment"),
             redirectUrl = System.getenv("GITHUB_OAUTH2_REDIRECT_URL"),
         ),
+        kafka = Config.Kafka(
+            bootstrapServers = System.getenv("KAFKA_BOOTSTRAP_SERVERS"),
+            appPublicationRequestedTopic = System.getenv("KAFKA_APP_PUBLICATION_REQUESTED_TOPIC"),
+            appEditPublicationRequestedTopic = System.getenv("KAFKA_APP_EDIT_PUBLICATION_REQUESTED_TOPIC"),
+            appPublishedTopic = System.getenv("KAFKA_APP_PUBLISHED_TOPIC"),
+            appEditPublishedTopic = System.getenv("KAFKA_APP_EDIT_PUBLISHED_TOPIC"),
+        ),
     )
 
     install(Koin) {
@@ -120,12 +133,18 @@ fun Application.module() {
             }
             single { HttpClient { install(HttpTimeout) } }
             single<PublishService> {
-                S3PublishService(
+                val (appEventProducer, appEditEventProducer) =
+                    configureKafkaProducers(config.kafka.bootstrapServers)
+                DirectoryPublishService(
                     Url.parse(config.s3.endpointUrl),
                     config.s3.region,
                     config.s3.bucket,
                     config.s3.accessKeyId,
                     config.s3.secretAccessKey,
+                    appEventProducer,
+                    config.kafka.appPublicationRequestedTopic,
+                    appEditEventProducer,
+                    config.kafka.appEditPublicationRequestedTopic,
                 )
             }
         }
@@ -156,4 +175,20 @@ fun Application.module() {
         httpClient = httpClient,
     )
     configureRouting()
+
+    val (appPublishedConsumer, appEditPublishedConsumer) = configureKafkaConsumers(
+        config.kafka.bootstrapServers,
+        config.kafka.appPublishedTopic,
+        config.kafka.appEditPublishedTopic,
+    )
+    launch(Dispatchers.IO) {
+        appPublishedConsumer.use {
+            startAppPublishedConsumerLoop(it)
+        }
+    }
+    launch(Dispatchers.IO) {
+        appEditPublishedConsumer.use {
+            startAppEditPublishedConsumerLoop(it)
+        }
+    }
 }

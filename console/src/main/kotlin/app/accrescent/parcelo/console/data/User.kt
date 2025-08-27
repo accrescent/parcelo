@@ -4,12 +4,12 @@
 
 package app.accrescent.parcelo.console.data
 
-import app.accrescent.parcelo.console.data.net.User as SerializableUser
 import org.jetbrains.exposed.dao.UUIDEntity
 import org.jetbrains.exposed.dao.UUIDEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.UUIDTable
 import java.util.UUID
+import app.accrescent.parcelo.console.data.net.User as SerializableUser
 
 object Users : UUIDTable("users") {
     val githubUserId = long("gh_id").uniqueIndex()

@@ -12,6 +12,11 @@ SPDX-License-Identifier: AGPL-3.0-only
       <env name="CORS_ALLOWED_SCHEME" value="http" />
       <env name="DEBUG_USER_EMAIL" value="example@example.com" />
       <env name="DEBUG_USER_REVIEWER_EMAIL" value="example@example.com" />
+      <env name="KAFKA_BOOTSTRAP_SERVERS" value="localhost:9092" />
+      <env name="KAFKA_APP_PUBLICATION_REQUESTED_TOPIC" value="app-publication-requested" />
+      <env name="KAFKA_APP_PUBLISHED_TOPIC" value="app-published" />
+      <env name="KAFKA_APP_EDIT_PUBLICATION_REQUESTED_TOPIC" value="app-edit-publication-requested" />
+      <env name="KAFKA_APP_EDIT_PUBLISHED_TOPIC" value="app-edit-published" />
       <env name="POSTGRESQL_PASSWORD" value="password" />
       <env name="POSTGRESQL_SSL_MODE" value="disable" />
       <env name="PRIVATE_STORAGE_BACKEND" value="S3" />

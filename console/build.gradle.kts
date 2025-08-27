@@ -48,6 +48,7 @@ dependencies {
     implementation(platform(libs.google.cloud.bom))
     implementation(libs.google.cloud.storage)
     implementation(libs.jobrunr)
+    implementation(libs.kafka.clients)
     implementation(libs.koin.ktor)
     implementation(libs.koin.logger)
     implementation(libs.ktor.client)
@@ -60,6 +61,8 @@ dependencies {
     implementation(libs.ktor.server.resources)
     implementation(libs.logback)
     implementation(libs.postgresql)
+    implementation(libs.protovalidate)
+    implementation(libs.server.events)
     testImplementation(libs.kotlin.test)
 }
 

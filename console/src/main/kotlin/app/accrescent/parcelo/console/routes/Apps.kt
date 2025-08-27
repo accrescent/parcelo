@@ -6,7 +6,6 @@ package app.accrescent.parcelo.console.routes
 
 import app.accrescent.parcelo.console.data.AccessControlLists
 import app.accrescent.parcelo.console.data.App
-import app.accrescent.parcelo.console.data.Apps as DbApps
 import app.accrescent.parcelo.console.data.Draft
 import app.accrescent.parcelo.console.data.Review
 import app.accrescent.parcelo.console.data.Session
@@ -29,6 +28,7 @@ import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jobrunr.scheduling.BackgroundJob
 import java.util.UUID
+import app.accrescent.parcelo.console.data.Apps as DbApps
 
 @Resource("/apps")
 class Apps {
