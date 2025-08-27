@@ -5,6 +5,7 @@
 package app.accrescent.parcelo.console.publish
 
 import java.io.InputStream
+import java.util.UUID
 
 /**
  * An abstraction over the implementation which publishes app data, i.e., makes it available for
@@ -13,26 +14,33 @@ import java.io.InputStream
 interface PublishService {
     /**
      * Publishes a draft
-     *
-     * @return the repository metadata
      */
     suspend fun publishDraft(
         apkSet: InputStream,
         icon: InputStream,
+        appName: String,
         shortDescription: String,
-    ): AppMetadata
+    )
 
     /**
      * Publishes an app update
-     *
-     * @return the updated repository metadata
      */
-    suspend fun publishUpdate(apkSet: InputStream, appId: String): AppMetadata
+    suspend fun publishUpdate(
+        apkSet: InputStream,
+        updateId: UUID,
+        currentIcon: InputStream,
+        currentAppName: String,
+        currentShortDescription: String,
+    )
 
     /**
      * Publishes an edit
-     *
-     * @return the updated repository metadata
      */
-    suspend fun publishEdit(appId: String, shortDescription: String?): ByteArray
+    suspend fun publishEdit(
+        appId: String,
+        editId: UUID,
+        currentApkSet: InputStream,
+        currentIcon: InputStream,
+        shortDescription: String?,
+    )
 }

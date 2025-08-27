@@ -11,6 +11,7 @@ data class Config(
     val privateStorage: ObjectStorage,
     val s3: S3,
     val github: GitHub,
+    val kafka: Kafka,
 ) {
     data class Application(val baseUrl: String)
 
@@ -48,5 +49,13 @@ data class Config(
         val clientId: String,
         val clientSecret: String,
         val redirectUrl: String,
+    )
+
+    data class Kafka(
+        val bootstrapServers: String,
+        val appPublicationRequestedTopic: String,
+        val appEditPublicationRequestedTopic: String,
+        val appPublishedTopic: String,
+        val appEditPublishedTopic: String,
     )
 }

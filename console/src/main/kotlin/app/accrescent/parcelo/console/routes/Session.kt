@@ -6,7 +6,6 @@ package app.accrescent.parcelo.console.routes
 
 import app.accrescent.parcelo.console.data.Session
 import app.accrescent.parcelo.console.data.Sessions
-import app.accrescent.parcelo.console.routes.auth.Session as CookieSession
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.auth.principal
 import io.ktor.server.response.respond
@@ -17,6 +16,7 @@ import io.ktor.server.sessions.sessions
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.transactions.transaction
+import app.accrescent.parcelo.console.routes.auth.Session as CookieSession
 
 fun Route.sessionRoutes() {
     deleteSessionRoute()

@@ -4,7 +4,6 @@
 
 package app.accrescent.parcelo.console.data
 
-import app.accrescent.parcelo.console.data.net.Draft as SerializableDraft
 import app.accrescent.parcelo.console.data.net.DraftStatus
 import org.jetbrains.exposed.dao.UUIDEntity
 import org.jetbrains.exposed.dao.UUIDEntityClass
@@ -15,6 +14,7 @@ import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.not
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.util.UUID
+import app.accrescent.parcelo.console.data.net.Draft as SerializableDraft
 
 // This is a UUID table because the ID is exposed to unprivileged API consumers. We don't want to
 // leak e.g. the total number of drafts.

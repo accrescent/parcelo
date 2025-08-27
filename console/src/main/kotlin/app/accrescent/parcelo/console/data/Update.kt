@@ -4,7 +4,6 @@
 
 package app.accrescent.parcelo.console.data
 
-import app.accrescent.parcelo.console.data.net.Update as SerializableUpdate
 import app.accrescent.parcelo.console.data.net.UpdateStatus
 import org.jetbrains.exposed.dao.UUIDEntity
 import org.jetbrains.exposed.dao.UUIDEntityClass
@@ -15,6 +14,7 @@ import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.not
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.util.UUID
+import app.accrescent.parcelo.console.data.net.Update as SerializableUpdate
 
 object Updates : UUIDTable("updates") {
     val appId = reference("app_id", Apps, ReferenceOption.CASCADE)

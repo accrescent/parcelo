@@ -4,8 +4,6 @@
 
 package app.accrescent.parcelo.console.routes.auth
 
-import app.accrescent.parcelo.console.data.Session as SessionDao
-import app.accrescent.parcelo.console.data.Sessions as DbSessions
 import io.ktor.client.HttpClient
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
@@ -26,6 +24,8 @@ import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.transactions.transaction
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
+import app.accrescent.parcelo.console.data.Session as SessionDao
+import app.accrescent.parcelo.console.data.Sessions as DbSessions
 
 /**
  * The maximum duration of a console login session

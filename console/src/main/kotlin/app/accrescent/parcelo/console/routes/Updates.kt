@@ -19,7 +19,6 @@ import app.accrescent.parcelo.console.data.Reviewer
 import app.accrescent.parcelo.console.data.Reviewers
 import app.accrescent.parcelo.console.data.Session
 import app.accrescent.parcelo.console.data.Update
-import app.accrescent.parcelo.console.data.Updates as DbUpdates
 import app.accrescent.parcelo.console.data.net.ApiError
 import app.accrescent.parcelo.console.data.net.toApiError
 import app.accrescent.parcelo.console.jobs.cleanFile
@@ -56,6 +55,7 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import org.jobrunr.scheduling.BackgroundJob
 import org.koin.ktor.ext.inject
 import java.util.UUID
+import app.accrescent.parcelo.console.data.Updates as DbUpdates
 
 @Resource("/updates")
 class Updates {

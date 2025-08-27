@@ -4,20 +4,18 @@
 
 package app.accrescent.parcelo.console.jobs
 
-import app.accrescent.parcelo.console.data.AccessControlList
-import app.accrescent.parcelo.console.data.App
-import app.accrescent.parcelo.console.data.Draft as DraftDao
 import app.accrescent.parcelo.console.data.Icon
 import app.accrescent.parcelo.console.data.Listing
-import app.accrescent.parcelo.console.data.Update as UpdateDao
+import app.accrescent.parcelo.console.data.Listings
 import app.accrescent.parcelo.console.publish.PublishService
 import app.accrescent.parcelo.console.storage.ObjectStorageService
 import kotlinx.coroutines.runBlocking
-import org.jetbrains.exposed.sql.statements.api.ExposedBlob
+import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.jobrunr.scheduling.BackgroundJob
 import org.koin.java.KoinJavaComponent.inject
 import java.util.UUID
+import app.accrescent.parcelo.console.data.Draft as DraftDao
+import app.accrescent.parcelo.console.data.Update as UpdateDao
 
 /**
  * Publishes the draft with the given ID, making it available for download
@@ -31,37 +29,16 @@ fun registerPublishAppJob(draftId: UUID) {
         transaction { Icon.findById(draft.iconId)?.fileId } ?: throw IllegalStateException()
 
     // Publish to the repository
-    val metadata = runBlocking {
+    runBlocking {
         storageService.loadObject(draft.fileId) { draftStream ->
             storageService.loadObject(iconFileId) { iconStream ->
-                publishService.publishDraft(draftStream, iconStream, draft.shortDescription)
+                publishService.publishDraft(
+                    draftStream,
+                    iconStream,
+                    draft.label,
+                    draft.shortDescription,
+                )
             }
-        }
-    }
-
-    // Account for publication
-    transaction {
-        draft.delete()
-        val app = App.new(draft.appId) {
-            versionCode = draft.versionCode
-            versionName = draft.versionName
-            fileId = draft.fileId
-            reviewIssueGroupId = draft.reviewIssueGroupId
-            repositoryMetadata = ExposedBlob(metadata.jsonMetadata)
-            buildApksResult = ExposedBlob(metadata.apkSetMetadata)
-        }
-        Listing.new {
-            appId = app.id
-            locale = "en-US"
-            iconId = draft.iconId
-            label = draft.label
-            shortDescription = draft.shortDescription
-        }
-        AccessControlList.new {
-            this.userId = draft.creatorId
-            appId = app.id
-            update = true
-            editMetadata = true
         }
     }
 }
@@ -74,35 +51,25 @@ fun registerPublishUpdateJob(updateId: UUID) {
     val publishService: PublishService by inject(PublishService::class.java)
 
     val update = transaction { UpdateDao.findById(updateId) } ?: return
+    val appListing = transaction {
+        Listing.find { Listings.appId eq update.appId and (Listings.locale eq "en-US") }.single()
+    }
+    val iconFileId = transaction { Icon.findById(appListing.iconId)?.fileId } ?: throw IllegalStateException()
 
     // Publish to the repository
-    val updatedMetadata = runBlocking {
-        storageService.loadObject(update.fileId!!) {
-            runBlocking { publishService.publishUpdate(it, update.appId.value) }
+    runBlocking {
+        storageService.loadObject(update.fileId!!) { updateStream ->
+            storageService.loadObject(iconFileId) { iconStream ->
+                runBlocking {
+                    publishService.publishUpdate(
+                        apkSet = updateStream,
+                        updateId = update.id.value,
+                        currentIcon = iconStream,
+                        currentAppName = appListing.label,
+                        currentShortDescription = appListing.shortDescription,
+                    )
+                }
+            }
         }
-    }
-
-    // Account for publication
-    val oldAppFileId = transaction {
-        App.findById(update.appId)?.run {
-            versionCode = update.versionCode
-            versionName = update.versionName
-            repositoryMetadata = ExposedBlob(updatedMetadata.jsonMetadata)
-            buildApksResult = ExposedBlob(updatedMetadata.apkSetMetadata)
-
-            val oldAppFileId = fileId
-            fileId = update.fileId!!
-
-            update.published = true
-            updating = false
-
-            oldAppFileId
-        }
-    }
-
-    // Delete old app file
-    if (oldAppFileId != null) {
-        runBlocking { storageService.markDeleted(oldAppFileId.value) }
-        BackgroundJob.enqueue { cleanFile(oldAppFileId.value) }
     }
 }

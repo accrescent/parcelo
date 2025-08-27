@@ -9,7 +9,6 @@ import app.accrescent.parcelo.apksparser.ParseApkSetResult
 import app.accrescent.parcelo.console.Config
 import app.accrescent.parcelo.console.data.App
 import app.accrescent.parcelo.console.data.Draft
-import app.accrescent.parcelo.console.data.Drafts as DbDrafts
 import app.accrescent.parcelo.console.data.Icon
 import app.accrescent.parcelo.console.data.RejectionReason
 import app.accrescent.parcelo.console.data.Review
@@ -57,6 +56,7 @@ import org.koin.ktor.ext.inject
 import java.util.UUID
 import javax.imageio.IIOException
 import javax.imageio.ImageIO
+import app.accrescent.parcelo.console.data.Drafts as DbDrafts
 
 @Resource("/drafts")
 class Drafts {
