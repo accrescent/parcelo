@@ -13,6 +13,9 @@ import javax.sql.DataSource
 private const val FILE_CLEANING_LABEL = "CLEAN_FILES"
 private val FILE_CLEANING_PERIOD = Duration.ofHours(6)
 
+private const val MIGRATE_TO_DIRECTORY_JOB_ID = "MIGRATE_TO_DIRECTORY"
+private val MIGRATE_TO_DIRECTORY_PERIOD = Duration.ofHours(6)
+
 /**
  * Configures JobRunr with the given [DataSource]
  */
@@ -25,5 +28,8 @@ fun configureJobRunr(dataSource: DataSource) {
 
     BackgroundJob.scheduleRecurrently(FILE_CLEANING_LABEL, FILE_CLEANING_PERIOD) {
         cleanDeletedFiles()
+    }
+    BackgroundJob.scheduleRecurrently(MIGRATE_TO_DIRECTORY_JOB_ID, MIGRATE_TO_DIRECTORY_PERIOD) {
+        migrateAppsToDirectoryService()
     }
 }
