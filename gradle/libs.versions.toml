@@ -22,7 +22,7 @@ logback = "1.5.18"
 postgresql = "42.7.7"
 protobuf = "4.32.1"
 protovalidate = "1.0.0"
-s3 = "1.5.42"
+s3 = "1.5.44"
 server-events = "32.0.0.1.20250822234457.c28626e0bf3f"
 
 [libraries]
