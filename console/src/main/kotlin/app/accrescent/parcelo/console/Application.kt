@@ -47,7 +47,7 @@ fun main(args: Array<String>) = EngineMain.main(args)
 
 @OptIn(ExperimentalSerializationApi::class)
 fun Application.module() {
-    log.info("Starting Parcelo console 0.15.0-rc.1")
+    log.info("Starting Parcelo console 0.15.0-rc.2")
 
     val config = Config(
         application = Config.Application(
