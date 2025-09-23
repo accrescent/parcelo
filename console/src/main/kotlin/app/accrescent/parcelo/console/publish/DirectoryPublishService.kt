@@ -154,7 +154,7 @@ class DirectoryPublishService(
                                 wellKnown = ReleaseChannel.WellKnown.WELL_KNOWN_STABLE
                             }
                             packageMetadata = packageMetadata {
-                                this.versionCode = versionCode
+                                this.versionCode = versionCode.toLong()
                                 this.versionName = versionName
                                 this.buildApksResult = buildApksResult
                                 this.apkObjectMetadata.putAll(apkObjectMetadata)
@@ -278,7 +278,7 @@ class DirectoryPublishService(
                                     wellKnown = ReleaseChannel.WellKnown.WELL_KNOWN_STABLE
                                 }
                                 packageMetadata = packageMetadata {
-                                    this.versionCode = versionCode
+                                    this.versionCode = versionCode.toLong()
                                     this.versionName = versionName
                                     this.buildApksResult = buildApksResult
                                     this.apkObjectMetadata.putAll(apkObjectMetadata)
@@ -374,7 +374,7 @@ class DirectoryPublishService(
                                     wellKnown = ReleaseChannel.WellKnown.WELL_KNOWN_STABLE
                                 }
                                 packageMetadata = packageMetadata {
-                                    this.versionCode = versionCode
+                                    this.versionCode = versionCode.toLong()
                                     this.versionName = versionName
                                     this.buildApksResult = buildApksResult
                                     this.apkObjectMetadata.putAll(apkObjectMetadata)

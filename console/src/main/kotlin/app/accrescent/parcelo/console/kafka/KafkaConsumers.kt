@@ -135,7 +135,9 @@ fun startAppEditPublishedConsumerLoop(consumer: KafkaConsumer<String, AppEditPub
             transaction {
                 val update = updateId?.let { Update.findById(it) }
                 App.findById(event.edit.app.appId)?.run {
-                    versionCode = stableAppMetadata.versionCode
+                    // Truncates the version code, but we don't currently support saving version
+                    // codes outside the Int range anyway, so we're not actually losing information
+                    versionCode = stableAppMetadata.versionCode.toInt()
                     versionName = stableAppMetadata.versionName
                     buildApksResult = ExposedBlob(stableAppMetadata.buildApksResult.toByteArray())
                     if (update != null) {
