@@ -53,6 +53,10 @@ data class Config(
 
     data class Kafka(
         val bootstrapServers: String,
+        val securityProtocol: String?,
+        val saslMechanism: String?,
+        val saslLoginCallbackHandlerClass: String?,
+        val saslJaasConfig: String?,
         val appPublicationRequestedTopic: String,
         val appEditPublicationRequestedTopic: String,
         val appPublishedTopic: String,

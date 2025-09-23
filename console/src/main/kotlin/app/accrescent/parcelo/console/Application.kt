@@ -103,6 +103,10 @@ fun Application.module() {
         ),
         kafka = Config.Kafka(
             bootstrapServers = System.getenv("KAFKA_BOOTSTRAP_SERVERS"),
+            securityProtocol = System.getenv("KAFKA_SECURITY_PROTOCOL"),
+            saslMechanism = System.getenv("KAFKA_SASL_MECHANISM"),
+            saslLoginCallbackHandlerClass = System.getenv("KAFKA_SASL_LOGIN_CALLBACK_HANDLER_CLASS"),
+            saslJaasConfig = System.getenv("KAFKA_SASL_JAAS_CONFIG"),
             appPublicationRequestedTopic = System.getenv("KAFKA_APP_PUBLICATION_REQUESTED_TOPIC"),
             appEditPublicationRequestedTopic = System.getenv("KAFKA_APP_EDIT_PUBLICATION_REQUESTED_TOPIC"),
             appPublishedTopic = System.getenv("KAFKA_APP_PUBLISHED_TOPIC"),
@@ -133,8 +137,13 @@ fun Application.module() {
             }
             single { HttpClient { install(HttpTimeout) } }
             single<PublishService> {
-                val (appEventProducer, appEditEventProducer) =
-                    configureKafkaProducers(config.kafka.bootstrapServers)
+                val (appEventProducer, appEditEventProducer) = configureKafkaProducers(
+                    bootstrapServers = config.kafka.bootstrapServers,
+                    securityProtocol = config.kafka.securityProtocol,
+                    saslMechanism = config.kafka.saslMechanism,
+                    saslLoginCallbackHandlerClass = config.kafka.saslLoginCallbackHandlerClass,
+                    saslJaasConfig = config.kafka.saslJaasConfig,
+                )
                 DirectoryPublishService(
                     Url.parse(config.s3.endpointUrl),
                     config.s3.region,
@@ -177,9 +186,13 @@ fun Application.module() {
     configureRouting()
 
     val (appPublishedConsumer, appEditPublishedConsumer) = configureKafkaConsumers(
-        config.kafka.bootstrapServers,
-        config.kafka.appPublishedTopic,
-        config.kafka.appEditPublishedTopic,
+        bootstrapServers = config.kafka.bootstrapServers,
+        securityProtocol = config.kafka.securityProtocol,
+        saslMechanism = config.kafka.saslMechanism,
+        saslLoginCallbackHandlerClass = config.kafka.saslLoginCallbackHandlerClass,
+        saslJaasConfig = config.kafka.saslJaasConfig,
+        appPublishedTopic = config.kafka.appPublishedTopic,
+        appEditPublishedTopic = config.kafka.appEditPublishedTopic,
     )
     launch(Dispatchers.IO) {
         appPublishedConsumer.use {

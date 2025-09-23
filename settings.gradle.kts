@@ -16,5 +16,9 @@ dependencyResolutionManagement {
             name = "buf"
             url = uri("https://buf.build/gen/maven")
         }
+        maven {
+            name = "confluent"
+            url = uri("https://packages.confluent.io/maven")
+        }
     }
 }

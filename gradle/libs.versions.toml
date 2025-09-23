@@ -19,6 +19,7 @@ kotlin = "2.2.20"
 ksp = "2.2.20-2.0.3"
 ktor = "3.3.0"
 logback = "1.5.18"
+managed-kafka-auth-login-handler = "1.0.6"
 postgresql = "42.7.8"
 protobuf = "4.32.1"
 protovalidate = "1.0.0"
@@ -53,6 +54,7 @@ ktor-server-negotiation = { module = "io.ktor:ktor-server-content-negotiation", 
 ktor-server-netty = { module = "io.ktor:ktor-server-netty", version.ref = "ktor" }
 ktor-server-resources = { module = "io.ktor:ktor-server-resources", version.ref = "ktor" }
 logback = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
+managed-kafka-auth-login-handler = { module = "com.google.cloud.hosted.kafka:managed-kafka-auth-login-handler", version.ref = "managed-kafka-auth-login-handler" }
 postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresql" }
 protobuf = { module = "com.google.protobuf:protobuf-java", version.ref = "protobuf" }
 protovalidate = { module = "build.buf:protovalidate", version.ref = "protovalidate" }

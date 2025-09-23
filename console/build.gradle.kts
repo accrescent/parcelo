@@ -60,6 +60,7 @@ dependencies {
     implementation(libs.ktor.server.netty)
     implementation(libs.ktor.server.resources)
     implementation(libs.logback)
+    implementation(libs.managed.kafka.auth.login.handler)
     implementation(libs.postgresql)
     implementation(libs.protovalidate)
     implementation(libs.server.events)

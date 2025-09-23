@@ -28,6 +28,10 @@ import java.util.UUID
 
 fun configureKafkaConsumers(
     bootstrapServers: String,
+    securityProtocol: String?,
+    saslMechanism: String?,
+    saslLoginCallbackHandlerClass: String?,
+    saslJaasConfig: String?,
     appPublishedTopic: String,
     appEditPublishedTopic: String,
 ): Pair<KafkaConsumer<String, AppPublished>, KafkaConsumer<String, AppEditPublished>> {
@@ -36,6 +40,18 @@ fun configureKafkaConsumers(
     appPublishedSettings.put("enable.auto.commit", "false")
     appPublishedSettings.put("group.id", "app.accrescent.server.parcelo")
     appPublishedSettings.put("isolation.level", "read_committed")
+    if (securityProtocol != null) {
+        appPublishedSettings["security.protocol"] = securityProtocol
+    }
+    if (saslMechanism != null) {
+        appPublishedSettings["sasl.mechanism"] = saslMechanism
+    }
+    if (saslLoginCallbackHandlerClass != null) {
+        appPublishedSettings["sasl.login.callback.handler.class"] = saslLoginCallbackHandlerClass
+    }
+    if (saslJaasConfig != null) {
+        appPublishedSettings["sasl.jaas.config"] = saslJaasConfig
+    }
 
     val appPublishedConsumer = KafkaConsumer(
         appPublishedSettings,
@@ -49,6 +65,18 @@ fun configureKafkaConsumers(
     appEditPublishedSettings.put("enable.auto.commit", "false")
     appEditPublishedSettings.put("group.id", "app.accrescent.server.parcelo")
     appEditPublishedSettings.put("isolation.level", "read_committed")
+    if (securityProtocol != null) {
+        appEditPublishedSettings["security.protocol"] = securityProtocol
+    }
+    if (saslMechanism != null) {
+        appEditPublishedSettings["sasl.mechanism"] = saslMechanism
+    }
+    if (saslLoginCallbackHandlerClass != null) {
+        appEditPublishedSettings["sasl.login.callback.handler.class"] = saslLoginCallbackHandlerClass
+    }
+    if (saslJaasConfig != null) {
+        appEditPublishedSettings["sasl.jaas.config"] = saslJaasConfig
+    }
 
     val appEditPublishedConsumer = KafkaConsumer(
         appEditPublishedSettings,

@@ -15,6 +15,10 @@ import java.util.UUID
 
 fun configureKafkaProducers(
     bootstrapServers: String,
+    securityProtocol: String?,
+    saslMechanism: String?,
+    saslLoginCallbackHandlerClass: String?,
+    saslJaasConfig: String?,
 ): Pair<KafkaProducer<String, AppPublicationRequested>, KafkaProducer<String, AppEditPublicationRequested>> {
     val transactionalIdSuffix = UUID.randomUUID().toString()
 
@@ -28,6 +32,18 @@ fun configureKafkaProducers(
         "transactional.id",
         "app.accrescent.server.parcelo-app-publication-requested-$transactionalIdSuffix",
     )
+    if (securityProtocol != null) {
+        appPublicationRequestedSettings["security.protocol"] = securityProtocol
+    }
+    if (saslMechanism != null) {
+        appPublicationRequestedSettings["sasl.mechanism"] = saslMechanism
+    }
+    if (saslLoginCallbackHandlerClass != null) {
+        appPublicationRequestedSettings["sasl.login.callback.handler.class"] = saslLoginCallbackHandlerClass
+    }
+    if (saslJaasConfig != null) {
+        appPublicationRequestedSettings["sasl.jaas.config"] = saslJaasConfig
+    }
 
     val appPublicationRequestedProducer = KafkaProducer(
         appPublicationRequestedSettings,
@@ -46,6 +62,18 @@ fun configureKafkaProducers(
         "transactional.id",
         "app.accrescent.server.parcelo-app-edit-publication-requested-$transactionalIdSuffix",
     )
+    if (securityProtocol != null) {
+        appEditPublicationRequestedSettings["security.protocol"] = securityProtocol
+    }
+    if (saslMechanism != null) {
+        appEditPublicationRequestedSettings["sasl.mechanism"] = saslMechanism
+    }
+    if (saslLoginCallbackHandlerClass != null) {
+        appEditPublicationRequestedSettings["sasl.login.callback.handler.class"] = saslLoginCallbackHandlerClass
+    }
+    if (saslJaasConfig != null) {
+        appEditPublicationRequestedSettings["sasl.jaas.config"] = saslJaasConfig
+    }
 
     val appEditPublicationRequestedProducer = KafkaProducer(
         appEditPublicationRequestedSettings,
