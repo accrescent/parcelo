@@ -23,7 +23,7 @@ managed-kafka-auth-login-handler = "1.0.6"
 postgresql = "42.7.8"
 protobuf = "4.32.1"
 protovalidate = "1.0.0"
-s3 = "1.5.44"
+s3 = "1.5.47"
 server-events = "32.1.0.1.20250917234113.06f7676728e3"
 
 [libraries]
