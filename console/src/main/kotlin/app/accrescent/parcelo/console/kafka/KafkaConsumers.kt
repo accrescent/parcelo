@@ -113,7 +113,6 @@ fun startAppPublishedConsumerLoop(consumer: KafkaConsumer<String, AppPublished>)
                     fileId = draft.fileId
                     reviewIssueGroupId = draft.reviewIssueGroupId
                     buildApksResult = ExposedBlob(stableAppMetadata.buildApksResult.toByteArray())
-                    migratedToDirectoryService = true
                 }
                 Listing.new {
                     appId = app.id
@@ -171,7 +170,6 @@ fun startAppEditPublishedConsumerLoop(consumer: KafkaConsumer<String, AppEditPub
                     if (update != null) {
                         fileId = update.fileId!!
                         update.published = true
-                        migratedToDirectoryService = true
                     }
                     updating = false
                 }

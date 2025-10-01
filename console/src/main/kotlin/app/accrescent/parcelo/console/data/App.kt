@@ -22,7 +22,6 @@ object Apps : IdTable<String>("apps") {
         reference("review_issue_group_id", ReviewIssueGroups, ReferenceOption.NO_ACTION).nullable()
     val updating = bool("updating").default(false)
     val buildApksResult = blob("build_apks_result").nullable()
-    val migratedToDirectoryService = bool("migrated_to_directory_service").default(false)
     override val primaryKey = PrimaryKey(id)
 }
 
@@ -36,7 +35,6 @@ class App(id: EntityID<String>) : Entity<String>(id), ToSerializable<Serializabl
     var reviewIssueGroupId by Apps.reviewIssueGroupId
     var updating by Apps.updating
     var buildApksResult by Apps.buildApksResult
-    var migratedToDirectoryService by Apps.migratedToDirectoryService
 
     override fun serializable(): SerializableApp {
         // Use en-US locale by default
