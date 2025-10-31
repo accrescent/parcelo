@@ -4,7 +4,7 @@
 
 rootProject.name = "parcelo"
 
-include("apksparser", "console")
+include("parcelo")
 
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)

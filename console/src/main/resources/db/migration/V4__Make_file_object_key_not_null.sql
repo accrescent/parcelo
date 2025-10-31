@@ -1,1 +1,0 @@
-ALTER TABLE files ALTER COLUMN s3_object_key SET NOT NULL;

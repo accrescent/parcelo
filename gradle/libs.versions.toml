@@ -3,68 +3,14 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 [versions]
-apkanalyzer = "31.13.0"
-apksig = "8.13.0"
-bundletool = "1.18.2"
-dokka = "2.0.0"
-exposed = "0.61.0"
-flyway = "11.13.2"
-github = "1.330"
-google-cloud = "26.68.0"
-jackson = "2.20.0"
-jobrunr = "8.1.0"
-kafka = "4.1.0"
-koin = "4.1.1"
 kotlin = "2.2.20"
-ksp = "2.2.20-2.0.3"
-ktor = "3.3.0"
-logback = "1.5.18"
-managed-kafka-auth-login-handler = "1.0.6"
-postgresql = "42.7.8"
-protobuf = "4.32.1"
-protovalidate = "1.0.0"
-s3 = "1.5.47"
-server-events = "32.1.0.1.20250917234113.06f7676728e3"
+quarkus = "3.29.0"
 
 [libraries]
-apkanalyzer = { module = "com.android.tools.apkparser:apkanalyzer", version.ref = "apkanalyzer" }
-apksig = { module = "com.android.tools.build:apksig", version.ref = "apksig" }
-bundletool = { module = "com.android.tools.build:bundletool", version.ref = "bundletool" }
-exposed-core = { module = "org.jetbrains.exposed:exposed-core", version.ref = "exposed" }
-exposed-dao = { module = "org.jetbrains.exposed:exposed-dao", version.ref = "exposed" }
-exposed-jdbc = { module = "org.jetbrains.exposed:exposed-jdbc", version.ref = "exposed" }
-flyway = { module = "org.flywaydb:flyway-core", version.ref = "flyway" }
-flyway-postgresql = { module = "org.flywaydb:flyway-database-postgresql", version.ref = "flyway" }
-github = { module = "org.kohsuke:github-api", version.ref = "github" }
-google-cloud-bom = { module = "com.google.cloud:libraries-bom", version.ref = "google-cloud" }
-google-cloud-storage = { module = "com.google.cloud:google-cloud-storage" }
-jackson-kotlin = { module = "com.fasterxml.jackson.module:jackson-module-kotlin", version.ref = "jackson" }
-jackson-xml = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-xml", version.ref = "jackson" }
-jobrunr = { module = "org.jobrunr:jobrunr", version.ref = "jobrunr" }
-kafka-clients = { module = "org.apache.kafka:kafka-clients", version.ref = "kafka" }
-koin-ktor = { module = "io.insert-koin:koin-ktor", version.ref = "koin" }
-koin-logger = { module = "io.insert-koin:koin-logger-slf4j", version.ref = "koin" }
-kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
-ktor-client = { module = "io.ktor:ktor-client-apache5", version.ref = "ktor" }
-ktor-serialization = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
-ktor-server-auth = { module = "io.ktor:ktor-server-auth", version.ref = "ktor" }
-ktor-server-core = { module = "io.ktor:ktor-server-core", version.ref = "ktor" }
-ktor-server-cors = { module = "io.ktor:ktor-server-cors", version.ref = "ktor" }
-ktor-server-negotiation = { module = "io.ktor:ktor-server-content-negotiation", version.ref = "ktor" }
-ktor-server-netty = { module = "io.ktor:ktor-server-netty", version.ref = "ktor" }
-ktor-server-resources = { module = "io.ktor:ktor-server-resources", version.ref = "ktor" }
-logback = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
-managed-kafka-auth-login-handler = { module = "com.google.cloud.hosted.kafka:managed-kafka-auth-login-handler", version.ref = "managed-kafka-auth-login-handler" }
-postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresql" }
-protobuf = { module = "com.google.protobuf:protobuf-java", version.ref = "protobuf" }
-protovalidate = { module = "build.buf:protovalidate", version.ref = "protovalidate" }
-s3 = { module = "aws.sdk.kotlin:s3", version.ref = "s3" }
-server-events = { module = "build.buf.gen:accrescent_server-events_protocolbuffers_kotlin", version.ref = "server-events" }
+quarkus-bom = { module = "io.quarkus:quarkus-bom", version.ref = "quarkus" }
+quarkus-kotlin = { module = "io.quarkus:quarkus-kotlin" }
 
 [plugins]
-dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
-java-library = { id = "java-library" }
+kotlin-allopen = { id = "org.jetbrains.kotlin.plugin.allopen", version.ref = "kotlin" }
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
-kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
-ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
-ktor = { id = "io.ktor.plugin", version.ref = "ktor" }
+quarkus = { id = "io.quarkus", version.ref = "quarkus" }
