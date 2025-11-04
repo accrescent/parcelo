@@ -100,7 +100,7 @@ class DirectoryPublishService(
                         // This key construction is deterministic, so we can safely retry this
                         // operation later in case of failure without creating orphan objects (i.e.
                         // objects whose existence our server isn't aware of)
-                        val objectId = "apps/$appId/$versionCode/$apkPathHash"
+                        val objectId = "apps/$appId/$versionCode/$apkPathHash.apk"
 
                         val request = PutObjectRequest {
                             bucket = s3Bucket
@@ -222,7 +222,7 @@ class DirectoryPublishService(
                         // This key construction is deterministic, so we can safely retry this
                         // operation later in case of failure without creating orphan objects (i.e.
                         // objects whose existence our server isn't aware of)
-                        val objectId = "apps/$appId/$versionCode/$apkPathHash"
+                        val objectId = "apps/$appId/$versionCode/$apkPathHash.apk"
 
                         val request = PutObjectRequest {
                             bucket = s3Bucket
@@ -337,7 +337,7 @@ class DirectoryPublishService(
                         .toHexString()
 
                     val entryBytes = zip.getInputStream(entry).readBytes()
-                    val objectId = "apps/$appId/$versionCode/$apkPathHash"
+                    val objectId = "apps/$appId/$versionCode/$apkPathHash.apk"
                     apkObjectMetadata.put(
                         entry.name,
                         objectMetadata {
