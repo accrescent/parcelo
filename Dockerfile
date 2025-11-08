@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-only
 
-FROM eclipse-temurin:21.0.8_9-jdk AS cache
+FROM eclipse-temurin:25.0.1_8-jdk AS cache
 
 ENV GRADLE_USER_HOME=/cache
 COPY apksparser/build.gradle.kts /app/apksparser/
@@ -12,14 +12,14 @@ COPY build.gradle.kts gradle.properties gradlew settings.gradle.kts /app/
 WORKDIR /app
 RUN ./gradlew clean build --no-daemon
 
-FROM eclipse-temurin:21.0.8_9-jdk AS builder
+FROM eclipse-temurin:25.0.1_8-jdk AS builder
 
 WORKDIR /build
 COPY --from=cache /cache /root/.gradle
 COPY . /build
 RUN ./gradlew clean buildFatJar --no-daemon
 
-FROM eclipse-temurin:21.0.8_9-jre
+FROM eclipse-temurin:25.0.1_8-jre
 
 WORKDIR /app
 COPY --from=builder /build/console/build/libs/console-all.jar parcelo-console.jar
