@@ -4,9 +4,9 @@
 
 package app.accrescent.server.parcelo.security
 
-import app.accrescent.server.parcelo.model.UserId
 import io.grpc.Context
+import java.util.UUID
 
 object AuthnContextKey {
-    val USER_ID: Context.Key<UserId> = Context.key("userId")
+    val USER_ID: Context.Key<UUID> = Context.key("userId")
 }

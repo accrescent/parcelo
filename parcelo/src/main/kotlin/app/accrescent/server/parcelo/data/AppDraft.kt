@@ -4,25 +4,26 @@
 
 package app.accrescent.server.parcelo.data
 
-import io.quarkus.hibernate.orm.panache.kotlin.PanacheEntity
+import io.quarkus.hibernate.orm.panache.kotlin.PanacheEntityBase
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.FetchType
+import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
 import java.util.UUID
 
 @Entity
-@Table(name = "api_keys")
-class ApiKey(
-    @Column(name = "user_id", nullable = false)
-    val userId: UUID,
+@Table(name = "app_drafts")
+class AppDraft(
+    @Id
+    val id: UUID,
 
-    @Column(columnDefinition = "text", name = "api_key_hash", nullable = false, unique = true)
-    val apiKeyHash: String,
-) : PanacheEntity() {
+    @Column(name = "organization_id", nullable = false)
+    val organizationId: UUID,
+) : PanacheEntityBase {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(insertable = false, updatable = false)
-    lateinit var user: User
+    lateinit var organization: Organization
 }

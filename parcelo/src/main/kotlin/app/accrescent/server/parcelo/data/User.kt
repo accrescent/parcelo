@@ -4,13 +4,15 @@
 
 package app.accrescent.server.parcelo.data
 
-import io.quarkus.hibernate.orm.panache.kotlin.PanacheCompanion
-import io.quarkus.hibernate.orm.panache.kotlin.PanacheEntity
+import io.quarkus.hibernate.orm.panache.kotlin.PanacheCompanionBase
+import io.quarkus.hibernate.orm.panache.kotlin.PanacheEntityBase
 import io.quarkus.runtime.annotations.RegisterForReflection
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
+import jakarta.persistence.Id
 import jakarta.persistence.Table
 import jakarta.persistence.UniqueConstraint
+import java.util.UUID
 
 @Entity
 @Table(
@@ -18,13 +20,16 @@ import jakarta.persistence.UniqueConstraint
     uniqueConstraints = [UniqueConstraint(columnNames = ["identity_provider", "scoped_user_id"])],
 )
 class User(
+    @Id
+    val id: UUID,
+
     @Column(columnDefinition = "text", name = "scoped_user_id", nullable = false)
     val scopedUserId: String,
-) : PanacheEntity() {
+) : PanacheEntityBase {
     @Column(columnDefinition = "text", name = "identity_provider", nullable = false)
     val identityProvider = "github"
 
-    companion object : PanacheCompanion<User> {
+    companion object : PanacheCompanionBase<User, UUID> {
         fun findByApiKeyHash(hash: String): User? {
             return find(
                 "SELECT api_keys.user " +
@@ -44,4 +49,4 @@ class User(
 }
 
 @RegisterForReflection
-data class UserId(val id: Long)
+data class UserId(val id: UUID)
