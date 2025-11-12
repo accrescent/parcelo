@@ -3,7 +3,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 plugins {
+    alias(libs.plugins.buf) apply false
     alias(libs.plugins.kotlin.allopen) apply false
+    alias(libs.plugins.kotlin.jpa) apply false
     alias(libs.plugins.kotlin.jvm) apply false
     alias(libs.plugins.quarkus) apply false
 }
