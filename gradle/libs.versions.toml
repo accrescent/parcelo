@@ -3,14 +3,26 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 [versions]
+app-publishing-api = "fc9cd623a1d6437ebe1f1d02b519a696"
+buf = "0.10.3"
 kotlin = "2.2.20"
+protovalidate = "1.0.1"
 quarkus = "3.29.0"
 
 [libraries]
+protobuf-kotlin = { module = "com.google.protobuf:protobuf-kotlin" }
+protovalidate = { module = "build.buf:protovalidate", version.ref = "protovalidate" }
 quarkus-bom = { module = "io.quarkus:quarkus-bom", version.ref = "quarkus" }
+quarkus-grpc = { module = "io.quarkus:quarkus-grpc" }
+quarkus-jdbc-postgresql = { module = "io.quarkus:quarkus-jdbc-postgresql" }
+quarkus-hibernate-orm-panache-kotlin = { module = "io.quarkus:quarkus-hibernate-orm-panache-kotlin" }
 quarkus-kotlin = { module = "io.quarkus:quarkus-kotlin" }
+quarkus-oidc = { module = "io.quarkus:quarkus-oidc" }
+quarkus-rest-jackson = { module = "io.quarkus:quarkus-rest-jackson" }
 
 [plugins]
+buf = { id = "build.buf", version.ref = "buf" }
 kotlin-allopen = { id = "org.jetbrains.kotlin.plugin.allopen", version.ref = "kotlin" }
+kotlin-jpa = { id = "org.jetbrains.kotlin.plugin.jpa", version.ref = "kotlin" }
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 quarkus = { id = "io.quarkus", version.ref = "quarkus" }
