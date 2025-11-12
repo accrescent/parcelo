@@ -5,7 +5,6 @@
 package app.accrescent.server.parcelo.security
 
 import app.accrescent.server.parcelo.data.User
-import app.accrescent.server.parcelo.model.UserId
 import io.grpc.Context
 import io.grpc.Contexts
 import io.grpc.Metadata
@@ -44,11 +43,8 @@ private object GrpcAuthenticationInterceptorImpl : ServerInterceptor {
             call.close(Status.UNAUTHENTICATED, Metadata())
             return object : ServerCall.Listener<ReqT>() {}
         }
+        val context = Context.current().withValue(AuthnContextKey.USER_ID, user.id)
 
-        val context = Context.current().withValue(
-            AuthnContextKey.USER_ID,
-            UserId(provider = user.identityProvider, scopedValue = user.scopedUserId),
-        )
         return Contexts.interceptCall(context, call, headers, next)
     }
 
