@@ -4,6 +4,7 @@
 
 package app.accrescent.server.parcelo.security
 
+import app.accrescent.server.parcelo.data.AppDraftAcl
 import app.accrescent.server.parcelo.data.OrganizationAcl
 import jakarta.transaction.Transactional
 import java.util.UUID
@@ -21,5 +22,19 @@ object PermissionService {
         return OrganizationAcl
             .findByOrganizationIdAndUserId(organizationId = organizationId, userId = userId)
             ?.canCreateAppDrafts == true
+    }
+
+    @Transactional
+    fun userCanViewAppDraft(userId: UUID, appDraftId: UUID): Boolean {
+        return AppDraftAcl
+            .findByAppDraftIdAndUserId(appDraftId = appDraftId, userId = userId)
+            ?.canView == true
+    }
+
+    @Transactional
+    fun userCanDeleteAppDraft(userId: UUID, appDraftId: UUID): Boolean {
+        return AppDraftAcl
+            .findByAppDraftIdAndUserId(appDraftId = appDraftId, userId = userId)
+            ?.canDelete == true
     }
 }

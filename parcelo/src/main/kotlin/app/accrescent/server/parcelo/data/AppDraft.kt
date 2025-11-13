@@ -4,6 +4,7 @@
 
 package app.accrescent.server.parcelo.data
 
+import io.quarkus.hibernate.orm.panache.kotlin.PanacheCompanionBase
 import io.quarkus.hibernate.orm.panache.kotlin.PanacheEntityBase
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
@@ -26,4 +27,6 @@ class AppDraft(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(insertable = false, updatable = false)
     lateinit var organization: Organization
+
+    companion object : PanacheCompanionBase<AppDraft, UUID>
 }
