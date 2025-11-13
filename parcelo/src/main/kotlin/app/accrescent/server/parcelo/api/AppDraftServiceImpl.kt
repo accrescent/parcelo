@@ -15,6 +15,7 @@ import app.accrescent.appstore.publish.v1alpha1.createAppDraftResponse
 import app.accrescent.appstore.publish.v1alpha1.deleteAppDraftResponse
 import app.accrescent.server.parcelo.data.AppDraft
 import app.accrescent.server.parcelo.data.AppDraftAcl
+import app.accrescent.server.parcelo.data.Organization
 import app.accrescent.server.parcelo.security.AuthnContextKey
 import app.accrescent.server.parcelo.security.GrpcAuthenticationInterceptor
 import app.accrescent.server.parcelo.security.PermissionService
@@ -23,6 +24,7 @@ import io.grpc.Status
 import io.quarkus.grpc.GrpcService
 import io.quarkus.grpc.RegisterInterceptor
 import io.smallrye.mutiny.Uni
+import jakarta.persistence.LockModeType
 import jakarta.transaction.Transactional
 import java.util.UUID
 
@@ -53,6 +55,25 @@ class AppDraftServiceImpl : AppDraftService {
                 .withDescription(
                     "insufficient permission to create app drafts in organization " +
                             "\"${request.organizationId}\""
+                )
+                .asRuntimeException()
+        }
+
+        val orgAppDraftLimit = Organization
+            .findById(organizationId, LockModeType.PESSIMISTIC_WRITE)
+            ?.appDraftLimit
+            ?: run {
+                throw Status
+                    .NOT_FOUND
+                    .withDescription("organization \"${request.organizationId}\" not found")
+                    .asRuntimeException()
+            }
+        val orgAppDraftCount = AppDraft.countInOrganization(organizationId)
+        if (orgAppDraftCount >= orgAppDraftLimit) {
+            throw Status
+                .RESOURCE_EXHAUSTED
+                .withDescription(
+                    "organization limit of $orgAppDraftLimit app drafts already reached"
                 )
                 .asRuntimeException()
         }
