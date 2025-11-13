@@ -28,5 +28,9 @@ class AppDraft(
     @JoinColumn(insertable = false, updatable = false)
     lateinit var organization: Organization
 
-    companion object : PanacheCompanionBase<AppDraft, UUID>
+    companion object : PanacheCompanionBase<AppDraft, UUID> {
+        fun countInOrganization(organizationId: UUID): Long {
+            return count("WHERE organizationId = ?1", organizationId)
+        }
+    }
 }
