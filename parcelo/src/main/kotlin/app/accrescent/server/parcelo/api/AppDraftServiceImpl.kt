@@ -12,7 +12,9 @@ import app.accrescent.appstore.publish.v1alpha1.DeleteAppDraftResponse
 import app.accrescent.appstore.publish.v1alpha1.GetAppDraftPackageUploadInfoRequest
 import app.accrescent.appstore.publish.v1alpha1.GetAppDraftPackageUploadInfoResponse
 import app.accrescent.appstore.publish.v1alpha1.createAppDraftResponse
+import app.accrescent.appstore.publish.v1alpha1.deleteAppDraftResponse
 import app.accrescent.server.parcelo.data.AppDraft
+import app.accrescent.server.parcelo.data.AppDraftAcl
 import app.accrescent.server.parcelo.security.AuthnContextKey
 import app.accrescent.server.parcelo.security.GrpcAuthenticationInterceptor
 import app.accrescent.server.parcelo.security.PermissionService
@@ -57,6 +59,13 @@ class AppDraftServiceImpl : AppDraftService {
 
         val appDraft = AppDraft(id = UUID.randomUUID(), organizationId = organizationId)
             .also { it.persist() }
+        AppDraftAcl(
+            appDraftId = appDraft.id,
+            userId = userId,
+            canDelete = true,
+            canView = true,
+        )
+            .persist()
 
         val response = createAppDraftResponse {
             id = appDraft.id.toString()
@@ -71,7 +80,32 @@ class AppDraftServiceImpl : AppDraftService {
         throw Status.UNIMPLEMENTED.asRuntimeException()
     }
 
+    @Transactional
     override fun deleteAppDraft(request: DeleteAppDraftRequest): Uni<DeleteAppDraftResponse> {
-        throw Status.UNIMPLEMENTED.asRuntimeException()
+        val userId = AuthnContextKey.USER_ID.get()
+        // protovalidate ensures this is a valid UUID, so no need to catch IllegalArgumentException
+        val appDraftId = UUID.fromString(request.id)
+
+        val canViewDraft = PermissionService
+            .userCanViewAppDraft(userId = userId, appDraftId = appDraftId)
+        if (!canViewDraft) {
+            throw Status
+                .NOT_FOUND
+                .withDescription("app draft \"$appDraftId\" not found")
+                .asRuntimeException()
+        }
+
+        val canDeleteAppDraft = PermissionService
+            .userCanDeleteAppDraft(userId = userId, appDraftId = appDraftId)
+        if (!canDeleteAppDraft) {
+            throw Status
+                .PERMISSION_DENIED
+                .withDescription("insufficient permission to delete app draft \"$appDraftId\"")
+                .asRuntimeException()
+        }
+
+        AppDraft.deleteById(appDraftId)
+
+        return Uni.createFrom().item { deleteAppDraftResponse {} }
     }
 }

@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 [versions]
-app-publishing-api = "adf52397ad6d4749a21fa333c22e4039"
+app-publishing-api = "dad4763296e24e9aa9efd11bce7a804f"
 buf = "0.10.3"
 kotlin = "2.2.20"
 protovalidate = "1.0.1"
