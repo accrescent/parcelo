@@ -19,6 +19,7 @@ dependencies {
         // need to use it so that its gencode is compatible with the server's protobuf runtime
         exclude("com.google.protobuf", "protobuf-java")
     }
+    implementation(project(":quarkus-google-cloud-storage"))
     implementation(libs.protobuf.kotlin)
     implementation(libs.protovalidate)
     implementation(libs.quarkus.grpc)
@@ -52,6 +53,8 @@ kotlin {
     compilerOptions {
         jvmTarget = JvmTarget.JVM_24
         javaParameters = true
+
+        freeCompilerArgs.add("-Xannotation-default-target=param-property")
     }
 }
 

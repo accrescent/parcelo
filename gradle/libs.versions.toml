@@ -5,24 +5,37 @@
 [versions]
 app-publishing-api = "dad4763296e24e9aa9efd11bce7a804f"
 buf = "0.10.3"
+google-cloud-libraries-bom = "26.71.0"
 kotlin = "2.2.20"
+log4j1 = "1.2.17"
 protovalidate = "1.0.1"
 quarkus = "3.29.0"
 
 [libraries]
+google-cloud-libraries-bom = { module = "com.google.cloud:libraries-bom", version.ref = "google-cloud-libraries-bom" }
+google-cloud-storage = { module = "com.google.cloud:google-cloud-storage" }
+log4j-api = { module = "org.apache.logging.log4j:log4j-api" }
+log4j1 = { module = "log4j:log4j", version.ref = "log4j1" }
 protobuf-kotlin = { module = "com.google.protobuf:protobuf-kotlin" }
 protovalidate = { module = "build.buf:protovalidate", version.ref = "protovalidate" }
+quarkus-arc-deployment = { module = "io.quarkus:quarkus-arc-deployment" }
 quarkus-bom = { module = "io.quarkus:quarkus-bom", version.ref = "quarkus" }
+quarkus-core = { module = "io.quarkus:quarkus-core" }
+quarkus-devservices-common = { module = "io.quarkus:quarkus-devservices-common" }
+quarkus-extension-processor = { module = "io.quarkus:quarkus-extension-processor", version.ref = "quarkus" }
 quarkus-grpc = { module = "io.quarkus:quarkus-grpc" }
 quarkus-jdbc-postgresql = { module = "io.quarkus:quarkus-jdbc-postgresql" }
 quarkus-hibernate-orm-panache-kotlin = { module = "io.quarkus:quarkus-hibernate-orm-panache-kotlin" }
 quarkus-kotlin = { module = "io.quarkus:quarkus-kotlin" }
 quarkus-oidc = { module = "io.quarkus:quarkus-oidc" }
 quarkus-rest-jackson = { module = "io.quarkus:quarkus-rest-jackson" }
+testcontainers = { module = "org.testcontainers:testcontainers"  }
 
 [plugins]
 buf = { id = "build.buf", version.ref = "buf" }
 kotlin-allopen = { id = "org.jetbrains.kotlin.plugin.allopen", version.ref = "kotlin" }
 kotlin-jpa = { id = "org.jetbrains.kotlin.plugin.jpa", version.ref = "kotlin" }
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-kapt = { id = "org.jetbrains.kotlin.kapt" }
 quarkus = { id = "io.quarkus", version.ref = "quarkus" }
+quarkus-extension = { id = "io.quarkus.extension", version.ref = "quarkus" }

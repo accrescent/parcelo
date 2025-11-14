@@ -4,7 +4,12 @@
 
 rootProject.name = "parcelo"
 
-include("parcelo")
+include(
+    "parcelo",
+    "quarkus-google-cloud-storage",
+    "quarkus-google-cloud-storage-deployment",
+    "quarkus-google-cloud-storage-devservices",
+)
 
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)

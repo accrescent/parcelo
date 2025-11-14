@@ -32,6 +32,13 @@ object PermissionService {
     }
 
     @Transactional
+    fun userCanReplaceAppDraftPackage(userId: UUID, appDraftId: UUID): Boolean {
+        return AppDraftAcl
+            .findByAppDraftIdAndUserId(appDraftId = appDraftId, userId = userId)
+            ?.canReplacePackage == true
+    }
+
+    @Transactional
     fun userCanDeleteAppDraft(userId: UUID, appDraftId: UUID): Boolean {
         return AppDraftAcl
             .findByAppDraftIdAndUserId(appDraftId = appDraftId, userId = userId)

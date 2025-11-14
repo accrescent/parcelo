@@ -28,6 +28,9 @@ class AppDraftAcl(
     @Column(name = "can_delete", nullable = false)
     val canDelete: Boolean,
 
+    @Column(name = "can_replace_package", nullable = false)
+    val canReplacePackage: Boolean,
+
     @Column(name = "can_view", nullable = false)
     val canView: Boolean,
 ) : PanacheEntity() {
