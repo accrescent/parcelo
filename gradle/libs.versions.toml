@@ -9,7 +9,7 @@ google-cloud-libraries-bom = "26.71.0"
 kotlin = "2.2.20"
 log4j1 = "1.2.17"
 protovalidate = "1.0.1"
-quarkus = "3.29.0"
+quarkus = "3.29.3"
 
 [libraries]
 google-cloud-libraries-bom = { module = "com.google.cloud:libraries-bom", version.ref = "google-cloud-libraries-bom" }
