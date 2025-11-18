@@ -24,7 +24,7 @@ postgresql = "42.7.8"
 protobuf = "4.33.0"
 protovalidate = "1.0.1"
 s3 = "1.5.74"
-server-events = "32.1.0.1.20250917234113.06f7676728e3"
+server-events = "33.1.0.1.20250917234113.06f7676728e3"
 
 [libraries]
 apkanalyzer = { module = "com.android.tools.apkparser:apkanalyzer", version.ref = "apkanalyzer" }
