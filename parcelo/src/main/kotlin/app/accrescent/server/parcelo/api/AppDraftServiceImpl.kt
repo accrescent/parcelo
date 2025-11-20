@@ -5,17 +5,21 @@
 package app.accrescent.server.parcelo.api
 
 import app.accrescent.appstore.publish.v1alpha1.AppDraftService
+import app.accrescent.appstore.publish.v1alpha1.CreateAppDraftListingRequest
+import app.accrescent.appstore.publish.v1alpha1.CreateAppDraftListingResponse
 import app.accrescent.appstore.publish.v1alpha1.CreateAppDraftRequest
 import app.accrescent.appstore.publish.v1alpha1.CreateAppDraftResponse
 import app.accrescent.appstore.publish.v1alpha1.DeleteAppDraftRequest
 import app.accrescent.appstore.publish.v1alpha1.DeleteAppDraftResponse
 import app.accrescent.appstore.publish.v1alpha1.GetAppDraftPackageUploadInfoRequest
 import app.accrescent.appstore.publish.v1alpha1.GetAppDraftPackageUploadInfoResponse
+import app.accrescent.appstore.publish.v1alpha1.createAppDraftListingResponse
 import app.accrescent.appstore.publish.v1alpha1.createAppDraftResponse
 import app.accrescent.appstore.publish.v1alpha1.deleteAppDraftResponse
 import app.accrescent.appstore.publish.v1alpha1.getAppDraftPackageUploadInfoResponse
 import app.accrescent.server.parcelo.data.AppDraft
 import app.accrescent.server.parcelo.data.AppDraftAcl
+import app.accrescent.server.parcelo.data.AppListing
 import app.accrescent.server.parcelo.data.Organization
 import app.accrescent.server.parcelo.security.AuthnContextKey
 import app.accrescent.server.parcelo.security.GrpcAuthenticationInterceptor
@@ -99,6 +103,7 @@ class AppDraftServiceImpl @Inject constructor(
         AppDraftAcl(
             appDraftId = appDraft.id,
             userId = userId,
+            canCreateListings = true,
             canDelete = true,
             canReplacePackage = true,
             canView = true,
@@ -183,5 +188,44 @@ class AppDraftServiceImpl @Inject constructor(
         AppDraft.deleteById(appDraftId)
 
         return Uni.createFrom().item { deleteAppDraftResponse {} }
+    }
+
+    @Transactional
+    override fun createAppDraftListing(
+        request: CreateAppDraftListingRequest,
+    ): Uni<CreateAppDraftListingResponse> {
+        val userId = AuthnContextKey.USER_ID.get()
+        // protovalidate ensures this is a valid UUID, so no need to catch IllegalArgumentException
+        val appDraftId = UUID.fromString(request.appDraftId)
+
+        val canViewAppDraft = PermissionService
+            .userCanViewAppDraft(userId = userId, appDraftId = appDraftId)
+        if (!canViewAppDraft) {
+            throw Status
+                .NOT_FOUND
+                .withDescription("app draft \"$appDraftId\" not found")
+                .asRuntimeException()
+        }
+        val canCreateListings = PermissionService
+            .userCanCreateListingsForDraft(userId = userId, appDraftId = appDraftId)
+        if (!canCreateListings) {
+            throw Status
+                .PERMISSION_DENIED
+                .withDescription(
+                    "insufficient permission to create app listings for app draft " +
+                            "\"$appDraftId\""
+                )
+                .asRuntimeException()
+        }
+
+        AppListing(
+            appDraftId = appDraftId,
+            language = request.language,
+            name = request.name,
+            shortDescription = request.shortDescription,
+        )
+            .persist()
+
+        return Uni.createFrom().item { createAppDraftListingResponse {} }
     }
 }
