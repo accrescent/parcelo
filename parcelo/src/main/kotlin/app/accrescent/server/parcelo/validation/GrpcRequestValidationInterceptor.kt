@@ -4,6 +4,7 @@
 
 package app.accrescent.server.parcelo.validation
 
+import app.accrescent.appstore.publish.v1alpha1.CreateAppDraftListingRequest
 import app.accrescent.appstore.publish.v1alpha1.CreateAppDraftRequest
 import app.accrescent.appstore.publish.v1alpha1.DeleteAppDraftRequest
 import app.accrescent.appstore.publish.v1alpha1.GetAppDraftPackageUploadInfoRequest
@@ -25,6 +26,7 @@ class GrpcRequestValidationInterceptor : ServerInterceptor {
         .newBuilder()
         .buildWithDescriptors(
             listOf(
+                CreateAppDraftListingRequest.getDescriptor(),
                 CreateAppDraftRequest.getDescriptor(),
                 DeleteAppDraftRequest.getDescriptor(),
                 GetAppDraftPackageUploadInfoRequest.getDescriptor()

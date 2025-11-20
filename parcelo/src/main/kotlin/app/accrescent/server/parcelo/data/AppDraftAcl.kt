@@ -25,6 +25,9 @@ class AppDraftAcl(
     @Column(name = "user_id", nullable = false)
     val userId: UUID,
 
+    @Column(name = "can_create_listings", nullable = false)
+    val canCreateListings: Boolean,
+
     @Column(name = "can_delete", nullable = false)
     val canDelete: Boolean,
 

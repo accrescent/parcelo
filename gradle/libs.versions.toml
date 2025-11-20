@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 [versions]
-app-publishing-api = "dad4763296e24e9aa9efd11bce7a804f"
+app-publishing-api = "b36a619c333f4e0c938d75e152040169"
 buf = "0.10.3"
 google-cloud-libraries-bom = "26.71.0"
 kotlin = "2.2.20"
