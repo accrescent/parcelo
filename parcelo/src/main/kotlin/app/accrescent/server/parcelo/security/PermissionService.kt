@@ -51,4 +51,11 @@ object PermissionService {
             .findByAppDraftIdAndUserId(appDraftId = appDraftId, userId = userId)
             ?.canCreateListings == true
     }
+
+    @Transactional
+    fun userCanDeleteAppDraftListings(userId: UUID, appDraftId: UUID): Boolean {
+        return AppDraftAcl
+            .findByAppDraftIdAndUserId(appDraftId = appDraftId, userId = userId)
+            ?.canDeleteListings == true
+    }
 }

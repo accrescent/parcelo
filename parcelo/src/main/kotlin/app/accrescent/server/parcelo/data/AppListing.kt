@@ -4,6 +4,7 @@
 
 package app.accrescent.server.parcelo.data
 
+import io.quarkus.hibernate.orm.panache.kotlin.PanacheCompanion
 import io.quarkus.hibernate.orm.panache.kotlin.PanacheEntity
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
@@ -38,4 +39,10 @@ class AppListing(
     @JoinColumn(name = "app_draft_id", insertable = false, updatable = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
     lateinit var appDraft: AppDraft
+
+    companion object : PanacheCompanion<AppListing> {
+        fun deleteByAppDraftAndLanguage(appDraftId: UUID, language: String): Boolean {
+            return delete("WHERE appDraftId = ?1 AND language = ?2", appDraftId, language) > 0
+        }
+    }
 }

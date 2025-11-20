@@ -31,6 +31,9 @@ class AppDraftAcl(
     @Column(name = "can_delete", nullable = false)
     val canDelete: Boolean,
 
+    @Column(name = "can_delete_listings", nullable = false)
+    val canDeleteListings: Boolean,
+
     @Column(name = "can_replace_package", nullable = false)
     val canReplacePackage: Boolean,
 

@@ -9,12 +9,15 @@ import app.accrescent.appstore.publish.v1alpha1.CreateAppDraftListingRequest
 import app.accrescent.appstore.publish.v1alpha1.CreateAppDraftListingResponse
 import app.accrescent.appstore.publish.v1alpha1.CreateAppDraftRequest
 import app.accrescent.appstore.publish.v1alpha1.CreateAppDraftResponse
+import app.accrescent.appstore.publish.v1alpha1.DeleteAppDraftListingRequest
+import app.accrescent.appstore.publish.v1alpha1.DeleteAppDraftListingResponse
 import app.accrescent.appstore.publish.v1alpha1.DeleteAppDraftRequest
 import app.accrescent.appstore.publish.v1alpha1.DeleteAppDraftResponse
 import app.accrescent.appstore.publish.v1alpha1.GetAppDraftPackageUploadInfoRequest
 import app.accrescent.appstore.publish.v1alpha1.GetAppDraftPackageUploadInfoResponse
 import app.accrescent.appstore.publish.v1alpha1.createAppDraftListingResponse
 import app.accrescent.appstore.publish.v1alpha1.createAppDraftResponse
+import app.accrescent.appstore.publish.v1alpha1.deleteAppDraftListingResponse
 import app.accrescent.appstore.publish.v1alpha1.deleteAppDraftResponse
 import app.accrescent.appstore.publish.v1alpha1.getAppDraftPackageUploadInfoResponse
 import app.accrescent.server.parcelo.data.AppDraft
@@ -105,6 +108,7 @@ class AppDraftServiceImpl @Inject constructor(
             userId = userId,
             canCreateListings = true,
             canDelete = true,
+            canDeleteListings = true,
             canReplacePackage = true,
             canView = true,
         )
@@ -227,5 +231,47 @@ class AppDraftServiceImpl @Inject constructor(
             .persist()
 
         return Uni.createFrom().item { createAppDraftListingResponse {} }
+    }
+
+    @Transactional
+    override fun deleteAppDraftListing(
+        request: DeleteAppDraftListingRequest,
+    ): Uni<DeleteAppDraftListingResponse> {
+        val userId = AuthnContextKey.USER_ID.get()
+        // protovalidate ensures this is a valid UUID, so no need to catch IllegalArgumentException
+        val appDraftId = UUID.fromString(request.appDraftId)
+
+        val canViewAppDraft = PermissionService
+            .userCanViewAppDraft(userId = userId, appDraftId = appDraftId)
+        if (!canViewAppDraft) {
+            throw Status
+                .NOT_FOUND
+                .withDescription("app draft \"$appDraftId\" not found")
+                .asRuntimeException()
+        }
+        val canDeleteAppDraftListings = PermissionService
+            .userCanDeleteAppDraftListings(userId = userId, appDraftId = appDraftId)
+        if (!canDeleteAppDraftListings) {
+            throw Status
+                .PERMISSION_DENIED
+                .withDescription(
+                    "insufficient permission to delete listings for app draft "
+                            + "\"$appDraftId\""
+                )
+                .asRuntimeException()
+        }
+
+        val deleted = AppListing.deleteByAppDraftAndLanguage(appDraftId, request.language)
+        if (deleted) {
+            return Uni.createFrom().item { deleteAppDraftListingResponse {} }
+        } else {
+            throw Status
+                .NOT_FOUND
+                .withDescription(
+                    "listing with language \"${request.language}\" not found for app draft "
+                            + "\"$appDraftId\""
+                )
+                .asRuntimeException()
+        }
     }
 }
