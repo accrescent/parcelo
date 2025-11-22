@@ -6,6 +6,10 @@ rootProject.name = "parcelo"
 
 include(
     "parcelo",
+    "quarkus-google-cloud-pubsub",
+    "quarkus-google-cloud-pubsub-deployment",
+    "quarkus-google-cloud-pubsub-devservices",
+    "quarkus-google-cloud-pubsub-spi",
     "quarkus-google-cloud-storage",
     "quarkus-google-cloud-storage-deployment",
     "quarkus-google-cloud-storage-devservices",

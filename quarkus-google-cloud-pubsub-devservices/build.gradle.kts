@@ -13,9 +13,9 @@ dependencies {
     implementation(platform(libs.google.cloud.libraries.bom))
     implementation(platform(libs.quarkus.bom))
     implementation(project(":quarkus-google-cloud-pubsub-spi"))
-    implementation(libs.google.cloud.storage)
+    implementation(libs.google.cloud.pubsub)
     implementation(libs.quarkus.devservices.common)
-    implementation(libs.testcontainers)
+    implementation(libs.testcontainers.gcloud)
     kapt(libs.quarkus.extension.processor)
 }
 

@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only
 
-package app.accrescent.quarkus.gcs.devservices
+package app.accrescent.quarkus.gcp.pubsub.devservices
 
 import io.quarkus.runtime.annotations.ConfigRoot
 import io.smallrye.config.ConfigMapping
@@ -10,9 +10,9 @@ import io.smallrye.config.WithDefault
 import java.util.Optional
 import java.util.OptionalInt
 
-@ConfigMapping(prefix = "quarkus.google.cloud.storage.devservices")
+@ConfigMapping(prefix = "quarkus.google.cloud.pubsub.devservices")
 @ConfigRoot
-interface GcsDevServicesConfig {
+interface PubSubDevServicesConfig {
     @WithDefault("true")
     fun enabled(): Boolean
 
@@ -20,7 +20,7 @@ interface GcsDevServicesConfig {
 
     fun port(): OptionalInt
 
-    fun buckets(): Optional<List<String>>
+    fun projectId(): Optional<String>
 
-    fun notifications(): Optional<NotificationsConfig>
+    fun topics(): Map<String, TopicConfig>
 }

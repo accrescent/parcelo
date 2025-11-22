@@ -6,17 +6,12 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.kotlin.jvm)
-    alias(libs.plugins.kotlin.kapt)
 }
 
 dependencies {
-    implementation(platform(libs.google.cloud.libraries.bom))
     implementation(platform(libs.quarkus.bom))
-    implementation(project(":quarkus-google-cloud-pubsub-spi"))
-    implementation(libs.google.cloud.storage)
-    implementation(libs.quarkus.devservices.common)
+    implementation(libs.quarkus.builder)
     implementation(libs.testcontainers)
-    kapt(libs.quarkus.extension.processor)
 }
 
 java {
