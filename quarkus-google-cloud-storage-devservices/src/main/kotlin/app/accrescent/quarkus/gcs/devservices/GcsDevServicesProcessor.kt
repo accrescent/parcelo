@@ -4,6 +4,7 @@
 
 package app.accrescent.quarkus.gcs.devservices
 
+import app.accrescent.quarkus.gcp.pubsub.spi.PubSubConnectionItem
 import com.google.cloud.NoCredentials
 import com.google.cloud.storage.BucketInfo
 import com.google.cloud.storage.StorageOptions
@@ -15,6 +16,7 @@ import org.testcontainers.utility.DockerImageName
 import java.util.Optional
 import java.util.OptionalInt
 import kotlin.jvm.optionals.getOrElse
+import kotlin.jvm.optionals.getOrNull
 
 private const val CONFIG_PREFIX = "quarkus.google.cloud.storage"
 private const val DEV_SERVICE_NAME = "google-cloud-storage-server"
@@ -25,12 +27,20 @@ private const val PROJECT_ID = "dev-service-project"
 
 class GcsDevServicesProcessor {
     @BuildStep
-    fun startContainer(config: GcsDevServicesConfig): DevServicesResultBuildItem? {
+    fun startContainer(
+        config: GcsDevServicesConfig,
+        pubSubConnectionItem: Optional<PubSubConnectionItem>,
+    ): DevServicesResultBuildItem? {
         if (!config.enabled()) {
             return null
         }
 
-        val container = QuarkusGcsContainer(config.imageName(), config.port())
+        val container = QuarkusGcsContainer(
+            config.imageName(),
+            config.port(),
+            config.notifications(),
+            pubSubConnectionItem,
+        )
         container.start()
 
         val host = "http://${container.host}:${container.firstMappedPort}"
@@ -65,6 +75,8 @@ class GcsDevServicesProcessor {
 private class QuarkusGcsContainer(
     imageName: Optional<String>,
     private val fixedExposedPort: OptionalInt,
+    private val notificationsConfig: Optional<NotificationsConfig>,
+    private val pubSubConnectionItem: Optional<PubSubConnectionItem>,
 ) : GenericContainer<QuarkusGcsContainer>(
     DockerImageName
         .parse(imageName.orElseGet { ConfigureUtil.getDefaultImageNameFor(DEV_SERVICE_NAME) })
@@ -79,6 +91,22 @@ private class QuarkusGcsContainer(
             addExposedPort(FAKE_GCS_SERVER_PORT)
         }
 
-        withCommand("-scheme", "http")
+        val notificationsConfig = notificationsConfig.getOrNull()
+        if (notificationsConfig == null) {
+            withCommand("-scheme", "http")
+        } else {
+            withCommand(
+                "-scheme",
+                "http",
+                "-event.pubsub-project-id",
+                notificationsConfig.pubsubProjectId(),
+                "-event.pubsub-topic",
+                notificationsConfig.pubsubTopic(),
+            )
+        }
+        pubSubConnectionItem.ifPresent { pubsub ->
+            withNetwork(pubsub.network)
+            withEnv("PUBSUB_EMULATOR_HOST", "${pubsub.internalHost}:${pubsub.internalPort}")
+        }
     }
 }

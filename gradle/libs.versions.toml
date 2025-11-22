@@ -13,6 +13,7 @@ quarkus = "3.29.3"
 
 [libraries]
 google-cloud-libraries-bom = { module = "com.google.cloud:libraries-bom", version.ref = "google-cloud-libraries-bom" }
+google-cloud-pubsub = { module = "com.google.cloud:google-cloud-pubsub" }
 google-cloud-storage = { module = "com.google.cloud:google-cloud-storage" }
 log4j-api = { module = "org.apache.logging.log4j:log4j-api" }
 log4j1 = { module = "log4j:log4j", version.ref = "log4j1" }
@@ -20,6 +21,7 @@ protobuf-kotlin = { module = "com.google.protobuf:protobuf-kotlin" }
 protovalidate = { module = "build.buf:protovalidate", version.ref = "protovalidate" }
 quarkus-arc-deployment = { module = "io.quarkus:quarkus-arc-deployment" }
 quarkus-bom = { module = "io.quarkus:quarkus-bom", version.ref = "quarkus" }
+quarkus-builder = { module = "io.quarkus:quarkus-builder" }
 quarkus-core = { module = "io.quarkus:quarkus-core" }
 quarkus-devservices-common = { module = "io.quarkus:quarkus-devservices-common" }
 quarkus-extension-processor = { module = "io.quarkus:quarkus-extension-processor", version.ref = "quarkus" }
@@ -30,6 +32,7 @@ quarkus-kotlin = { module = "io.quarkus:quarkus-kotlin" }
 quarkus-oidc = { module = "io.quarkus:quarkus-oidc" }
 quarkus-rest-jackson = { module = "io.quarkus:quarkus-rest-jackson" }
 testcontainers = { module = "org.testcontainers:testcontainers"  }
+testcontainers-gcloud = { module = "org.testcontainers:gcloud" }
 
 [plugins]
 buf = { id = "build.buf", version.ref = "buf" }

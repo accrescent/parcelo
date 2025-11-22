@@ -10,12 +10,10 @@ plugins {
 }
 
 dependencies {
-    implementation(platform(libs.google.cloud.libraries.bom))
     implementation(platform(libs.quarkus.bom))
-    implementation(project(":quarkus-google-cloud-pubsub-spi"))
-    implementation(libs.google.cloud.storage)
-    implementation(libs.quarkus.devservices.common)
-    implementation(libs.testcontainers)
+    implementation(project(":quarkus-google-cloud-pubsub"))
+    implementation(project(":quarkus-google-cloud-pubsub-devservices"))
+    implementation(libs.quarkus.arc.deployment)
     kapt(libs.quarkus.extension.processor)
 }
 
