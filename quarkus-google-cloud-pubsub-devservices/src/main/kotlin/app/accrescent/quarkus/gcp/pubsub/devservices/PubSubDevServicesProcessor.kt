@@ -16,9 +16,12 @@ import com.google.pubsub.v1.PushConfig
 import com.google.pubsub.v1.SubscriptionName
 import com.google.pubsub.v1.TopicName
 import io.grpc.ManagedChannelBuilder
+import io.quarkus.deployment.IsDevServicesSupportedByLaunchMode
 import io.quarkus.deployment.annotations.BuildProducer
 import io.quarkus.deployment.annotations.BuildStep
+import io.quarkus.deployment.annotations.BuildSteps
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem
+import io.quarkus.deployment.dev.devservices.DevServicesConfig
 import io.quarkus.devservices.common.ConfigureUtil
 import org.testcontainers.containers.Network
 import org.testcontainers.containers.PubSubEmulatorContainer
@@ -36,6 +39,7 @@ private const val FEATURE = "google-cloud-pubsub-devservices"
 private const val NETWORK_ALIAS = "pubsub-emulator"
 private const val PUB_SUB_EMULATOR_PORT = 8085
 
+@BuildSteps(onlyIf = [IsDevServicesSupportedByLaunchMode::class, DevServicesConfig.Enabled::class])
 class PubSubDevServicesProcessor {
     @BuildStep
     fun startContainer(

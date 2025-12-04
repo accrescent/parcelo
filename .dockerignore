@@ -4,7 +4,6 @@
 
 *
 
-!/apksparser
 !/build.gradle.kts
 !/console
 !/gradle

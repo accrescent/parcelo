@@ -22,8 +22,12 @@ import app.accrescent.appstore.publish.v1alpha1.deleteAppDraftResponse
 import app.accrescent.appstore.publish.v1alpha1.getAppDraftPackageUploadInfoResponse
 import app.accrescent.server.parcelo.data.AppDraft
 import app.accrescent.server.parcelo.data.AppDraftAcl
+import app.accrescent.server.parcelo.data.AppDraftUploadProcessingJob
 import app.accrescent.server.parcelo.data.AppListing
 import app.accrescent.server.parcelo.data.Organization
+import app.accrescent.server.parcelo.data.OrphanedBlob
+import app.accrescent.server.parcelo.data.TransactionIsolationLevel
+import app.accrescent.server.parcelo.data.call
 import app.accrescent.server.parcelo.security.AuthnContextKey
 import app.accrescent.server.parcelo.security.GrpcAuthenticationInterceptor
 import app.accrescent.server.parcelo.security.PermissionService
@@ -34,11 +38,14 @@ import com.google.cloud.storage.Storage
 import io.grpc.Status
 import io.quarkus.grpc.GrpcService
 import io.quarkus.grpc.RegisterInterceptor
+import io.quarkus.narayana.jta.QuarkusTransaction
+import io.smallrye.common.annotation.Blocking
 import io.smallrye.mutiny.Uni
 import jakarta.inject.Inject
 import jakarta.persistence.LockModeType
 import jakarta.transaction.Transactional
 import org.eclipse.microprofile.config.inject.ConfigProperty
+import java.time.OffsetDateTime
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 
@@ -101,7 +108,11 @@ class AppDraftServiceImpl @Inject constructor(
                 .asRuntimeException()
         }
 
-        val appDraft = AppDraft(id = UUID.randomUUID(), organizationId = organizationId)
+        val appDraft = AppDraft(
+            id = UUID.randomUUID(),
+            organizationId = organizationId,
+            appPackageId = null,
+        )
             .also { it.persist() }
         AppDraftAcl(
             appDraftId = appDraft.id,
@@ -157,6 +168,14 @@ class AppDraftServiceImpl @Inject constructor(
                 mapOf("X-Goog-Content-Length-Range" to "0,$MAX_APK_SET_SIZE_BYTES")
             ),
         )
+        AppDraftUploadProcessingJob(
+            appDraftId = appDraftId,
+            bucketId = blobInfo.bucket,
+            objectId = blobInfo.name,
+            completed = false,
+            succeeded = false,
+        )
+            .persist()
 
         val response = getAppDraftPackageUploadInfoResponse {
             apkSetUploadUrl = uploadUrl.toString()
@@ -165,31 +184,50 @@ class AppDraftServiceImpl @Inject constructor(
         return Uni.createFrom().item { response }
     }
 
-    @Transactional
+    @Blocking
     override fun deleteAppDraft(request: DeleteAppDraftRequest): Uni<DeleteAppDraftResponse> {
         val userId = AuthnContextKey.USER_ID.get()
         // protovalidate ensures this is a valid UUID, so no need to catch IllegalArgumentException
         val appDraftId = UUID.fromString(request.id)
 
-        val canViewDraft = PermissionService
-            .userCanViewAppDraft(userId = userId, appDraftId = appDraftId)
-        if (!canViewDraft) {
-            throw Status
-                .NOT_FOUND
-                .withDescription("app draft \"$appDraftId\" not found")
-                .asRuntimeException()
-        }
+        QuarkusTransaction
+            .requiringNew()
+            .call(TransactionIsolationLevel.REPEATABLE_READ) {
+                val appDraft = AppDraft.findById(appDraftId)
+                val canViewDraft = PermissionService
+                    .userCanViewAppDraft(userId = userId, appDraftId = appDraftId)
+                if (!canViewDraft || appDraft == null) {
+                    throw Status
+                        .NOT_FOUND
+                        .withDescription("app draft \"$appDraftId\" not found")
+                        .asRuntimeException()
+                }
+                val canDeleteAppDraft = PermissionService
+                    .userCanDeleteAppDraft(userId = userId, appDraftId = appDraftId)
+                if (!canDeleteAppDraft) {
+                    throw Status
+                        .PERMISSION_DENIED
+                        .withDescription(
+                            "insufficient permission to delete app draft \"$appDraftId\""
+                        )
+                        .asRuntimeException()
+                }
 
-        val canDeleteAppDraft = PermissionService
-            .userCanDeleteAppDraft(userId = userId, appDraftId = appDraftId)
-        if (!canDeleteAppDraft) {
-            throw Status
-                .PERMISSION_DENIED
-                .withDescription("insufficient permission to delete app draft \"$appDraftId\"")
-                .asRuntimeException()
-        }
+                val appPackage = appDraft.appPackage
+                appDraft.delete()
 
-        AppDraft.deleteById(appDraftId)
+                // Delete the associated package (if one exists) and mark its associated blob for
+                // deletion
+                if (appPackage != null) {
+                    OrphanedBlob(
+                        bucketId = appPackage.bucketId,
+                        objectId = appPackage.objectId,
+                        orphanedOn = OffsetDateTime.now(),
+                    )
+                        .persist()
+                    appPackage.delete()
+                }
+            }
 
         return Uni.createFrom().item { deleteAppDraftResponse {} }
     }

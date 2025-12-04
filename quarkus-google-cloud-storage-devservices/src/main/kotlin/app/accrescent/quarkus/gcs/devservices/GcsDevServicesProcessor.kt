@@ -8,8 +8,11 @@ import app.accrescent.quarkus.gcp.pubsub.spi.PubSubConnectionItem
 import com.google.cloud.NoCredentials
 import com.google.cloud.storage.BucketInfo
 import com.google.cloud.storage.StorageOptions
+import io.quarkus.deployment.IsDevServicesSupportedByLaunchMode
 import io.quarkus.deployment.annotations.BuildStep
+import io.quarkus.deployment.annotations.BuildSteps
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem
+import io.quarkus.deployment.dev.devservices.DevServicesConfig
 import io.quarkus.devservices.common.ConfigureUtil
 import org.testcontainers.containers.GenericContainer
 import org.testcontainers.utility.DockerImageName
@@ -25,6 +28,7 @@ private const val FAKE_GCS_SERVER_PORT = 4443
 private const val FEATURE = "google-cloud-storage-devservices"
 private const val PROJECT_ID = "dev-service-project"
 
+@BuildSteps(onlyIf = [IsDevServicesSupportedByLaunchMode::class, DevServicesConfig.Enabled::class])
 class GcsDevServicesProcessor {
     @BuildStep
     fun startContainer(
@@ -95,14 +99,28 @@ private class QuarkusGcsContainer(
         if (notificationsConfig == null) {
             withCommand("-scheme", "http")
         } else {
-            withCommand(
-                "-scheme",
-                "http",
-                "-event.pubsub-project-id",
-                notificationsConfig.pubsubProjectId(),
-                "-event.pubsub-topic",
-                notificationsConfig.pubsubTopic(),
-            )
+            val bucket = notificationsConfig.bucket().getOrNull()
+            if (bucket == null) {
+                withCommand(
+                    "-scheme",
+                    "http",
+                    "-event.pubsub-project-id",
+                    notificationsConfig.pubsubProjectId(),
+                    "-event.pubsub-topic",
+                    notificationsConfig.pubsubTopic(),
+                )
+            } else {
+                withCommand(
+                    "-scheme",
+                    "http",
+                    "-event.bucket",
+                    bucket,
+                    "-event.pubsub-project-id",
+                    notificationsConfig.pubsubProjectId(),
+                    "-event.pubsub-topic",
+                    notificationsConfig.pubsubTopic(),
+                )
+            }
         }
         pubSubConnectionItem.ifPresent { pubsub ->
             withNetwork(pubsub.network)
