@@ -5,6 +5,7 @@
 package app.accrescent.server.parcelo.security
 
 import app.accrescent.server.parcelo.data.User
+import app.accrescent.server.parcelo.util.sha256Hash
 import io.grpc.Context
 import io.grpc.Contexts
 import io.grpc.Metadata
@@ -15,7 +16,6 @@ import io.grpc.Status
 import io.vertx.core.Vertx
 import io.vertx.grpc.BlockingServerInterceptor
 import jakarta.enterprise.context.ApplicationScoped
-import java.security.MessageDigest
 
 @ApplicationScoped
 class GrpcAuthenticationInterceptor(
@@ -46,9 +46,5 @@ private object GrpcAuthenticationInterceptorImpl : ServerInterceptor {
         val context = Context.current().withValue(AuthnContextKey.USER_ID, user.id)
 
         return Contexts.interceptCall(context, call, headers, next)
-    }
-
-    private fun sha256Hash(input: ByteArray): String {
-        return MessageDigest.getInstance("SHA-256").digest(input).toHexString()
     }
 }

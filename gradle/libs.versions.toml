@@ -3,8 +3,11 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 [versions]
+apkanalyzer = "31.13.1"
+apksig = "8.13.1"
 app-publishing-api = "85c2cbd48f5e444c947602e4b4bbc2e5"
 buf = "0.10.3"
+bundletool = "1.18.2"
 google-cloud-libraries-bom = "26.71.0"
 kotlin = "2.2.21"
 log4j1 = "1.2.17"
@@ -12,11 +15,15 @@ protovalidate = "1.0.1"
 quarkus = "3.29.3"
 
 [libraries]
+apkanalyzer = { module = "com.android.tools.apkparser:apkanalyzer", version.ref = "apkanalyzer" }
+apksig = { module = "com.android.tools.build:apksig", version.ref = "apksig" }
+bundletool = { module = "com.android.tools.build:bundletool", version.ref = "bundletool" }
 google-cloud-libraries-bom = { module = "com.google.cloud:libraries-bom", version.ref = "google-cloud-libraries-bom" }
 google-cloud-pubsub = { module = "com.google.cloud:google-cloud-pubsub" }
 google-cloud-storage = { module = "com.google.cloud:google-cloud-storage" }
 log4j-api = { module = "org.apache.logging.log4j:log4j-api" }
 log4j1 = { module = "log4j:log4j", version.ref = "log4j1" }
+protobuf-java = { module = "com.google.protobuf:protobuf-java" }
 protobuf-kotlin = { module = "com.google.protobuf:protobuf-kotlin" }
 protovalidate = { module = "build.buf:protovalidate", version.ref = "protovalidate" }
 quarkus-arc-deployment = { module = "io.quarkus:quarkus-arc-deployment" }
@@ -27,6 +34,7 @@ quarkus-devservices-common = { module = "io.quarkus:quarkus-devservices-common" 
 quarkus-extension-processor = { module = "io.quarkus:quarkus-extension-processor", version.ref = "quarkus" }
 quarkus-grpc = { module = "io.quarkus:quarkus-grpc" }
 quarkus-jdbc-postgresql = { module = "io.quarkus:quarkus-jdbc-postgresql" }
+quarkus-hibernate-orm-panache = { module = "io.quarkus:quarkus-hibernate-orm-panache" }
 quarkus-hibernate-orm-panache-kotlin = { module = "io.quarkus:quarkus-hibernate-orm-panache-kotlin" }
 quarkus-kotlin = { module = "io.quarkus:quarkus-kotlin" }
 quarkus-oidc = { module = "io.quarkus:quarkus-oidc" }

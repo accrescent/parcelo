@@ -5,6 +5,7 @@
 package app.accrescent.quarkus.gcs
 
 import com.google.auth.oauth2.ServiceAccountCredentials
+import com.google.cloud.NoCredentials
 import com.google.cloud.storage.BlobInfo
 import com.google.cloud.storage.Storage
 import com.google.cloud.storage.StorageOptions
@@ -28,14 +29,20 @@ class StorageProducer @Inject constructor(
     fun createStorage(): Storage {
         val host = storageConfig.host().getOrNull()
         val storage = if (host != null) {
+            val devCredentials = generateDevCredentials()
             val storage = StorageOptions
                 .newBuilder()
                 .setHost(host)
-                .setCredentials(generateDevCredentials())
+                .setCredentials(NoCredentials.getInstance())
                 .build()
                 .service
-            // Intercept the default signUrl() implementation, modifying its parameters so that the
-            // dynamically assigned port of the GCS Dev Service is preserved in the signed URL
+            // Intercept the default signUrl() implementation, modifying its parameters so that 1)
+            // it has credentials capable of signing the URL, since NoCredentials is not and 2) the
+            // dynamically assigned port of the GCS Dev Service is preserved in the signed URL.
+            //
+            // Note that we can't simply use StorageOptions.setCredentials(devCredentials) instead
+            // of SignUrlOption.signWith() because other Storage methods attempt to use them with
+            // the Google Cloud Storage service proper, ignoring host overrides.
             object : Storage by storage {
                 override fun signUrl(
                     blobInfo: BlobInfo,
@@ -44,6 +51,7 @@ class StorageProducer @Inject constructor(
                     vararg options: Storage.SignUrlOption,
                 ): URL {
                     val amendedOptions = options.toMutableList()
+                    amendedOptions.add(Storage.SignUrlOption.signWith(devCredentials))
                     amendedOptions.add(Storage.SignUrlOption.withHostName(host))
                     return storage.signUrl(blobInfo, duration, unit, *amendedOptions.toTypedArray())
                 }

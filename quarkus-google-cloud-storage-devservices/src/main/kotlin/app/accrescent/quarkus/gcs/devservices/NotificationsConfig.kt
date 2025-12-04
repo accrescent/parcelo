@@ -5,9 +5,12 @@
 package app.accrescent.quarkus.gcs.devservices
 
 import io.smallrye.config.ConfigMapping
+import java.util.Optional
 
 @ConfigMapping(prefix = "notifications")
 interface NotificationsConfig {
+    fun bucket(): Optional<String>
+
     fun pubsubProjectId(): String
 
     fun pubsubTopic(): String
