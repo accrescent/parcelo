@@ -12,10 +12,14 @@ import jakarta.persistence.FetchType
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
+import jakarta.persistence.UniqueConstraint
 import java.util.UUID
 
 @Entity
-@Table(name = "organization_acls")
+@Table(
+    name = "organization_acls",
+    uniqueConstraints = [UniqueConstraint(columnNames = ["organization_id", "user_id"])],
+)
 class OrganizationAcl(
     @Column(name = "organization_id", nullable = false)
     val organizationId: UUID,
