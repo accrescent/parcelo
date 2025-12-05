@@ -26,8 +26,6 @@ import app.accrescent.server.parcelo.data.AppDraftUploadProcessingJob
 import app.accrescent.server.parcelo.data.AppListing
 import app.accrescent.server.parcelo.data.Organization
 import app.accrescent.server.parcelo.data.OrphanedBlob
-import app.accrescent.server.parcelo.data.TransactionIsolationLevel
-import app.accrescent.server.parcelo.data.call
 import app.accrescent.server.parcelo.security.AuthnContextKey
 import app.accrescent.server.parcelo.security.GrpcAuthenticationInterceptor
 import app.accrescent.server.parcelo.security.PermissionService
@@ -38,8 +36,6 @@ import com.google.cloud.storage.Storage
 import io.grpc.Status
 import io.quarkus.grpc.GrpcService
 import io.quarkus.grpc.RegisterInterceptor
-import io.quarkus.narayana.jta.QuarkusTransaction
-import io.smallrye.common.annotation.Blocking
 import io.smallrye.mutiny.Uni
 import jakarta.inject.Inject
 import jakarta.persistence.LockModeType
@@ -184,50 +180,46 @@ class AppDraftServiceImpl @Inject constructor(
         return Uni.createFrom().item { response }
     }
 
-    @Blocking
+    @Transactional
     override fun deleteAppDraft(request: DeleteAppDraftRequest): Uni<DeleteAppDraftResponse> {
         val userId = AuthnContextKey.USER_ID.get()
         // protovalidate ensures this is a valid UUID, so no need to catch IllegalArgumentException
         val appDraftId = UUID.fromString(request.id)
 
-        QuarkusTransaction
-            .requiringNew()
-            .call(TransactionIsolationLevel.REPEATABLE_READ) {
-                val appDraft = AppDraft.findById(appDraftId)
-                val canViewDraft = PermissionService
-                    .userCanViewAppDraft(userId = userId, appDraftId = appDraftId)
-                if (!canViewDraft || appDraft == null) {
-                    throw Status
-                        .NOT_FOUND
-                        .withDescription("app draft \"$appDraftId\" not found")
-                        .asRuntimeException()
-                }
-                val canDeleteAppDraft = PermissionService
-                    .userCanDeleteAppDraft(userId = userId, appDraftId = appDraftId)
-                if (!canDeleteAppDraft) {
-                    throw Status
-                        .PERMISSION_DENIED
-                        .withDescription(
-                            "insufficient permission to delete app draft \"$appDraftId\""
-                        )
-                        .asRuntimeException()
-                }
+        val appDraft = AppDraft.findById(appDraftId)
+        val canViewDraft = PermissionService
+            .userCanViewAppDraft(userId = userId, appDraftId = appDraftId)
+        if (!canViewDraft || appDraft == null) {
+            throw Status
+                .NOT_FOUND
+                .withDescription("app draft \"$appDraftId\" not found")
+                .asRuntimeException()
+        }
+        val canDeleteAppDraft = PermissionService
+            .userCanDeleteAppDraft(userId = userId, appDraftId = appDraftId)
+        if (!canDeleteAppDraft) {
+            throw Status
+                .PERMISSION_DENIED
+                .withDescription(
+                    "insufficient permission to delete app draft \"$appDraftId\""
+                )
+                .asRuntimeException()
+        }
 
-                val appPackage = appDraft.appPackage
-                appDraft.delete()
+        val appPackage = appDraft.appPackage
+        appDraft.delete()
 
-                // Delete the associated package (if one exists) and mark its associated blob for
-                // deletion
-                if (appPackage != null) {
-                    OrphanedBlob(
-                        bucketId = appPackage.bucketId,
-                        objectId = appPackage.objectId,
-                        orphanedOn = OffsetDateTime.now(),
-                    )
-                        .persist()
-                    appPackage.delete()
-                }
-            }
+        // Delete the associated package (if one exists) and mark its associated blob for
+        // deletion
+        if (appPackage != null) {
+            OrphanedBlob(
+                bucketId = appPackage.bucketId,
+                objectId = appPackage.objectId,
+                orphanedOn = OffsetDateTime.now(),
+            )
+                .persist()
+            appPackage.delete()
+        }
 
         return Uni.createFrom().item { deleteAppDraftResponse {} }
     }

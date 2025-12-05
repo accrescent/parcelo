@@ -34,7 +34,6 @@ quarkus-devservices-common = { module = "io.quarkus:quarkus-devservices-common" 
 quarkus-extension-processor = { module = "io.quarkus:quarkus-extension-processor", version.ref = "quarkus" }
 quarkus-grpc = { module = "io.quarkus:quarkus-grpc" }
 quarkus-jdbc-postgresql = { module = "io.quarkus:quarkus-jdbc-postgresql" }
-quarkus-hibernate-orm-panache = { module = "io.quarkus:quarkus-hibernate-orm-panache" }
 quarkus-hibernate-orm-panache-kotlin = { module = "io.quarkus:quarkus-hibernate-orm-panache-kotlin" }
 quarkus-kotlin = { module = "io.quarkus:quarkus-kotlin" }
 quarkus-oidc = { module = "io.quarkus:quarkus-oidc" }
