@@ -9,8 +9,6 @@ import app.accrescent.server.parcelo.data.AppDraft
 import app.accrescent.server.parcelo.data.AppDraftUploadProcessingJob
 import app.accrescent.server.parcelo.data.AppPackage
 import app.accrescent.server.parcelo.data.OrphanedBlob
-import app.accrescent.server.parcelo.data.TransactionIsolationLevel
-import app.accrescent.server.parcelo.data.call
 import app.accrescent.server.parcelo.parsers.ApkSet
 import app.accrescent.server.parcelo.parsers.ApkSetParseResult
 import app.accrescent.server.parcelo.util.TempFile
@@ -102,7 +100,7 @@ class PackageUploadedProcessor @Inject constructor(
     //    event for a given object arrives with an equal or earlier timestamp than previously
     //    recorded, it is skipped because it is obsoleted by the later upload event.
     // 3. Use proper transaction isolation. Saving a successful processing result occurs in a highly
-    //    consistent PostgreSQL REPEATABLE READ transaction, ensuring that processing doesn't result
+    //    consistent PostgreSQL SERIALIZABLE transaction, ensuring that processing doesn't result
     //    in undesirable state, e.g., untracked orphan blobs.
     //
     // [1]: https://docs.cloud.google.com/pubsub/docs/subscription-overview#default_properties
@@ -220,8 +218,8 @@ class PackageUploadedProcessor @Inject constructor(
         }
 
         QuarkusTransaction
-            .requiringNew()
-            .call(TransactionIsolationLevel.REPEATABLE_READ) {
+            .joiningExisting()
+            .call {
                 val appDraft = AppDraft
                     .findByProcessingJobBucketIdAndObjectId(bucketId, objectId)
                     ?: run {
