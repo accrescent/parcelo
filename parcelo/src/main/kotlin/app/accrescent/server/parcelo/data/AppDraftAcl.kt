@@ -12,12 +12,16 @@ import jakarta.persistence.FetchType
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
+import jakarta.persistence.UniqueConstraint
 import org.hibernate.annotations.OnDelete
 import org.hibernate.annotations.OnDeleteAction
 import java.util.UUID
 
 @Entity
-@Table(name = "app_draft_acls")
+@Table(
+    name = "app_draft_acls",
+    uniqueConstraints = [UniqueConstraint(columnNames = ["app_draft_id", "user_id"])],
+)
 class AppDraftAcl(
     @Column(name = "app_draft_id", nullable = false)
     val appDraftId: UUID,
