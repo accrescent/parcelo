@@ -39,6 +39,13 @@ object PermissionService {
     }
 
     @Transactional
+    fun userCanSubmitAppDraft(userId: UUID, appDraftId: UUID): Boolean {
+        return AppDraftAcl
+            .findByAppDraftIdAndUserId(appDraftId = appDraftId, userId = userId)
+            ?.canSubmit == true
+    }
+
+    @Transactional
     fun userCanDeleteAppDraft(userId: UUID, appDraftId: UUID): Boolean {
         return AppDraftAcl
             .findByAppDraftIdAndUserId(appDraftId = appDraftId, userId = userId)

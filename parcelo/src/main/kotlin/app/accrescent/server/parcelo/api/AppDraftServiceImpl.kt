@@ -15,17 +15,21 @@ import app.accrescent.appstore.publish.v1alpha1.DeleteAppDraftRequest
 import app.accrescent.appstore.publish.v1alpha1.DeleteAppDraftResponse
 import app.accrescent.appstore.publish.v1alpha1.GetAppDraftPackageUploadInfoRequest
 import app.accrescent.appstore.publish.v1alpha1.GetAppDraftPackageUploadInfoResponse
+import app.accrescent.appstore.publish.v1alpha1.SubmitAppDraftRequest
+import app.accrescent.appstore.publish.v1alpha1.SubmitAppDraftResponse
 import app.accrescent.appstore.publish.v1alpha1.createAppDraftListingResponse
 import app.accrescent.appstore.publish.v1alpha1.createAppDraftResponse
 import app.accrescent.appstore.publish.v1alpha1.deleteAppDraftListingResponse
 import app.accrescent.appstore.publish.v1alpha1.deleteAppDraftResponse
 import app.accrescent.appstore.publish.v1alpha1.getAppDraftPackageUploadInfoResponse
+import app.accrescent.appstore.publish.v1alpha1.submitAppDraftResponse
 import app.accrescent.server.parcelo.data.AppDraft
 import app.accrescent.server.parcelo.data.AppDraftAcl
 import app.accrescent.server.parcelo.data.AppDraftUploadProcessingJob
 import app.accrescent.server.parcelo.data.AppListing
 import app.accrescent.server.parcelo.data.Organization
 import app.accrescent.server.parcelo.data.OrphanedBlob
+import app.accrescent.server.parcelo.data.Reviewer
 import app.accrescent.server.parcelo.security.AuthnContextKey
 import app.accrescent.server.parcelo.security.GrpcAuthenticationInterceptor
 import app.accrescent.server.parcelo.security.PermissionService
@@ -108,6 +112,7 @@ class AppDraftServiceImpl @Inject constructor(
             id = UUID.randomUUID(),
             organizationId = organizationId,
             appPackageId = null,
+            submitted = false,
         )
             .also { it.persist() }
         AppDraftAcl(
@@ -117,6 +122,8 @@ class AppDraftServiceImpl @Inject constructor(
             canDelete = true,
             canDeleteListings = true,
             canReplacePackage = true,
+            canReview = false,
+            canSubmit = true,
             canView = true,
         )
             .persist()
@@ -136,9 +143,10 @@ class AppDraftServiceImpl @Inject constructor(
         // protovalidate ensures this is a valid UUID, so no need to catch IllegalArgumentException
         val appDraftId = UUID.fromString(request.appDraftId)
 
+        val appDraft = AppDraft.findById(appDraftId)
         val canViewDraft = PermissionService
             .userCanDeleteAppDraft(userId = userId, appDraftId = appDraftId)
-        if (!canViewDraft) {
+        if (!canViewDraft || appDraft == null) {
             throw Status
                 .NOT_FOUND
                 .withDescription("app draft \"$appDraftId\" not found")
@@ -150,6 +158,12 @@ class AppDraftServiceImpl @Inject constructor(
             throw Status
                 .PERMISSION_DENIED
                 .withDescription("insufficient permission to replace package")
+                .asRuntimeException()
+        }
+        if (appDraft.submitted) {
+            throw Status
+                .FAILED_PRECONDITION
+                .withDescription("submitted drafts cannot be modified")
                 .asRuntimeException()
         }
 
@@ -181,6 +195,68 @@ class AppDraftServiceImpl @Inject constructor(
     }
 
     @Transactional
+    override fun submitAppDraft(request: SubmitAppDraftRequest): Uni<SubmitAppDraftResponse> {
+        val userId = AuthnContextKey.USER_ID.get()
+        // protovalidate ensures this is a valid UUID, so no need to catch IllegalArgumentException
+        val appDraftId = UUID.fromString(request.id)
+
+        val appDraft = AppDraft.findById(appDraftId)
+        val canViewDraft = PermissionService
+            .userCanDeleteAppDraft(userId = userId, appDraftId = appDraftId)
+        if (!canViewDraft || appDraft == null) {
+            throw Status
+                .NOT_FOUND
+                .withDescription("app draft \"$appDraftId\" not found")
+                .asRuntimeException()
+        }
+        val canSubmitDraft = PermissionService
+            .userCanSubmitAppDraft(userId = userId, appDraftId = appDraftId)
+        if (!canSubmitDraft) {
+            throw Status
+                .PERMISSION_DENIED
+                .withDescription("insufficient permission to submit app draft")
+                .asRuntimeException()
+        }
+        if (appDraft.appPackageId == null) {
+            throw Status
+                .FAILED_PRECONDITION
+                .withDescription("draft must have a package uploaded before it can be submitted")
+                .asRuntimeException()
+        } else if (appDraft.submitted) {
+            throw Status
+                .FAILED_PRECONDITION
+                .withDescription("draft already submitted")
+                .asRuntimeException()
+        }
+
+        // Assign a reviewer
+        val reviewer = Reviewer.findRandom() ?: throw Status
+            .FAILED_PRECONDITION
+            .withDescription("no reviewers available to assign")
+            .asRuntimeException()
+        val existingAcl = AppDraftAcl.findByAppDraftIdAndUserId(appDraftId, userId)
+        if (existingAcl == null) {
+            AppDraftAcl(
+                appDraftId = appDraftId,
+                userId = reviewer.userId,
+                canCreateListings = false,
+                canDelete = false,
+                canDeleteListings = false,
+                canReplacePackage = false,
+                canReview = true,
+                canSubmit = false,
+                canView = false,
+            )
+                .persist()
+        } else {
+            existingAcl.canReview = true
+        }
+        appDraft.submitted = true
+
+        return Uni.createFrom().item { submitAppDraftResponse {} }
+    }
+
+    @Transactional
     override fun deleteAppDraft(request: DeleteAppDraftRequest): Uni<DeleteAppDraftResponse> {
         val userId = AuthnContextKey.USER_ID.get()
         // protovalidate ensures this is a valid UUID, so no need to catch IllegalArgumentException
@@ -203,6 +279,12 @@ class AppDraftServiceImpl @Inject constructor(
                 .withDescription(
                     "insufficient permission to delete app draft \"$appDraftId\""
                 )
+                .asRuntimeException()
+        }
+        if (appDraft.submitted) {
+            throw Status
+                .FAILED_PRECONDITION
+                .withDescription("submitted drafts cannot be deleted")
                 .asRuntimeException()
         }
 
@@ -232,9 +314,10 @@ class AppDraftServiceImpl @Inject constructor(
         // protovalidate ensures this is a valid UUID, so no need to catch IllegalArgumentException
         val appDraftId = UUID.fromString(request.appDraftId)
 
+        val appDraft = AppDraft.findById(appDraftId)
         val canViewAppDraft = PermissionService
             .userCanViewAppDraft(userId = userId, appDraftId = appDraftId)
-        if (!canViewAppDraft) {
+        if (!canViewAppDraft || appDraft == null) {
             throw Status
                 .NOT_FOUND
                 .withDescription("app draft \"$appDraftId\" not found")
@@ -249,6 +332,12 @@ class AppDraftServiceImpl @Inject constructor(
                     "insufficient permission to create app listings for app draft " +
                             "\"$appDraftId\""
                 )
+                .asRuntimeException()
+        }
+        if (appDraft.submitted) {
+            throw Status
+                .FAILED_PRECONDITION
+                .withDescription("submitted drafts cannot be modified")
                 .asRuntimeException()
         }
 
@@ -271,9 +360,10 @@ class AppDraftServiceImpl @Inject constructor(
         // protovalidate ensures this is a valid UUID, so no need to catch IllegalArgumentException
         val appDraftId = UUID.fromString(request.appDraftId)
 
+        val appDraft = AppDraft.findById(appDraftId)
         val canViewAppDraft = PermissionService
             .userCanViewAppDraft(userId = userId, appDraftId = appDraftId)
-        if (!canViewAppDraft) {
+        if (!canViewAppDraft || appDraft == null) {
             throw Status
                 .NOT_FOUND
                 .withDescription("app draft \"$appDraftId\" not found")
@@ -288,6 +378,12 @@ class AppDraftServiceImpl @Inject constructor(
                     "insufficient permission to delete listings for app draft "
                             + "\"$appDraftId\""
                 )
+                .asRuntimeException()
+        }
+        if (appDraft.submitted) {
+            throw Status
+                .FAILED_PRECONDITION
+                .withDescription("submitted drafts cannot be modified")
                 .asRuntimeException()
         }
 
