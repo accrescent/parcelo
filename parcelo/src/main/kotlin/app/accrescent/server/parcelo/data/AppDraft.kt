@@ -6,6 +6,7 @@ package app.accrescent.server.parcelo.data
 
 import io.quarkus.hibernate.orm.panache.kotlin.PanacheCompanionBase
 import io.quarkus.hibernate.orm.panache.kotlin.PanacheEntityBase
+import jakarta.persistence.CheckConstraint
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.FetchType
@@ -16,7 +17,11 @@ import jakarta.persistence.Table
 import java.util.UUID
 
 @Entity
-@Table(name = "app_drafts")
+@Table(
+    name = "app_drafts",
+    // Forbid the draft from being submitted if no app package is attached to it
+    check = [CheckConstraint(constraint = "app_package_id IS NOT NULL OR submitted = false")],
+)
 class AppDraft(
     @Id
     val id: UUID,
@@ -26,6 +31,9 @@ class AppDraft(
 
     @Column(name = "app_package_id")
     var appPackageId: UUID?,
+
+    @Column(name = "submitted", nullable = false)
+    var submitted: Boolean,
 ) : PanacheEntityBase {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(insertable = false, updatable = false)

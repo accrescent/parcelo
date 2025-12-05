@@ -37,6 +37,12 @@ class AppDraftAcl(
     @Column(name = "can_replace_package", nullable = false)
     val canReplacePackage: Boolean,
 
+    @Column(name = "can_review", nullable = false)
+    var canReview: Boolean,
+
+    @Column(name = "can_submit", nullable = false)
+    val canSubmit: Boolean,
+
     @Column(name = "can_view", nullable = false)
     val canView: Boolean,
 ) : PanacheEntity() {

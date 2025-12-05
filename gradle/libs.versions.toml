@@ -5,7 +5,7 @@
 [versions]
 apkanalyzer = "31.13.1"
 apksig = "8.13.1"
-app-publishing-api = "85c2cbd48f5e444c947602e4b4bbc2e5"
+app-publishing-api = "4bcd48841ece4f1ebc3298b89741beec"
 buf = "0.10.3"
 bundletool = "1.18.2"
 google-cloud-libraries-bom = "26.71.0"
