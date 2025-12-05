@@ -130,7 +130,7 @@ class AppDraftServiceImpl @Inject constructor(
             .persist()
 
         val response = createAppDraftResponse {
-            id = appDraft.id.toString()
+            appDraftId = appDraft.id.toString()
         }
 
         return Uni.createFrom().item { response }
@@ -199,7 +199,7 @@ class AppDraftServiceImpl @Inject constructor(
     override fun submitAppDraft(request: SubmitAppDraftRequest): Uni<SubmitAppDraftResponse> {
         val userId = AuthnContextKey.USER_ID.get()
         // protovalidate ensures this is a valid UUID, so no need to catch IllegalArgumentException
-        val appDraftId = UUID.fromString(request.id)
+        val appDraftId = UUID.fromString(request.appDraftId)
 
         val appDraft = AppDraft.findById(appDraftId)
         val canViewDraft = PermissionService
@@ -261,7 +261,7 @@ class AppDraftServiceImpl @Inject constructor(
     override fun deleteAppDraft(request: DeleteAppDraftRequest): Uni<DeleteAppDraftResponse> {
         val userId = AuthnContextKey.USER_ID.get()
         // protovalidate ensures this is a valid UUID, so no need to catch IllegalArgumentException
-        val appDraftId = UUID.fromString(request.id)
+        val appDraftId = UUID.fromString(request.appDraftId)
 
         val appDraft = AppDraft.findById(appDraftId)
         val canViewDraft = PermissionService
