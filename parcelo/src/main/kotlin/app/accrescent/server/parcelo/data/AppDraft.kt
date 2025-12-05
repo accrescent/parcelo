@@ -13,14 +13,19 @@ import jakarta.persistence.FetchType
 import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
+import jakarta.persistence.OneToOne
 import jakarta.persistence.Table
 import java.util.UUID
 
 @Entity
 @Table(
     name = "app_drafts",
-    // Forbid the draft from being submitted if no app package is attached to it
-    check = [CheckConstraint(constraint = "app_package_id IS NOT NULL OR submitted = false")],
+    check = [
+        // Forbid the draft from being submitted if no app package is attached to it
+        CheckConstraint(constraint = "app_package_id IS NOT NULL OR submitted = false"),
+        // Forbid the draft from being reviewed if it is not submitted
+        CheckConstraint(constraint = "submitted = true OR review_id IS NULL"),
+    ],
 )
 class AppDraft(
     @Id
@@ -34,6 +39,9 @@ class AppDraft(
 
     @Column(name = "submitted", nullable = false)
     var submitted: Boolean,
+
+    @Column(name = "review_id")
+    var reviewId: UUID?,
 ) : PanacheEntityBase {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(insertable = false, updatable = false)
@@ -42,6 +50,10 @@ class AppDraft(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "app_package_id", insertable = false, updatable = false)
     val appPackage: AppPackage? = null
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(insertable = false, updatable = false)
+    val review: Review? = null
 
     companion object : PanacheCompanionBase<AppDraft, UUID> {
         fun countInOrganization(organizationId: UUID): Long {

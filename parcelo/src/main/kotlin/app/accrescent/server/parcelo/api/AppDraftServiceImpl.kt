@@ -113,6 +113,7 @@ class AppDraftServiceImpl @Inject constructor(
             organizationId = organizationId,
             appPackageId = null,
             submitted = false,
+            reviewId = null,
         )
             .also { it.persist() }
         AppDraftAcl(
