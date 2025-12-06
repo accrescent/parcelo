@@ -32,6 +32,13 @@ object PermissionService {
     }
 
     @Transactional
+    fun userCanEditAppDraftListings(userId: UUID, appDraftId: UUID): Boolean {
+        return AppDraftAcl
+            .findByAppDraftIdAndUserId(appDraftId = appDraftId, userId = userId)
+            ?.canEditListings == true
+    }
+
+    @Transactional
     fun userCanReplaceAppDraftPackage(userId: UUID, appDraftId: UUID): Boolean {
         return AppDraftAcl
             .findByAppDraftIdAndUserId(appDraftId = appDraftId, userId = userId)
@@ -53,30 +60,9 @@ object PermissionService {
     }
 
     @Transactional
-    fun userCanUpdateAppDraftDefaultListingLanguage(userId: UUID, appDraftId: UUID): Boolean {
-        return AppDraftAcl
-            .findByAppDraftIdAndUserId(appDraftId = appDraftId, userId = userId)
-            ?.canUpdateDefaultListingLanguage == true
-    }
-
-    @Transactional
     fun userCanDeleteAppDraft(userId: UUID, appDraftId: UUID): Boolean {
         return AppDraftAcl
             .findByAppDraftIdAndUserId(appDraftId = appDraftId, userId = userId)
             ?.canDelete == true
-    }
-
-    @Transactional
-    fun userCanCreateListingsForDraft(userId: UUID, appDraftId: UUID): Boolean {
-        return AppDraftAcl
-            .findByAppDraftIdAndUserId(appDraftId = appDraftId, userId = userId)
-            ?.canCreateListings == true
-    }
-
-    @Transactional
-    fun userCanDeleteAppDraftListings(userId: UUID, appDraftId: UUID): Boolean {
-        return AppDraftAcl
-            .findByAppDraftIdAndUserId(appDraftId = appDraftId, userId = userId)
-            ?.canDeleteListings == true
     }
 }

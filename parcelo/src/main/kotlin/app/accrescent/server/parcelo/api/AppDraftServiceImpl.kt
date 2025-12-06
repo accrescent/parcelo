@@ -123,13 +123,11 @@ class AppDraftServiceImpl @Inject constructor(
         AppDraftAcl(
             appDraftId = appDraft.id,
             userId = userId,
-            canCreateListings = true,
             canDelete = true,
-            canDeleteListings = true,
+            canEditListings = true,
             canReplacePackage = true,
             canReview = false,
             canSubmit = true,
-            canUpdateDefaultListingLanguage = true,
             canView = true,
         )
             .persist()
@@ -216,7 +214,7 @@ class AppDraftServiceImpl @Inject constructor(
                 .asRuntimeException()
         }
         val canUpdate = PermissionService
-            .userCanUpdateAppDraftDefaultListingLanguage(userId = userId, appDraftId = appDraftId)
+            .userCanEditAppDraftListings(userId = userId, appDraftId = appDraftId)
         if (!canUpdate) {
             throw Status
                 .PERMISSION_DENIED
@@ -296,13 +294,11 @@ class AppDraftServiceImpl @Inject constructor(
             AppDraftAcl(
                 appDraftId = appDraftId,
                 userId = reviewer.userId,
-                canCreateListings = false,
                 canDelete = false,
-                canDeleteListings = false,
+                canEditListings = false,
                 canReplacePackage = false,
                 canReview = true,
                 canSubmit = false,
-                canUpdateDefaultListingLanguage = false,
                 canView = false,
             )
                 .persist()
@@ -382,7 +378,7 @@ class AppDraftServiceImpl @Inject constructor(
                 .asRuntimeException()
         }
         val canCreateListings = PermissionService
-            .userCanCreateListingsForDraft(userId = userId, appDraftId = appDraftId)
+            .userCanEditAppDraftListings(userId = userId, appDraftId = appDraftId)
         if (!canCreateListings) {
             throw Status
                 .PERMISSION_DENIED
@@ -428,7 +424,7 @@ class AppDraftServiceImpl @Inject constructor(
                 .asRuntimeException()
         }
         val canDeleteAppDraftListings = PermissionService
-            .userCanDeleteAppDraftListings(userId = userId, appDraftId = appDraftId)
+            .userCanEditAppDraftListings(userId = userId, appDraftId = appDraftId)
         if (!canDeleteAppDraftListings) {
             throw Status
                 .PERMISSION_DENIED

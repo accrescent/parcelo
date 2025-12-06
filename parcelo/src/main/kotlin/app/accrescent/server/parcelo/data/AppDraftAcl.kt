@@ -29,14 +29,11 @@ class AppDraftAcl(
     @Column(name = "user_id", nullable = false)
     val userId: UUID,
 
-    @Column(name = "can_create_listings", nullable = false)
-    val canCreateListings: Boolean,
-
     @Column(name = "can_delete", nullable = false)
     val canDelete: Boolean,
 
-    @Column(name = "can_delete_listings", nullable = false)
-    val canDeleteListings: Boolean,
+    @Column(name = "can_edit_listings", nullable = false)
+    val canEditListings: Boolean,
 
     @Column(name = "can_replace_package", nullable = false)
     val canReplacePackage: Boolean,
@@ -46,9 +43,6 @@ class AppDraftAcl(
 
     @Column(name = "can_submit", nullable = false)
     val canSubmit: Boolean,
-
-    @Column(name = "can_update_default_listing_language", nullable = false)
-    val canUpdateDefaultListingLanguage: Boolean,
 
     @Column(name = "can_view", nullable = false)
     val canView: Boolean,
