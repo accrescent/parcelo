@@ -53,6 +53,13 @@ object PermissionService {
     }
 
     @Transactional
+    fun userCanUpdateAppDraftDefaultListingLanguage(userId: UUID, appDraftId: UUID): Boolean {
+        return AppDraftAcl
+            .findByAppDraftIdAndUserId(appDraftId = appDraftId, userId = userId)
+            ?.canUpdateDefaultListingLanguage == true
+    }
+
+    @Transactional
     fun userCanDeleteAppDraft(userId: UUID, appDraftId: UUID): Boolean {
         return AppDraftAcl
             .findByAppDraftIdAndUserId(appDraftId = appDraftId, userId = userId)

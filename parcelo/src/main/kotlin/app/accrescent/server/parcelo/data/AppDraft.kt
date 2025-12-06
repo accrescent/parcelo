@@ -23,6 +23,8 @@ import java.util.UUID
     check = [
         // Forbid the draft from being submitted if no app package is attached to it
         CheckConstraint(constraint = "app_package_id IS NOT NULL OR submitted = false"),
+        // Forbid the draft from being submitted if no default listing language is set
+        CheckConstraint(constraint = "default_listing_language IS NOT NULL or submitted = false"),
         // Forbid the draft from being reviewed if it is not submitted
         CheckConstraint(constraint = "submitted = true OR review_id IS NULL"),
     ],
@@ -36,6 +38,9 @@ class AppDraft(
 
     @Column(name = "app_package_id")
     var appPackageId: UUID?,
+
+    @Column(name = "default_listing_language")
+    var defaultListingLanguage: String?,
 
     @Column(name = "submitted", nullable = false)
     var submitted: Boolean,
@@ -54,6 +59,16 @@ class AppDraft(
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(insertable = false, updatable = false)
     val review: Review? = null
+
+    fun hasListingForLanguage(language: String): Boolean {
+        return count(
+            "FROM AppListing app_listings " +
+                    "WHERE app_listings.appDraftId = ?1 " +
+                    "AND app_listings.language = ?2",
+            id,
+            language,
+        ) > 0
+    }
 
     companion object : PanacheCompanionBase<AppDraft, UUID> {
         fun countInOrganization(organizationId: UUID): Long {

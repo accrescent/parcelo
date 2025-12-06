@@ -10,6 +10,7 @@ import app.accrescent.appstore.publish.v1alpha1.DeleteAppDraftListingRequest
 import app.accrescent.appstore.publish.v1alpha1.DeleteAppDraftRequest
 import app.accrescent.appstore.publish.v1alpha1.GetAppDraftPackageUploadInfoRequest
 import app.accrescent.appstore.publish.v1alpha1.SubmitAppDraftRequest
+import app.accrescent.appstore.publish.v1alpha1.UpdateAppDraftRequest
 import app.accrescent.appstore.review.v1alpha1.ReviewAppDraftRequest
 import build.buf.protovalidate.Validator
 import build.buf.protovalidate.ValidatorFactory
@@ -36,6 +37,7 @@ class GrpcRequestValidationInterceptor : ServerInterceptor {
                 GetAppDraftPackageUploadInfoRequest.getDescriptor(),
                 ReviewAppDraftRequest.getDescriptor(),
                 SubmitAppDraftRequest.getDescriptor(),
+                UpdateAppDraftRequest.getDescriptor(),
             ),
             true,
         )
