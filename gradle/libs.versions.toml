@@ -5,7 +5,7 @@
 [versions]
 apkanalyzer = "31.13.1"
 apksig = "8.13.1"
-app-publishing-api = "e6197f34f6cc4e6e84fc081680100ba2"
+app-publishing-api = "03378860fce94b299c0ac5d3fcf5cfd0"
 app-review-api = "f8c62338b57f40c2849527d580bcb5e3"
 buf = "0.10.3"
 bundletool = "1.18.2"

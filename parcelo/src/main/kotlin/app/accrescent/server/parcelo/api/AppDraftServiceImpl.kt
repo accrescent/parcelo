@@ -17,12 +17,15 @@ import app.accrescent.appstore.publish.v1alpha1.GetAppDraftPackageUploadInfoRequ
 import app.accrescent.appstore.publish.v1alpha1.GetAppDraftPackageUploadInfoResponse
 import app.accrescent.appstore.publish.v1alpha1.SubmitAppDraftRequest
 import app.accrescent.appstore.publish.v1alpha1.SubmitAppDraftResponse
+import app.accrescent.appstore.publish.v1alpha1.UpdateAppDraftRequest
+import app.accrescent.appstore.publish.v1alpha1.UpdateAppDraftResponse
 import app.accrescent.appstore.publish.v1alpha1.createAppDraftListingResponse
 import app.accrescent.appstore.publish.v1alpha1.createAppDraftResponse
 import app.accrescent.appstore.publish.v1alpha1.deleteAppDraftListingResponse
 import app.accrescent.appstore.publish.v1alpha1.deleteAppDraftResponse
 import app.accrescent.appstore.publish.v1alpha1.getAppDraftPackageUploadInfoResponse
 import app.accrescent.appstore.publish.v1alpha1.submitAppDraftResponse
+import app.accrescent.appstore.publish.v1alpha1.updateAppDraftResponse
 import app.accrescent.server.parcelo.data.AppDraft
 import app.accrescent.server.parcelo.data.AppDraftAcl
 import app.accrescent.server.parcelo.data.AppDraftUploadProcessingJob
@@ -112,6 +115,7 @@ class AppDraftServiceImpl @Inject constructor(
             id = UUID.randomUUID(),
             organizationId = organizationId,
             appPackageId = null,
+            defaultListingLanguage = null,
             submitted = false,
             reviewId = null,
         )
@@ -125,6 +129,7 @@ class AppDraftServiceImpl @Inject constructor(
             canReplacePackage = true,
             canReview = false,
             canSubmit = true,
+            canUpdateDefaultListingLanguage = true,
             canView = true,
         )
             .persist()
@@ -196,6 +201,44 @@ class AppDraftServiceImpl @Inject constructor(
     }
 
     @Transactional
+    override fun updateAppDraft(request: UpdateAppDraftRequest): Uni<UpdateAppDraftResponse> {
+        val userId = AuthnContextKey.USER_ID.get()
+        // protovalidate ensures this is a valid UUID, so no need to catch IllegalArgumentException
+        val appDraftId = UUID.fromString(request.appDraftId)
+
+        val appDraft = AppDraft.findById(appDraftId)
+        val canView = PermissionService
+            .userCanViewAppDraft(userId = userId, appDraftId = appDraftId)
+        if (!canView || appDraft == null) {
+            throw Status
+                .NOT_FOUND
+                .withDescription("app draft \"$appDraftId\" not found")
+                .asRuntimeException()
+        }
+        val canUpdate = PermissionService
+            .userCanUpdateAppDraftDefaultListingLanguage(userId = userId, appDraftId = appDraftId)
+        if (!canUpdate) {
+            throw Status
+                .PERMISSION_DENIED
+                .withDescription("insufficient permission to update default listing language")
+                .asRuntimeException()
+        }
+        if (appDraft.submitted) {
+            throw Status
+                .FAILED_PRECONDITION
+                .withDescription("submitted app drafts cannot be modified")
+                .asRuntimeException()
+        }
+
+        // Update the app draft based on the update mask
+        if (request.updateMask.pathsList.contains("default_listing_language")) {
+            appDraft.defaultListingLanguage = request.defaultListingLanguage
+        }
+
+        return Uni.createFrom().item { updateAppDraftResponse {} }
+    }
+
+    @Transactional
     override fun submitAppDraft(request: SubmitAppDraftRequest): Uni<SubmitAppDraftResponse> {
         val userId = AuthnContextKey.USER_ID.get()
         // protovalidate ensures this is a valid UUID, so no need to catch IllegalArgumentException
@@ -218,13 +261,26 @@ class AppDraftServiceImpl @Inject constructor(
                 .withDescription("insufficient permission to submit app draft")
                 .asRuntimeException()
         }
-        if (appDraft.appPackageId == null) {
-            throw Status
+        val defaultListingLanguage = appDraft.defaultListingLanguage
+        when {
+            appDraft.appPackageId == null -> throw Status
                 .FAILED_PRECONDITION
                 .withDescription("draft must have a package uploaded before it can be submitted")
                 .asRuntimeException()
-        } else if (appDraft.submitted) {
-            throw Status
+
+            defaultListingLanguage == null -> throw Status
+                .FAILED_PRECONDITION
+                .withDescription(
+                    "draft must have a default listing language set before it can be submitted"
+                )
+                .asRuntimeException()
+
+            !appDraft.hasListingForLanguage(defaultListingLanguage) -> throw Status
+                .FAILED_PRECONDITION
+                .withDescription("draft must have a listing for the default listing language")
+                .asRuntimeException()
+
+            appDraft.submitted -> throw Status
                 .FAILED_PRECONDITION
                 .withDescription("draft already submitted")
                 .asRuntimeException()
@@ -246,6 +302,7 @@ class AppDraftServiceImpl @Inject constructor(
                 canReplacePackage = false,
                 canReview = true,
                 canSubmit = false,
+                canUpdateDefaultListingLanguage = false,
                 canView = false,
             )
                 .persist()

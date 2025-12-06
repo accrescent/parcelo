@@ -47,6 +47,9 @@ class AppDraftAcl(
     @Column(name = "can_submit", nullable = false)
     val canSubmit: Boolean,
 
+    @Column(name = "can_update_default_listing_language", nullable = false)
+    val canUpdateDefaultListingLanguage: Boolean,
+
     @Column(name = "can_view", nullable = false)
     val canView: Boolean,
 ) : PanacheEntity() {
