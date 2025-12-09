@@ -44,8 +44,8 @@ class AppDraftAcl(
     @Column(name = "can_submit", nullable = false)
     val canSubmit: Boolean,
 
-    @Column(name = "can_view", nullable = false)
-    val canView: Boolean,
+    @Column(name = "can_view_existence", nullable = false)
+    var canViewExistence: Boolean,
 ) : PanacheEntity() {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "app_draft_id", insertable = false, updatable = false)

@@ -34,24 +34,21 @@ class ReviewServiceImpl : ReviewService {
         // protovalidate ensures this is a valid UUID, so no need to catch IllegalArgumentException
         val appDraftId = UUID.fromString(request.appDraftId)
 
-        // Review permission implies permission to view certain details of the app draft and the
-        // "view" permission implies permission to view as a user, not a reviewer, so we don't check
-        // the "view" permission for reviewers here
         val appDraft = AppDraft.findById(appDraftId)
+        val canViewExistence = PermissionService
+            .userCanViewAppDraftExistence(userId = userId, appDraftId = appDraftId)
+        if (!canViewExistence || appDraft == null) {
+            throw Status
+                .NOT_FOUND
+                .withDescription("app draft \"$appDraftId\" not found")
+                .asRuntimeException()
+        }
         val canReview = PermissionService.userCanReviewAppDraft(userId = userId, appDraftId = appDraftId)
-        if (!canReview || appDraft == null) {
-            val canView = PermissionService.userCanViewAppDraft(userId = userId, appDraftId = appDraftId)
-            if (canView) {
-                throw Status
-                    .PERMISSION_DENIED
-                    .withDescription("insufficient permission to review app draft")
-                    .asRuntimeException()
-            } else {
-                throw Status
-                    .NOT_FOUND
-                    .withDescription("app draft \"$appDraftId\" not found")
-                    .asRuntimeException()
-            }
+        if (!canReview) {
+            throw Status
+                .PERMISSION_DENIED
+                .withDescription("insufficient permission to review app draft")
+                .asRuntimeException()
         }
         if (appDraft.reviewId != null) {
             throw Status
