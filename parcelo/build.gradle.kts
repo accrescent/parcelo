@@ -23,6 +23,7 @@ dependencies {
     implementation(project(":quarkus-google-cloud-storage"))
     implementation(libs.apkanalyzer)
     implementation(libs.apksig)
+    implementation(libs.arrow.core)
     implementation(libs.bundletool)
     implementation(libs.protobuf.java)
     implementation(libs.protobuf.kotlin)

@@ -7,6 +7,7 @@ apkanalyzer = "31.13.1"
 apksig = "8.13.1"
 app-publishing-api = "03378860fce94b299c0ac5d3fcf5cfd0"
 app-review-api = "f8c62338b57f40c2849527d580bcb5e3"
+arrow = "2.2.0"
 buf = "0.10.3"
 bundletool = "1.18.2"
 google-cloud-libraries-bom = "26.71.0"
@@ -18,6 +19,7 @@ quarkus = "3.29.3"
 [libraries]
 apkanalyzer = { module = "com.android.tools.apkparser:apkanalyzer", version.ref = "apkanalyzer" }
 apksig = { module = "com.android.tools.build:apksig", version.ref = "apksig" }
+arrow-core = { module = "io.arrow-kt:arrow-core", version.ref = "arrow" }
 bundletool = { module = "com.android.tools.build:bundletool", version.ref = "bundletool" }
 google-cloud-libraries-bom = { module = "com.google.cloud:libraries-bom", version.ref = "google-cloud-libraries-bom" }
 google-cloud-pubsub = { module = "com.google.cloud:google-cloud-pubsub" }
