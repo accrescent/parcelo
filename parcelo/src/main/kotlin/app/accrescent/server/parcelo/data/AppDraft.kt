@@ -52,7 +52,7 @@ class AppDraft(
     @JoinColumn(insertable = false, updatable = false)
     lateinit var organization: Organization
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "app_package_id", insertable = false, updatable = false)
     val appPackage: AppPackage? = null
 

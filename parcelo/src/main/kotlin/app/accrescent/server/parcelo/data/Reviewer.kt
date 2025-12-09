@@ -10,7 +10,7 @@ import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.FetchType
 import jakarta.persistence.JoinColumn
-import jakarta.persistence.ManyToOne
+import jakarta.persistence.OneToOne
 import jakarta.persistence.Table
 import org.hibernate.annotations.OnDelete
 import org.hibernate.annotations.OnDeleteAction
@@ -22,7 +22,7 @@ class Reviewer(
     @Column(name = "user_id", nullable = false, unique = true)
     val userId: UUID,
 ) : PanacheEntity() {
-    @ManyToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(insertable = false, updatable = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
     lateinit var user: User
