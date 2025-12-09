@@ -22,7 +22,7 @@ class RejectionReason(
     @Column(columnDefinition = "text", nullable = false)
     val reason: String,
 ) : PanacheEntity() {
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(insertable = false, updatable = false)
     lateinit var review: Review
 }

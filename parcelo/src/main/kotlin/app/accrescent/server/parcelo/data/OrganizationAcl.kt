@@ -33,11 +33,11 @@ class OrganizationAcl(
     @Column(name = "can_view_organization", nullable = false)
     val canViewOrganization: Boolean,
 ) : PanacheEntity() {
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(insertable = false, updatable = false)
     private lateinit var organization: Organization
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(insertable = false, updatable = false)
     private lateinit var user: User
 

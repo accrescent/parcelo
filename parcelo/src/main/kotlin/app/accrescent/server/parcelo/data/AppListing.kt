@@ -35,7 +35,7 @@ class AppListing(
     @Column(columnDefinition = "text", name = "short_description", nullable = false)
     val shortDescription: String,
 ) : PanacheEntity() {
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "app_draft_id", insertable = false, updatable = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
     lateinit var appDraft: AppDraft

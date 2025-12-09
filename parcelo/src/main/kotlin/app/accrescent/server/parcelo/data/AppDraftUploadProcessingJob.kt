@@ -38,7 +38,7 @@ class AppDraftUploadProcessingJob(
     @Column(nullable = false)
     val succeeded: Boolean,
 ) : PanacheEntity() {
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "app_draft_id", insertable = false, updatable = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
     private lateinit var appDraft: AppDraft

@@ -47,12 +47,12 @@ class AppDraftAcl(
     @Column(name = "can_view", nullable = false)
     val canView: Boolean,
 ) : PanacheEntity() {
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "app_draft_id", insertable = false, updatable = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
     private lateinit var appDraft: AppDraft
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(insertable = false, updatable = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
     private lateinit var user: User

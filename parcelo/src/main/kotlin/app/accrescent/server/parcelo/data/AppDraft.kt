@@ -48,7 +48,7 @@ class AppDraft(
     @Column(name = "review_id")
     var reviewId: UUID?,
 ) : PanacheEntityBase {
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(insertable = false, updatable = false)
     lateinit var organization: Organization
 
