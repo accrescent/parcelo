@@ -22,7 +22,7 @@ class Reviewer(
     @Column(name = "user_id", nullable = false, unique = true)
     val userId: UUID,
 ) : PanacheEntity() {
-    @OneToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(insertable = false, updatable = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
     lateinit var user: User

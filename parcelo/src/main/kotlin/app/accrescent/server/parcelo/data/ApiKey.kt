@@ -22,7 +22,7 @@ class ApiKey(
     @Column(columnDefinition = "text", name = "api_key_hash", nullable = false, unique = true)
     val apiKeyHash: String,
 ) : PanacheEntity() {
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(insertable = false, updatable = false)
     lateinit var user: User
 }
