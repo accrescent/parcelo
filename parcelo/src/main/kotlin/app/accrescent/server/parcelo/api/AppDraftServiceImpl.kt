@@ -29,6 +29,7 @@ import app.accrescent.appstore.publish.v1alpha1.getAppDraftDownloadInfoResponse
 import app.accrescent.appstore.publish.v1alpha1.getAppDraftUploadInfoResponse
 import app.accrescent.appstore.publish.v1alpha1.submitAppDraftResponse
 import app.accrescent.appstore.publish.v1alpha1.updateAppDraftResponse
+import app.accrescent.server.parcelo.config.ParceloConfig
 import app.accrescent.server.parcelo.data.AppDraft
 import app.accrescent.server.parcelo.data.AppDraftAcl
 import app.accrescent.server.parcelo.data.AppDraftUploadProcessingJob
@@ -50,7 +51,6 @@ import io.smallrye.mutiny.Uni
 import jakarta.inject.Inject
 import jakarta.persistence.LockModeType
 import jakarta.transaction.Transactional
-import org.eclipse.microprofile.config.inject.ConfigProperty
 import java.time.OffsetDateTime
 import java.util.UUID
 import java.util.concurrent.TimeUnit
@@ -64,9 +64,7 @@ private const val DOWNLOAD_URL_EXPIRATION_SECONDS = 30L
 @RegisterInterceptor(GrpcAuthenticationInterceptor::class)
 @RegisterInterceptor(GrpcRequestValidationInterceptor::class)
 class AppDraftServiceImpl @Inject constructor(
-    @ConfigProperty(name = "parcelo.bucket.appupload.name")
-    private val appUploadBucketName: String,
-
+    private val config: ParceloConfig,
     private val storage: Storage,
 ) : AppDraftService {
     @Transactional
@@ -175,7 +173,8 @@ class AppDraftServiceImpl @Inject constructor(
                 .asRuntimeException()
         }
 
-        val blobInfo = BlobInfo.newBuilder(appUploadBucketName, UUID.randomUUID().toString()).build()
+        val blobInfo = BlobInfo
+            .newBuilder(config.appUploadBucket(), UUID.randomUUID().toString()).build()
         val uploadUrl = storage.signUrl(
             blobInfo,
             UPLOAD_URL_EXPIRATION_SECONDS,

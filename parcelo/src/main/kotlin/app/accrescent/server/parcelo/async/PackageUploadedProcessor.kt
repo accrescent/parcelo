@@ -5,6 +5,7 @@
 package app.accrescent.server.parcelo.async
 
 import app.accrescent.quarkus.gcp.pubsub.PubSubHelper
+import app.accrescent.server.parcelo.config.ParceloConfig
 import app.accrescent.server.parcelo.data.AppDraft
 import app.accrescent.server.parcelo.data.AppDraftUploadProcessingJob
 import app.accrescent.server.parcelo.data.AppPackage
@@ -26,7 +27,6 @@ import io.quarkus.runtime.StartupEvent
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.enterprise.event.Observes
 import jakarta.inject.Inject
-import org.eclipse.microprofile.config.inject.ConfigProperty
 import org.jboss.logging.Logger
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
@@ -45,21 +45,9 @@ private const val OBJECT_ORPHAN_TIMEOUT_DAYS = 1L
 
 @ApplicationScoped
 class PackageUploadedProcessor @Inject constructor(
-    @ConfigProperty(name = "parcelo.bucket.apppackage.name")
-    private val appPackageBucket: String,
-
+    private val config: ParceloConfig,
     private val pubSubHelper: PubSubHelper,
-
-    @ConfigProperty(name = "parcelo.pubsub.project-id")
-    private val pubSubProjectId: String,
-
-    @ConfigProperty(name = "parcelo.pubsub.subscription-name")
-    private val pubSubSubscriptionName: String,
-
     private val storage: Storage,
-
-    @ConfigProperty(name = "parcelo.package-processing-directory")
-    private val packageProcessingDirectory: String,
 ) {
     private companion object {
         private val LOG = Logger.getLogger(PackageUploadedProcessor::class.java)
@@ -70,8 +58,11 @@ class PackageUploadedProcessor @Inject constructor(
     private lateinit var subscriber: SubscriberInterface
 
     fun onStart(@Observes startupEvent: StartupEvent) {
-        subscriber = pubSubHelper
-            .createSubscriber(pubSubProjectId, pubSubSubscriptionName, messageReceiver)
+        subscriber = pubSubHelper.createSubscriber(
+            config.pubSub().projectId(),
+            config.pubSub().subscriptionName(),
+            messageReceiver,
+        )
         subscriber.startAsync().awaitRunning()
     }
 
@@ -149,7 +140,7 @@ class PackageUploadedProcessor @Inject constructor(
                 return
             }
 
-        val apkSet = TempFile(Path(packageProcessingDirectory))
+        val apkSet = TempFile(Path(config.packageProcessingDirectory()))
             .use { tempFile ->
                 try {
                     storage.get(BlobId.of(bucketId, objectId)).downloadTo(tempFile.path)
@@ -159,7 +150,7 @@ class PackageUploadedProcessor @Inject constructor(
                     return
                 }
 
-                ApkSet.parse(tempFile.path, Path(packageProcessingDirectory))
+                ApkSet.parse(tempFile.path, Path(config.packageProcessingDirectory()))
             }
             .getOrElse {
                 QuarkusTransaction
@@ -177,7 +168,7 @@ class PackageUploadedProcessor @Inject constructor(
             }
 
         val oldBlobId = BlobId.of(bucketId, objectId)
-        val newBlobId = BlobId.of(appPackageBucket, UUID.randomUUID().toString())
+        val newBlobId = BlobId.of(config.appPackageBucket(), UUID.randomUUID().toString())
 
         // Mark the new object as an orphan temporarily so that if it is persisted in GCS but never
         // attached to an app draft (e.g., because the app draft is deleted after object persistence
