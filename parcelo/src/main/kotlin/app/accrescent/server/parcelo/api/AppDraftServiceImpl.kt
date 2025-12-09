@@ -13,8 +13,10 @@ import app.accrescent.appstore.publish.v1alpha1.DeleteAppDraftListingRequest
 import app.accrescent.appstore.publish.v1alpha1.DeleteAppDraftListingResponse
 import app.accrescent.appstore.publish.v1alpha1.DeleteAppDraftRequest
 import app.accrescent.appstore.publish.v1alpha1.DeleteAppDraftResponse
-import app.accrescent.appstore.publish.v1alpha1.GetAppDraftPackageUploadInfoRequest
-import app.accrescent.appstore.publish.v1alpha1.GetAppDraftPackageUploadInfoResponse
+import app.accrescent.appstore.publish.v1alpha1.GetAppDraftDownloadInfoRequest
+import app.accrescent.appstore.publish.v1alpha1.GetAppDraftDownloadInfoResponse
+import app.accrescent.appstore.publish.v1alpha1.GetAppDraftUploadInfoRequest
+import app.accrescent.appstore.publish.v1alpha1.GetAppDraftUploadInfoResponse
 import app.accrescent.appstore.publish.v1alpha1.SubmitAppDraftRequest
 import app.accrescent.appstore.publish.v1alpha1.SubmitAppDraftResponse
 import app.accrescent.appstore.publish.v1alpha1.UpdateAppDraftRequest
@@ -23,7 +25,8 @@ import app.accrescent.appstore.publish.v1alpha1.createAppDraftListingResponse
 import app.accrescent.appstore.publish.v1alpha1.createAppDraftResponse
 import app.accrescent.appstore.publish.v1alpha1.deleteAppDraftListingResponse
 import app.accrescent.appstore.publish.v1alpha1.deleteAppDraftResponse
-import app.accrescent.appstore.publish.v1alpha1.getAppDraftPackageUploadInfoResponse
+import app.accrescent.appstore.publish.v1alpha1.getAppDraftDownloadInfoResponse
+import app.accrescent.appstore.publish.v1alpha1.getAppDraftUploadInfoResponse
 import app.accrescent.appstore.publish.v1alpha1.submitAppDraftResponse
 import app.accrescent.appstore.publish.v1alpha1.updateAppDraftResponse
 import app.accrescent.server.parcelo.data.AppDraft
@@ -55,6 +58,7 @@ import java.util.concurrent.TimeUnit
 // 1 GiB
 private const val MAX_APK_SET_SIZE_BYTES = 1073741824
 private const val UPLOAD_URL_EXPIRATION_SECONDS = 30L
+private const val DOWNLOAD_URL_EXPIRATION_SECONDS = 30L
 
 @GrpcService
 @RegisterInterceptor(GrpcAuthenticationInterceptor::class)
@@ -140,9 +144,9 @@ class AppDraftServiceImpl @Inject constructor(
     }
 
     @Transactional
-    override fun getAppDraftPackageUploadInfo(
-        request: GetAppDraftPackageUploadInfoRequest,
-    ): Uni<GetAppDraftPackageUploadInfoResponse> {
+    override fun getAppDraftUploadInfo(
+        request: GetAppDraftUploadInfoRequest,
+    ): Uni<GetAppDraftUploadInfoResponse> {
         val userId = AuthnContextKey.USER_ID.get()
         // protovalidate ensures this is a valid UUID, so no need to catch IllegalArgumentException
         val appDraftId = UUID.fromString(request.appDraftId)
@@ -191,8 +195,55 @@ class AppDraftServiceImpl @Inject constructor(
         )
             .persist()
 
-        val response = getAppDraftPackageUploadInfoResponse {
+        val response = getAppDraftUploadInfoResponse {
             apkSetUploadUrl = uploadUrl.toString()
+        }
+
+        return Uni.createFrom().item { response }
+    }
+
+    @Transactional
+    override fun getAppDraftDownloadInfo(
+        request: GetAppDraftDownloadInfoRequest,
+    ): Uni<GetAppDraftDownloadInfoResponse> {
+        val userId = AuthnContextKey.USER_ID.get()
+        // protovalidate ensures this is a valid UUID, so no need to catch IllegalArgumentException
+        val appDraftId = UUID.fromString(request.appDraftId)
+
+        // Review permission implies permission to view certain details of the app draft and the
+        // "view" permission implies permission to view as a user, not a reviewer, so we don't check
+        // the "view" permission for reviewers here
+        val appDraft = AppDraft.findById(appDraftId)
+        val canReview = PermissionService.userCanReviewAppDraft(userId = userId, appDraftId = appDraftId)
+        if (!canReview || appDraft == null) {
+            val canView = PermissionService.userCanViewAppDraft(userId = userId, appDraftId = appDraftId)
+            if (canView) {
+                throw Status
+                    .PERMISSION_DENIED
+                    .withDescription("insufficient permission to review app draft")
+                    .asRuntimeException()
+            } else {
+                throw Status
+                    .NOT_FOUND
+                    .withDescription("app draft \"$appDraftId\" not found")
+                    .asRuntimeException()
+            }
+        }
+        val appPackage = appDraft.appPackage ?: throw Status
+            .NOT_FOUND
+            .withDescription("app draft \"$appDraftId\" has no package")
+            .asRuntimeException()
+
+        val apkSetBlob = BlobInfo.newBuilder(appPackage.bucketId, appPackage.objectId).build()
+        val downloadUrl = storage.signUrl(
+            apkSetBlob,
+            DOWNLOAD_URL_EXPIRATION_SECONDS,
+            TimeUnit.SECONDS,
+            Storage.SignUrlOption.withV4Signature(),
+        )
+
+        val response = getAppDraftDownloadInfoResponse {
+            apkSetUrl = downloadUrl.toString()
         }
 
         return Uni.createFrom().item { response }

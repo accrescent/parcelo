@@ -75,7 +75,7 @@ tasks.bufLint {
 
 tasks.register<Exec>("downloadAppPublishingApiProtos") {
     inputs.property("app.accrescent.server.parcelo.app-publishing-api-version", libs.versions.app.publishing.api)
-    outputs.dir("$projectDir/src/main/proto/accrescent/appstore/publish")
+    outputs.dir("$projectDir/src/main/proto/accrescent")
 
     val bufExecutable = configurations.getByName(BUF_BINARY_CONFIGURATION_NAME).singleFile
     if (!bufExecutable.canExecute()) {
@@ -98,34 +98,8 @@ tasks.register<Exec>("downloadAppPublishingApiProtos") {
         file("$projectDir/src/main/proto/buf").deleteRecursively()
     }
 }
-tasks.register<Exec>("downloadAppReviewApiProtos") {
-    inputs.property("app.accrescent.server.parcelo.app-review-api-version", libs.versions.app.review.api)
-    outputs.dir("$projectDir/src/main/proto/accrescent/appstore/review")
-
-    val bufExecutable = configurations.getByName(BUF_BINARY_CONFIGURATION_NAME).singleFile
-    if (!bufExecutable.canExecute()) {
-        bufExecutable.setExecutable(true)
-    }
-
-    val appReviewApiVersion = inputs.properties["app.accrescent.server.parcelo.app-review-api-version"]
-
-    commandLine(
-        bufExecutable.absolutePath,
-        "export",
-        "buf.build/accrescent/app-review-api:$appReviewApiVersion",
-        "--output",
-        "$projectDir/src/main/proto/",
-    )
-
-    // Remove buf/validate/validate.proto so that Quarkus doesn't generate classes which conflict
-    // with those defined in our protovalidate dependency
-    doLast {
-        file("$projectDir/src/main/proto/buf").deleteRecursively()
-    }
-}
 tasks.register("downloadProtos") {
     dependsOn(tasks.getByName("downloadAppPublishingApiProtos"))
-    dependsOn(tasks.getByName("downloadAppReviewApiProtos"))
 }
 tasks.quarkusGenerateCode {
     dependsOn(tasks.getByName("downloadProtos"))

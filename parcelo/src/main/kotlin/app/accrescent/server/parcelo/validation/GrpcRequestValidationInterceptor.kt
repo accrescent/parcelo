@@ -6,13 +6,13 @@ package app.accrescent.server.parcelo.validation
 
 import app.accrescent.appstore.publish.v1alpha1.CreateAppDraftListingRequest
 import app.accrescent.appstore.publish.v1alpha1.CreateAppDraftRequest
+import app.accrescent.appstore.publish.v1alpha1.CreateAppDraftReviewRequest
 import app.accrescent.appstore.publish.v1alpha1.DeleteAppDraftListingRequest
 import app.accrescent.appstore.publish.v1alpha1.DeleteAppDraftRequest
-import app.accrescent.appstore.publish.v1alpha1.GetAppDraftPackageUploadInfoRequest
+import app.accrescent.appstore.publish.v1alpha1.GetAppDraftDownloadInfoRequest
+import app.accrescent.appstore.publish.v1alpha1.GetAppDraftUploadInfoRequest
 import app.accrescent.appstore.publish.v1alpha1.SubmitAppDraftRequest
 import app.accrescent.appstore.publish.v1alpha1.UpdateAppDraftRequest
-import app.accrescent.appstore.review.v1alpha1.GetAppDraftDownloadInfoRequest
-import app.accrescent.appstore.review.v1alpha1.ReviewAppDraftRequest
 import build.buf.protovalidate.Validator
 import build.buf.protovalidate.ValidatorFactory
 import build.buf.protovalidate.exceptions.ValidationException
@@ -33,11 +33,11 @@ class GrpcRequestValidationInterceptor : ServerInterceptor {
             listOf(
                 CreateAppDraftListingRequest.getDescriptor(),
                 CreateAppDraftRequest.getDescriptor(),
+                CreateAppDraftReviewRequest.getDescriptor(),
                 DeleteAppDraftListingRequest.getDescriptor(),
                 DeleteAppDraftRequest.getDescriptor(),
                 GetAppDraftDownloadInfoRequest.getDescriptor(),
-                GetAppDraftPackageUploadInfoRequest.getDescriptor(),
-                ReviewAppDraftRequest.getDescriptor(),
+                GetAppDraftUploadInfoRequest.getDescriptor(),
                 SubmitAppDraftRequest.getDescriptor(),
                 UpdateAppDraftRequest.getDescriptor(),
             ),
