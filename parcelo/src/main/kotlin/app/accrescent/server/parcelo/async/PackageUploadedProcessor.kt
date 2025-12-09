@@ -10,8 +10,9 @@ import app.accrescent.server.parcelo.data.AppDraftUploadProcessingJob
 import app.accrescent.server.parcelo.data.AppPackage
 import app.accrescent.server.parcelo.data.OrphanedBlob
 import app.accrescent.server.parcelo.parsers.ApkSet
-import app.accrescent.server.parcelo.parsers.ApkSetParseResult
+import app.accrescent.server.parcelo.parsers.ApkSetParseError
 import app.accrescent.server.parcelo.util.TempFile
+import arrow.core.getOrElse
 import com.google.cloud.pubsub.v1.AckReplyConsumer
 import com.google.cloud.pubsub.v1.MessageReceiver
 import com.google.cloud.pubsub.v1.SubscriberInterface
@@ -148,32 +149,32 @@ class PackageUploadedProcessor @Inject constructor(
                 return
             }
 
-        val apkSetParseResult = TempFile(Path(packageProcessingDirectory)).use { tempFile ->
-            try {
-                storage.get(BlobId.of(bucketId, objectId)).downloadTo(tempFile.path)
-            } catch (e: StorageException) {
-                LOG.error("error downloading object $objectId from bucket $bucketId: ${e.message}")
-                consumer.nack()
+        val apkSet = TempFile(Path(packageProcessingDirectory))
+            .use { tempFile ->
+                try {
+                    storage.get(BlobId.of(bucketId, objectId)).downloadTo(tempFile.path)
+                } catch (e: StorageException) {
+                    LOG.error("error downloading object $objectId from bucket $bucketId: ${e.message}")
+                    consumer.nack()
+                    return
+                }
+
+                ApkSet.parse(tempFile.path, Path(packageProcessingDirectory))
+            }
+            .getOrElse {
+                QuarkusTransaction
+                    .joiningExisting()
+                    .call { AppDraftUploadProcessingJob.markFailed(bucketId, objectId) }
+
+                if (it is ApkSetParseError.IoError) {
+                    // I/O errors are a result of problematic server state, not the APK set, so we
+                    // shouldn't fail processing for them
+                    consumer.nack()
+                } else {
+                    consumer.ack()
+                }
                 return
             }
-
-            ApkSet.parse(tempFile.path, Path(packageProcessingDirectory))
-        }
-        if (apkSetParseResult !is ApkSetParseResult.Ok) {
-            QuarkusTransaction
-                .joiningExisting()
-                .call { AppDraftUploadProcessingJob.markFailed(bucketId, objectId) }
-
-            if (apkSetParseResult is ApkSetParseResult.IoError) {
-                // I/O errors are a result of problematic server state, not the APK set, so we
-                // shouldn't fail processing for them
-                consumer.nack()
-            } else {
-                consumer.ack()
-            }
-            return
-        }
-        val apkSet = apkSetParseResult.apkSet
 
         val oldBlobId = BlobId.of(bucketId, objectId)
         val newBlobId = BlobId.of(appPackageBucket, UUID.randomUUID().toString())

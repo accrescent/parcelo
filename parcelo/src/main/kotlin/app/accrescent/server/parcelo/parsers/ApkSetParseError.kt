@@ -4,11 +4,10 @@
 
 package app.accrescent.server.parcelo.parsers
 
-sealed class ApkSetParseResult {
-    data class Ok(val apkSet: ApkSet) : ApkSetParseResult()
-    data object InvalidFormat : ApkSetParseResult()
-    data object IoError : ApkSetParseResult()
-    sealed class RequirementError : ApkSetParseResult() {
+sealed class ApkSetParseError {
+    data object InvalidFormat : ApkSetParseError()
+    data object IoError : ApkSetParseError()
+    sealed class RequirementError : ApkSetParseError() {
         data object NoModernSignature : RequirementError()
         data object SignedWithDebugCert : RequirementError()
         data object SignedWithMultipleCerts : RequirementError()
