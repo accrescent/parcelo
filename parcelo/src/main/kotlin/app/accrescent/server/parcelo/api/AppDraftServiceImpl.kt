@@ -153,7 +153,7 @@ class AppDraftServiceImpl @Inject constructor(
 
         val appDraft = AppDraft.findById(appDraftId)
         val canViewDraft = PermissionService
-            .userCanDeleteAppDraft(userId = userId, appDraftId = appDraftId)
+            .userCanViewAppDraft(userId = userId, appDraftId = appDraftId)
         if (!canViewDraft || appDraft == null) {
             throw Status
                 .NOT_FOUND
@@ -295,7 +295,7 @@ class AppDraftServiceImpl @Inject constructor(
 
         val appDraft = AppDraft.findById(appDraftId)
         val canViewDraft = PermissionService
-            .userCanDeleteAppDraft(userId = userId, appDraftId = appDraftId)
+            .userCanViewAppDraft(userId = userId, appDraftId = appDraftId)
         if (!canViewDraft || appDraft == null) {
             throw Status
                 .NOT_FOUND
