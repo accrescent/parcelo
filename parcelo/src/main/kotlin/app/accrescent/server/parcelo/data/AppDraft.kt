@@ -6,6 +6,7 @@ package app.accrescent.server.parcelo.data
 
 import io.quarkus.hibernate.orm.panache.kotlin.PanacheCompanionBase
 import io.quarkus.hibernate.orm.panache.kotlin.PanacheEntityBase
+import jakarta.persistence.CascadeType
 import jakarta.persistence.CheckConstraint
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
@@ -13,6 +14,7 @@ import jakarta.persistence.FetchType
 import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
+import jakarta.persistence.OneToMany
 import jakarta.persistence.OneToOne
 import jakarta.persistence.Table
 import java.util.UUID
@@ -27,6 +29,8 @@ import java.util.UUID
         CheckConstraint(constraint = "default_listing_language IS NOT NULL or submitted = false"),
         // Forbid the draft from being reviewed if it is not submitted
         CheckConstraint(constraint = "submitted = true OR review_id IS NULL"),
+        // Forbid the draft from being published if it is not reviewed
+        CheckConstraint(constraint = "review_id IS NOT NULL OR published = false"),
     ],
 )
 class AppDraft(
@@ -47,6 +51,9 @@ class AppDraft(
 
     @Column(name = "review_id")
     var reviewId: UUID?,
+
+    @Column(nullable = false)
+    var published: Boolean,
 ) : PanacheEntityBase {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(insertable = false, updatable = false)
@@ -60,11 +67,14 @@ class AppDraft(
     @JoinColumn(insertable = false, updatable = false)
     val review: Review? = null
 
+    @OneToMany(cascade = [CascadeType.ALL], mappedBy = "appDraft")
+    lateinit var listings: List<AppDraftListing>
+
     fun hasListingForLanguage(language: String): Boolean {
         return count(
-            "FROM AppListing app_listings " +
-                    "WHERE app_listings.appDraftId = ?1 " +
-                    "AND app_listings.language = ?2",
+            "FROM AppDraftListing app_draft_listings " +
+                    "WHERE app_draft_listings.appDraftId = ?1 " +
+                    "AND app_draft_listings.language = ?2",
             id,
             language,
         ) > 0

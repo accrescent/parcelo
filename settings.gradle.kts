@@ -13,6 +13,9 @@ include(
     "quarkus-google-cloud-storage",
     "quarkus-google-cloud-storage-deployment",
     "quarkus-google-cloud-storage-devservices",
+    "quarkus-minio",
+    "quarkus-minio-deployment",
+    "quarkus-minio-devservices",
 )
 
 dependencyResolutionManagement {

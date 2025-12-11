@@ -5,9 +5,11 @@
 package app.accrescent.server.parcelo.data
 
 import io.quarkus.hibernate.orm.panache.kotlin.PanacheEntityBase
+import jakarta.persistence.CascadeType
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.Id
+import jakarta.persistence.OneToMany
 import jakarta.persistence.Table
 import jakarta.persistence.UniqueConstraint
 import java.time.OffsetDateTime
@@ -50,4 +52,7 @@ class AppPackage(
 
     @Column(name = "build_apks_result", nullable = false)
     val buildApksResult: ByteArray,
-) : PanacheEntityBase
+) : PanacheEntityBase {
+    @OneToMany(cascade = [CascadeType.ALL], mappedBy = "appPackage")
+    lateinit var publishedApks: List<PublishedApk>
+}

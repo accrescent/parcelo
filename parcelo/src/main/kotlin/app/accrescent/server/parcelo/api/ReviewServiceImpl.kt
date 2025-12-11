@@ -9,6 +9,8 @@ import app.accrescent.appstore.publish.v1alpha1.CreateAppDraftReviewResponse
 import app.accrescent.appstore.publish.v1alpha1.ReviewService
 import app.accrescent.appstore.publish.v1alpha1.createAppDraftReviewResponse
 import app.accrescent.server.parcelo.data.AppDraft
+import app.accrescent.server.parcelo.data.AppDraftAcl
+import app.accrescent.server.parcelo.data.Publisher
 import app.accrescent.server.parcelo.data.RejectionReason
 import app.accrescent.server.parcelo.data.Review
 import app.accrescent.server.parcelo.security.AuthnContextKey
@@ -69,6 +71,30 @@ class ReviewServiceImpl : ReviewService {
             RejectionReason(reviewId = review.id, reason = rejectionReason.reason).persist()
         }
         appDraft.reviewId = review.id
+
+        // Assign a publisher
+        val publisher = Publisher.findRandom() ?: throw Status
+            .FAILED_PRECONDITION
+            .withDescription("no publishers available to assign")
+            .asRuntimeException()
+        val existingAcl = AppDraftAcl.findByAppDraftIdAndUserId(appDraftId, publisher.userId)
+        if (existingAcl == null) {
+            AppDraftAcl(
+                appDraftId = appDraftId,
+                userId = publisher.userId,
+                canDelete = false,
+                canEditListings = false,
+                canPublish = true,
+                canReplacePackage = false,
+                canReview = false,
+                canSubmit = false,
+                canViewExistence = true,
+            )
+                .persist()
+        } else {
+            existingAcl.canPublish = true
+            existingAcl.canViewExistence = true
+        }
 
         return Uni.createFrom().item { createAppDraftReviewResponse {} }
     }

@@ -35,6 +35,9 @@ class AppDraftAcl(
     @Column(name = "can_edit_listings", nullable = false)
     val canEditListings: Boolean,
 
+    @Column(name = "can_publish", nullable = false)
+    var canPublish: Boolean,
+
     @Column(name = "can_replace_package", nullable = false)
     val canReplacePackage: Boolean,
 

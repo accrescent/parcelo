@@ -21,6 +21,7 @@ dependencies {
     }
     implementation(project(":quarkus-google-cloud-pubsub"))
     implementation(project(":quarkus-google-cloud-storage"))
+    implementation(project(":quarkus-minio"))
     implementation(libs.apkanalyzer)
     implementation(libs.apksig)
     implementation(libs.arrow.core)
