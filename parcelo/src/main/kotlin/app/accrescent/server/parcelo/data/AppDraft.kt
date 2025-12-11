@@ -97,5 +97,16 @@ class AppDraft(
             )
                 .firstResult()
         }
+
+        fun submittedDraftExistsWithAppId(appId: String): Boolean {
+            return count(
+                "FROM AppDraft app_drafts " +
+                        "JOIN AppPackage app_packages " +
+                        "ON app_packages.id = app_drafts.appPackageId " +
+                        "WHERE app_drafts.submitted = true " +
+                        "AND app_packages.appId = ?1",
+                appId,
+            ) > 0
+        }
     }
 }
