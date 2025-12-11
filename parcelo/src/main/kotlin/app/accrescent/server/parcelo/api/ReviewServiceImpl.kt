@@ -37,15 +37,14 @@ class ReviewServiceImpl : ReviewService {
         val appDraftId = UUID.fromString(request.appDraftId)
 
         val appDraft = AppDraft.findById(appDraftId)
-        val canViewExistence = PermissionService
-            .userCanViewAppDraftExistence(userId = userId, appDraftId = appDraftId)
+        val canViewExistence = PermissionService.userCanViewAppDraftExistence(userId, appDraftId)
         if (!canViewExistence || appDraft == null) {
             throw Status
                 .NOT_FOUND
                 .withDescription("app draft \"$appDraftId\" not found")
                 .asRuntimeException()
         }
-        val canReview = PermissionService.userCanReviewAppDraft(userId = userId, appDraftId = appDraftId)
+        val canReview = PermissionService.userCanReviewAppDraft(userId, appDraftId)
         if (!canReview) {
             throw Status
                 .PERMISSION_DENIED
