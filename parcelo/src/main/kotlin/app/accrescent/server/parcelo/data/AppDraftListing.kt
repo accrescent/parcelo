@@ -44,5 +44,9 @@ class AppDraftListing(
         fun deleteByAppDraftAndLanguage(appDraftId: UUID, language: String): Boolean {
             return delete("WHERE appDraftId = ?1 AND language = ?2", appDraftId, language) > 0
         }
+
+        fun exists(appDraftId: UUID, language: String): Boolean {
+            return count("WHERE appDraftId = ?1 AND language = ?2", appDraftId, language) > 0
+        }
     }
 }
