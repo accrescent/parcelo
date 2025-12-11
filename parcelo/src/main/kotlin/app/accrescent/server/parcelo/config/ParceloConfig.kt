@@ -15,6 +15,8 @@ interface ParceloConfig {
 
     fun packageProcessingDirectory(): String
 
+    fun publishedArtifactBucket(): String
+
     @WithName("pubsub")
     fun pubSub(): PubSub
 

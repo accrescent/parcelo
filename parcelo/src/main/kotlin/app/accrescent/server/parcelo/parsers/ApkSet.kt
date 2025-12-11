@@ -5,6 +5,7 @@
 package app.accrescent.server.parcelo.parsers
 
 import app.accrescent.server.parcelo.util.TempFile
+import app.accrescent.server.parcelo.util.apkPaths
 import arrow.core.Either
 import arrow.core.raise.either
 import com.android.bundle.Commands
@@ -73,14 +74,7 @@ class ApkSet private constructor(
                 }
 
                 // Check compliance of individual APKs
-                val apkPaths = buildApksResult
-                    .variantList
-                    .flatMap { it.apkSetList }
-                    .flatMap { it.apkDescriptionList }
-                    .map { it.path }
-                    // Paths can be repeated across variants, so deduplicate them here so that we
-                    // don't unnecessarily process an APK more than once
-                    .toSet()
+                val apkPaths = buildApksResult.apkPaths()
                 var pinnedSigningCert: X509Certificate? = null
                 var pinnedVersionCode: Int? = null
                 var firstEncounteredVersionName: String? = null

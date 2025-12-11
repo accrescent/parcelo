@@ -17,6 +17,8 @@ import app.accrescent.appstore.publish.v1alpha1.GetAppDraftDownloadInfoRequest
 import app.accrescent.appstore.publish.v1alpha1.GetAppDraftDownloadInfoResponse
 import app.accrescent.appstore.publish.v1alpha1.GetAppDraftUploadInfoRequest
 import app.accrescent.appstore.publish.v1alpha1.GetAppDraftUploadInfoResponse
+import app.accrescent.appstore.publish.v1alpha1.PublishAppDraftRequest
+import app.accrescent.appstore.publish.v1alpha1.PublishAppDraftResponse
 import app.accrescent.appstore.publish.v1alpha1.SubmitAppDraftRequest
 import app.accrescent.appstore.publish.v1alpha1.SubmitAppDraftResponse
 import app.accrescent.appstore.publish.v1alpha1.UpdateAppDraftRequest
@@ -27,23 +29,34 @@ import app.accrescent.appstore.publish.v1alpha1.deleteAppDraftListingResponse
 import app.accrescent.appstore.publish.v1alpha1.deleteAppDraftResponse
 import app.accrescent.appstore.publish.v1alpha1.getAppDraftDownloadInfoResponse
 import app.accrescent.appstore.publish.v1alpha1.getAppDraftUploadInfoResponse
+import app.accrescent.appstore.publish.v1alpha1.publishAppDraftResponse
 import app.accrescent.appstore.publish.v1alpha1.submitAppDraftResponse
 import app.accrescent.appstore.publish.v1alpha1.updateAppDraftResponse
 import app.accrescent.server.parcelo.config.ParceloConfig
+import app.accrescent.server.parcelo.data.App
 import app.accrescent.server.parcelo.data.AppDraft
 import app.accrescent.server.parcelo.data.AppDraftAcl
+import app.accrescent.server.parcelo.data.AppDraftListing
 import app.accrescent.server.parcelo.data.AppDraftUploadProcessingJob
 import app.accrescent.server.parcelo.data.AppListing
 import app.accrescent.server.parcelo.data.Organization
 import app.accrescent.server.parcelo.data.OrphanedBlob
+import app.accrescent.server.parcelo.data.PublishedApk
 import app.accrescent.server.parcelo.data.Reviewer
+import app.accrescent.server.parcelo.publish.PublishService
 import app.accrescent.server.parcelo.security.AuthnContextKey
 import app.accrescent.server.parcelo.security.GrpcAuthenticationInterceptor
 import app.accrescent.server.parcelo.security.PermissionService
+import app.accrescent.server.parcelo.util.TempFile
+import app.accrescent.server.parcelo.util.apkPaths
 import app.accrescent.server.parcelo.validation.GrpcRequestValidationInterceptor
+import com.android.bundle.Commands
+import com.google.cloud.storage.BlobId
 import com.google.cloud.storage.BlobInfo
 import com.google.cloud.storage.HttpMethod
 import com.google.cloud.storage.Storage
+import com.google.cloud.storage.StorageException
+import com.google.protobuf.InvalidProtocolBufferException
 import io.grpc.Status
 import io.quarkus.grpc.GrpcService
 import io.quarkus.grpc.RegisterInterceptor
@@ -54,6 +67,7 @@ import jakarta.transaction.Transactional
 import java.time.OffsetDateTime
 import java.util.UUID
 import java.util.concurrent.TimeUnit
+import kotlin.io.path.Path
 
 // 1 GiB
 private const val MAX_APK_SET_SIZE_BYTES = 1073741824
@@ -65,6 +79,7 @@ private const val DOWNLOAD_URL_EXPIRATION_SECONDS = 30L
 @RegisterInterceptor(GrpcRequestValidationInterceptor::class)
 class AppDraftServiceImpl @Inject constructor(
     private val config: ParceloConfig,
+    private val publishService: PublishService,
     private val storage: Storage,
 ) : AppDraftService {
     @Transactional
@@ -120,6 +135,7 @@ class AppDraftServiceImpl @Inject constructor(
             defaultListingLanguage = null,
             submitted = false,
             reviewId = null,
+            published = false,
         )
             .also { it.persist() }
         AppDraftAcl(
@@ -127,6 +143,7 @@ class AppDraftServiceImpl @Inject constructor(
             userId = userId,
             canDelete = true,
             canEditListings = true,
+            canPublish = false,
             canReplacePackage = true,
             canReview = false,
             canSubmit = true,
@@ -343,6 +360,7 @@ class AppDraftServiceImpl @Inject constructor(
                 userId = reviewer.userId,
                 canDelete = false,
                 canEditListings = false,
+                canPublish = false,
                 canReplacePackage = false,
                 canReview = true,
                 canSubmit = false,
@@ -443,7 +461,7 @@ class AppDraftServiceImpl @Inject constructor(
                 .asRuntimeException()
         }
 
-        AppListing(
+        AppDraftListing(
             appDraftId = appDraftId,
             language = request.language,
             name = request.name,
@@ -489,7 +507,7 @@ class AppDraftServiceImpl @Inject constructor(
                 .asRuntimeException()
         }
 
-        val deleted = AppListing.deleteByAppDraftAndLanguage(appDraftId, request.language)
+        val deleted = AppDraftListing.deleteByAppDraftAndLanguage(appDraftId, request.language)
         if (deleted) {
             return Uni.createFrom().item { deleteAppDraftListingResponse {} }
         } else {
@@ -501,5 +519,119 @@ class AppDraftServiceImpl @Inject constructor(
                 )
                 .asRuntimeException()
         }
+    }
+
+    @Transactional
+    override fun publishAppDraft(request: PublishAppDraftRequest): Uni<PublishAppDraftResponse> {
+        val userId = AuthnContextKey.USER_ID.get()
+        // protovalidate ensures this is a valid UUID, so no need to catch IllegalArgumentException
+        val appDraftId = UUID.fromString(request.appDraftId)
+
+        val appDraft = AppDraft.findById(appDraftId)
+        val canViewExistence = PermissionService
+            .userCanViewAppDraftExistence(userId = userId, appDraftId = appDraftId)
+        if (!canViewExistence || appDraft == null) {
+            throw Status
+                .NOT_FOUND
+                .withDescription("app draft \"$appDraftId\" not found")
+                .asRuntimeException()
+        }
+        val canPublish = PermissionService
+            .userCanPublishAppDraft(userId = userId, appDraftId = appDraftId)
+        if (!canPublish) {
+            throw Status
+                .PERMISSION_DENIED
+                .withDescription("insufficient permission to publish app draft")
+                .asRuntimeException()
+        }
+        if (appDraft.published) {
+            throw Status
+                .ALREADY_EXISTS
+                .withDescription("the app draft has already been published")
+                .asRuntimeException()
+        }
+
+        val appPackage = appDraft.appPackage ?: throw Status
+            .INTERNAL
+            .withDescription("app draft has no package")
+            .asRuntimeException()
+        val appId = appPackage.appId
+        val defaultListingLanguage = appDraft.defaultListingLanguage ?: throw Status
+            .INTERNAL
+            .withDescription("app draft has no default listing language")
+            .asRuntimeException()
+        if (App.existsById(appId)) {
+            throw Status
+                .ALREADY_EXISTS
+                .withDescription("an app with ID \"$appId\" has already been published")
+                .asRuntimeException()
+        }
+
+        // Parse the app package metadata
+        val buildApksResult = try {
+            Commands.BuildApksResult.parseFrom(appPackage.buildApksResult)
+        } catch (_: InvalidProtocolBufferException) {
+            throw Status
+                .DATA_LOSS
+                .withDescription("app package metadata is invalid")
+                .asRuntimeException()
+        }
+
+        // Publish the APK set's APKs to an S3-compatible server.
+        //
+        // It is possible for this process to create orphan objects, i.e., objects that are stored
+        // remotely but untracked by our database. However, this creation occurs only if this RPC
+        // does not eventually complete successfully. That is, if this RPC is called and completes
+        // successfully for a given draft, it is guaranteed that no orphan objects exist for it even
+        // if previous calls have failed.
+        val pathsToApks = TempFile(Path(config.packageProcessingDirectory())).use { tempApkSet ->
+            try {
+                storage
+                    .get(BlobId.of(appPackage.bucketId, appPackage.objectId))
+                    .downloadTo(tempApkSet.path)
+            } catch (_: StorageException) {
+                throw Status
+                    .UNAVAILABLE
+                    .withDescription("failed to download app package")
+                    .asRuntimeException()
+            }
+
+            publishService.publishApks(
+                appId = buildApksResult.packageName,
+                versionCode = appPackage.versionCode,
+                apkSetPath = tempApkSet.path,
+                apkPaths = buildApksResult.apkPaths(),
+            )
+        }
+
+        // Publish draft
+        App(
+            id = appId,
+            defaultListingLanguage = defaultListingLanguage,
+            appPackageId = appPackage.id,
+        )
+            .persist()
+        for (draftListing in appDraft.listings) {
+            AppListing(
+                appId = appId,
+                language = draftListing.language,
+                name = draftListing.name,
+                shortDescription = draftListing.shortDescription,
+            )
+                .persist()
+        }
+        for ((apkPath, apk) in pathsToApks) {
+            PublishedApk(
+                appPackageId = appPackage.id,
+                apkPath = apkPath,
+                bucketId = apk.bucketId,
+                objectId = apk.objectId,
+                size = apk.size,
+            )
+                .persist()
+        }
+        appDraft.published = true
+
+        return Uni.createFrom().item { publishAppDraftResponse {} }
     }
 }

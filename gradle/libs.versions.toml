@@ -5,13 +5,14 @@
 [versions]
 apkanalyzer = "31.13.1"
 apksig = "8.13.1"
-app-publishing-api = "37822bfcbd7a44e6ab09418837130d09"
+app-publishing-api = "27072d182e164c7ca3c4f108e07b8f82"
 arrow = "2.2.0"
 buf = "0.10.3"
 bundletool = "1.18.2"
 google-cloud-libraries-bom = "26.71.0"
 kotlin = "2.2.21"
 log4j1 = "1.2.17"
+minio = "8.6.0"
 protovalidate = "1.1.0"
 quarkus = "3.29.3"
 
@@ -25,6 +26,7 @@ google-cloud-pubsub = { module = "com.google.cloud:google-cloud-pubsub" }
 google-cloud-storage = { module = "com.google.cloud:google-cloud-storage" }
 log4j-api = { module = "org.apache.logging.log4j:log4j-api" }
 log4j1 = { module = "log4j:log4j", version.ref = "log4j1" }
+minio = { module = "io.minio:minio", version.ref = "minio" }
 protobuf-java = { module = "com.google.protobuf:protobuf-java" }
 protobuf-kotlin = { module = "com.google.protobuf:protobuf-kotlin" }
 protovalidate = { module = "build.buf:protovalidate", version.ref = "protovalidate" }
@@ -42,6 +44,7 @@ quarkus-oidc = { module = "io.quarkus:quarkus-oidc" }
 quarkus-rest-jackson = { module = "io.quarkus:quarkus-rest-jackson" }
 testcontainers = { module = "org.testcontainers:testcontainers"  }
 testcontainers-gcloud = { module = "org.testcontainers:gcloud" }
+testcontainers-minio = { module = "org.testcontainers:minio" }
 
 [plugins]
 buf = { id = "build.buf", version.ref = "buf" }
