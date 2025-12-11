@@ -454,6 +454,15 @@ class AppDraftServiceImpl @Inject constructor(
                 )
                 .asRuntimeException()
         }
+        if (AppDraftListing.exists(appDraftId, request.language)) {
+            throw Status
+                .ALREADY_EXISTS
+                .withDescription(
+                    "an app listing for app draft \"$appDraftId\" with language " +
+                            "\"${request.language}\" already exists"
+                )
+                .asRuntimeException()
+        }
         if (appDraft.submitted) {
             throw Status
                 .FAILED_PRECONDITION
