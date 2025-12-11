@@ -323,13 +323,12 @@ class AppDraftServiceImpl @Inject constructor(
                 .withDescription("insufficient permission to submit app draft")
                 .asRuntimeException()
         }
+        val appPackage = appDraft.appPackage ?: throw Status
+            .FAILED_PRECONDITION
+            .withDescription("draft must have a package uploaded before it can be submitted")
+            .asRuntimeException()
         val defaultListingLanguage = appDraft.defaultListingLanguage
         when {
-            appDraft.appPackageId == null -> throw Status
-                .FAILED_PRECONDITION
-                .withDescription("draft must have a package uploaded before it can be submitted")
-                .asRuntimeException()
-
             defaultListingLanguage == null -> throw Status
                 .FAILED_PRECONDITION
                 .withDescription(
@@ -345,6 +344,13 @@ class AppDraftServiceImpl @Inject constructor(
             appDraft.submitted -> throw Status
                 .FAILED_PRECONDITION
                 .withDescription("draft already submitted")
+                .asRuntimeException()
+
+            AppDraft.submittedDraftExistsWithAppId(appPackage.appId) -> throw Status
+                .ALREADY_EXISTS
+                .withDescription(
+                    "a draft has already been submitted for app ID \"${appPackage.appId}\""
+                )
                 .asRuntimeException()
         }
 
