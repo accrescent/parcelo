@@ -336,7 +336,7 @@ class AppDraftServiceImpl @Inject constructor(
             .FAILED_PRECONDITION
             .withDescription("no reviewers available to assign")
             .asRuntimeException()
-        val existingAcl = AppDraftAcl.findByAppDraftIdAndUserId(appDraftId, userId)
+        val existingAcl = AppDraftAcl.findByAppDraftIdAndUserId(appDraftId, reviewer.userId)
         if (existingAcl == null) {
             AppDraftAcl(
                 appDraftId = appDraftId,
