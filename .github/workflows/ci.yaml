@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-only
 
-name: Build
+name: CI
 
 on: [push, pull_request]
 
@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 jobs:
-  build:
+  ci:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -21,3 +21,4 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - run: ./gradlew assemble
       - run: ./gradlew assemble -Dquarkus.native.enabled=true -Dquarkus.package.jar.enabled=false
+      - run: ./gradlew test
