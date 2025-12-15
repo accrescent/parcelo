@@ -32,7 +32,7 @@ class App(
     @JoinColumn(name = "app_package_id", insertable = false, updatable = false)
     lateinit var appPackage: AppPackage
 
-    companion object : PanacheCompanionBase<App, UUID> {
+    companion object : PanacheCompanionBase<App, String> {
         fun existsById(id: String): Boolean {
             return count("WHERE id = ?1", id) > 0
         }
