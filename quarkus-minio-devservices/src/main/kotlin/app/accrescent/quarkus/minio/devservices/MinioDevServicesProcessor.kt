@@ -15,7 +15,6 @@ import io.quarkus.devservices.common.ConfigureUtil
 import org.testcontainers.containers.MinIOContainer
 import org.testcontainers.utility.DockerImageName
 import java.util.Optional
-import java.util.OptionalInt
 import kotlin.jvm.optionals.getOrElse
 
 private const val CONFIG_PREFIX = "quarkus.minio"
@@ -35,11 +34,7 @@ class MinioDevServicesProcessor {
             return null
         }
 
-        val container = QuarkusMinioContainer(
-            config.imageName(),
-            config.apiPort(),
-            config.consolePort(),
-        )
+        val container = QuarkusMinioContainer(config.imageName())
         container.start()
 
         val host = "http://${container.host}:${container.firstMappedPort}"
@@ -74,11 +69,7 @@ class MinioDevServicesProcessor {
     }
 }
 
-private class QuarkusMinioContainer(
-    imageName: Optional<String>,
-    private val apiPort: OptionalInt,
-    private val consolePort: OptionalInt,
-) : MinIOContainer(
+private class QuarkusMinioContainer(imageName: Optional<String>) : MinIOContainer(
     DockerImageName
         .parse(imageName.orElseGet { ConfigureUtil.getDefaultImageNameFor(DEV_SERVICE_NAME) })
         .asCompatibleSubstituteFor(DOCKER_IMAGE_NAME)
@@ -86,15 +77,7 @@ private class QuarkusMinioContainer(
     override fun configure() {
         super.configure()
 
-        if (apiPort.isPresent) {
-            addFixedExposedPort(apiPort.asInt, MINIO_API_PORT)
-        } else {
-            addExposedPort(MINIO_API_PORT)
-        }
-        if (consolePort.isPresent) {
-            addFixedExposedPort(consolePort.asInt, MINIO_CONSOLE_PORT)
-        } else {
-            addExposedPort(MINIO_CONSOLE_PORT)
-        }
+        addExposedPort(MINIO_API_PORT)
+        addExposedPort(MINIO_CONSOLE_PORT)
     }
 }

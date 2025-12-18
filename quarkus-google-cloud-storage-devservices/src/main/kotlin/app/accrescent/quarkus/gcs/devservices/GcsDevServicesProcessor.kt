@@ -17,7 +17,6 @@ import io.quarkus.devservices.common.ConfigureUtil
 import org.testcontainers.containers.GenericContainer
 import org.testcontainers.utility.DockerImageName
 import java.util.Optional
-import java.util.OptionalInt
 import kotlin.jvm.optionals.getOrElse
 import kotlin.jvm.optionals.getOrNull
 
@@ -41,7 +40,6 @@ class GcsDevServicesProcessor {
 
         val container = QuarkusGcsContainer(
             config.imageName(),
-            config.port(),
             config.notifications(),
             pubSubConnectionItem,
         )
@@ -78,7 +76,6 @@ class GcsDevServicesProcessor {
 
 private class QuarkusGcsContainer(
     imageName: Optional<String>,
-    private val fixedExposedPort: OptionalInt,
     private val notificationsConfig: Optional<NotificationsConfig>,
     private val pubSubConnectionItem: Optional<PubSubConnectionItem>,
 ) : GenericContainer<QuarkusGcsContainer>(
@@ -89,11 +86,7 @@ private class QuarkusGcsContainer(
     override fun configure() {
         super.configure()
 
-        if (fixedExposedPort.isPresent) {
-            addFixedExposedPort(fixedExposedPort.asInt, FAKE_GCS_SERVER_PORT)
-        } else {
-            addExposedPort(FAKE_GCS_SERVER_PORT)
-        }
+        addExposedPort(FAKE_GCS_SERVER_PORT)
 
         val notificationsConfig = notificationsConfig.getOrNull()
         if (notificationsConfig == null) {

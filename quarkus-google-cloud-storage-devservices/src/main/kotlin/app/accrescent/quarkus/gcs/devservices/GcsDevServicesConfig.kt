@@ -8,7 +8,6 @@ import io.quarkus.runtime.annotations.ConfigRoot
 import io.smallrye.config.ConfigMapping
 import io.smallrye.config.WithDefault
 import java.util.Optional
-import java.util.OptionalInt
 
 @ConfigMapping(prefix = "quarkus.google.cloud.storage.devservices")
 @ConfigRoot
@@ -17,8 +16,6 @@ interface GcsDevServicesConfig {
     fun enabled(): Boolean
 
     fun imageName(): Optional<String>
-
-    fun port(): OptionalInt
 
     fun buckets(): Optional<List<String>>
 
