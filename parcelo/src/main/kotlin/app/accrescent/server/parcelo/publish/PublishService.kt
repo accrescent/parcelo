@@ -12,12 +12,18 @@ import io.minio.MinioClient
 import io.minio.UploadObjectArgs
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
+import java.io.OutputStream
 import java.nio.file.Path
+import java.security.DigestInputStream
+import java.security.MessageDigest
 import java.util.zip.ZipFile
 import kotlin.io.copyTo
 import kotlin.io.path.Path
+import kotlin.io.path.inputStream
 import kotlin.io.path.outputStream
 import kotlin.use
+
+private const val ICON_PREFIX = "icon-"
 
 @ApplicationScoped
 class PublishService @Inject constructor(
@@ -64,6 +70,36 @@ class PublishService @Inject constructor(
         return pathsToPublishedApks
     }
 
+    fun publishIcon(appId: String, listingLanguage: String, iconPath: Path): PublishedIcon {
+        val bucketId = config.publishedArtifactBucket()
+        val contentHash = sha256HashFile(iconPath)
+        val objectId = "apps/$appId/listings/$listingLanguage/$ICON_PREFIX$contentHash.png"
+
+        val requestArgs = UploadObjectArgs
+            .builder()
+            .bucket(bucketId)
+            .`object`(objectId)
+            .filename(iconPath.toString())
+            .build()
+        minioClient.uploadObject(requestArgs)
+
+        return PublishedIcon(bucketId = bucketId, objectId = objectId)
+    }
+
+    private fun sha256HashFile(path: Path): String {
+        val digest = MessageDigest.getInstance("SHA-256")
+
+        path.inputStream().use { iconInputStream ->
+            DigestInputStream(iconInputStream, digest).use { digestInputStream ->
+                OutputStream.nullOutputStream().use { nullOutputStream ->
+                    digestInputStream.copyTo(nullOutputStream)
+                }
+            }
+        }
+
+        return digest.digest().toHexString()
+    }
+
     private fun apkPathToObjectId(apkPath: String, appId: String, versionCode: Int): String {
         val pathHash = sha256Hash(apkPath.toByteArray())
         val objectId = "apps/$appId/$versionCode/$pathHash.apk"
@@ -73,3 +109,5 @@ class PublishService @Inject constructor(
 }
 
 data class PublishedApk(val bucketId: String, val objectId: String, val size: ULong)
+
+data class PublishedIcon(val bucketId: String, val objectId: String)

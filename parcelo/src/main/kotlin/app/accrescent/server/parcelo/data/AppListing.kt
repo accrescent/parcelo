@@ -12,6 +12,7 @@ import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
 import jakarta.persistence.UniqueConstraint
+import java.util.UUID
 
 @Entity
 @Table(
@@ -30,8 +31,15 @@ class AppListing(
 
     @Column(columnDefinition = "text", name = "short_description", nullable = false)
     val shortDescription: String,
+
+    @Column(name = "icon_published_image_id", nullable = false)
+    val iconPublishedImageId: UUID,
 ) : PanacheEntity() {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(insertable = false, updatable = false)
     lateinit var app: App
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "icon_published_image_id", insertable = false, updatable = false)
+    lateinit var icon: PublishedImage
 }

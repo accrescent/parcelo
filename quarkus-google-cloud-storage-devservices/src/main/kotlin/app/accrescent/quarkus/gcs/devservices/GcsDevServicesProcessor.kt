@@ -16,9 +16,9 @@ import io.quarkus.deployment.dev.devservices.DevServicesConfig
 import io.quarkus.devservices.common.ConfigureUtil
 import org.testcontainers.containers.GenericContainer
 import org.testcontainers.utility.DockerImageName
+import java.net.ServerSocket
 import java.util.Optional
 import kotlin.jvm.optionals.getOrElse
-import kotlin.jvm.optionals.getOrNull
 
 private const val CONFIG_PREFIX = "quarkus.google.cloud.storage"
 private const val DEV_SERVICE_NAME = "google-cloud-storage-server"
@@ -86,38 +86,43 @@ private class QuarkusGcsContainer(
     override fun configure() {
         super.configure()
 
-        addExposedPort(FAKE_GCS_SERVER_PORT)
+        withExposedPorts(FAKE_GCS_SERVER_PORT)
 
-        val notificationsConfig = notificationsConfig.getOrNull()
-        if (notificationsConfig == null) {
-            withCommand("-scheme", "http")
-        } else {
-            val bucket = notificationsConfig.bucket().getOrNull()
-            if (bucket == null) {
-                withCommand(
-                    "-scheme",
-                    "http",
+        // We must expose a "fixed" port to work around
+        // https://github.com/fsouza/fake-gcs-server/issues/1624 (See
+        // https://github.com/fsouza/fake-gcs-server/issues/1624#issuecomment-3667735362 for more
+        // details), but using a constant port value could cause port conflicts, especially when
+        // starting new container instances in Quarkus dev mode.
+        //
+        // To fix this problem, "reserve" a port that is not in use on the system by binding to it,
+        // then immediately unbind and use that port for our port mapping. This approach is
+        // technically racy because another application on the host could bind to the "reserved"
+        // port after we unbind it and before our container binds to it, but it is less likely to
+        // cause conflicts than using a constant fixed port and an error caused by a binding race
+        // can be trivially worked around by restarting the Dev Service anyway, so it's not a
+        // significant issue for us.
+        val reservedPort = ServerSocket(0).use { it.localPort }
+        addFixedExposedPort(reservedPort, FAKE_GCS_SERVER_PORT)
+
+        val commandFlags = mutableListOf("-scheme", "http", "-external-url", "http://$host:$reservedPort")
+        notificationsConfig.ifPresent { notificationsConfig ->
+            commandFlags.addAll(
+                listOf(
                     "-event.pubsub-project-id",
                     notificationsConfig.pubsubProjectId(),
                     "-event.pubsub-topic",
                     notificationsConfig.pubsubTopic(),
                 )
-            } else {
-                withCommand(
-                    "-scheme",
-                    "http",
-                    "-event.bucket",
-                    bucket,
-                    "-event.pubsub-project-id",
-                    notificationsConfig.pubsubProjectId(),
-                    "-event.pubsub-topic",
-                    notificationsConfig.pubsubTopic(),
-                )
+            )
+            notificationsConfig.bucket().ifPresent { bucket ->
+                commandFlags.addAll(listOf("-event.bucket", bucket))
             }
         }
         pubSubConnectionItem.ifPresent { pubsub ->
             withNetwork(pubsub.network)
             withEnv("PUBSUB_EMULATOR_HOST", "${pubsub.internalHost}:${pubsub.internalPort}")
         }
+
+        withCommand(*commandFlags.toTypedArray())
     }
 }

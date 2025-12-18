@@ -80,6 +80,15 @@ class AppDraft(
         ) > 0
     }
 
+    fun allListingsHaveIcon(): Boolean {
+        return count(
+            "FROM AppDraftListing app_draft_listings " +
+                    "WHERE app_draft_listings.appDraftId = ?1 " +
+                    "AND app_draft_listings.iconImageId IS NULL",
+            id,
+        ) == 0L
+    }
+
     companion object : PanacheCompanionBase<AppDraft, UUID> {
         fun countInOrganization(organizationId: UUID): Long {
             return count("WHERE organizationId = ?1", organizationId)

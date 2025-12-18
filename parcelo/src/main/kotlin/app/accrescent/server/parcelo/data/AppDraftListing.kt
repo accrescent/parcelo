@@ -4,13 +4,15 @@
 
 package app.accrescent.server.parcelo.data
 
-import io.quarkus.hibernate.orm.panache.kotlin.PanacheCompanion
-import io.quarkus.hibernate.orm.panache.kotlin.PanacheEntity
+import io.quarkus.hibernate.orm.panache.kotlin.PanacheCompanionBase
+import io.quarkus.hibernate.orm.panache.kotlin.PanacheEntityBase
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.FetchType
+import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
+import jakarta.persistence.OneToOne
 import jakarta.persistence.Table
 import jakarta.persistence.UniqueConstraint
 import org.hibernate.annotations.OnDelete
@@ -23,6 +25,9 @@ import java.util.UUID
     uniqueConstraints = [UniqueConstraint(columnNames = ["app_draft_id", "language"])],
 )
 class AppDraftListing(
+    @Id
+    val id: UUID,
+
     @Column(name = "app_draft_id", nullable = false)
     val appDraftId: UUID,
 
@@ -34,15 +39,23 @@ class AppDraftListing(
 
     @Column(columnDefinition = "text", name = "short_description", nullable = false)
     val shortDescription: String,
-) : PanacheEntity() {
+
+    @Column(name = "icon_image_id")
+    var iconImageId: UUID?,
+) : PanacheEntityBase {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "app_draft_id", insertable = false, updatable = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
     lateinit var appDraft: AppDraft
 
-    companion object : PanacheCompanion<AppDraftListing> {
-        fun deleteByAppDraftAndLanguage(appDraftId: UUID, language: String): Boolean {
-            return delete("WHERE appDraftId = ?1 AND language = ?2", appDraftId, language) > 0
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "icon_image_id", insertable = false, updatable = false)
+    val icon: Image? = null
+
+    companion object : PanacheCompanionBase<AppDraftListing, UUID> {
+        fun findByAppDraftIdAndLanguage(appDraftId: UUID, language: String): AppDraftListing? {
+            return find("WHERE appDraftId = ?1 AND language = ?2", appDraftId, language)
+                .firstResult()
         }
 
         fun exists(appDraftId: UUID, language: String): Boolean {

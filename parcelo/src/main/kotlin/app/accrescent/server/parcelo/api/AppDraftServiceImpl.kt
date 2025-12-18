@@ -15,6 +15,8 @@ import app.accrescent.appstore.publish.v1alpha1.DeleteAppDraftRequest
 import app.accrescent.appstore.publish.v1alpha1.DeleteAppDraftResponse
 import app.accrescent.appstore.publish.v1alpha1.GetAppDraftDownloadInfoRequest
 import app.accrescent.appstore.publish.v1alpha1.GetAppDraftDownloadInfoResponse
+import app.accrescent.appstore.publish.v1alpha1.GetAppDraftListingIconUploadInfoRequest
+import app.accrescent.appstore.publish.v1alpha1.GetAppDraftListingIconUploadInfoResponse
 import app.accrescent.appstore.publish.v1alpha1.GetAppDraftUploadInfoRequest
 import app.accrescent.appstore.publish.v1alpha1.GetAppDraftUploadInfoResponse
 import app.accrescent.appstore.publish.v1alpha1.PublishAppDraftRequest
@@ -28,6 +30,7 @@ import app.accrescent.appstore.publish.v1alpha1.createAppDraftResponse
 import app.accrescent.appstore.publish.v1alpha1.deleteAppDraftListingResponse
 import app.accrescent.appstore.publish.v1alpha1.deleteAppDraftResponse
 import app.accrescent.appstore.publish.v1alpha1.getAppDraftDownloadInfoResponse
+import app.accrescent.appstore.publish.v1alpha1.getAppDraftListingIconUploadInfoResponse
 import app.accrescent.appstore.publish.v1alpha1.getAppDraftUploadInfoResponse
 import app.accrescent.appstore.publish.v1alpha1.publishAppDraftResponse
 import app.accrescent.appstore.publish.v1alpha1.submitAppDraftResponse
@@ -37,13 +40,16 @@ import app.accrescent.server.parcelo.data.App
 import app.accrescent.server.parcelo.data.AppDraft
 import app.accrescent.server.parcelo.data.AppDraftAcl
 import app.accrescent.server.parcelo.data.AppDraftListing
+import app.accrescent.server.parcelo.data.AppDraftListingIconUploadJob
 import app.accrescent.server.parcelo.data.AppDraftUploadProcessingJob
 import app.accrescent.server.parcelo.data.AppListing
 import app.accrescent.server.parcelo.data.Organization
 import app.accrescent.server.parcelo.data.OrphanedBlob
 import app.accrescent.server.parcelo.data.PublishedApk
+import app.accrescent.server.parcelo.data.PublishedImage
 import app.accrescent.server.parcelo.data.Reviewer
 import app.accrescent.server.parcelo.publish.PublishService
+import app.accrescent.server.parcelo.publish.PublishedIcon
 import app.accrescent.server.parcelo.security.AuthnContextKey
 import app.accrescent.server.parcelo.security.GrpcAuthenticationInterceptor
 import app.accrescent.server.parcelo.security.PermissionService
@@ -333,6 +339,11 @@ class AppDraftServiceImpl @Inject constructor(
                 .withDescription("draft must have a listing for the default listing language")
                 .asRuntimeException()
 
+            !appDraft.allListingsHaveIcon() -> throw Status
+                .FAILED_PRECONDITION
+                .withDescription("all draft listings must have an icon")
+                .asRuntimeException()
+
             appDraft.submitted -> throw Status
                 .FAILED_PRECONDITION
                 .withDescription("draft already submitted")
@@ -465,14 +476,69 @@ class AppDraftServiceImpl @Inject constructor(
         }
 
         AppDraftListing(
+            id = UUID.randomUUID(),
             appDraftId = appDraftId,
             language = request.language,
             name = request.name,
             shortDescription = request.shortDescription,
+            iconImageId = null,
         )
             .persist()
 
         return Uni.createFrom().item { createAppDraftListingResponse {} }
+    }
+
+    @Transactional
+    override fun getAppDraftListingIconUploadInfo(
+        request: GetAppDraftListingIconUploadInfoRequest,
+    ): Uni<GetAppDraftListingIconUploadInfoResponse> {
+        val userId = AuthnContextKey.USER_ID.get()
+        // protovalidate ensures this is a valid UUID, so no need to catch IllegalArgumentException
+        val appDraftId = UUID.fromString(request.appDraftId)
+
+        val appDraft = AppDraft.findById(appDraftId)
+        val canViewExistence = PermissionService.userCanViewAppDraftExistence(userId, appDraftId)
+        if (!canViewExistence || appDraft == null) {
+            throw Status
+                .NOT_FOUND
+                .withDescription("app draft \"$appDraftId\" not found")
+                .asRuntimeException()
+        }
+        val canEditListingIcon = PermissionService.userCanEditAppDraftListings(userId, appDraftId)
+        if (!canEditListingIcon) {
+            throw Status
+                .PERMISSION_DENIED
+                .withDescription("insufficient permission to modify app listing icon")
+                .asRuntimeException()
+        }
+        if (appDraft.submitted) {
+            throw Status
+                .FAILED_PRECONDITION
+                .withDescription("submitted drafts cannot be modified")
+                .asRuntimeException()
+        }
+        val appDraftListing = AppDraftListing
+            .findByAppDraftIdAndLanguage(appDraftId, request.language)
+            ?: throw Status
+                .NOT_FOUND
+                .withDescription("listing with language \"${request.language}\" not found")
+                .asRuntimeException()
+
+        val uploadJob = AppDraftListingIconUploadJob(
+            appDraftListingId = appDraftListing.id,
+            uploadKey = UUID.randomUUID(),
+            completed = false,
+            succeeded = false,
+            expiresAt = OffsetDateTime.now().plusSeconds(UPLOAD_URL_EXPIRATION_SECONDS),
+        )
+            .also { it.persist() }
+
+        val response = getAppDraftListingIconUploadInfoResponse {
+            uploadUrl = ImageUploadService
+                .createUploadUrl(config.imageUploadServiceBaseUrl(), uploadJob.uploadKey)
+        }
+
+        return Uni.createFrom().item { response }
     }
 
     @Transactional
@@ -508,19 +574,31 @@ class AppDraftServiceImpl @Inject constructor(
                 .withDescription("submitted drafts cannot be modified")
                 .asRuntimeException()
         }
-
-        val deleted = AppDraftListing.deleteByAppDraftAndLanguage(appDraftId, request.language)
-        if (deleted) {
-            return Uni.createFrom().item { deleteAppDraftListingResponse {} }
-        } else {
-            throw Status
+        val appDraftListing = AppDraftListing
+            .findByAppDraftIdAndLanguage(appDraftId, request.language)
+            ?: throw Status
                 .NOT_FOUND
                 .withDescription(
                     "listing with language \"${request.language}\" not found for app draft "
                             + "\"$appDraftId\""
                 )
                 .asRuntimeException()
+
+        // Delete the associated icon (if it exists) and mark its associated blob for deletion
+        appDraftListing.icon?.let { icon ->
+            OrphanedBlob(
+                bucketId = icon.bucketId,
+                objectId = icon.objectId,
+                orphanedOn = OffsetDateTime.now()
+            )
+                .persist()
+            icon.delete()
         }
+
+        // Delete the listing
+        appDraftListing.delete()
+
+        return Uni.createFrom().item { deleteAppDraftListingResponse {} }
     }
 
     @Transactional
@@ -560,6 +638,13 @@ class AppDraftServiceImpl @Inject constructor(
             .INTERNAL
             .withDescription("app draft has no default listing language")
             .asRuntimeException()
+        val listingIcons = appDraft.listings.map {
+            val icon = it.icon ?: throw Status
+                .DATA_LOSS
+                .withDescription("listing for language \"${it.language}\" has no icon")
+                .asRuntimeException()
+            it.language to icon
+        }
         if (App.existsById(appId)) {
             throw Status
                 .ALREADY_EXISTS
@@ -603,6 +688,29 @@ class AppDraftServiceImpl @Inject constructor(
                 apkPaths = buildApksResult.apkPaths(),
             )
         }
+        // Publish the app's listing icons to an S3-compatible server.
+        //
+        // This process has the same orphan object guarantees as publishing an APK set's APKs.
+        val publishedIcons = mutableMapOf<String, PublishedIcon>()
+        for ((listingLanguage, icon) in listingIcons) {
+            TempFile(Path(config.packageProcessingDirectory())).use { tempIcon ->
+                try {
+                    storage.get(BlobId.of(icon.bucketId, icon.objectId)).downloadTo(tempIcon.path)
+                } catch (_: StorageException) {
+                    throw Status
+                        .UNAVAILABLE
+                        .withDescription("failed to download icon for listing \"$listingLanguage\"")
+                        .asRuntimeException()
+                }
+
+                val publishedIcon = publishService.publishIcon(
+                    appId = buildApksResult.packageName,
+                    listingLanguage = listingLanguage,
+                    iconPath = tempIcon.path,
+                )
+                publishedIcons.put(listingLanguage, publishedIcon)
+            }
+        }
 
         // Publish draft
         App(
@@ -612,11 +720,22 @@ class AppDraftServiceImpl @Inject constructor(
         )
             .persist()
         for (draftListing in appDraft.listings) {
+            val remoteIcon = publishedIcons[draftListing.language] ?: throw Status
+                .INTERNAL
+                .withDescription("no published icon exists for language \"${draftListing.language}\"")
+                .asRuntimeException()
+            val publishedIcon = PublishedImage(
+                id = UUID.randomUUID(),
+                bucketId = remoteIcon.bucketId,
+                objectId = remoteIcon.objectId,
+            )
+                .also { it.persist() }
             AppListing(
                 appId = appId,
                 language = draftListing.language,
                 name = draftListing.name,
                 shortDescription = draftListing.shortDescription,
+                iconPublishedImageId = publishedIcon.id,
             )
                 .persist()
         }
