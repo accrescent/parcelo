@@ -13,6 +13,10 @@ interface ParceloConfig {
 
     fun appUploadBucket(): String
 
+    fun imageUploadServiceBaseUrl(): String
+
+    fun listingImageBucket(): String
+
     fun packageProcessingDirectory(): String
 
     fun publishedArtifactBucket(): String
