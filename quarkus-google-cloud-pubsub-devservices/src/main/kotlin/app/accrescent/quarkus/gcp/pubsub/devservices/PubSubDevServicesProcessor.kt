@@ -27,7 +27,6 @@ import org.testcontainers.containers.Network
 import org.testcontainers.containers.PubSubEmulatorContainer
 import org.testcontainers.utility.DockerImageName
 import java.util.Optional
-import java.util.OptionalInt
 import kotlin.jvm.optionals.getOrDefault
 
 private const val ACK_DEADLINE_SECONDS = 30
@@ -51,11 +50,7 @@ class PubSubDevServicesProcessor {
         }
 
         val network = Network.newNetwork()
-        val container = QuarkusPubSubContainer(
-            config.imageName(),
-            config.port(),
-            network,
-        )
+        val container = QuarkusPubSubContainer(config.imageName(), network)
         container.start()
 
         val host = "${container.host}:${container.firstMappedPort}"
@@ -124,7 +119,6 @@ class PubSubDevServicesProcessor {
 
 private class QuarkusPubSubContainer(
     imageName: Optional<String>,
-    private val fixedExposedPort: OptionalInt,
     private val network: Network,
 ) : PubSubEmulatorContainer(
     DockerImageName
@@ -134,11 +128,7 @@ private class QuarkusPubSubContainer(
     override fun configure() {
         super.configure()
 
-        if (fixedExposedPort.isPresent) {
-            addFixedExposedPort(fixedExposedPort.asInt, PUB_SUB_EMULATOR_PORT)
-        } else {
-            addExposedPort(PUB_SUB_EMULATOR_PORT)
-        }
+        addExposedPort(PUB_SUB_EMULATOR_PORT)
 
         withNetwork(network)
         withNetworkAliases(NETWORK_ALIAS)
