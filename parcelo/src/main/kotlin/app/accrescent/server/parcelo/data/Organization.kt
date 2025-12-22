@@ -23,5 +23,40 @@ class Organization(
     @Column(name = "app_draft_limit", nullable = false)
     val appDraftLimit = DEFAULT_APP_DRAFT_LIMIT
 
-    companion object : PanacheCompanionBase<Organization, UUID>
+    companion object : PanacheCompanionBase<Organization, UUID> {
+        fun findForUserByQuery(
+            userId: UUID,
+            pageSize: UInt,
+            lastOrganizationId: UUID?,
+        ): List<Organization> {
+            return if (lastOrganizationId == null) {
+                find(
+                    "FROM Organization organizations " +
+                            "JOIN OrganizationAcl organization_acls " +
+                            "ON organization_acls.organizationId = organizations.id " +
+                            "AND organization_acls.userId = ?1 " +
+                            "WHERE organization_acls.userId = ?1 " +
+                            "AND organization_acls.canViewOrganization = true " +
+                            "ORDER BY organizations.id ASC LIMIT ?2",
+                    userId,
+                    pageSize.toLong(),
+                )
+            } else {
+                find(
+                    "FROM Organization organizations " +
+                            "JOIN OrganizationAcl organization_acls " +
+                            "ON organization_acls.organizationId = organizations.id " +
+                            "AND organization_acls.userId = ?1 " +
+                            "WHERE organization_acls.userId = ?1 " +
+                            "AND organization_acls.canViewOrganization = true " +
+                            "AND organizations.id > ?2 " +
+                            "ORDER BY organizations.id ASC LIMIT ?3",
+                    userId,
+                    lastOrganizationId,
+                    pageSize.toLong(),
+                )
+            }
+                .list()
+        }
+    }
 }
