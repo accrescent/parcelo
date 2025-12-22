@@ -35,6 +35,7 @@ dependencies {
     implementation(libs.quarkus.kotlin)
     implementation(libs.quarkus.oidc)
     implementation(libs.quarkus.rest.jackson)
+    testImplementation(libs.htmlunit)
     testImplementation(libs.quarkus.junit5)
 }
 

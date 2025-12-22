@@ -10,6 +10,7 @@ arrow = "2.2.0"
 buf = "0.10.3"
 bundletool = "1.18.2"
 google-cloud-libraries-bom = "26.71.0"
+htmlunit = "4.20.0"
 kotlin = "2.2.20"
 log4j1 = "1.2.17"
 minio = "8.6.0"
@@ -24,6 +25,7 @@ bundletool = { module = "com.android.tools.build:bundletool", version.ref = "bun
 google-cloud-libraries-bom = { module = "com.google.cloud:libraries-bom", version.ref = "google-cloud-libraries-bom" }
 google-cloud-pubsub = { module = "com.google.cloud:google-cloud-pubsub" }
 google-cloud-storage = { module = "com.google.cloud:google-cloud-storage" }
+htmlunit = { module = "org.htmlunit:htmlunit", version.ref = "htmlunit" }
 log4j-api = { module = "org.apache.logging.log4j:log4j-api" }
 log4j1 = { module = "log4j:log4j", version.ref = "log4j1" }
 minio = { module = "io.minio:minio", version.ref = "minio" }
