@@ -13,6 +13,7 @@ import io.quarkus.oidc.IdToken
 import io.quarkus.security.Authenticated
 import jakarta.inject.Inject
 import jakarta.transaction.Transactional
+import jakarta.ws.rs.GET
 import jakarta.ws.rs.POST
 import jakarta.ws.rs.Path
 import org.eclipse.microprofile.jwt.JsonWebToken
@@ -20,13 +21,18 @@ import java.util.UUID
 import app.accrescent.server.parcelo.data.ApiKey as DbApiKey
 
 @Authenticated
-@Path("/web/session/tokens")
-class SessionTokenResource {
+@Path("/web/session")
+class SessionResource {
     @IdToken
     @Inject
     lateinit var idToken: JsonWebToken
 
+    @GET
+    @Path("/login")
+    fun login() = Unit
+
     @POST
+    @Path("/tokens")
     @Transactional
     fun generateToken(): TokenResponse {
         val apiKey = ApiKey.generateNew(ApiKeyType.USER_SESSION)

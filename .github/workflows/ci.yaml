@@ -21,5 +21,5 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - run: ./gradlew assemble
       - run: ./gradlew assemble -Dquarkus.native.enabled=true -Dquarkus.package.jar.enabled=false
-      - run: ./gradlew quarkusIntTest -Dquarkus.profile=test
-      - run: ./gradlew quarkusIntTest -Dquarkus.profile=test -Dquarkus.native.enabled=true -Dquarkus.package.jar.enabled=false
+      - run: ./gradlew quarkusIntTest
+      - run: ./gradlew quarkusIntTest -Dquarkus.native.enabled=true -Dquarkus.package.jar.enabled=false
