@@ -31,6 +31,7 @@ import java.io.StringReader
 import java.net.URI
 
 private const val DEFAULT_SERVER_HOST = "localhost"
+private const val DEFAULT_USER_PASSWORD = "password"
 private const val SERVER_HOST_CONFIG_PROPERTY = "quarkus.http.test-host"
 private const val SERVER_PORT_CONFIG_PROPERTY = "quarkus.http.test-port"
 
@@ -63,7 +64,7 @@ class AppDraftServiceImplIT {
             channel.shutdown()
         }
 
-        private fun generateSessionToken(): BearerToken {
+        private fun generateSessionToken(username: String): BearerToken {
             return WebClient().use { webClient ->
                 // Get rid of spurious warnings in test output
                 webClient.options.isCssEnabled = false
@@ -72,8 +73,8 @@ class AppDraftServiceImplIT {
                 val loginPage: HtmlPage = webClient
                     .getPage("http://$serverHost:$serverPort/web/session/login")
                 val loginForm = loginPage.forms[0]
-                loginForm.getInputByName<HtmlInput>("username").type("alice")
-                loginForm.getInputByName<HtmlInput>("password").type("alice")
+                loginForm.getInputByName<HtmlInput>("username").type(username)
+                loginForm.getInputByName<HtmlInput>("password").type(DEFAULT_USER_PASSWORD)
                 loginForm.getButtonByName("login").click<HtmlPage>()
 
                 // Create a session token
@@ -107,7 +108,7 @@ class AppDraftServiceImplIT {
 
     @Test
     fun organizationDraftLimitIsEnforced() {
-        val token = generateSessionToken()
+        val token = generateSessionToken("user1")
         val organizationService = getOrganizationServiceStub(token)
         val appDraftService = getAppDraftServiceStub(token)
 

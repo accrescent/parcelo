@@ -1,0 +1,20 @@
+{
+    "realm": "quarkus",
+    "enabled": true,
+    "users": [
+        {
+            "username": "user1",
+            "id": "ed3f288f-a5a6-446e-8dd3-5c61f3505fdd",
+            "enabled": true,
+            "credentials": [{"type": "password", "value": "password"}]
+        }
+    ],
+    "clients": [
+        {
+            "clientId": "quarkus-app",
+            "publicClient": false,
+            "secret": "secret",
+            "redirectUris": ["*"]
+        }
+    ]
+}
