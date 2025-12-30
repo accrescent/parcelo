@@ -28,6 +28,10 @@ class Reviewer(
     lateinit var user: User
 
     companion object : PanacheCompanion<Reviewer> {
+        fun existsByUserId(userId: UUID): Boolean {
+            return count("WHERE userId = ?1", userId) > 0
+        }
+
         fun findRandom(): Reviewer? {
             return find("ORDER BY random() LIMIT 1").firstResult()
         }

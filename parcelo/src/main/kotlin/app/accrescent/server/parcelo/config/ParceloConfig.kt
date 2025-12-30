@@ -9,6 +9,8 @@ import io.smallrye.config.WithName
 
 @ConfigMapping(prefix = "parcelo")
 interface ParceloConfig {
+    fun admin(): Admin
+
     fun appPackageBucket(): String
 
     fun appUploadBucket(): String
@@ -23,6 +25,12 @@ interface ParceloConfig {
 
     @WithName("pubsub")
     fun pubSub(): PubSub
+
+    interface Admin {
+        fun identityProvider(): String
+
+        fun scopedUserId(): String
+    }
 
     interface PubSub {
         fun projectId(): String
