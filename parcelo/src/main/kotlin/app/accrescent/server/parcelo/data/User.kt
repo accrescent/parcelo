@@ -30,6 +30,10 @@ class User(
     val identityProvider = "github"
 
     companion object : PanacheCompanionBase<User, UUID> {
+        fun existsById(id: UUID): Boolean {
+            return count("WHERE id = ?1", id) > 0
+        }
+
         fun findByApiKeyHash(hash: String): User? {
             return find(
                 "SELECT api_keys.user " +
