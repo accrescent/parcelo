@@ -33,6 +33,7 @@ protobuf-java = { module = "com.google.protobuf:protobuf-java" }
 protobuf-kotlin = { module = "com.google.protobuf:protobuf-kotlin" }
 protovalidate = { module = "build.buf:protovalidate", version.ref = "protovalidate" }
 quarkus-arc-deployment = { module = "io.quarkus:quarkus-arc-deployment" }
+quarkus-awt = { module = "io.quarkus:quarkus-awt" }
 quarkus-bom = { module = "io.quarkus:quarkus-bom", version.ref = "quarkus" }
 quarkus-builder = { module = "io.quarkus:quarkus-builder" }
 quarkus-core = { module = "io.quarkus:quarkus-core" }

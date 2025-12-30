@@ -29,6 +29,7 @@ dependencies {
     implementation(libs.protobuf.java)
     implementation(libs.protobuf.kotlin)
     implementation(libs.protovalidate)
+    implementation(libs.quarkus.awt)
     implementation(libs.quarkus.grpc)
     implementation(libs.quarkus.hibernate.orm.panache.kotlin)
     implementation(libs.quarkus.jdbc.postgresql)
