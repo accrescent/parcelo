@@ -17,6 +17,8 @@ import app.accrescent.appstore.publish.v1alpha1.GetAppDraftDownloadInfoRequest
 import app.accrescent.appstore.publish.v1alpha1.GetAppDraftDownloadInfoResponse
 import app.accrescent.appstore.publish.v1alpha1.GetAppDraftListingIconUploadInfoRequest
 import app.accrescent.appstore.publish.v1alpha1.GetAppDraftListingIconUploadInfoResponse
+import app.accrescent.appstore.publish.v1alpha1.GetAppDraftRequest
+import app.accrescent.appstore.publish.v1alpha1.GetAppDraftResponse
 import app.accrescent.appstore.publish.v1alpha1.GetAppDraftUploadInfoRequest
 import app.accrescent.appstore.publish.v1alpha1.GetAppDraftUploadInfoResponse
 import app.accrescent.appstore.publish.v1alpha1.PublishAppDraftRequest
@@ -25,12 +27,14 @@ import app.accrescent.appstore.publish.v1alpha1.SubmitAppDraftRequest
 import app.accrescent.appstore.publish.v1alpha1.SubmitAppDraftResponse
 import app.accrescent.appstore.publish.v1alpha1.UpdateAppDraftRequest
 import app.accrescent.appstore.publish.v1alpha1.UpdateAppDraftResponse
+import app.accrescent.appstore.publish.v1alpha1.appDraft
 import app.accrescent.appstore.publish.v1alpha1.createAppDraftListingResponse
 import app.accrescent.appstore.publish.v1alpha1.createAppDraftResponse
 import app.accrescent.appstore.publish.v1alpha1.deleteAppDraftListingResponse
 import app.accrescent.appstore.publish.v1alpha1.deleteAppDraftResponse
 import app.accrescent.appstore.publish.v1alpha1.getAppDraftDownloadInfoResponse
 import app.accrescent.appstore.publish.v1alpha1.getAppDraftListingIconUploadInfoResponse
+import app.accrescent.appstore.publish.v1alpha1.getAppDraftResponse
 import app.accrescent.appstore.publish.v1alpha1.getAppDraftUploadInfoResponse
 import app.accrescent.appstore.publish.v1alpha1.publishAppDraftResponse
 import app.accrescent.appstore.publish.v1alpha1.submitAppDraftResponse
@@ -152,12 +156,45 @@ class AppDraftServiceImpl @Inject constructor(
             canReplacePackage = true,
             canReview = false,
             canSubmit = true,
+            canView = true,
             canViewExistence = true,
         )
             .persist()
 
         val response = createAppDraftResponse {
             appDraftId = appDraft.id.toString()
+        }
+
+        return Uni.createFrom().item { response }
+    }
+
+    @Transactional
+    override fun getAppDraft(request: GetAppDraftRequest): Uni<GetAppDraftResponse> {
+        val userId = AuthnContextKey.USER_ID.get()
+        // protovalidate ensures this is a valid UUID, so no need to catch IllegalArgumentException
+        val appDraftId = UUID.fromString(request.appDraftId)
+
+        val appDraft = AppDraft.findById(appDraftId)
+        val canViewExistence = PermissionService.userCanViewAppDraftExistence(userId, appDraftId)
+        if (!canViewExistence || appDraft == null) {
+            throw Status
+                .NOT_FOUND
+                .withDescription("app draft \"$appDraftId\" not found")
+                .asRuntimeException()
+        }
+        val canView = PermissionService.userCanViewAppDraft(userId, appDraftId)
+        if (!canView) {
+            throw Status
+                .PERMISSION_DENIED
+                .withDescription("insufficient permission to view app draft")
+                .asRuntimeException()
+        }
+
+        val response = getAppDraftResponse {
+            draft = appDraft {
+                id = appDraft.id.toString()
+                submitted = appDraft.submitted
+            }
         }
 
         return Uni.createFrom().item { response }
@@ -373,6 +410,7 @@ class AppDraftServiceImpl @Inject constructor(
                 canReplacePackage = false,
                 canReview = true,
                 canSubmit = false,
+                canView = false,
                 canViewExistence = true,
             )
                 .persist()
