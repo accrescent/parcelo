@@ -87,6 +87,7 @@ class ReviewServiceImpl : ReviewService {
                 canReplacePackage = false,
                 canReview = false,
                 canSubmit = false,
+                canView = false,
                 canViewExistence = true,
             )
                 .persist()

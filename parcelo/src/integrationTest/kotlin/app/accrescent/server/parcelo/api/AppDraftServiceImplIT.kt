@@ -12,6 +12,7 @@ import app.accrescent.appstore.publish.v1alpha1.createAppDraftListingRequest
 import app.accrescent.appstore.publish.v1alpha1.createAppDraftRequest
 import app.accrescent.appstore.publish.v1alpha1.createReviewerRequest
 import app.accrescent.appstore.publish.v1alpha1.getAppDraftListingIconUploadInfoRequest
+import app.accrescent.appstore.publish.v1alpha1.getAppDraftRequest
 import app.accrescent.appstore.publish.v1alpha1.getAppDraftUploadInfoRequest
 import app.accrescent.appstore.publish.v1alpha1.getSelfRequest
 import app.accrescent.appstore.publish.v1alpha1.listMyOrganizationsRequest
@@ -36,6 +37,7 @@ import org.htmlunit.html.HtmlInput
 import org.htmlunit.html.HtmlPage
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -221,5 +223,12 @@ class AppDraftServiceImplIT {
                 appDraftService.submitAppDraft(submitAppDraftRequest)
                 true
             }
+
+        // Verify the app draft is submitted
+        val appDraft = appDraftService
+            .getAppDraft(getAppDraftRequest { this.appDraftId = appDraftId })
+            .draft
+
+        assertTrue(appDraft.submitted)
     }
 }

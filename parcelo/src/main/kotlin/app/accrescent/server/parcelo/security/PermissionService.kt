@@ -25,6 +25,13 @@ object PermissionService {
     }
 
     @Transactional
+    fun userCanViewAppDraft(userId: UUID, appDraftId: UUID): Boolean {
+        return AppDraftAcl
+            .findByAppDraftIdAndUserId(appDraftId = appDraftId, userId = userId)
+            ?.canView == true
+    }
+
+    @Transactional
     fun userCanViewAppDraftExistence(userId: UUID, appDraftId: UUID): Boolean {
         return AppDraftAcl
             .findByAppDraftIdAndUserId(appDraftId = appDraftId, userId = userId)
