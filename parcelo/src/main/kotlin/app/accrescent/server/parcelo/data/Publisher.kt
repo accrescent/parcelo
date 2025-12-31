@@ -28,6 +28,10 @@ class Publisher(
     lateinit var user: User
 
     companion object : PanacheCompanion<Publisher> {
+        fun existsByUserId(userId: UUID): Boolean {
+            return count("WHERE userId = ?1", userId) > 0
+        }
+
         fun findRandom(): Publisher? {
             return find("ORDER BY random() LIMIT 1").firstResult()
         }
