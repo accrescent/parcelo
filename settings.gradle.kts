@@ -16,6 +16,7 @@ include(
     "quarkus-minio",
     "quarkus-minio-deployment",
     "quarkus-minio-devservices",
+    "testdata:android-app-valid",
 )
 
 dependencyResolutionManagement {
@@ -23,5 +24,12 @@ dependencyResolutionManagement {
     repositories {
         mavenCentral()
         google()
+    }
+}
+pluginManagement {
+    repositories {
+        mavenCentral()
+        google()
+        gradlePluginPortal()
     }
 }

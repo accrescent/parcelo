@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 [versions]
+agp = "8.13.2"
 apkanalyzer = "31.13.1"
 apksig = "8.13.1"
 app-publishing-api = "87d6a72eac2641b39a2b50b22571d9ee"
@@ -21,6 +22,7 @@ quarkus = "3.29.3"
 apkanalyzer = { module = "com.android.tools.apkparser:apkanalyzer", version.ref = "apkanalyzer" }
 apksig = { module = "com.android.tools.build:apksig", version.ref = "apksig" }
 arrow-core = { module = "io.arrow-kt:arrow-core", version.ref = "arrow" }
+awaitility = { module = "org.awaitility:awaitility" }
 bundletool = { module = "com.android.tools.build:bundletool", version.ref = "bundletool" }
 google-cloud-libraries-bom = { module = "com.google.cloud:libraries-bom", version.ref = "google-cloud-libraries-bom" }
 google-cloud-pubsub = { module = "com.google.cloud:google-cloud-pubsub" }
@@ -47,13 +49,16 @@ quarkus-junit5 = { module = "io.quarkus:quarkus-junit5" }
 quarkus-kotlin = { module = "io.quarkus:quarkus-kotlin" }
 quarkus-oidc = { module = "io.quarkus:quarkus-oidc" }
 quarkus-rest-jackson = { module = "io.quarkus:quarkus-rest-jackson" }
+rest-assured = { module = "io.rest-assured:rest-assured" }
 testcontainers = { module = "org.testcontainers:testcontainers"  }
 testcontainers-gcloud = { module = "org.testcontainers:gcloud" }
 testcontainers-minio = { module = "org.testcontainers:minio" }
 
 [plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
 buf = { id = "build.buf", version.ref = "buf" }
 kotlin-allopen = { id = "org.jetbrains.kotlin.plugin.allopen", version.ref = "kotlin" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-jpa = { id = "org.jetbrains.kotlin.plugin.jpa", version.ref = "kotlin" }
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-kapt = { id = "org.jetbrains.kotlin.kapt" }

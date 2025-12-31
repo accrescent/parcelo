@@ -3,8 +3,26 @@
     "enabled": true,
     "users": [
         {
+            "username": "admin1",
+            "id": "c54374b4-b1f6-4d4b-8cb9-d6cfea172a58",
+            "enabled": true,
+            "credentials": [{"type": "password", "value": "password"}]
+        },
+        {
+            "username": "reviewer1",
+            "id": "14666df2-6e19-4747-9fb2-720c9c03d8e6",
+            "enabled": true,
+            "credentials": [{"type": "password", "value": "password"}]
+        },
+        {
             "username": "user1",
             "id": "ed3f288f-a5a6-446e-8dd3-5c61f3505fdd",
+            "enabled": true,
+            "credentials": [{"type": "password", "value": "password"}]
+        },
+        {
+            "username": "user2",
+            "id": "f2d3c4fe-658c-4f09-ab0b-5a1ef84a56f2",
             "enabled": true,
             "credentials": [{"type": "password", "value": "password"}]
         }

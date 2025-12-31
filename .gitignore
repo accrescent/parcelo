@@ -45,3 +45,6 @@ out/
 
 ### Misc
 .kotlin/
+
+### Android
+/local.properties

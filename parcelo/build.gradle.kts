@@ -2,7 +2,10 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only
 
+import app.accrescent.parcelo.build.ApkSetAttr
+import app.accrescent.parcelo.build.ApkSetNameAttr
 import build.buf.gradle.BUF_BINARY_CONFIGURATION_NAME
+import com.android.build.api.attributes.BuildTypeAttr
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -11,6 +14,14 @@ plugins {
     alias(libs.plugins.kotlin.jpa)
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.quarkus)
+}
+
+// Configuration for defining dependencies on release-mode APK set project outputs
+val testApkSets by configurations.creating {
+    isCanBeResolved = true
+    isCanBeConsumed = false
+    attributes.attribute(ApkSetAttr.ATTRIBUTE, objects.named(ApkSetAttr::class, ApkSetAttr.PRESENT))
+    attributes.attribute(BuildTypeAttr.ATTRIBUTE, objects.named(BuildTypeAttr::class, "release"))
 }
 
 dependencies {
@@ -37,8 +48,11 @@ dependencies {
     implementation(libs.quarkus.kotlin)
     implementation(libs.quarkus.oidc)
     implementation(libs.quarkus.rest.jackson)
+    testImplementation(libs.awaitility)
     testImplementation(libs.htmlunit)
     testImplementation(libs.quarkus.junit5)
+    testImplementation(libs.rest.assured)
+    testApkSets(project(":testdata:android-app-valid"))
 }
 
 group = "app.accrescent.server"
@@ -115,6 +129,18 @@ sourceSets {
     main {
         java {
             srcDirs("build/classes/java/quarkus-generated-sources/grpc")
+        }
+    }
+}
+
+// Make our integration tests depend on our generated test data
+tasks.quarkusIntTest {
+    inputs.files(testApkSets)
+
+    doFirst {
+        testApkSets.incoming.artifacts.forEach { artifact ->
+            val name = artifact.variant.attributes.getAttribute(ApkSetNameAttr.ATTRIBUTE)!!
+            systemProperty("testdata.apkset.$name.path", artifact.file.absolutePath)
         }
     }
 }
