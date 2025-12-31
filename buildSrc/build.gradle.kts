@@ -1,0 +1,7 @@
+// SPDX-FileCopyrightText: © 2025 Logan Magee
+//
+// SPDX-License-Identifier: AGPL-3.0-only
+
+plugins {
+    `kotlin-dsl`
+}
