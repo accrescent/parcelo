@@ -25,12 +25,12 @@ quarkusExtension {
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_24
-    targetCompatibility = JavaVersion.VERSION_24
+    sourceCompatibility = JavaVersion.VERSION_25
+    targetCompatibility = JavaVersion.VERSION_25
 }
 kotlin {
     compilerOptions {
-        jvmTarget = JvmTarget.JVM_24
+        jvmTarget = JvmTarget.JVM_25
         javaParameters = true
 
         freeCompilerArgs.add("-Xannotation-default-target=param-property")
