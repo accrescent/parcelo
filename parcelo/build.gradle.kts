@@ -32,6 +32,7 @@ dependencies {
     implementation(libs.quarkus.awt)
     implementation(libs.quarkus.grpc)
     implementation(libs.quarkus.hibernate.orm.panache.kotlin)
+    implementation(libs.quarkus.jaxb)
     implementation(libs.quarkus.jdbc.postgresql)
     implementation(libs.quarkus.kotlin)
     implementation(libs.quarkus.oidc)

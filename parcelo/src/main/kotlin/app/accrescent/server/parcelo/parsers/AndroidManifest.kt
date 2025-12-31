@@ -5,6 +5,7 @@
 package app.accrescent.server.parcelo.parsers
 
 import com.android.tools.apk.analyzer.BinaryXmlParser
+import io.quarkus.runtime.annotations.RegisterForReflection
 import jakarta.xml.bind.JAXBContext
 import jakarta.xml.bind.UnmarshalException
 import jakarta.xml.bind.annotation.XmlAccessType
@@ -31,6 +32,7 @@ private const val MIN_SDK_VERSION_DEFAULT = 1
 // Version codes of < 1 are not installable on Android devices
 private const val VERSION_CODE_MIN_VALUE = 1
 
+@RegisterForReflection
 data class AndroidManifest(
     val `package`: String,
     val versionCode: Int,
