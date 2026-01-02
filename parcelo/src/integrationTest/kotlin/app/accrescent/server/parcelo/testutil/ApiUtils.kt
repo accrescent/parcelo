@@ -19,7 +19,6 @@ import app.accrescent.appstore.publish.v1alpha1.listMyOrganizationsRequest
 import app.accrescent.appstore.publish.v1alpha1.publishAppDraftRequest
 import app.accrescent.appstore.publish.v1alpha1.submitAppDraftRequest
 import app.accrescent.appstore.publish.v1alpha1.updateAppDraftRequest
-import app.accrescent.appstore.v1.AppServiceGrpc
 import com.google.protobuf.fieldMask
 import io.grpc.ManagedChannelBuilder
 import io.restassured.RestAssured.given
@@ -37,6 +36,8 @@ import java.io.StringReader
 import java.net.URI
 import kotlin.io.encoding.Base64
 import kotlin.use
+import app.accrescent.appstore.publish.v1alpha1.AppServiceGrpc as DevAppServiceGrpc
+import app.accrescent.appstore.v1.AppServiceGrpc as StoreAppServiceGrpc
 
 private const val DEFAULT_SERVER_HOST = "localhost"
 private const val DEFAULT_SERVER_PORT = 8081
@@ -66,8 +67,8 @@ object ApiUtils {
     ): AppDraftServiceGrpc.AppDraftServiceBlockingV2Stub =
         AppDraftServiceGrpc.newBlockingV2Stub(channel).withCallCredentials(token)
 
-    fun getAppServiceStub(): AppServiceGrpc.AppServiceBlockingV2Stub =
-        AppServiceGrpc.newBlockingV2Stub(channel)
+    fun getDevAppServiceStub(token: BearerToken): DevAppServiceGrpc.AppServiceBlockingV2Stub =
+        DevAppServiceGrpc.newBlockingV2Stub(channel).withCallCredentials(token)
 
     fun getPublisherServiceStub(
         token: BearerToken,
@@ -81,6 +82,9 @@ object ApiUtils {
         token: BearerToken
     ): ReviewerServiceGrpc.ReviewerServiceBlockingV2Stub =
         ReviewerServiceGrpc.newBlockingV2Stub(channel).withCallCredentials(token)
+
+    fun getStoreAppServiceStub(): StoreAppServiceGrpc.AppServiceBlockingV2Stub =
+        StoreAppServiceGrpc.newBlockingV2Stub(channel)
 
     fun getUserServiceStub(token: BearerToken): UserServiceGrpc.UserServiceBlockingV2Stub =
         UserServiceGrpc.newBlockingV2Stub(channel).withCallCredentials(token)

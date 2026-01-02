@@ -26,9 +26,16 @@ class App(
     @Column(columnDefinition = "text", name = "default_listing_language", nullable = false)
     val defaultListingLanguage: String,
 
+    @Column(name = "organization_id", nullable = false)
+    val organizationId: UUID,
+
     @Column(name = "app_package_id", nullable = false)
     val appPackageId: UUID,
 ) : PanacheEntityBase {
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(insertable = false, updatable = false)
+    lateinit var organization: Organization
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "app_package_id", insertable = false, updatable = false)
     lateinit var appPackage: AppPackage

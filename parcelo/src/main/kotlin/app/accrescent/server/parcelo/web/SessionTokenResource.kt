@@ -50,6 +50,7 @@ class SessionResource {
                     organizationId = org.id,
                     userId = user.id,
                     canCreateAppDrafts = true,
+                    canViewApps = true,
                     canViewOrganization = true,
                 )
                     .persist()

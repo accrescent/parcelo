@@ -770,6 +770,7 @@ class AppDraftServiceImpl @Inject constructor(
         App(
             id = appId,
             defaultListingLanguage = defaultListingLanguage,
+            organizationId = appDraft.organizationId,
             appPackageId = appPackage.id,
         )
             .persist()
