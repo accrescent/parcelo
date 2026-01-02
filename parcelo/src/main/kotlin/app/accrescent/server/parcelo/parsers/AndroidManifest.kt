@@ -4,7 +4,6 @@
 
 package app.accrescent.server.parcelo.parsers
 
-import com.android.tools.apk.analyzer.BinaryXmlParser
 import io.quarkus.runtime.annotations.RegisterForReflection
 import jakarta.xml.bind.JAXBContext
 import jakarta.xml.bind.UnmarshalException
@@ -40,6 +39,7 @@ data class AndroidManifest(
     val split: String?,
     val application: Application,
     val usesSdk: UsesSdk?,
+    val usesPermissions: List<UsesPermission>,
 ) {
     @XmlRootElement(name = "manifest")
     @XmlAccessorType(XmlAccessType.FIELD)
@@ -60,7 +60,10 @@ data class AndroidManifest(
         var application: RawApplication? = null,
 
         @XmlElement(name = "uses-sdk")
-        var usesSdk: RawUsesSdk? = null
+        var usesSdk: RawUsesSdk? = null,
+
+        @XmlElement(name = "uses-permission")
+        var usesPermissions: List<RawUsesPermission>? = null,
     ) {
         fun toAndroidManifest(): AndroidManifest? {
             return AndroidManifest(
@@ -89,7 +92,15 @@ data class AndroidManifest(
                             // https://developer.android.com/guide/topics/manifest/uses-sdk-element#target
                             targetSdkVersion = it.targetSdkVersion ?: minSdkVersion
                         )
+                    },
+                usesPermissions = usesPermissions
+                    ?.map {
+                        UsesPermission(
+                            name = it.name ?: return null,
+                            maxSdkVersion = it.maxSdkVersion,
+                        )
                     }
+                    ?: emptyList(),
             )
         }
     }
@@ -112,15 +123,19 @@ data class AndroidManifest(
         var targetSdkVersion: Int? = null,
     )
 
+    @XmlAccessorType(XmlAccessType.FIELD)
+    private data class RawUsesPermission(
+        @XmlAttribute(namespace = ANDROID_NAMESPACE)
+        var name: String? = null,
+
+        @XmlAttribute(namespace = ANDROID_NAMESPACE)
+        var maxSdkVersion: Int? = null,
+    )
+
     companion object {
         private val appIdRegex = Regex("""^([a-zA-Z][a-zA-Z0-9_]*\.)+[a-zA-Z][a-zA-Z0-9_]*$""")
 
-        fun parse(binaryManifest: ByteArray): AndroidManifest? {
-            val xml = BinaryXmlParser.decodeXml(binaryManifest).decodeToString()
-            return parse(xml)
-        }
-
-        private fun parse(xml: String): AndroidManifest? {
+        fun parse(xml: String): AndroidManifest? {
             val manifest = try {
                 StringReader(xml).use {
                     JAXBContext
@@ -145,4 +160,9 @@ data class Application(
 data class UsesSdk(
     val minSdkVersion: Int,
     val targetSdkVersion: Int,
+)
+
+data class UsesPermission(
+    val name: String,
+    val maxSdkVersion: Int?,
 )

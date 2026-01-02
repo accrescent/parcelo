@@ -10,6 +10,7 @@ import com.android.apksig.ApkVerifier
 import com.android.apksig.apk.ApkFormatException
 import com.android.apksig.apk.ApkUtils
 import com.android.apksig.util.DataSources
+import com.android.tools.apk.analyzer.BinaryXmlParser
 import java.io.IOException
 import java.io.RandomAccessFile
 import java.nio.file.Path
@@ -66,8 +67,9 @@ class Apk private constructor(
             } catch (_: ApkFormatException) {
                 raise(ApkSetParseError.InvalidFormat)
             }
+            val textManifest = BinaryXmlParser.decodeXml(binaryManifest).decodeToString()
             val manifest = AndroidManifest
-                .parse(binaryManifest)
+                .parse(textManifest)
                 ?: raise(ApkSetParseError.InvalidFormat)
             when {
                 // Check compliance with testOnly requirement

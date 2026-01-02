@@ -9,6 +9,7 @@ import app.accrescent.server.parcelo.config.ParceloConfig
 import app.accrescent.server.parcelo.data.AppDraft
 import app.accrescent.server.parcelo.data.AppDraftUploadProcessingJob
 import app.accrescent.server.parcelo.data.AppPackage
+import app.accrescent.server.parcelo.data.AppPackagePermission
 import app.accrescent.server.parcelo.data.OrphanedBlob
 import app.accrescent.server.parcelo.parsers.ApkSet
 import app.accrescent.server.parcelo.parsers.ApkSetParseError
@@ -261,6 +262,14 @@ class PackageUploadedProcessor @Inject constructor(
                             buildApksResult = apkSet.buildApksResult.toByteArray(),
                         )
                             .also { it.persist() }
+                        for (permission in apkSet.permissions) {
+                            AppPackagePermission(
+                                appPackageId = appPackage.id,
+                                name = permission.name,
+                                maxSdkVersion = permission.maxSdkVersion,
+                            )
+                                .persist()
+                        }
                         appDraft.appPackageId = appPackage.id
                     }
 
