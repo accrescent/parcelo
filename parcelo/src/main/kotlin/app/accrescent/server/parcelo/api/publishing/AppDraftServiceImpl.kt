@@ -70,6 +70,7 @@ import com.google.protobuf.InvalidProtocolBufferException
 import io.grpc.Status
 import io.quarkus.grpc.GrpcService
 import io.quarkus.grpc.RegisterInterceptor
+import io.quarkus.mailer.MailTemplate
 import io.smallrye.mutiny.Uni
 import jakarta.inject.Inject
 import jakarta.persistence.LockModeType
@@ -92,6 +93,11 @@ class AppDraftServiceImpl @Inject constructor(
     private val publishService: PublishService,
     private val storage: Storage,
 ) : AppDraftService {
+    @JvmRecord
+    data class AppDraftAssignedToYouForReviewEmail(
+        val appDraftId: UUID,
+    ) : MailTemplate.MailTemplateInstance
+
     @Transactional
     override fun createAppDraft(request: CreateAppDraftRequest): Uni<CreateAppDraftResponse> {
         val userId = AuthnContextKey.USER_ID.get()
@@ -419,6 +425,16 @@ class AppDraftServiceImpl @Inject constructor(
             existingAcl.canViewExistence = true
         }
         appDraft.submitted = true
+
+        // Notify the reviewer that they are assigned to this draft before the transaction is
+        // committed. This approach means reviewers may receive notifications for drafts they aren't
+        // actually assigned to if the transaction is rolled back. However, it also means we will
+        // always send a notification for drafts they are actually assigned to, which we want to
+        // guarantee to ascertain timely reviews.
+        AppDraftAssignedToYouForReviewEmail(appDraft.id)
+            .to(reviewer.email)
+            .subject("A new app draft has been assigned to you")
+            .sendAndAwait()
 
         return Uni.createFrom().item { submitAppDraftResponse {} }
     }
