@@ -4,6 +4,7 @@
 
 package app.accrescent.server.parcelo.data
 
+import io.quarkus.hibernate.orm.panache.kotlin.PanacheCompanion
 import io.quarkus.hibernate.orm.panache.kotlin.PanacheEntity
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
@@ -41,4 +42,20 @@ class PublishedApk(
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "app_package_id", insertable = false, updatable = false)
     private lateinit var appPackage: AppPackage
+
+    companion object : PanacheCompanion<PublishedApk> {
+        fun findByQualifiedPaths(appId: String, paths: List<String>): List<PublishedApk> {
+            return find(
+                "JOIN AppPackage app_packages " +
+                        "ON app_packages.id = appPackageId " +
+                        "JOIN App apps " +
+                        "ON apps.id = app_packages.appId " +
+                        "WHERE apps.id = ?1 " +
+                        "AND apkPath IN ?2",
+                appId,
+                paths,
+            )
+                .list()
+        }
+    }
 }

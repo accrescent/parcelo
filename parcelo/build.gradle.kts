@@ -117,8 +117,34 @@ tasks.register<Exec>("downloadAppPublishingApiProtos") {
         file("$projectDir/src/main/proto/buf").deleteRecursively()
     }
 }
+tasks.register<Exec>("downloadAppStoreApiProtos") {
+    inputs.property("app.accrescent.server.parcelo.app-store-api-version", libs.versions.appstore.api)
+    outputs.dir("$projectDir/src/main/proto/accrescent")
+
+    val bufExecutable = configurations.getByName(BUF_BINARY_CONFIGURATION_NAME).singleFile
+    if (!bufExecutable.canExecute()) {
+        bufExecutable.setExecutable(true)
+    }
+
+    val appStoreApiVersion = inputs.properties["app.accrescent.server.parcelo.app-store-api-version"]
+
+    commandLine(
+        bufExecutable.absolutePath,
+        "export",
+        "buf.build/accrescent/appstore-api:$appStoreApiVersion",
+        "--output",
+        "$projectDir/src/main/proto/",
+    )
+
+    // Remove buf/validate/validate.proto so that Quarkus doesn't generate classes which conflict
+    // with those defined in our protovalidate dependency
+    doLast {
+        file("$projectDir/src/main/proto/buf").deleteRecursively()
+    }
+}
 tasks.register("downloadProtos") {
     dependsOn(tasks.getByName("downloadAppPublishingApiProtos"))
+    dependsOn(tasks.getByName("downloadAppStoreApiProtos"))
 }
 tasks.quarkusGenerateCode {
     dependsOn(tasks.getByName("downloadProtos"))

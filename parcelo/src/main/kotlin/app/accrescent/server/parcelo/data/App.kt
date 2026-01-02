@@ -6,6 +6,7 @@ package app.accrescent.server.parcelo.data
 
 import io.quarkus.hibernate.orm.panache.kotlin.PanacheCompanionBase
 import io.quarkus.hibernate.orm.panache.kotlin.PanacheEntityBase
+import io.quarkus.runtime.annotations.RegisterForReflection
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.FetchType
@@ -36,5 +37,27 @@ class App(
         fun existsById(id: String): Boolean {
             return count("WHERE id = ?1", id) > 0
         }
+
+        fun findDefaultListingLanguagesByQuery(
+            pageSize: UInt,
+            skip: UInt,
+            afterAppId: String?,
+        ): List<AppDefaultListingLanguage> {
+            return if (afterAppId == null) {
+                find("ORDER BY id ASC LIMIT ?1 OFFSET ?2", pageSize.toLong(), skip.toLong())
+            } else {
+                find(
+                    "WHERE id > ?1 ORDER BY id ASC LIMIT ?2 OFFSET ?3",
+                    afterAppId,
+                    pageSize.toLong(),
+                    skip.toLong(),
+                )
+            }
+                .project(AppDefaultListingLanguage::class.java)
+                .list()
+        }
     }
 }
+
+@RegisterForReflection
+data class AppDefaultListingLanguage(val id: String, val defaultListingLanguage: String)

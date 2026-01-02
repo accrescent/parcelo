@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only
 
-package app.accrescent.server.parcelo.api
+package app.accrescent.server.parcelo.api.publishing
 
 import app.accrescent.appstore.publish.v1alpha1.ListMyOrganizationsRequest
 import app.accrescent.appstore.publish.v1alpha1.ListMyOrganizationsResponse

@@ -20,6 +20,11 @@ import app.accrescent.appstore.publish.v1alpha1.ListMyOrganizationsRequest
 import app.accrescent.appstore.publish.v1alpha1.PublishAppDraftRequest
 import app.accrescent.appstore.publish.v1alpha1.SubmitAppDraftRequest
 import app.accrescent.appstore.publish.v1alpha1.UpdateAppDraftRequest
+import app.accrescent.appstore.v1.GetAppDownloadInfoRequest
+import app.accrescent.appstore.v1.GetAppListingRequest
+import app.accrescent.appstore.v1.GetAppPackageInfoRequest
+import app.accrescent.appstore.v1.GetAppUpdateInfoRequest
+import app.accrescent.appstore.v1.ListAppListingsRequest
 import build.buf.protovalidate.Validator
 import build.buf.protovalidate.ValidatorFactory
 import build.buf.protovalidate.exceptions.ValidationException
@@ -45,11 +50,16 @@ class GrpcRequestValidationInterceptor : ServerInterceptor {
                 CreateReviewerRequest.getDescriptor(),
                 DeleteAppDraftListingRequest.getDescriptor(),
                 DeleteAppDraftRequest.getDescriptor(),
+                GetAppDownloadInfoRequest.getDescriptor(),
                 GetAppDraftDownloadInfoRequest.getDescriptor(),
                 GetAppDraftListingIconUploadInfoRequest.getDescriptor(),
                 GetAppDraftRequest.getDescriptor(),
                 GetAppDraftUploadInfoRequest.getDescriptor(),
+                GetAppListingRequest.getDescriptor(),
+                GetAppPackageInfoRequest.getDescriptor(),
+                GetAppUpdateInfoRequest.getDescriptor(),
                 GetSelfRequest.getDescriptor(),
+                ListAppListingsRequest.getDescriptor(),
                 ListMyOrganizationsRequest.getDescriptor(),
                 PublishAppDraftRequest.getDescriptor(),
                 SubmitAppDraftRequest.getDescriptor(),
