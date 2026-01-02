@@ -56,7 +56,9 @@ class PublisherServiceImpl @Inject constructor(val config: ParceloConfig) : Publ
                 .asRuntimeException()
         }
 
-        Publisher(userId = userToPromoteId).persist()
+        // Because this API is restricted to administrators, we don't need to verify ownership of
+        // the email address
+        Publisher(userId = userToPromoteId, email = request.email).persist()
 
         return Uni.createFrom().item { createPublisherResponse {} }
     }

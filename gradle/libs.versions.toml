@@ -6,7 +6,7 @@
 agp = "8.13.2"
 apkanalyzer = "31.13.1"
 apksig = "8.13.1"
-app-publishing-api = "79b3d00ad9c14ac3a0e621f952d6487e"
+app-publishing-api = "35d8f27ae54343fb8734b49fc48f4a77"
 appstore-api = "v1.0.3"
 arrow = "2.2.0"
 buf = "0.10.3"
