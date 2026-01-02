@@ -21,8 +21,8 @@ import io.quarkus.grpc.GrpcService
 import io.quarkus.grpc.RegisterInterceptor
 import io.smallrye.mutiny.Uni
 import jakarta.transaction.Transactional
-import java.util.Base64
 import java.util.UUID
+import kotlin.io.encoding.Base64
 
 private const val DEFAULT_PAGE_SIZE = 50u
 private const val MAX_PAGE_SIZE = 50u
@@ -44,7 +44,7 @@ class OrganizationServiceImpl : OrganizationService {
         }
         val lastOrganizationId = if (request.hasPageToken()) {
             try {
-                val tokenBytes = Base64.getUrlDecoder().decode(request.pageToken)
+                val tokenBytes = Base64.UrlSafe.decode(request.pageToken)
                 val token = ListMyOrganizationsPageToken.parseFrom(tokenBytes)
                 if (!token.hasLastOrganizationId()) {
                     throw invalidPageTokenError
@@ -73,7 +73,7 @@ class OrganizationServiceImpl : OrganizationService {
             val pageToken = listMyOrganizationsPageToken {
                 this.lastOrganizationId = organizations.last().id
             }
-            val encodedPageToken = Base64.getUrlEncoder().encodeToString(pageToken.toByteArray())
+            val encodedPageToken = Base64.UrlSafe.encode(pageToken.toByteArray())
 
             listMyOrganizationsResponse {
                 this.organizations.addAll(organizations)

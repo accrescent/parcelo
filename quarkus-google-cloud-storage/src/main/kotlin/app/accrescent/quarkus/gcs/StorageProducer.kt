@@ -16,8 +16,8 @@ import jakarta.inject.Inject
 import jakarta.inject.Singleton
 import java.net.URL
 import java.security.KeyPairGenerator
-import java.util.Base64
 import java.util.concurrent.TimeUnit
+import kotlin.io.encoding.Base64
 import kotlin.jvm.optionals.getOrNull
 
 @ApplicationScoped
@@ -73,9 +73,7 @@ private fun generateDevCredentials(): ServiceAccountCredentials {
         .getInstance("RSA")
         .apply { initialize(2048) }
         .generateKeyPair()
-    val encodedPrivateKey = Base64
-        .getEncoder()
-        .encodeToString(keyPair.private.encoded)
+    val encodedPrivateKey = Base64.encode(keyPair.private.encoded)
     val privateKeyPkcs8 = """
         -----BEGIN PRIVATE KEY-----
         $encodedPrivateKey
