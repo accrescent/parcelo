@@ -20,6 +20,7 @@ import app.accrescent.server.parcelo.validation.GrpcRequestValidationInterceptor
 import io.grpc.Status
 import io.quarkus.grpc.GrpcService
 import io.quarkus.grpc.RegisterInterceptor
+import io.quarkus.mailer.MailTemplate
 import io.smallrye.mutiny.Uni
 import jakarta.transaction.Transactional
 import java.util.UUID
@@ -28,6 +29,11 @@ import java.util.UUID
 @RegisterInterceptor(GrpcAuthenticationInterceptor::class)
 @RegisterInterceptor(GrpcRequestValidationInterceptor::class)
 class ReviewServiceImpl : ReviewService {
+    @JvmRecord
+    data class AppDraftAssignedToYouForPublishingEmail(
+        val appDraftId: UUID,
+    ) : MailTemplate.MailTemplateInstance
+
     @Transactional
     override fun createAppDraftReview(
         request: CreateAppDraftReviewRequest,
@@ -95,6 +101,16 @@ class ReviewServiceImpl : ReviewService {
             existingAcl.canPublish = true
             existingAcl.canViewExistence = true
         }
+
+        // Notify the publisher that they are assigned to this draft before the transaction is
+        // committed. This approach means publishers may receive notifications for drafts they
+        // aren't actually assigned to if the transaction is rolled back. However, it also means we
+        // will always send a notification for drafts they are actually assigned to, which we want
+        // to guarantee to ascertain timely publishing.
+        AppDraftAssignedToYouForPublishingEmail(appDraft.id)
+            .to(publisher.email)
+            .subject("A new app draft has been assigned to you")
+            .sendAndAwait()
 
         return Uni.createFrom().item { createAppDraftReviewResponse {} }
     }
