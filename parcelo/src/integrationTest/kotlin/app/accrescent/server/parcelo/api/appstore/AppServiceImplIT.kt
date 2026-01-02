@@ -73,7 +73,10 @@ class AppServiceImplIT {
                 .userId
             ApiUtils
                 .getPublisherServiceStub(adminToken)
-                .createPublisher(createPublisherRequest { userId = publisherUserId })
+                .createPublisher(createPublisherRequest {
+                    userId = publisherUserId
+                    email = "publisher1@example.com"
+                })
 
             // Publish the valid example app
             ApiUtils.publishApp("user2", "reviewer1", "publisher1", "valid")
