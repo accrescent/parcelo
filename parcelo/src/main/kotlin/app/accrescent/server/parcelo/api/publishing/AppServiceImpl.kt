@@ -40,6 +40,7 @@ class AppServiceImpl : AppService {
         val response = getAppResponse {
             this.app = app {
                 id = app.id
+                defaultListingLanguage = app.defaultListingLanguage
             }
         }
 
