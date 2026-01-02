@@ -2,11 +2,13 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only
 
-package app.accrescent.server.parcelo.api.appstore
+package app.accrescent.server.parcelo.api
 
+import app.accrescent.appstore.publish.v1alpha1.createAppDraftRequest
 import app.accrescent.appstore.publish.v1alpha1.createPublisherRequest
 import app.accrescent.appstore.publish.v1alpha1.createReviewerRequest
 import app.accrescent.appstore.publish.v1alpha1.getSelfRequest
+import app.accrescent.appstore.publish.v1alpha1.listMyOrganizationsRequest
 import app.accrescent.appstore.v1.DeviceAttributes
 import app.accrescent.appstore.v1.getAppDownloadInfoRequest
 import app.accrescent.appstore.v1.getAppListingRequest
@@ -25,11 +27,13 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 
+private const val ORGANIZATION_APP_DRAFT_LIMIT = 3
+
 private const val ANCIENT_DEVICE_DEVICE_ATTRIBUTES_PATH = "ancient-device-device-attributes.txtpb"
 private const val PIXEL_9_EMULATOR_DEVICE_ATTRIBUTES_PATH = "pixel-9-emulator-device-attributes.txtpb"
 
 @QuarkusIntegrationTest
-class AppServiceImplIT {
+class ApiIT {
     val appService = ApiUtils.getAppServiceStub()
 
     val ancientDeviceDeviceAttributes: DeviceAttributes = javaClass
@@ -201,5 +205,28 @@ class AppServiceImplIT {
         // Assert that the device is detected as incompatible
         val exception = assertThrows<StatusException> { appService.getAppUpdateInfo(request) }
         assertEquals(exception.status.code, Status.Code.FAILED_PRECONDITION)
+    }
+
+    @Test
+    fun developerTriesToCreateAppDraftsBeyondOrgLimit() {
+        val token = ApiUtils.generateSessionToken("user1")
+        val organizationService = ApiUtils.getOrganizationServiceStub(token)
+        val appDraftService = ApiUtils.getAppDraftServiceStub(token)
+        val organizationId = organizationService
+            .listMyOrganizations(listMyOrganizationsRequest {})
+            .organizationsList[0]
+            .id
+
+        // We should be able to successfully create as many as ORGANIZATION_APP_DRAFT_LIMIT app
+        // drafts without issue
+        val request = createAppDraftRequest { this.organizationId = organizationId }
+        repeat(ORGANIZATION_APP_DRAFT_LIMIT) {
+            appDraftService.createAppDraft(request)
+        }
+
+        // Creating app drafts beyond ORGANIZATION_APP_DRAFT_LIMIT should fail because of exceeding
+        // the organization quota
+        val exception = assertThrows<StatusException> { appDraftService.createAppDraft(request) }
+        assertEquals(exception.status.code, Status.Code.RESOURCE_EXHAUSTED)
     }
 }
