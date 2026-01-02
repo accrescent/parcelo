@@ -241,6 +241,7 @@ class ApiIT {
 
         // Assert that the app is retrieved successfully
         assertEquals("com.example.valid", app.id)
+        assertEquals("en-US", app.defaultListingLanguage)
     }
 
     @Test
