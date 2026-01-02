@@ -25,6 +25,13 @@ object PermissionService {
     }
 
     @Transactional
+    fun userCanViewApp(userId: UUID, appId: String): Boolean {
+        return OrganizationAcl
+            .findByAppIdAndUserId(appId = appId, userId = userId)
+            ?.canViewApps == true
+    }
+
+    @Transactional
     fun userCanViewAppDraft(userId: UUID, appDraftId: UUID): Boolean {
         return AppDraftAcl
             .findByAppDraftIdAndUserId(appDraftId = appDraftId, userId = userId)

@@ -30,6 +30,9 @@ class OrganizationAcl(
     @Column(name = "can_create_app_drafts", nullable = false)
     val canCreateAppDrafts: Boolean,
 
+    @Column(name = "can_view_apps", nullable = false)
+    val canViewApps: Boolean,
+
     @Column(name = "can_view_organization", nullable = false)
     val canViewOrganization: Boolean,
 ) : PanacheEntity() {
@@ -42,6 +45,19 @@ class OrganizationAcl(
     private lateinit var user: User
 
     companion object : PanacheCompanion<OrganizationAcl> {
+        fun findByAppIdAndUserId(appId: String, userId: UUID): OrganizationAcl? {
+            return find(
+                "FROM OrganizationAcl organization_acls " +
+                        "JOIN App apps " +
+                        "ON apps.organizationId = organization_acls.organizationId " +
+                        "WHERE apps.id = ?1 " +
+                        "AND organization_acls.userId = ?2",
+                appId,
+                userId,
+            )
+                .firstResult()
+        }
+
         fun findByOrganizationIdAndUserId(organizationId: UUID, userId: UUID): OrganizationAcl? {
             return find("WHERE organizationId = ?1 AND userId = ?2", organizationId, userId)
                 .firstResult()

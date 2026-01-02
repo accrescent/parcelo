@@ -7,6 +7,7 @@ package app.accrescent.server.parcelo.api
 import app.accrescent.appstore.publish.v1alpha1.createAppDraftRequest
 import app.accrescent.appstore.publish.v1alpha1.createPublisherRequest
 import app.accrescent.appstore.publish.v1alpha1.createReviewerRequest
+import app.accrescent.appstore.publish.v1alpha1.getAppRequest
 import app.accrescent.appstore.publish.v1alpha1.getSelfRequest
 import app.accrescent.appstore.publish.v1alpha1.listMyOrganizationsRequest
 import app.accrescent.appstore.v1.DeviceAttributes
@@ -34,7 +35,7 @@ private const val PIXEL_9_EMULATOR_DEVICE_ATTRIBUTES_PATH = "pixel-9-emulator-de
 
 @QuarkusIntegrationTest
 class ApiIT {
-    val appService = ApiUtils.getAppServiceStub()
+    val storeAppService = ApiUtils.getStoreAppServiceStub()
 
     val ancientDeviceDeviceAttributes: DeviceAttributes = javaClass
         .classLoader
@@ -54,6 +55,8 @@ class ApiIT {
         }
 
     companion object {
+        val user1Token = ApiUtils.generateSessionToken("user1")
+
         @BeforeAll
         @JvmStatic
         fun setup() {
@@ -95,7 +98,7 @@ class ApiIT {
         }
 
         // Assert that the listing doesn't exist
-        val exception = assertThrows<StatusException> { appService.getAppListing(request) }
+        val exception = assertThrows<StatusException> { storeAppService.getAppListing(request) }
         assertEquals(exception.status.code, Status.Code.NOT_FOUND)
     }
 
@@ -105,7 +108,7 @@ class ApiIT {
             appId = "com.example.valid"
             preferredLanguages.add("en-US")
         }
-        val listing = appService.getAppListing(request).listing
+        val listing = storeAppService.getAppListing(request).listing
 
         // Assert the listing matches what was published
         assertEquals("com.example.valid", listing.appId)
@@ -117,7 +120,7 @@ class ApiIT {
     @Test
     fun userListsAppListingsWithOvershoot() {
         val request = listAppListingsRequest { skip = Int.MAX_VALUE }
-        val response = appService.listAppListings(request)
+        val response = storeAppService.listAppListings(request)
 
         // If there are no more listings, nextPageToken should not be present
         assertFalse(response.hasNextPageToken())
@@ -128,14 +131,14 @@ class ApiIT {
         val request = getAppPackageInfoRequest { appId = "non.existent.app" }
 
         // Assert the package info doesn't exist
-        val exception = assertThrows<StatusException> { appService.getAppPackageInfo(request) }
+        val exception = assertThrows<StatusException> { storeAppService.getAppPackageInfo(request) }
         assertEquals(exception.status.code, Status.Code.NOT_FOUND)
     }
 
     @Test
     fun userRequestsPackageInfoForPublishedApp() {
         val request = getAppPackageInfoRequest { appId = "com.example.valid" }
-        val packageInfo = appService.getAppPackageInfo(request).packageInfo
+        val packageInfo = storeAppService.getAppPackageInfo(request).packageInfo
 
         // Assert the package info matches what was published
         assertEquals(2, packageInfo.versionCode)
@@ -148,7 +151,7 @@ class ApiIT {
             appId = "com.example.valid"
             deviceAttributes = pixel9EmulatorDeviceAttributes
         }
-        val downloadInfo = appService.getAppDownloadInfo(request).appDownloadInfo
+        val downloadInfo = storeAppService.getAppDownloadInfo(request).appDownloadInfo
 
         // Assert download info was retrieved successfully
         assertTrue(downloadInfo.splitDownloadInfoCount > 0)
@@ -162,7 +165,7 @@ class ApiIT {
         }
 
         // Assert that the device is detected as incompatible
-        val exception = assertThrows<StatusException> { appService.getAppDownloadInfo(request) }
+        val exception = assertThrows<StatusException> { storeAppService.getAppDownloadInfo(request) }
         assertEquals(exception.status.code, Status.Code.FAILED_PRECONDITION)
     }
 
@@ -173,7 +176,7 @@ class ApiIT {
             deviceAttributes = pixel9EmulatorDeviceAttributes
             baseVersionCode = 2
         }
-        val response = appService.getAppUpdateInfo(request)
+        val response = storeAppService.getAppUpdateInfo(request)
 
         // Assert that the response indicates there is no update available
         assertFalse(response.hasAppUpdateInfo())
@@ -187,7 +190,7 @@ class ApiIT {
             baseVersionCode = 1
         }
 
-        val response = appService.getAppUpdateInfo(request)
+        val response = storeAppService.getAppUpdateInfo(request)
 
         // Assert that update info was retrieved successfully
         assertTrue(response.hasAppUpdateInfo())
@@ -203,15 +206,14 @@ class ApiIT {
         }
 
         // Assert that the device is detected as incompatible
-        val exception = assertThrows<StatusException> { appService.getAppUpdateInfo(request) }
+        val exception = assertThrows<StatusException> { storeAppService.getAppUpdateInfo(request) }
         assertEquals(exception.status.code, Status.Code.FAILED_PRECONDITION)
     }
 
     @Test
     fun developerTriesToCreateAppDraftsBeyondOrgLimit() {
-        val token = ApiUtils.generateSessionToken("user1")
-        val organizationService = ApiUtils.getOrganizationServiceStub(token)
-        val appDraftService = ApiUtils.getAppDraftServiceStub(token)
+        val organizationService = ApiUtils.getOrganizationServiceStub(user1Token)
+        val appDraftService = ApiUtils.getAppDraftServiceStub(user1Token)
         val organizationId = organizationService
             .listMyOrganizations(listMyOrganizationsRequest {})
             .organizationsList[0]
@@ -228,5 +230,27 @@ class ApiIT {
         // the organization quota
         val exception = assertThrows<StatusException> { appDraftService.createAppDraft(request) }
         assertEquals(exception.status.code, Status.Code.RESOURCE_EXHAUSTED)
+    }
+
+    @Test
+    fun developerRequestsPublishedAppWithAuthorization() {
+        val appService = ApiUtils.getDevAppServiceStub(ApiUtils.generateSessionToken("user2"))
+
+        val request = getAppRequest { appId = "com.example.valid" }
+        val app = appService.getApp(request).app
+
+        // Assert that the app is retrieved successfully
+        assertEquals("com.example.valid", app.id)
+    }
+
+    @Test
+    fun developerRequestsPublishedAppWithNoAuthorization() {
+        val appService = ApiUtils.getDevAppServiceStub(user1Token)
+
+        val request = getAppRequest { appId = "com.example.valid" }
+        val exception = assertThrows<StatusException> { appService.getApp(request) }
+
+        // Assert that the developer can't access the app
+        assertEquals(Status.Code.NOT_FOUND, exception.status.code)
     }
 }
