@@ -4,7 +4,9 @@
 
 package app.accrescent.server.parcelo.data
 
+import io.quarkus.hibernate.orm.panache.kotlin.PanacheCompanionBase
 import io.quarkus.hibernate.orm.panache.kotlin.PanacheEntityBase
+import io.quarkus.runtime.annotations.RegisterForReflection
 import jakarta.persistence.CascadeType
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
@@ -55,4 +57,32 @@ class AppPackage(
 ) : PanacheEntityBase {
     @OneToMany(cascade = [CascadeType.ALL], mappedBy = "appPackage")
     lateinit var publishedApks: List<PublishedApk>
+
+    companion object : PanacheCompanionBase<AppPackage, UUID> {
+        fun findByPublishedAppId(appId: String): AppPackage? {
+            return find(
+                "FROM AppPackage app_packages " +
+                        "JOIN App apps " +
+                        "ON apps.id = app_packages.appId " +
+                        "WHERE app_packages.appId = ?1",
+                appId,
+            )
+                .firstResult()
+        }
+
+        fun findPackageInfoByPublishedAppId(appId: String): AppPackageInfo? {
+            return find(
+                "FROM AppPackage app_packages " +
+                        "JOIN App apps " +
+                        "ON apps.id = app_packages.appId " +
+                        "WHERE app_packages.appId = ?1",
+                appId,
+            )
+                .project(AppPackageInfo::class.java)
+                .firstResult()
+        }
+    }
 }
+
+@RegisterForReflection
+data class AppPackageInfo(val versionCode: Int, val versionName: String)

@@ -2,14 +2,14 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only
 
-package app.accrescent.server.parcelo.api
+package app.accrescent.server.parcelo.api.publishing
 
-import app.accrescent.appstore.publish.v1alpha1.CreateReviewerRequest
-import app.accrescent.appstore.publish.v1alpha1.CreateReviewerResponse
-import app.accrescent.appstore.publish.v1alpha1.ReviewerService
-import app.accrescent.appstore.publish.v1alpha1.createReviewerResponse
+import app.accrescent.appstore.publish.v1alpha1.CreatePublisherRequest
+import app.accrescent.appstore.publish.v1alpha1.CreatePublisherResponse
+import app.accrescent.appstore.publish.v1alpha1.PublisherService
+import app.accrescent.appstore.publish.v1alpha1.createPublisherResponse
 import app.accrescent.server.parcelo.config.ParceloConfig
-import app.accrescent.server.parcelo.data.Reviewer
+import app.accrescent.server.parcelo.data.Publisher
 import app.accrescent.server.parcelo.data.User
 import app.accrescent.server.parcelo.security.AuthnContextKey
 import app.accrescent.server.parcelo.security.GrpcAuthenticationInterceptor
@@ -25,9 +25,9 @@ import java.util.UUID
 @GrpcService
 @RegisterInterceptor(GrpcAuthenticationInterceptor::class)
 @RegisterInterceptor(GrpcRequestValidationInterceptor::class)
-class ReviewerServiceImpl @Inject constructor(val config: ParceloConfig) : ReviewerService {
+class PublisherServiceImpl @Inject constructor(val config: ParceloConfig) : PublisherService {
     @Transactional
-    override fun createReviewer(request: CreateReviewerRequest): Uni<CreateReviewerResponse> {
+    override fun createPublisher(request: CreatePublisherRequest): Uni<CreatePublisherResponse> {
         val userId = AuthnContextKey.USER_ID.get()
         // protovalidate ensures this is a valid UUID, so no need to catch IllegalArgumentException
         val userToPromoteId = UUID.fromString(request.userId)
@@ -35,12 +35,12 @@ class ReviewerServiceImpl @Inject constructor(val config: ParceloConfig) : Revie
         val authenticatedUser = User
             .findById(userId)
             ?: throw Status.UNAUTHENTICATED.asRuntimeException()
-        val canCreateReviewer = config.admin().identityProvider() == authenticatedUser.identityProvider
+        val canCreatePublisher = config.admin().identityProvider() == authenticatedUser.identityProvider
                 && config.admin().scopedUserId() == authenticatedUser.scopedUserId
-        if (!canCreateReviewer) {
+        if (!canCreatePublisher) {
             throw Status
                 .PERMISSION_DENIED
-                .withDescription("insufficient permission to create reviewers")
+                .withDescription("insufficient permission to create publishers")
                 .asRuntimeException()
         }
         if (!User.existsById(userToPromoteId)) {
@@ -49,15 +49,15 @@ class ReviewerServiceImpl @Inject constructor(val config: ParceloConfig) : Revie
                 .withDescription("user with ID \"$userToPromoteId\" not found")
                 .asRuntimeException()
         }
-        if (Reviewer.existsByUserId(userToPromoteId)) {
+        if (Publisher.existsByUserId(userToPromoteId)) {
             throw Status
                 .ALREADY_EXISTS
-                .withDescription("specified user is already a reviewer")
+                .withDescription("specified user is already a publisher")
                 .asRuntimeException()
         }
 
-        Reviewer(userId = userToPromoteId).persist()
+        Publisher(userId = userToPromoteId).persist()
 
-        return Uni.createFrom().item { createReviewerResponse {} }
+        return Uni.createFrom().item { createPublisherResponse {} }
     }
 }

@@ -15,6 +15,12 @@
             "credentials": [{"type": "password", "value": "password"}]
         },
         {
+            "username": "publisher1",
+            "id": "6a53a8b8-c24d-447c-a607-7dfb6688d8ed",
+            "enabled": true,
+            "credentials": [{"type": "password", "value": "password"}]
+        },
+        {
             "username": "user1",
             "id": "ed3f288f-a5a6-446e-8dd3-5c61f3505fdd",
             "enabled": true,
