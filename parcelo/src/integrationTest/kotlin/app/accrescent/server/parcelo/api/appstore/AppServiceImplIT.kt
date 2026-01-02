@@ -62,7 +62,10 @@ class AppServiceImplIT {
                 .userId
             ApiUtils
                 .getReviewerServiceStub(adminToken)
-                .createReviewer(createReviewerRequest { userId = reviewerUserId })
+                .createReviewer(createReviewerRequest {
+                    userId = reviewerUserId
+                    email = "reviewer1@example.com"
+                })
 
             val publisherUserId = ApiUtils
                 .getUserServiceStub(ApiUtils.generateSessionToken("publisher1"))

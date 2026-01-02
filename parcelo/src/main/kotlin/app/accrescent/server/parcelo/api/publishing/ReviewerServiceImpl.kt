@@ -56,7 +56,9 @@ class ReviewerServiceImpl @Inject constructor(val config: ParceloConfig) : Revie
                 .asRuntimeException()
         }
 
-        Reviewer(userId = userToPromoteId).persist()
+        // Because this API is restricted to administrators, we don't need to verify ownership of
+        // the email address
+        Reviewer(userId = userToPromoteId, email = request.email).persist()
 
         return Uni.createFrom().item { createReviewerResponse {} }
     }

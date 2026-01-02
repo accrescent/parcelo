@@ -21,6 +21,9 @@ import java.util.UUID
 class Reviewer(
     @Column(name = "user_id", nullable = false, unique = true)
     val userId: UUID,
+
+    @Column(nullable = false)
+    val email: String,
 ) : PanacheEntity() {
     @OneToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(insertable = false, updatable = false)
