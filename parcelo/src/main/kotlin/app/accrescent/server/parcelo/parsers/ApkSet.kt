@@ -27,6 +27,7 @@ class ApkSet private constructor(
     val targetSdk: Int,
     val signingCert: X509Certificate,
     val buildApksResult: Commands.BuildApksResult,
+    val permissions: Set<UsesPermission>,
 ) {
     companion object {
         /**
@@ -79,6 +80,7 @@ class ApkSet private constructor(
                 var pinnedVersionCode: Int? = null
                 var firstEncounteredVersionName: String? = null
                 var lowestEncounteredTargetSdk: Int? = null
+                val allDeclaredPermissions = mutableSetOf<UsesPermission>()
                 for (apkPath in apkPaths) {
                     val apkEntry = zipFile
                         .getEntry(apkPath)
@@ -140,6 +142,10 @@ class ApkSet private constructor(
                             ) {
                                 firstEncounteredVersionName = apk.manifest.versionName
                             }
+                            // Save all permissions for later review
+                            if (apk.manifest.split == null) {
+                                allDeclaredPermissions.addAll(apk.manifest.usesPermissions)
+                            }
                         }
                     }
                 }
@@ -167,6 +173,7 @@ class ApkSet private constructor(
                     targetSdk = lowestEncounteredTargetSdk,
                     signingCert = pinnedSigningCert,
                     buildApksResult = buildApksResult,
+                    permissions = allDeclaredPermissions,
                 )
             }
         }
