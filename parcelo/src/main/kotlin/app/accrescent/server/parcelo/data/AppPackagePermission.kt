@@ -21,7 +21,7 @@ class AppPackagePermission(
     @Column(name = "app_package_id", nullable = false)
     val appPackageId: UUID,
 
-    @Column(nullable = false)
+    @Column(columnDefinition = "text", nullable = false)
     val name: String,
 
     @Column(name = "max_sdk_version")

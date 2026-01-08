@@ -43,7 +43,7 @@ class AppDraft(
     @Column(name = "app_package_id")
     var appPackageId: UUID?,
 
-    @Column(name = "default_listing_language")
+    @Column(columnDefinition = "text", name = "default_listing_language")
     var defaultListingLanguage: String?,
 
     @Column(name = "submitted", nullable = false)
