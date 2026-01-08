@@ -15,7 +15,7 @@ import app.accrescent.appstore.publish.v1alpha1.createAppDraftRequest
 import app.accrescent.appstore.publish.v1alpha1.createAppDraftReviewRequest
 import app.accrescent.appstore.publish.v1alpha1.getAppDraftListingIconUploadInfoRequest
 import app.accrescent.appstore.publish.v1alpha1.getAppDraftUploadInfoRequest
-import app.accrescent.appstore.publish.v1alpha1.listMyOrganizationsRequest
+import app.accrescent.appstore.publish.v1alpha1.listOrganizationsRequest
 import app.accrescent.appstore.publish.v1alpha1.publishAppDraftRequest
 import app.accrescent.appstore.publish.v1alpha1.submitAppDraftRequest
 import app.accrescent.appstore.publish.v1alpha1.updateAppDraftRequest
@@ -135,7 +135,7 @@ object ApiUtils {
         val publisherAppDraftService = getAppDraftServiceStub(publisherToken)
 
         val organizationId = organizationService
-            .listMyOrganizations(listMyOrganizationsRequest {})
+            .listOrganizations(listOrganizationsRequest {})
             .organizationsList[0]
             .id
 

@@ -4,13 +4,13 @@
 
 package app.accrescent.server.parcelo.api.publishing
 
-import app.accrescent.appstore.publish.v1alpha1.ListMyOrganizationsRequest
-import app.accrescent.appstore.publish.v1alpha1.ListMyOrganizationsResponse
+import app.accrescent.appstore.publish.v1alpha1.ListOrganizationsRequest
+import app.accrescent.appstore.publish.v1alpha1.ListOrganizationsResponse
 import app.accrescent.appstore.publish.v1alpha1.OrganizationService
-import app.accrescent.appstore.publish.v1alpha1.listMyOrganizationsResponse
+import app.accrescent.appstore.publish.v1alpha1.listOrganizationsResponse
 import app.accrescent.appstore.publish.v1alpha1.organization
-import app.accrescent.parcelo.impl.v1.ListMyOrganizationsPageToken
-import app.accrescent.parcelo.impl.v1.listMyOrganizationsPageToken
+import app.accrescent.parcelo.impl.v1.ListOrganizationsPageToken
+import app.accrescent.parcelo.impl.v1.listOrganizationsPageToken
 import app.accrescent.server.parcelo.data.Organization
 import app.accrescent.server.parcelo.security.AuthnContextKey
 import app.accrescent.server.parcelo.security.GrpcAuthenticationInterceptor
@@ -32,9 +32,9 @@ private const val MAX_PAGE_SIZE = 50u
 @RegisterInterceptor(GrpcRequestValidationInterceptor::class)
 class OrganizationServiceImpl : OrganizationService {
     @Transactional
-    override fun listMyOrganizations(
-        request: ListMyOrganizationsRequest,
-    ): Uni<ListMyOrganizationsResponse> {
+    override fun listOrganizations(
+        request: ListOrganizationsRequest,
+    ): Uni<ListOrganizationsResponse> {
         val userId = AuthnContextKey.USER_ID.get()
 
         val pageSize = if (request.hasPageSize() && request.pageSize != 0) {
@@ -45,7 +45,7 @@ class OrganizationServiceImpl : OrganizationService {
         val lastOrganizationId = if (request.hasPageToken()) {
             try {
                 val tokenBytes = Base64.UrlSafe.decode(request.pageToken)
-                val token = ListMyOrganizationsPageToken.parseFrom(tokenBytes)
+                val token = ListOrganizationsPageToken.parseFrom(tokenBytes)
                 if (!token.hasLastOrganizationId()) {
                     throw invalidPageTokenError
                 }
@@ -70,17 +70,17 @@ class OrganizationServiceImpl : OrganizationService {
 
         val response = if (organizations.isNotEmpty()) {
             // Set a page token indicating there may be more results
-            val pageToken = listMyOrganizationsPageToken {
+            val pageToken = listOrganizationsPageToken {
                 this.lastOrganizationId = organizations.last().id
             }
             val encodedPageToken = Base64.UrlSafe.encode(pageToken.toByteArray())
 
-            listMyOrganizationsResponse {
+            listOrganizationsResponse {
                 this.organizations.addAll(organizations)
                 nextPageToken = encodedPageToken
             }
         } else {
-            listMyOrganizationsResponse {}
+            listOrganizationsResponse {}
         }
 
         return Uni.createFrom().item { response }

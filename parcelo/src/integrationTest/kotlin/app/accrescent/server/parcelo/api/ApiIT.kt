@@ -10,7 +10,7 @@ import app.accrescent.appstore.publish.v1alpha1.createReviewerRequest
 import app.accrescent.appstore.publish.v1alpha1.getAppRequest
 import app.accrescent.appstore.publish.v1alpha1.getSelfRequest
 import app.accrescent.appstore.publish.v1alpha1.listAppsRequest
-import app.accrescent.appstore.publish.v1alpha1.listMyOrganizationsRequest
+import app.accrescent.appstore.publish.v1alpha1.listOrganizationsRequest
 import app.accrescent.appstore.v1.DeviceAttributes
 import app.accrescent.appstore.v1.getAppDownloadInfoRequest
 import app.accrescent.appstore.v1.getAppListingRequest
@@ -217,7 +217,7 @@ class ApiIT {
         val organizationService = ApiUtils.getOrganizationServiceStub(user1Token)
         val appDraftService = ApiUtils.getAppDraftServiceStub(user1Token)
         val organizationId = organizationService
-            .listMyOrganizations(listMyOrganizationsRequest {})
+            .listOrganizations(listOrganizationsRequest {})
             .organizationsList[0]
             .id
 
