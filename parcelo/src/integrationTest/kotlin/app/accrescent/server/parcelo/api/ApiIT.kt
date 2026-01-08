@@ -9,6 +9,7 @@ import app.accrescent.appstore.publish.v1alpha1.createPublisherRequest
 import app.accrescent.appstore.publish.v1alpha1.createReviewerRequest
 import app.accrescent.appstore.publish.v1alpha1.getAppRequest
 import app.accrescent.appstore.publish.v1alpha1.getSelfRequest
+import app.accrescent.appstore.publish.v1alpha1.listAppsRequest
 import app.accrescent.appstore.publish.v1alpha1.listMyOrganizationsRequest
 import app.accrescent.appstore.v1.DeviceAttributes
 import app.accrescent.appstore.v1.getAppDownloadInfoRequest
@@ -56,6 +57,7 @@ class ApiIT {
 
     companion object {
         val user1Token = ApiUtils.generateSessionToken("user1")
+        val user2Token = ApiUtils.generateSessionToken("user2")
 
         @BeforeAll
         @JvmStatic
@@ -234,7 +236,7 @@ class ApiIT {
 
     @Test
     fun developerRequestsPublishedAppWithAuthorization() {
-        val appService = ApiUtils.getDevAppServiceStub(ApiUtils.generateSessionToken("user2"))
+        val appService = ApiUtils.getDevAppServiceStub(user2Token)
 
         val request = getAppRequest { appId = "com.example.valid" }
         val app = appService.getApp(request).app
@@ -253,5 +255,27 @@ class ApiIT {
 
         // Assert that the developer can't access the app
         assertEquals(Status.Code.NOT_FOUND, exception.status.code)
+    }
+
+    @Test
+    fun developerListsPublishedAppsWithAuthorizationForOne() {
+        val appService = ApiUtils.getDevAppServiceStub(user2Token)
+
+        val apps = appService.listApps(listAppsRequest {}).appsList
+
+        // Assert that the expected app is included in the response
+        assertEquals(1, apps.size)
+        assertEquals("com.example.valid", apps[0].id)
+        assertEquals("en-US", apps[0].defaultListingLanguage)
+    }
+
+    @Test
+    fun developerListsPublishedAppsWithNoAuthorization() {
+        val appService = ApiUtils.getDevAppServiceStub(user1Token)
+
+        val apps = appService.listApps(listAppsRequest {}).appsList
+
+        // Assert that the developer can't access the app
+        assertEquals(0, apps.size)
     }
 }
