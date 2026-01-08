@@ -25,6 +25,7 @@ apksig = { module = "com.android.tools.build:apksig", version.ref = "apksig" }
 arrow-core = { module = "io.arrow-kt:arrow-core", version.ref = "arrow" }
 awaitility = { module = "org.awaitility:awaitility" }
 bundletool = { module = "com.android.tools.build:bundletool", version.ref = "bundletool" }
+flyway-database-postgresql = { module = "org.flywaydb:flyway-database-postgresql" }
 google-cloud-libraries-bom = { module = "com.google.cloud:libraries-bom", version.ref = "google-cloud-libraries-bom" }
 google-cloud-pubsub = { module = "com.google.cloud:google-cloud-pubsub" }
 google-cloud-storage = { module = "com.google.cloud:google-cloud-storage" }
@@ -42,6 +43,7 @@ quarkus-builder = { module = "io.quarkus:quarkus-builder" }
 quarkus-core = { module = "io.quarkus:quarkus-core" }
 quarkus-devservices-common = { module = "io.quarkus:quarkus-devservices-common" }
 quarkus-extension-processor = { module = "io.quarkus:quarkus-extension-processor", version.ref = "quarkus" }
+quarkus-flyway = { module = "io.quarkus:quarkus-flyway" }
 quarkus-grpc = { module = "io.quarkus:quarkus-grpc" }
 quarkus-hibernate-orm-panache-kotlin = { module = "io.quarkus:quarkus-hibernate-orm-panache-kotlin" }
 quarkus-jaxb = { module = "io.quarkus:quarkus-jaxb" }
