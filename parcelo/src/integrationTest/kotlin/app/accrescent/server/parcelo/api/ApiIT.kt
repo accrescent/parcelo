@@ -101,7 +101,7 @@ class ApiIT {
 
         // Assert that the listing doesn't exist
         val exception = assertThrows<StatusException> { storeAppService.getAppListing(request) }
-        assertEquals(exception.status.code, Status.Code.NOT_FOUND)
+        assertEquals(Status.Code.NOT_FOUND, exception.status.code)
     }
 
     @Test
@@ -134,7 +134,7 @@ class ApiIT {
 
         // Assert the package info doesn't exist
         val exception = assertThrows<StatusException> { storeAppService.getAppPackageInfo(request) }
-        assertEquals(exception.status.code, Status.Code.NOT_FOUND)
+        assertEquals(Status.Code.NOT_FOUND, exception.status.code)
     }
 
     @Test
@@ -168,7 +168,7 @@ class ApiIT {
 
         // Assert that the device is detected as incompatible
         val exception = assertThrows<StatusException> { storeAppService.getAppDownloadInfo(request) }
-        assertEquals(exception.status.code, Status.Code.FAILED_PRECONDITION)
+        assertEquals(Status.Code.FAILED_PRECONDITION, exception.status.code)
     }
 
     @Test
@@ -209,7 +209,7 @@ class ApiIT {
 
         // Assert that the device is detected as incompatible
         val exception = assertThrows<StatusException> { storeAppService.getAppUpdateInfo(request) }
-        assertEquals(exception.status.code, Status.Code.FAILED_PRECONDITION)
+        assertEquals(Status.Code.FAILED_PRECONDITION, exception.status.code)
     }
 
     @Test
@@ -231,7 +231,7 @@ class ApiIT {
         // Creating app drafts beyond ORGANIZATION_APP_DRAFT_LIMIT should fail because of exceeding
         // the organization quota
         val exception = assertThrows<StatusException> { appDraftService.createAppDraft(request) }
-        assertEquals(exception.status.code, Status.Code.RESOURCE_EXHAUSTED)
+        assertEquals(Status.Code.RESOURCE_EXHAUSTED, exception.status.code)
     }
 
     @Test
