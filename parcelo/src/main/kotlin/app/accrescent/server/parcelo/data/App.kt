@@ -63,6 +63,37 @@ class App(
                 .project(AppDefaultListingLanguage::class.java)
                 .list()
         }
+
+        fun findForUserByQuery(userId: UUID, pageSize: UInt, afterAppId: String?): List<App> {
+            return if (afterAppId == null) {
+                find(
+                    "FROM App apps " +
+                            "JOIN OrganizationAcl organization_acls " +
+                            "ON organization_acls.organizationId = apps.organizationId " +
+                            "AND organization_acls.userId = ?1 " +
+                            "WHERE organization_acls.userId = ?1 " +
+                            "AND organization_acls.canViewApps = true " +
+                            "ORDER BY apps.id ASC LIMIT ?2",
+                    userId,
+                    pageSize.toLong(),
+                )
+            } else {
+                find(
+                    "FROM App apps " +
+                            "JOIN OrganizationAcl organization_acls " +
+                            "ON organization_acls.organizationId = apps.organizationId " +
+                            "AND organization_acls.userId = ?1 " +
+                            "WHERE organization_acls.userId = ?1 " +
+                            "AND organization_acls.canViewApps = true " +
+                            "AND apps.id > ?2 " +
+                            "ORDER BY apps.id ASC LIMIT ?3",
+                    userId,
+                    afterAppId,
+                    pageSize.toLong(),
+                )
+            }
+                .list()
+        }
     }
 }
 

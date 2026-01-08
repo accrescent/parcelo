@@ -17,6 +17,7 @@ import app.accrescent.appstore.publish.v1alpha1.GetAppDraftRequest
 import app.accrescent.appstore.publish.v1alpha1.GetAppDraftUploadInfoRequest
 import app.accrescent.appstore.publish.v1alpha1.GetAppRequest
 import app.accrescent.appstore.publish.v1alpha1.GetSelfRequest
+import app.accrescent.appstore.publish.v1alpha1.ListAppsRequest
 import app.accrescent.appstore.publish.v1alpha1.ListMyOrganizationsRequest
 import app.accrescent.appstore.publish.v1alpha1.PublishAppDraftRequest
 import app.accrescent.appstore.publish.v1alpha1.SubmitAppDraftRequest
@@ -62,6 +63,7 @@ class GrpcRequestValidationInterceptor : ServerInterceptor {
                 GetAppUpdateInfoRequest.getDescriptor(),
                 GetSelfRequest.getDescriptor(),
                 ListAppListingsRequest.getDescriptor(),
+                ListAppsRequest.getDescriptor(),
                 ListMyOrganizationsRequest.getDescriptor(),
                 PublishAppDraftRequest.getDescriptor(),
                 SubmitAppDraftRequest.getDescriptor(),
