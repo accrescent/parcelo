@@ -9,9 +9,9 @@ package accrescent.parcelo.impl.v1;
 option java_multiple_files = true;
 option java_package = "app.accrescent.parcelo.impl.v1";
 
-// A "next page" token returned in ListMyOrganizationsResponse.
-message ListMyOrganizationsPageToken {
-  // The last organization ID returned in the ListMyOrganizationsResponse.
+// A "next page" token returned in ListOrganizationsResponse.
+message ListOrganizationsPageToken {
+  // The last organization ID returned in the ListOrganizationsResponse.
   // Required.
   optional string last_organization_id = 1;
 }
