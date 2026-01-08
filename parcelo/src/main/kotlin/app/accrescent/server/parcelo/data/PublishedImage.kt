@@ -21,9 +21,9 @@ class PublishedImage(
     @Id
     val id: UUID,
 
-    @Column(name = "bucket_id", nullable = false)
+    @Column(columnDefinition = "text", name = "bucket_id", nullable = false)
     val bucketId: String,
 
-    @Column(name = "object_id", nullable = false)
+    @Column(columnDefinition = "text", name = "object_id", nullable = false)
     val objectId: String,
 ) : PanacheEntityBase
