@@ -12,7 +12,7 @@ import jakarta.persistence.Id
 import jakarta.persistence.Table
 import java.util.UUID
 
-private const val DEFAULT_APP_DRAFT_LIMIT = 3
+private const val DEFAULT_ACTIVE_APP_DRAFT_LIMIT = 3
 
 @Entity
 @Table(name = "organizations")
@@ -20,8 +20,8 @@ class Organization(
     @Id
     val id: UUID,
 ) : PanacheEntityBase {
-    @Column(name = "app_draft_limit", nullable = false)
-    val appDraftLimit = DEFAULT_APP_DRAFT_LIMIT
+    @Column(name = "active_app_draft_limit", nullable = false)
+    val activeAppDraftLimit = DEFAULT_ACTIVE_APP_DRAFT_LIMIT
 
     companion object : PanacheCompanionBase<Organization, UUID> {
         fun findForUserByQuery(

@@ -154,7 +154,7 @@ CREATE TABLE organization_acls (
 );
 
 CREATE TABLE organizations (
-    app_draft_limit integer NOT NULL,
+    active_app_draft_limit integer NOT NULL,
     id uuid NOT NULL,
     PRIMARY KEY (id)
 );

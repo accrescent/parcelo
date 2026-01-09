@@ -29,7 +29,7 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 
-private const val ORGANIZATION_APP_DRAFT_LIMIT = 3
+private const val ORGANIZATION_ACTIVE_APP_DRAFT_LIMIT = 3
 
 private const val ANCIENT_DEVICE_DEVICE_ATTRIBUTES_PATH = "ancient-device-device-attributes.txtpb"
 private const val PIXEL_9_EMULATOR_DEVICE_ATTRIBUTES_PATH = "pixel-9-emulator-device-attributes.txtpb"
@@ -221,15 +221,15 @@ class ApiIT {
             .organizationsList[0]
             .id
 
-        // We should be able to successfully create as many as ORGANIZATION_APP_DRAFT_LIMIT app
-        // drafts without issue
+        // We should be able to successfully create as many as ORGANIZATION_ACTIVE_APP_DRAFT_LIMIT
+        // app drafts without issue
         val request = createAppDraftRequest { this.organizationId = organizationId }
-        repeat(ORGANIZATION_APP_DRAFT_LIMIT) {
+        repeat(ORGANIZATION_ACTIVE_APP_DRAFT_LIMIT) {
             appDraftService.createAppDraft(request)
         }
 
-        // Creating app drafts beyond ORGANIZATION_APP_DRAFT_LIMIT should fail because of exceeding
-        // the organization quota
+        // Creating app drafts beyond ORGANIZATION_ACTIVE_APP_DRAFT_LIMIT should fail because of
+        // exceeding the organization quota
         val exception = assertThrows<StatusException> { appDraftService.createAppDraft(request) }
         assertEquals(Status.Code.RESOURCE_EXHAUSTED, exception.status.code)
     }
