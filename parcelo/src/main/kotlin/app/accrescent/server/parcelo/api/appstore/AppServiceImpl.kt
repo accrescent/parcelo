@@ -38,6 +38,7 @@ import app.accrescent.server.parcelo.data.AppPackage
 import app.accrescent.server.parcelo.data.ListingId
 import app.accrescent.server.parcelo.data.PublishedApk
 import app.accrescent.server.parcelo.data.PublishedImage
+import app.accrescent.server.parcelo.security.GrpcRateLimitInterceptor
 import app.accrescent.server.parcelo.validation.GrpcRequestValidationInterceptor
 import com.android.bundle.Commands
 import com.android.tools.build.bundletool.device.ApkMatcher
@@ -57,6 +58,7 @@ private const val MAX_PAGE_SIZE = 200u
 
 @GrpcService
 @RegisterInterceptor(GrpcRequestValidationInterceptor::class)
+@RegisterInterceptor(GrpcRateLimitInterceptor::class)
 class AppServiceImpl(private val config: ParceloConfig) : AppService {
     @Transactional
     override fun getAppListing(request: GetAppListingRequest): Uni<GetAppListingResponse> {

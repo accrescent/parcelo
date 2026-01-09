@@ -6,6 +6,8 @@ package app.accrescent.server.parcelo.config
 
 import io.smallrye.config.ConfigMapping
 import io.smallrye.config.WithName
+import jakarta.validation.constraints.NotEmpty
+import java.time.Duration
 
 @ConfigMapping(prefix = "parcelo")
 interface ParceloConfig {
@@ -25,6 +27,8 @@ interface ParceloConfig {
 
     fun publishedArtifactBucket(): String
 
+    fun rateLimits(): RateLimits
+
     @WithName("pubsub")
     fun pubSub(): PubSub
 
@@ -37,5 +41,23 @@ interface ParceloConfig {
     interface PubSub {
         fun projectId(): String
         fun subscriptionName(): String
+    }
+
+    interface RateLimit {
+        fun period(): Duration
+        fun requests(): Long
+    }
+
+    interface RateLimitBucket {
+        fun version(): Long
+
+        @NotEmpty
+        fun limits(): Map<String, RateLimit>
+    }
+
+    interface RateLimits {
+        fun authenticated(): RateLimitBucket
+
+        fun unauthenticated(): RateLimitBucket
     }
 }

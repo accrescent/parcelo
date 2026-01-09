@@ -56,6 +56,7 @@ import app.accrescent.server.parcelo.publish.PublishService
 import app.accrescent.server.parcelo.publish.PublishedIcon
 import app.accrescent.server.parcelo.security.AuthnContextKey
 import app.accrescent.server.parcelo.security.GrpcAuthenticationInterceptor
+import app.accrescent.server.parcelo.security.GrpcRateLimitInterceptor
 import app.accrescent.server.parcelo.security.PermissionService
 import app.accrescent.server.parcelo.util.TempFile
 import app.accrescent.server.parcelo.util.apkPaths
@@ -88,6 +89,7 @@ private const val DOWNLOAD_URL_EXPIRATION_SECONDS = 30L
 @GrpcService
 @RegisterInterceptor(GrpcAuthenticationInterceptor::class)
 @RegisterInterceptor(GrpcRequestValidationInterceptor::class)
+@RegisterInterceptor(GrpcRateLimitInterceptor::class)
 class AppDraftServiceImpl @Inject constructor(
     private val config: ParceloConfig,
     private val publishService: PublishService,
