@@ -4,12 +4,14 @@
 
 package app.accrescent.server.parcelo.security
 
+import app.accrescent.appstore.publish.v1alpha1.AppDraftServiceGrpc
 import app.accrescent.server.parcelo.config.ParceloConfig
 import app.accrescent.server.parcelo.security.Principal.IpAddress
 import app.accrescent.server.parcelo.security.Principal.User
 import io.agroal.api.AgroalDataSource
 import io.github.bucket4j.BucketConfiguration
 import io.github.bucket4j.TokensInheritanceStrategy
+import io.github.bucket4j.distributed.BucketProxy
 import io.github.bucket4j.distributed.ExpirationAfterWriteStrategy
 import io.github.bucket4j.distributed.jdbc.PrimaryKeyMapper
 import io.github.bucket4j.postgresql.Bucket4jPostgreSQL
@@ -48,6 +50,11 @@ private class GrpcRateLimitInterceptorImpl(
     private companion object {
         private val BUCKET_KEEP_AFTER_REFILL_DURATION = Duration.ofSeconds(30)
         private val LOG = Logger.getLogger(GrpcRateLimitInterceptorImpl::class.java)
+
+        private val UPLOAD_APIS_METHODS = setOf(
+            AppDraftServiceGrpc.getGetAppDraftUploadInfoMethod().fullMethodName,
+            AppDraftServiceGrpc.getGetAppDraftListingIconUploadInfoMethod().fullMethodName,
+        )
     }
 
     private val proxyManager = Bucket4jPostgreSQL
@@ -89,31 +96,35 @@ private class GrpcRateLimitInterceptorImpl(
             is IpAddress -> config.rateLimits().unauthenticated()
             is User -> config.rateLimits().authenticated()
         }
-        val bucket = proxyManager
-            .builder()
-            .withImplicitConfigurationReplacement(
-                rateLimitConfig.version(),
-                TokensInheritanceStrategy.PROPORTIONALLY,
-            )
-            .build(principal.bucketKey()) {
-                val configBuilder = BucketConfiguration.builder()
-                for ((id, limit) in rateLimitConfig.limits()) {
-                    configBuilder.addLimit {
-                        it
-                            .capacity(limit.requests())
-                            .refillGreedy(limit.requests(), limit.period())
-                            .id(id)
-                    }
-                }
-                configBuilder.build()
-            }
+        val userBucket = getBucket(rateLimitConfig, principal.bucketKey())
 
-        return if (bucket.tryConsume(1)) {
-            next.startCall(call, headers)
-        } else {
+        // Apply per-user rate limit
+        if (!userBucket.tryConsume(1)) {
             call.close(Status.RESOURCE_EXHAUSTED.withDescription("rate limit exceeded"), Metadata())
             object : ServerCall.Listener<ReqT>() {}
         }
+
+        // Apply API-specific rate limits
+        val methodId = call.methodDescriptor.fullMethodName
+        if (UPLOAD_APIS_METHODS.contains(methodId)) {
+            val rateLimitConfig = config.rateLimits().uploadApis()
+            val bucketKey = "${principal.bucketKey()}|$methodId"
+            val methodBucket = getBucket(rateLimitConfig, bucketKey)
+
+            if (!methodBucket.tryConsume(1)) {
+                // Return the previously consumed token to the user bucket since this request is
+                // rejected
+                userBucket.addTokens(1)
+
+                call.close(
+                    Status.RESOURCE_EXHAUSTED.withDescription("rate limit exceeded"),
+                    Metadata(),
+                )
+                object : ServerCall.Listener<ReqT>() {}
+            }
+        }
+
+        return next.startCall(call, headers)
     }
 
     @Scheduled(every = REMOVE_EXPIRED_BUCKET_JOB_PERIOD)
@@ -130,6 +141,16 @@ private class GrpcRateLimitInterceptorImpl(
             }
         } while (removed > REMOVED_EXPIRED_BUCKET_CONTINUE_THRESHOLD)
     }
+
+    private fun getBucket(config: ParceloConfig.RateLimitBucket, key: String): BucketProxy {
+        return proxyManager
+            .builder()
+            .withImplicitConfigurationReplacement(
+                config.version(),
+                TokensInheritanceStrategy.PROPORTIONALLY,
+            )
+            .build(key) { config.toBucketConfiguration() }
+    }
 }
 
 private sealed class Principal {
@@ -142,4 +163,18 @@ private sealed class Principal {
             is User -> "user|$userId"
         }
     }
+}
+
+private fun ParceloConfig.RateLimitBucket.toBucketConfiguration(): BucketConfiguration {
+    val configBuilder = BucketConfiguration.builder()
+    for ((id, limit) in this.limits()) {
+        configBuilder.addLimit {
+            it
+                .capacity(limit.requests())
+                .refillGreedy(limit.requests(), limit.period())
+                .id(id)
+        }
+    }
+
+    return configBuilder.build()
 }
