@@ -9,6 +9,7 @@ apksig = "8.13.1"
 app-publishing-api = "e03afa1f8a2f4f1c801c34192c97ed37"
 appstore-api = "v1.0.3"
 arrow = "2.2.0"
+bucket4j = "8.16.0"
 buf = "0.10.3"
 bundletool = "1.18.2"
 google-cloud-libraries-bom = "26.71.0"
@@ -24,6 +25,7 @@ apkanalyzer = { module = "com.android.tools.apkparser:apkanalyzer", version.ref 
 apksig = { module = "com.android.tools.build:apksig", version.ref = "apksig" }
 arrow-core = { module = "io.arrow-kt:arrow-core", version.ref = "arrow" }
 awaitility = { module = "org.awaitility:awaitility" }
+bucket4j-postgresql = { module = "com.bucket4j:bucket4j_jdk17-postgresql", version.ref = "bucket4j" }
 bundletool = { module = "com.android.tools.build:bundletool", version.ref = "bundletool" }
 flyway-database-postgresql = { module = "org.flywaydb:flyway-database-postgresql" }
 google-cloud-libraries-bom = { module = "com.google.cloud:libraries-bom", version.ref = "google-cloud-libraries-bom" }
@@ -46,6 +48,7 @@ quarkus-extension-processor = { module = "io.quarkus:quarkus-extension-processor
 quarkus-flyway = { module = "io.quarkus:quarkus-flyway" }
 quarkus-grpc = { module = "io.quarkus:quarkus-grpc" }
 quarkus-hibernate-orm-panache-kotlin = { module = "io.quarkus:quarkus-hibernate-orm-panache-kotlin" }
+quarkus-hibernate-validator = { module = "io.quarkus:quarkus-hibernate-validator" }
 quarkus-jaxb = { module = "io.quarkus:quarkus-jaxb" }
 quarkus-jdbc-postgresql = { module = "io.quarkus:quarkus-jdbc-postgresql" }
 quarkus-junit5 = { module = "io.quarkus:quarkus-junit5" }
@@ -54,6 +57,7 @@ quarkus-mailer = { module = "io.quarkus:quarkus-mailer" }
 quarkus-oidc = { module = "io.quarkus:quarkus-oidc" }
 quarkus-qute = { module = "io.quarkus:quarkus-qute" }
 quarkus-rest-jackson = { module = "io.quarkus:quarkus-rest-jackson" }
+quarkus-scheduler = { module = "io.quarkus:quarkus-scheduler" }
 rest-assured = { module = "io.rest-assured:rest-assured" }
 testcontainers = { module = "org.testcontainers:testcontainers"  }
 testcontainers-gcloud = { module = "org.testcontainers:gcloud" }

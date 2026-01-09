@@ -17,6 +17,7 @@ import app.accrescent.parcelo.impl.v1.listAppsPageToken
 import app.accrescent.server.parcelo.data.App
 import app.accrescent.server.parcelo.security.AuthnContextKey
 import app.accrescent.server.parcelo.security.GrpcAuthenticationInterceptor
+import app.accrescent.server.parcelo.security.GrpcRateLimitInterceptor
 import app.accrescent.server.parcelo.security.PermissionService
 import app.accrescent.server.parcelo.validation.GrpcRequestValidationInterceptor
 import com.google.protobuf.InvalidProtocolBufferException
@@ -33,6 +34,7 @@ private const val MAX_PAGE_SIZE = 50u
 @GrpcService
 @RegisterInterceptor(GrpcAuthenticationInterceptor::class)
 @RegisterInterceptor(GrpcRequestValidationInterceptor::class)
+@RegisterInterceptor(GrpcRateLimitInterceptor::class)
 class AppServiceImpl : AppService {
     @Transactional
     override fun getApp(request: GetAppRequest): Uni<GetAppResponse> {

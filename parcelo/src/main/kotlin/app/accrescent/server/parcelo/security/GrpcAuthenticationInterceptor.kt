@@ -16,11 +16,20 @@ import io.grpc.Status
 import io.vertx.core.Vertx
 import io.vertx.grpc.BlockingServerInterceptor
 import jakarta.enterprise.context.ApplicationScoped
+import jakarta.enterprise.inject.spi.Prioritized
 
 @ApplicationScoped
 class GrpcAuthenticationInterceptor(
     private val vertx: Vertx,
-) : ServerInterceptor by BlockingServerInterceptor.wrap(vertx, GrpcAuthenticationInterceptorImpl)
+) : ServerInterceptor by BlockingServerInterceptor.wrap(vertx, GrpcAuthenticationInterceptorImpl),
+    Prioritized {
+    // The authentication interceptor should run before all other interceptors if present so that
+    // the user ID it injects into the gRPC context is available to other interceptors, e.g., the
+    // rate limiting interceptor
+    override fun getPriority(): Int {
+        return 1
+    }
+}
 
 private object GrpcAuthenticationInterceptorImpl : ServerInterceptor {
     private val AUTHORIZATION_HEADER_KEY =

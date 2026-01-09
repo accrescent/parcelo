@@ -14,6 +14,7 @@ import app.accrescent.parcelo.impl.v1.listOrganizationsPageToken
 import app.accrescent.server.parcelo.data.Organization
 import app.accrescent.server.parcelo.security.AuthnContextKey
 import app.accrescent.server.parcelo.security.GrpcAuthenticationInterceptor
+import app.accrescent.server.parcelo.security.GrpcRateLimitInterceptor
 import app.accrescent.server.parcelo.validation.GrpcRequestValidationInterceptor
 import com.google.protobuf.InvalidProtocolBufferException
 import io.grpc.Status
@@ -30,6 +31,7 @@ private const val MAX_PAGE_SIZE = 50u
 @GrpcService
 @RegisterInterceptor(GrpcAuthenticationInterceptor::class)
 @RegisterInterceptor(GrpcRequestValidationInterceptor::class)
+@RegisterInterceptor(GrpcRateLimitInterceptor::class)
 class OrganizationServiceImpl : OrganizationService {
     @Transactional
     override fun listOrganizations(

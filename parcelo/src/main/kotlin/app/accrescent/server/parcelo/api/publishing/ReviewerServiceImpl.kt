@@ -13,6 +13,7 @@ import app.accrescent.server.parcelo.data.Reviewer
 import app.accrescent.server.parcelo.data.User
 import app.accrescent.server.parcelo.security.AuthnContextKey
 import app.accrescent.server.parcelo.security.GrpcAuthenticationInterceptor
+import app.accrescent.server.parcelo.security.GrpcRateLimitInterceptor
 import app.accrescent.server.parcelo.validation.GrpcRequestValidationInterceptor
 import io.grpc.Status
 import io.quarkus.grpc.GrpcService
@@ -25,6 +26,7 @@ import java.util.UUID
 @GrpcService
 @RegisterInterceptor(GrpcAuthenticationInterceptor::class)
 @RegisterInterceptor(GrpcRequestValidationInterceptor::class)
+@RegisterInterceptor(GrpcRateLimitInterceptor::class)
 class ReviewerServiceImpl @Inject constructor(val config: ParceloConfig) : ReviewerService {
     @Transactional
     override fun createReviewer(request: CreateReviewerRequest): Uni<CreateReviewerResponse> {

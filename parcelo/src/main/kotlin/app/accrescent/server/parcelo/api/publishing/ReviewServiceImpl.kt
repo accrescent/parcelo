@@ -15,6 +15,7 @@ import app.accrescent.server.parcelo.data.RejectionReason
 import app.accrescent.server.parcelo.data.Review
 import app.accrescent.server.parcelo.security.AuthnContextKey
 import app.accrescent.server.parcelo.security.GrpcAuthenticationInterceptor
+import app.accrescent.server.parcelo.security.GrpcRateLimitInterceptor
 import app.accrescent.server.parcelo.security.PermissionService
 import app.accrescent.server.parcelo.validation.GrpcRequestValidationInterceptor
 import io.grpc.Status
@@ -28,6 +29,7 @@ import java.util.UUID
 @GrpcService
 @RegisterInterceptor(GrpcAuthenticationInterceptor::class)
 @RegisterInterceptor(GrpcRequestValidationInterceptor::class)
+@RegisterInterceptor(GrpcRateLimitInterceptor::class)
 class ReviewServiceImpl : ReviewService {
     @JvmRecord
     data class AppDraftAssignedToYouForPublishingEmail(
