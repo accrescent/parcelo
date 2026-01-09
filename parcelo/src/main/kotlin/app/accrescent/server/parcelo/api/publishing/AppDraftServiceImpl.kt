@@ -126,21 +126,21 @@ class AppDraftServiceImpl @Inject constructor(
                 .asRuntimeException()
         }
 
-        val orgAppDraftLimit = Organization
+        val orgActiveAppDraftLimit = Organization
             .findById(organizationId, LockModeType.PESSIMISTIC_WRITE)
-            ?.appDraftLimit
+            ?.activeAppDraftLimit
             ?: run {
                 throw Status
                     .NOT_FOUND
                     .withDescription("organization \"${request.organizationId}\" not found")
                     .asRuntimeException()
             }
-        val orgAppDraftCount = AppDraft.countInOrganization(organizationId)
-        if (orgAppDraftCount >= orgAppDraftLimit) {
+        val orgActiveAppDraftCount = AppDraft.countActiveInOrganization(organizationId)
+        if (orgActiveAppDraftCount >= orgActiveAppDraftLimit) {
             throw Status
                 .RESOURCE_EXHAUSTED
                 .withDescription(
-                    "organization limit of $orgAppDraftLimit app drafts already reached"
+                    "organization limit of $orgActiveAppDraftLimit active app drafts already reached"
                 )
                 .asRuntimeException()
         }

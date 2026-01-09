@@ -90,8 +90,20 @@ class AppDraft(
     }
 
     companion object : PanacheCompanionBase<AppDraft, UUID> {
-        fun countInOrganization(organizationId: UUID): Long {
-            return count("WHERE organizationId = ?1", organizationId)
+        fun countActiveInOrganization(organizationId: UUID): Long {
+            // An app draft is considered active if it is not in a terminal state. The terminal
+            // states are:
+            //
+            // - Published
+            // - Reviewed with a rejection
+            return count(
+                "LEFT JOIN Review reviews " +
+                        "ON reviews.id = reviewId " +
+                        "WHERE organizationId = ?1 " +
+                        "AND published = false " +
+                        "AND (reviews.approved IS NULL OR reviews.approved = false)",
+                organizationId,
+            )
         }
 
         fun findByProcessingJobBucketIdAndObjectId(bucketId: String, objectId: String): AppDraft? {
