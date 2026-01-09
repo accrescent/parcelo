@@ -59,5 +59,7 @@ interface ParceloConfig {
         fun authenticated(): RateLimitBucket
 
         fun unauthenticated(): RateLimitBucket
+
+        fun uploadApis(): RateLimitBucket
     }
 }
