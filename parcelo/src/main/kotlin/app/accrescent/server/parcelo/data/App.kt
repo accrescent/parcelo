@@ -41,6 +41,10 @@ class App(
     lateinit var appPackage: AppPackage
 
     companion object : PanacheCompanionBase<App, String> {
+        fun countInOrganization(organizationId: UUID): Long {
+            return count("WHERE organizationId = ?1", organizationId)
+        }
+
         fun existsById(id: String): Boolean {
             return count("WHERE id = ?1", id) > 0
         }

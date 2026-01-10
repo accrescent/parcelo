@@ -380,6 +380,8 @@ class AppDraftServiceImpl @Inject constructor(
             .withDescription("draft must have a package uploaded before it can be submitted")
             .asRuntimeException()
         val defaultListingLanguage = appDraft.defaultListingLanguage
+        val orgPublishedAppLimit = appDraft.organization.publishedAppLimit
+        val orgPublishedAppCount = App.countInOrganization(appDraft.organizationId)
         when {
             defaultListingLanguage == null -> throw Status
                 .FAILED_PRECONDITION
@@ -407,6 +409,13 @@ class AppDraftServiceImpl @Inject constructor(
                 .ALREADY_EXISTS
                 .withDescription(
                     "a draft has already been submitted for app ID \"${appPackage.appId}\""
+                )
+                .asRuntimeException()
+
+            orgPublishedAppCount >= orgPublishedAppLimit -> throw Status
+                .RESOURCE_EXHAUSTED
+                .withDescription(
+                    "organization limit of $orgPublishedAppLimit published apps already reached"
                 )
                 .asRuntimeException()
         }

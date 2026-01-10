@@ -17,6 +17,8 @@ include(
     "quarkus-minio-deployment",
     "quarkus-minio-devservices",
     "testdata:android-app-valid",
+    "testdata:android-app-valid2",
+    "testdata:android-app-valid3",
 )
 
 dependencyResolutionManagement {

@@ -30,6 +30,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 
 private const val ORGANIZATION_ACTIVE_APP_DRAFT_LIMIT = 3
+private const val ORGANIZATION_PUBLISHED_APP_LIMIT = 1
 
 private const val ANCIENT_DEVICE_DEVICE_ATTRIBUTES_PATH = "ancient-device-device-attributes.txtpb"
 private const val PIXEL_9_EMULATOR_DEVICE_ATTRIBUTES_PATH = "pixel-9-emulator-device-attributes.txtpb"
@@ -277,5 +278,23 @@ class ApiIT {
 
         // Assert that the developer can't access the app
         assertEquals(0, apps.size)
+    }
+
+    @Test
+    fun developerTriesToPublishAppsBeyondOrgLimit() {
+        // We should be able to publish as many as ORGANIZATION_PUBLISHED_APP_LIMIT apps without
+        // issue
+        ApiUtils.publishApp("user3", "reviewer1", "publisher1", "valid2")
+
+        val exception = assertThrows<StatusException> {
+            ApiUtils.publishApp("user3", "reviewer1", "publisher1", "valid3")
+        }
+
+        // Assert that the organization quota is enforced
+        assertEquals(Status.Code.RESOURCE_EXHAUSTED, exception.status.code)
+        assertEquals(
+            "organization limit of $ORGANIZATION_PUBLISHED_APP_LIMIT published apps already reached",
+            exception.status.description,
+        )
     }
 }

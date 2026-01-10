@@ -60,6 +60,8 @@ dependencies {
     testImplementation(libs.quarkus.junit5)
     testImplementation(libs.rest.assured)
     testApkSets(project(":testdata:android-app-valid"))
+    testApkSets(project(":testdata:android-app-valid2"))
+    testApkSets(project(":testdata:android-app-valid3"))
 }
 
 group = "app.accrescent.server"
