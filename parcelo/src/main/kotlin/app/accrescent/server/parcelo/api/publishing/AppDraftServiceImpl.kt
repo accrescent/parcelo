@@ -28,6 +28,7 @@ import app.accrescent.appstore.publish.v1alpha1.SubmitAppDraftResponse
 import app.accrescent.appstore.publish.v1alpha1.UpdateAppDraftRequest
 import app.accrescent.appstore.publish.v1alpha1.UpdateAppDraftResponse
 import app.accrescent.appstore.publish.v1alpha1.appDraft
+import app.accrescent.appstore.publish.v1alpha1.appPackage
 import app.accrescent.appstore.publish.v1alpha1.createAppDraftListingResponse
 import app.accrescent.appstore.publish.v1alpha1.createAppDraftResponse
 import app.accrescent.appstore.publish.v1alpha1.deleteAppDraftListingResponse
@@ -202,6 +203,14 @@ class AppDraftServiceImpl @Inject constructor(
             draft = appDraft {
                 id = appDraft.id.toString()
                 submitted = appDraft.submitted
+                appDraft.appPackage?.let { pkg ->
+                    appPackage = appPackage {
+                        appId = pkg.appId
+                        versionCode = pkg.versionCode.toLong()
+                        versionName = pkg.versionName
+                        targetSdk = pkg.targetSdk.toLong()
+                    }
+                }
             }
         }
 
