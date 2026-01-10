@@ -9,6 +9,7 @@ import app.accrescent.appstore.publish.v1alpha1.createPublisherRequest
 import app.accrescent.appstore.publish.v1alpha1.createReviewerRequest
 import app.accrescent.appstore.publish.v1alpha1.getAppRequest
 import app.accrescent.appstore.publish.v1alpha1.getSelfRequest
+import app.accrescent.appstore.publish.v1alpha1.listAppDraftsRequest
 import app.accrescent.appstore.publish.v1alpha1.listAppsRequest
 import app.accrescent.appstore.publish.v1alpha1.listOrganizationsRequest
 import app.accrescent.appstore.v1.DeviceAttributes
@@ -296,5 +297,24 @@ class ApiIT {
             "organization limit of $ORGANIZATION_PUBLISHED_APP_LIMIT published apps already reached",
             exception.status.description,
         )
+    }
+
+    @Test
+    fun developerListsAppDraftsWithAuthorizationForOne() {
+        val token = ApiUtils.generateSessionToken("user4")
+        val appDraftService = ApiUtils.getAppDraftServiceStub(token)
+        val organizationService = ApiUtils.getOrganizationServiceStub(token)
+        val organizationId = organizationService
+            .listOrganizations(listOrganizationsRequest {})
+            .organizationsList[0]
+            .id
+
+        val request = createAppDraftRequest { this.organizationId = organizationId }
+        appDraftService.createAppDraft(request)
+
+        val appDrafts = appDraftService.listAppDrafts(listAppDraftsRequest {}).appDraftsList
+
+        // Assert that only the newly created app draft is returned
+        assertEquals(1, appDrafts.size)
     }
 }

@@ -119,6 +119,41 @@ class AppDraft(
                 .firstResult()
         }
 
+        fun findForUserByQuery(
+            userId: UUID,
+            pageSize: UInt,
+            afterAppDraftId: UUID?,
+        ): List<AppDraft> {
+            return if (afterAppDraftId == null) {
+                find(
+                    "FROM AppDraft app_drafts " +
+                            "JOIN AppDraftAcl app_draft_acls " +
+                            "ON app_draft_acls.appDraftId = app_drafts.id " +
+                            "AND app_draft_acls.userId = ?1 " +
+                            "WHERE app_draft_acls.userId = ?1 " +
+                            "AND app_draft_acls.canView = true " +
+                            "ORDER BY app_drafts.id ASC LIMIT ?2",
+                    userId,
+                    pageSize.toLong(),
+                )
+            } else {
+                find(
+                    "FROM AppDraft app_drafts " +
+                            "JOIN AppDraftAcl app_draft_acls " +
+                            "ON app_draft_acls.appDraftId = app_drafts.id " +
+                            "AND app_draft_acls.userId = ?1 " +
+                            "WHERE app_draft_acls.userId = ?1 " +
+                            "AND app_draft_acls.canView = true " +
+                            "AND app_drafts.id > ?2 " +
+                            "ORDER BY app_drafts.id ASC LIMIT ?3",
+                    userId,
+                    afterAppDraftId,
+                    pageSize.toLong(),
+                )
+            }
+                .list()
+        }
+
         fun submittedDraftExistsWithAppId(appId: String): Boolean {
             return count(
                 "FROM AppDraft app_drafts " +
