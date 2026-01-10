@@ -21,6 +21,8 @@ import app.accrescent.appstore.publish.v1alpha1.GetAppDraftRequest
 import app.accrescent.appstore.publish.v1alpha1.GetAppDraftResponse
 import app.accrescent.appstore.publish.v1alpha1.GetAppDraftUploadInfoRequest
 import app.accrescent.appstore.publish.v1alpha1.GetAppDraftUploadInfoResponse
+import app.accrescent.appstore.publish.v1alpha1.ListAppDraftsRequest
+import app.accrescent.appstore.publish.v1alpha1.ListAppDraftsResponse
 import app.accrescent.appstore.publish.v1alpha1.PublishAppDraftRequest
 import app.accrescent.appstore.publish.v1alpha1.PublishAppDraftResponse
 import app.accrescent.appstore.publish.v1alpha1.SubmitAppDraftRequest
@@ -37,9 +39,12 @@ import app.accrescent.appstore.publish.v1alpha1.getAppDraftDownloadInfoResponse
 import app.accrescent.appstore.publish.v1alpha1.getAppDraftListingIconUploadInfoResponse
 import app.accrescent.appstore.publish.v1alpha1.getAppDraftResponse
 import app.accrescent.appstore.publish.v1alpha1.getAppDraftUploadInfoResponse
+import app.accrescent.appstore.publish.v1alpha1.listAppDraftsResponse
 import app.accrescent.appstore.publish.v1alpha1.publishAppDraftResponse
 import app.accrescent.appstore.publish.v1alpha1.submitAppDraftResponse
 import app.accrescent.appstore.publish.v1alpha1.updateAppDraftResponse
+import app.accrescent.parcelo.impl.v1.ListAppDraftsPageToken
+import app.accrescent.parcelo.impl.v1.listAppDraftsPageToken
 import app.accrescent.server.parcelo.config.ParceloConfig
 import app.accrescent.server.parcelo.data.App
 import app.accrescent.server.parcelo.data.AppDraft
@@ -80,12 +85,16 @@ import jakarta.transaction.Transactional
 import java.time.OffsetDateTime
 import java.util.UUID
 import java.util.concurrent.TimeUnit
+import kotlin.io.encoding.Base64
 import kotlin.io.path.Path
 
 // 1 GiB
 private const val MAX_APK_SET_SIZE_BYTES = 1073741824
 private const val UPLOAD_URL_EXPIRATION_SECONDS = 30L
 private const val DOWNLOAD_URL_EXPIRATION_SECONDS = 30L
+
+private const val DEFAULT_PAGE_SIZE = 50u
+private const val MAX_PAGE_SIZE = 50u
 
 @GrpcService
 @RegisterInterceptor(GrpcAuthenticationInterceptor::class)
@@ -212,6 +221,68 @@ class AppDraftServiceImpl @Inject constructor(
                     }
                 }
             }
+        }
+
+        return Uni.createFrom().item { response }
+    }
+
+    @Transactional
+    override fun listAppDrafts(request: ListAppDraftsRequest): Uni<ListAppDraftsResponse> {
+        val userId = AuthnContextKey.USER_ID.get()
+
+        val pageSize = if (request.hasPageSize() && request.pageSize != 0) {
+            request.pageSize.toUInt().coerceAtMost(MAX_PAGE_SIZE)
+        } else {
+            DEFAULT_PAGE_SIZE
+        }
+        val lastAppDraftId = if (request.hasPageToken()) {
+            try {
+                val tokenBytes = Base64.UrlSafe.decode(request.pageToken)
+                val pageToken = ListAppDraftsPageToken.parseFrom(tokenBytes)
+                if (!pageToken.hasLastAppDraftId()) {
+                    throw invalidPageTokenError
+                }
+
+                UUID.fromString(pageToken.lastAppDraftId)
+            } catch (_: IllegalArgumentException) {
+                throw invalidPageTokenError
+            } catch (_: InvalidProtocolBufferException) {
+                throw invalidPageTokenError
+            }
+        } else {
+            null
+        }
+
+        val appDrafts = AppDraft
+            .findForUserByQuery(userId, pageSize, lastAppDraftId)
+            .map { appDraft ->
+                appDraft {
+                    id = appDraft.id.toString()
+                    submitted = appDraft.submitted
+                    appDraft.appPackage?.let { pkg ->
+                        appPackage = appPackage {
+                            appId = pkg.appId
+                            versionCode = pkg.versionCode.toLong()
+                            versionName = pkg.versionName
+                            targetSdk = pkg.targetSdk.toLong()
+                        }
+                    }
+                }
+            }
+
+        val response = if (appDrafts.isNotEmpty()) {
+            // Set a page token indicating there may be more results
+            val pageToken = listAppDraftsPageToken {
+                this.lastAppDraftId = appDrafts.last().id
+            }
+            val encodedPageToken = Base64.UrlSafe.encode(pageToken.toByteArray())
+
+            listAppDraftsResponse {
+                this.appDrafts.addAll(appDrafts)
+                nextPageToken = encodedPageToken
+            }
+        } else {
+            listAppDraftsResponse {}
         }
 
         return Uni.createFrom().item { response }
@@ -827,5 +898,12 @@ class AppDraftServiceImpl @Inject constructor(
         appDraft.published = true
 
         return Uni.createFrom().item { publishAppDraftResponse {} }
+    }
+
+    private companion object {
+        private val invalidPageTokenError = Status
+            .INVALID_ARGUMENT
+            .withDescription("provided page token is invalid")
+            .asRuntimeException()
     }
 }
