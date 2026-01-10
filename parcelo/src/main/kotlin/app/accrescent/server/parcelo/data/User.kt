@@ -34,13 +34,16 @@ class User(
             return count("WHERE id = ?1", id) > 0
         }
 
-        fun findByApiKeyHash(hash: String): User? {
+        fun findIdByApiKeyHash(hash: String): UserId? {
             return find(
-                "SELECT api_keys.user " +
-                        "FROM ApiKey api_keys " +
+                "SELECT users.id " +
+                        "FROM User users " +
+                        "JOIN ApiKey api_keys " +
+                        "ON api_keys.userId = users.id " +
                         "WHERE api_keys.apiKeyHash = ?1",
                 hash,
             )
+                .project(UserId::class.java)
                 .firstResult()
         }
 
