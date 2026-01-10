@@ -48,11 +48,11 @@ private object GrpcAuthenticationInterceptorImpl : ServerInterceptor {
         val rawApiKey = rawHeaderValue.removePrefix("Bearer ")
         val hashedApiKey = sha256Hash(rawApiKey.toByteArray())
 
-        val user = User.findByApiKeyHash(hashedApiKey) ?: run {
+        val userId = User.findIdByApiKeyHash(hashedApiKey)?.id ?: run {
             call.close(Status.UNAUTHENTICATED, Metadata())
             return object : ServerCall.Listener<ReqT>() {}
         }
-        val context = Context.current().withValue(AuthnContextKey.USER_ID, user.id)
+        val context = Context.current().withValue(AuthnContextKey.USER_ID, userId)
 
         return Contexts.interceptCall(context, call, headers, next)
     }
