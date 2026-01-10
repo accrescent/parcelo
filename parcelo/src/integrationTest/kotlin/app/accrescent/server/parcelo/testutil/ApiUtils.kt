@@ -14,6 +14,7 @@ import app.accrescent.appstore.publish.v1alpha1.createAppDraftListingRequest
 import app.accrescent.appstore.publish.v1alpha1.createAppDraftRequest
 import app.accrescent.appstore.publish.v1alpha1.createAppDraftReviewRequest
 import app.accrescent.appstore.publish.v1alpha1.getAppDraftListingIconUploadInfoRequest
+import app.accrescent.appstore.publish.v1alpha1.getAppDraftRequest
 import app.accrescent.appstore.publish.v1alpha1.getAppDraftUploadInfoRequest
 import app.accrescent.appstore.publish.v1alpha1.listOrganizationsRequest
 import app.accrescent.appstore.publish.v1alpha1.publishAppDraftRequest
@@ -176,14 +177,13 @@ object ApiUtils {
             .then()
             .statusCode(200)
 
+        // Wait for the package to be processed
+        val getAppDraftRequest = getAppDraftRequest { this.appDraftId = appDraftId }
+        await().until { appDraftService.getAppDraft(getAppDraftRequest).draft.hasAppPackage() }
+
         // Submit the app draft
         val submitAppDraftRequest = submitAppDraftRequest { this.appDraftId = appDraftId }
-        await()
-            .ignoreExceptions()
-            .until {
-                appDraftService.submitAppDraft(submitAppDraftRequest)
-                true
-            }
+        appDraftService.submitAppDraft(submitAppDraftRequest)
 
         // Approve the app draft
         val reviewRequest = createAppDraftReviewRequest {
