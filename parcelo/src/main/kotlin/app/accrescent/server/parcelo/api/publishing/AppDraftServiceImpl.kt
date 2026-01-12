@@ -53,6 +53,7 @@ import app.accrescent.server.parcelo.data.AppDraftListing
 import app.accrescent.server.parcelo.data.AppDraftListingIconUploadJob
 import app.accrescent.server.parcelo.data.AppDraftUploadProcessingJob
 import app.accrescent.server.parcelo.data.AppListing
+import app.accrescent.server.parcelo.data.Image
 import app.accrescent.server.parcelo.data.Organization
 import app.accrescent.server.parcelo.data.OrphanedBlob
 import app.accrescent.server.parcelo.data.PublishedApk
@@ -836,7 +837,7 @@ class AppDraftServiceImpl @Inject constructor(
         // Publish the app's listing icons to an S3-compatible server.
         //
         // This process has the same orphan object guarantees as publishing an APK set's APKs.
-        val publishedIcons = mutableMapOf<String, PublishedIcon>()
+        val publishedIcons = mutableMapOf<String, Pair<Image, PublishedIcon>>()
         for ((listingLanguage, icon) in listingIcons) {
             TempFile(Path(config.packageProcessingDirectory())).use { tempIcon ->
                 try {
@@ -853,7 +854,7 @@ class AppDraftServiceImpl @Inject constructor(
                     listingLanguage = listingLanguage,
                     iconPath = tempIcon.path,
                 )
-                publishedIcons.put(listingLanguage, publishedIcon)
+                publishedIcons.put(listingLanguage, Pair(icon, publishedIcon))
             }
         }
 
@@ -870,18 +871,18 @@ class AppDraftServiceImpl @Inject constructor(
                 .INTERNAL
                 .withDescription("no published icon exists for language \"${draftListing.language}\"")
                 .asRuntimeException()
-            val publishedIcon = PublishedImage(
-                id = UUID.randomUUID(),
-                bucketId = remoteIcon.bucketId,
-                objectId = remoteIcon.objectId,
+            PublishedImage(
+                imageId = remoteIcon.first.id,
+                bucketId = remoteIcon.second.bucketId,
+                objectId = remoteIcon.second.objectId,
             )
-                .also { it.persist() }
+                .persist()
             AppListing(
                 appId = appId,
                 language = draftListing.language,
                 name = draftListing.name,
                 shortDescription = draftListing.shortDescription,
-                iconPublishedImageId = publishedIcon.id,
+                iconImageId = remoteIcon.first.id,
             )
                 .persist()
         }

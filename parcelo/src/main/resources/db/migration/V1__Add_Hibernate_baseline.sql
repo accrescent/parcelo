@@ -16,6 +16,8 @@ CREATE SEQUENCE orphaned_blobs_seq START WITH 1 INCREMENT BY 50;
 
 CREATE SEQUENCE published_apks_seq START WITH 1 INCREMENT BY 50;
 
+CREATE SEQUENCE published_images_seq START WITH 1 INCREMENT BY 50;
+
 CREATE SEQUENCE publishers_seq START WITH 1 INCREMENT BY 50;
 
 CREATE SEQUENCE rejection_reasons_seq START WITH 1 INCREMENT BY 50;
@@ -94,7 +96,7 @@ CREATE TABLE app_drafts (
 
 CREATE TABLE app_listings (
     id bigint NOT NULL,
-    icon_published_image_id uuid NOT NULL,
+    icon_image_id uuid NOT NULL,
     app_id text NOT NULL,
     language text NOT NULL,
     name text NOT NULL,
@@ -182,7 +184,8 @@ CREATE TABLE published_apks (
 );
 
 CREATE TABLE published_images (
-    id uuid NOT NULL,
+    id bigint NOT NULL,
+    image_id uuid NOT NULL,
     bucket_id text NOT NULL,
     object_id text NOT NULL,
     PRIMARY KEY (id),
@@ -285,9 +288,9 @@ ALTER TABLE IF EXISTS app_listings
     REFERENCES apps;
 
 ALTER TABLE IF EXISTS app_listings
-    ADD CONSTRAINT FKi5ryyusyong79scvwwlwmjhxa
-    FOREIGN KEY (icon_published_image_id)
-    REFERENCES published_images;
+    ADD CONSTRAINT FKgtsrchuvmu7hlhbwa4gvg8cr4
+    FOREIGN KEY (icon_image_id)
+    REFERENCES images;
 
 ALTER TABLE IF EXISTS app_package_permissions
     ADD CONSTRAINT FKf7nfokd5ar42vtvc5c4imyh0m
@@ -319,6 +322,11 @@ ALTER TABLE IF EXISTS published_apks
     ADD CONSTRAINT FK300fv1f2yclf74qsap4dbm5p6
     FOREIGN KEY (app_package_id)
     REFERENCES app_packages;
+
+ALTER TABLE IF EXISTS published_images
+    ADD CONSTRAINT FKbnbf68yjoaad3cmsn3lgsejsf
+    FOREIGN KEY (image_id)
+    REFERENCES images;
 
 ALTER TABLE IF EXISTS publishers
     ADD CONSTRAINT FK84mh2dxvfhtrap7uwjxehewg9
