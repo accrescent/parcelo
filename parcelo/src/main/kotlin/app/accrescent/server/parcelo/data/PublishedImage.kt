@@ -4,10 +4,13 @@
 
 package app.accrescent.server.parcelo.data
 
-import io.quarkus.hibernate.orm.panache.kotlin.PanacheEntityBase
+import io.quarkus.hibernate.orm.panache.kotlin.PanacheCompanion
+import io.quarkus.hibernate.orm.panache.kotlin.PanacheEntity
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
-import jakarta.persistence.Id
+import jakarta.persistence.FetchType
+import jakarta.persistence.JoinColumn
+import jakarta.persistence.OneToOne
 import jakarta.persistence.Table
 import jakarta.persistence.UniqueConstraint
 import java.util.UUID
@@ -18,12 +21,30 @@ import java.util.UUID
     uniqueConstraints = [UniqueConstraint(columnNames = ["bucket_id", "object_id"])],
 )
 class PublishedImage(
-    @Id
-    val id: UUID,
+    @Column(name = "image_id", nullable = false)
+    val imageId: UUID,
 
     @Column(columnDefinition = "text", name = "bucket_id", nullable = false)
     val bucketId: String,
 
     @Column(columnDefinition = "text", name = "object_id", nullable = false)
     val objectId: String,
-) : PanacheEntityBase
+) : PanacheEntity() {
+    @OneToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "image_id", insertable = false, updatable = false)
+    lateinit var icon: Image
+
+    companion object : PanacheCompanion<PublishedImage> {
+        fun findIconByAppIdAndListingLanguage(appId: String, language: String): PublishedImage? {
+            return find(
+                "JOIN AppListing app_listings " +
+                        "ON app_listings.iconImageId = imageId " +
+                        "WHERE app_listings.appId = ?1 " +
+                        "AND app_listings.language = ?2",
+                appId,
+                language,
+            )
+                .firstResult()
+        }
+    }
+}

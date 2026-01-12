@@ -34,16 +34,16 @@ class AppListing(
     @Column(columnDefinition = "text", name = "short_description", nullable = false)
     val shortDescription: String,
 
-    @Column(name = "icon_published_image_id", nullable = false)
-    val iconPublishedImageId: UUID,
+    @Column(name = "icon_image_id", nullable = false)
+    val iconImageId: UUID,
 ) : PanacheEntity() {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(insertable = false, updatable = false)
     lateinit var app: App
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "icon_published_image_id", insertable = false, updatable = false)
-    lateinit var icon: PublishedImage
+    @JoinColumn(name = "icon_image_id", insertable = false, updatable = false)
+    lateinit var icon: Image
 
     companion object : PanacheCompanion<AppListing> {
         fun findByAppIdAndLanguage(appId: String, language: String): AppListing? {

@@ -83,6 +83,12 @@ class AppServiceImpl(private val config: ParceloConfig) : AppService {
                 .DATA_LOSS
                 .withDescription("listing for best matching language not found")
                 .asRuntimeException()
+        val publishedIcon = PublishedImage
+            .findIconByAppIdAndListingLanguage(app.id, appListing.language)
+            ?: throw Status
+                .DATA_LOSS
+                .withDescription("published icon for listing \"$bestMatchingLanguage\" not found")
+                .asRuntimeException()
         val response = getAppListingResponse {
             listing = appListing {
                 appId = app.id
@@ -90,7 +96,7 @@ class AppServiceImpl(private val config: ParceloConfig) : AppService {
                 name = appListing.name
                 shortDescription = appListing.shortDescription
                 icon = image {
-                    url = getPublishedIconUrl(appListing.icon)
+                    url = getPublishedIconUrl(publishedIcon)
                 }
             }
         }
@@ -150,13 +156,20 @@ class AppServiceImpl(private val config: ParceloConfig) : AppService {
         val listings = AppListing
             .findByIdsOrdered(bestMatchingLanguages)
             .map {
+                val publishedIcon = PublishedImage
+                    .findIconByAppIdAndListingLanguage(it.appId, it.language)
+                    ?: throw Status
+                        .DATA_LOSS
+                        .withDescription("published icon for listing \"${it.language}\" not found")
+                        .asRuntimeException()
+
                 appListing {
                     appId = it.appId
                     language = it.language
                     name = it.name
                     shortDescription = it.shortDescription
                     icon = image {
-                        url = getPublishedIconUrl(it.icon)
+                        url = getPublishedIconUrl(publishedIcon)
                     }
                 }
             }
