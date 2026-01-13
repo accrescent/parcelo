@@ -94,6 +94,27 @@ CREATE TABLE app_drafts (
     CHECK (review_id IS NOT NULL OR published = false)
 );
 
+CREATE TABLE app_edit_listings (
+    app_edit_id uuid NOT NULL,
+    icon_image_id uuid NOT NULL,
+    id uuid NOT NULL,
+    language text NOT NULL,
+    name text NOT NULL,
+    short_description text NOT NULL,
+    PRIMARY KEY (id),
+    UNIQUE (app_edit_id, language)
+);
+
+CREATE TABLE app_edits (
+    published boolean NOT NULL,
+    app_package_id uuid NOT NULL,
+    id uuid NOT NULL,
+    review_id uuid,
+    app_id text NOT NULL,
+    default_listing_language text NOT NULL,
+    PRIMARY KEY (id)
+);
+
 CREATE TABLE app_listings (
     id bigint NOT NULL,
     icon_image_id uuid NOT NULL,
@@ -129,6 +150,7 @@ CREATE TABLE app_packages (
 );
 
 CREATE TABLE apps (
+    active_edit_limit integer NOT NULL,
     app_package_id uuid NOT NULL,
     organization_id uuid NOT NULL,
     default_listing_language text NOT NULL,
@@ -146,6 +168,7 @@ CREATE TABLE images (
 
 CREATE TABLE organization_acls (
     can_create_app_drafts boolean NOT NULL,
+    can_edit_apps boolean NOT NULL,
     can_view_apps boolean NOT NULL,
     can_view_organization boolean NOT NULL,
     id bigint NOT NULL,
@@ -279,6 +302,31 @@ ALTER TABLE IF EXISTS app_drafts
 
 ALTER TABLE IF EXISTS app_drafts
     ADD CONSTRAINT FK70o7youassq7f5ek48br8nb3x
+    FOREIGN KEY (review_id)
+    REFERENCES reviews;
+
+ALTER TABLE IF EXISTS app_edit_listings
+    ADD CONSTRAINT FK8fmdmeiilyxcwql50l0c2b00m
+    FOREIGN KEY (app_edit_id)
+    REFERENCES app_edits;
+
+ALTER TABLE IF EXISTS app_edit_listings
+    ADD CONSTRAINT FKojyernf1xpkkd6tl2aybighet
+    FOREIGN KEY (icon_image_id)
+    REFERENCES images;
+
+ALTER TABLE IF EXISTS app_edits
+    ADD CONSTRAINT FK37f96egr7eyanbvg9rg5af749
+    FOREIGN KEY (app_id)
+    REFERENCES apps;
+
+ALTER TABLE IF EXISTS app_edits
+    ADD CONSTRAINT FKrywe716r3571orcuhljqnhege
+    FOREIGN KEY (app_package_id)
+    REFERENCES app_packages;
+
+ALTER TABLE IF EXISTS app_edits
+    ADD CONSTRAINT FKqqwaj84ip1g1w08qqfghuhmqw
     FOREIGN KEY (review_id)
     REFERENCES reviews;
 

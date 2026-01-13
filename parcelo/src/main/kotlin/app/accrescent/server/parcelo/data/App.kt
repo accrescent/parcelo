@@ -13,8 +13,11 @@ import jakarta.persistence.FetchType
 import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
+import jakarta.persistence.OneToMany
 import jakarta.persistence.Table
 import java.util.UUID
+
+private const val DEFAULT_ACTIVE_EDIT_LIMIT = 3
 
 @Entity
 @Table(name = "apps")
@@ -32,6 +35,9 @@ class App(
     @Column(name = "app_package_id", nullable = false)
     val appPackageId: UUID,
 ) : PanacheEntityBase {
+    @Column(name = "active_edit_limit", nullable = false)
+    val activeEditLimit = DEFAULT_ACTIVE_EDIT_LIMIT
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(insertable = false, updatable = false)
     lateinit var organization: Organization
@@ -39,6 +45,9 @@ class App(
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "app_package_id", insertable = false, updatable = false)
     lateinit var appPackage: AppPackage
+
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "app")
+    lateinit var listings: Set<AppListing>
 
     companion object : PanacheCompanionBase<App, String> {
         fun countInOrganization(organizationId: UUID): Long {

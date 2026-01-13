@@ -30,6 +30,9 @@ class OrganizationAcl(
     @Column(name = "can_create_app_drafts", nullable = false)
     val canCreateAppDrafts: Boolean,
 
+    @Column(name = "can_edit_apps", nullable = false)
+    val canEditApps: Boolean,
+
     @Column(name = "can_view_apps", nullable = false)
     val canViewApps: Boolean,
 
