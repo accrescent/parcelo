@@ -5,6 +5,7 @@
 package app.accrescent.server.parcelo.testutil
 
 import app.accrescent.appstore.publish.v1alpha1.AppDraftServiceGrpc
+import app.accrescent.appstore.publish.v1alpha1.AppEditServiceGrpc
 import app.accrescent.appstore.publish.v1alpha1.OrganizationServiceGrpc
 import app.accrescent.appstore.publish.v1alpha1.PublisherServiceGrpc
 import app.accrescent.appstore.publish.v1alpha1.ReviewServiceGrpc
@@ -67,6 +68,9 @@ object ApiUtils {
         token: BearerToken,
     ): AppDraftServiceGrpc.AppDraftServiceBlockingV2Stub =
         AppDraftServiceGrpc.newBlockingV2Stub(channel).withCallCredentials(token)
+
+    fun getAppEditServiceStub(token: BearerToken): AppEditServiceGrpc.AppEditServiceBlockingV2Stub =
+        AppEditServiceGrpc.newBlockingV2Stub(channel).withCallCredentials(token)
 
     fun getDevAppServiceStub(token: BearerToken): DevAppServiceGrpc.AppServiceBlockingV2Stub =
         DevAppServiceGrpc.newBlockingV2Stub(channel).withCallCredentials(token)

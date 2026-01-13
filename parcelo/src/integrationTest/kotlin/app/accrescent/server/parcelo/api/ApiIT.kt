@@ -5,6 +5,7 @@
 package app.accrescent.server.parcelo.api
 
 import app.accrescent.appstore.publish.v1alpha1.createAppDraftRequest
+import app.accrescent.appstore.publish.v1alpha1.createAppEditRequest
 import app.accrescent.appstore.publish.v1alpha1.createPublisherRequest
 import app.accrescent.appstore.publish.v1alpha1.createReviewerRequest
 import app.accrescent.appstore.publish.v1alpha1.getAppRequest
@@ -30,6 +31,7 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 
+private const val APP_ACTIVE_EDIT_LIMIT = 3
 private const val ORGANIZATION_ACTIVE_APP_DRAFT_LIMIT = 3
 private const val ORGANIZATION_PUBLISHED_APP_LIMIT = 1
 
@@ -316,5 +318,22 @@ class ApiIT {
 
         // Assert that only the newly created app draft is returned
         assertEquals(1, appDrafts.size)
+    }
+
+    @Test
+    fun developerTriesToCreateAppEditsBeyondAppLimit() {
+        val appEditService = ApiUtils.getAppEditServiceStub(user2Token)
+
+        // We should be able to successfully create as many as APP_ACTIVE_EDIT_LIMIT edits without
+        // issue
+        val request = createAppEditRequest { appId = "com.example.valid" }
+        repeat(APP_ACTIVE_EDIT_LIMIT) {
+            appEditService.createAppEdit(request)
+        }
+
+        // Creating app drafts beyond APP_ACTIVE_EDIT_LIMIT should fail because of exceeding the
+        // organization quota
+        val exception = assertThrows<StatusException> { appEditService.createAppEdit(request) }
+        assertEquals(Status.Code.RESOURCE_EXHAUSTED, exception.status.code)
     }
 }

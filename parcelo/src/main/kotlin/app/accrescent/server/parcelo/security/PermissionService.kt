@@ -25,6 +25,13 @@ object PermissionService {
     }
 
     @Transactional
+    fun userCanCreateAppEditForApp(userId: UUID, appId: String): Boolean {
+        return OrganizationAcl
+            .findByAppIdAndUserId(appId = appId, userId = userId)
+            ?.canEditApps == true
+    }
+
+    @Transactional
     fun userCanViewApp(userId: UUID, appId: String): Boolean {
         return OrganizationAcl
             .findByAppIdAndUserId(appId = appId, userId = userId)
@@ -43,6 +50,13 @@ object PermissionService {
         return AppDraftAcl
             .findByAppDraftIdAndUserId(appDraftId = appDraftId, userId = userId)
             ?.canViewExistence == true
+    }
+
+    @Transactional
+    fun userCanViewAppExistence(userId: UUID, appId: String): Boolean {
+        return OrganizationAcl
+            .findByAppIdAndUserId(appId = appId, userId = userId)
+            ?.canViewApps == true
     }
 
     @Transactional
