@@ -7,6 +7,10 @@ package app.accrescent.server.parcelo.api.publishing
 import app.accrescent.appstore.publish.v1alpha1.AppEditService
 import app.accrescent.appstore.publish.v1alpha1.CreateAppEditRequest
 import app.accrescent.appstore.publish.v1alpha1.CreateAppEditResponse
+import app.accrescent.appstore.publish.v1alpha1.SubmitAppEditRequest
+import app.accrescent.appstore.publish.v1alpha1.SubmitAppEditResponse
+import app.accrescent.appstore.publish.v1alpha1.UpdateAppEditRequest
+import app.accrescent.appstore.publish.v1alpha1.UpdateAppEditResponse
 import app.accrescent.appstore.publish.v1alpha1.createAppEditResponse
 import app.accrescent.server.parcelo.data.App
 import app.accrescent.server.parcelo.data.AppEdit
@@ -65,7 +69,7 @@ class AppEditServiceImpl : AppEditService {
             defaultListingLanguage = app.defaultListingLanguage,
             appPackageId = app.appPackageId,
             reviewId = null,
-            published = false,
+            publishedAt = null,
         )
             .also { it.persist() }
         for (listing in app.listings) {
@@ -83,6 +87,14 @@ class AppEditServiceImpl : AppEditService {
         val response = createAppEditResponse { appEditId = appEdit.id.toString() }
 
         return Uni.createFrom().item { response }
+    }
+
+    override fun updateAppEdit(request: UpdateAppEditRequest): Uni<UpdateAppEditResponse> {
+        throw Status.UNIMPLEMENTED.asRuntimeException()
+    }
+
+    override fun submitAppEdit(request: SubmitAppEditRequest): Uni<SubmitAppEditResponse> {
+        throw Status.UNIMPLEMENTED.asRuntimeException()
     }
 
     private companion object {

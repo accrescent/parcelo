@@ -14,6 +14,7 @@ import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
 import jakarta.persistence.OneToOne
 import jakarta.persistence.Table
+import java.time.OffsetDateTime
 import java.util.UUID
 
 @Entity
@@ -34,8 +35,8 @@ class AppEdit(
     @Column(name = "review_id")
     val reviewId: UUID?,
 
-    @Column(nullable = false)
-    val published: Boolean,
+    @Column(name = "published_at")
+    var publishedAt: OffsetDateTime?,
 ) : PanacheEntityBase {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(insertable = false, updatable = false)
@@ -60,7 +61,7 @@ class AppEdit(
                 "LEFT JOIN Review reviews " +
                         "ON reviews.id = reviewId " +
                         "WHERE appId = ?1 " +
-                        "AND published = false " +
+                        "AND publishedAt IS NULL " +
                         "AND (reviews.approved IS NULL OR reviews.approved = false)",
                 appId,
             )

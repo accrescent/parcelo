@@ -17,6 +17,7 @@ import jakarta.persistence.ManyToOne
 import jakarta.persistence.OneToMany
 import jakarta.persistence.OneToOne
 import jakarta.persistence.Table
+import java.time.OffsetDateTime
 import java.util.UUID
 
 @Entity
@@ -24,13 +25,13 @@ import java.util.UUID
     name = "app_drafts",
     check = [
         // Forbid the draft from being submitted if no app package is attached to it
-        CheckConstraint(constraint = "app_package_id IS NOT NULL OR submitted = false"),
+        CheckConstraint(constraint = "app_package_id IS NOT NULL OR submitted_at IS NULL"),
         // Forbid the draft from being submitted if no default listing language is set
-        CheckConstraint(constraint = "default_listing_language IS NOT NULL or submitted = false"),
+        CheckConstraint(constraint = "default_listing_language IS NOT NULL or submitted_at IS NULL"),
         // Forbid the draft from being reviewed if it is not submitted
-        CheckConstraint(constraint = "submitted = true OR review_id IS NULL"),
+        CheckConstraint(constraint = "submitted_at IS NOT NULL OR review_id IS NULL"),
         // Forbid the draft from being published if it is not reviewed
-        CheckConstraint(constraint = "review_id IS NOT NULL OR published = false"),
+        CheckConstraint(constraint = "review_id IS NOT NULL OR published_at IS NULL"),
     ],
 )
 class AppDraft(
@@ -46,15 +47,21 @@ class AppDraft(
     @Column(columnDefinition = "text", name = "default_listing_language")
     var defaultListingLanguage: String?,
 
-    @Column(name = "submitted", nullable = false)
-    var submitted: Boolean,
+    @Column(name = "submitted_at")
+    var submittedAt: OffsetDateTime?,
 
     @Column(name = "review_id")
     var reviewId: UUID?,
 
-    @Column(nullable = false)
-    var published: Boolean,
+    @Column(name = "published_at")
+    var publishedAt: OffsetDateTime?,
 ) : PanacheEntityBase {
+    val submitted: Boolean
+        get() = submittedAt != null
+
+    val published: Boolean
+        get() = publishedAt != null
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(insertable = false, updatable = false)
     lateinit var organization: Organization
@@ -100,7 +107,7 @@ class AppDraft(
                 "LEFT JOIN Review reviews " +
                         "ON reviews.id = reviewId " +
                         "WHERE organizationId = ?1 " +
-                        "AND published = false " +
+                        "AND publishedAt IS NULL " +
                         "AND (reviews.approved IS NULL OR reviews.approved = false)",
                 organizationId,
             )
@@ -159,7 +166,7 @@ class AppDraft(
                 "FROM AppDraft app_drafts " +
                         "JOIN AppPackage app_packages " +
                         "ON app_packages.id = app_drafts.appPackageId " +
-                        "WHERE app_drafts.submitted = true " +
+                        "WHERE app_drafts.submittedAt IS NOT NULL " +
                         "AND app_packages.appId = ?1",
                 appId,
             ) > 0
