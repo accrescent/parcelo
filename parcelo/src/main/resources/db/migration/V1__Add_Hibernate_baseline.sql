@@ -80,18 +80,18 @@ CREATE TABLE app_draft_upload_processing_jobs (
 );
 
 CREATE TABLE app_drafts (
-    published boolean NOT NULL,
-    submitted boolean NOT NULL,
+    published_at timestamp(6) with time zone,
+    submitted_at timestamp(6) with time zone,
     app_package_id uuid,
     id uuid NOT NULL,
     organization_id uuid NOT NULL,
     review_id uuid,
     default_listing_language text,
     PRIMARY KEY (id),
-    CHECK (app_package_id IS NOT NULL OR submitted = false),
-    CHECK (default_listing_language IS NOT NULL OR submitted = false),
-    CHECK (submitted = true OR review_id IS NULL),
-    CHECK (review_id IS NOT NULL OR published = false)
+    CHECK (app_package_id IS NOT NULL OR submitted_at IS NULL),
+    CHECK (default_listing_language IS NOT NULL OR submitted_at IS NULL),
+    CHECK (submitted_at IS NOT NULL OR review_id IS NULL),
+    CHECK (review_id IS NOT NULL OR published_at IS NULL)
 );
 
 CREATE TABLE app_edit_listings (
@@ -106,7 +106,7 @@ CREATE TABLE app_edit_listings (
 );
 
 CREATE TABLE app_edits (
-    published boolean NOT NULL,
+    published_at timestamp(6) with time zone,
     app_package_id uuid NOT NULL,
     id uuid NOT NULL,
     review_id uuid,

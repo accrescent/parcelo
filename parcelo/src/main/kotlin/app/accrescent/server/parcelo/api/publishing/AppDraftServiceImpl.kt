@@ -75,6 +75,7 @@ import com.google.cloud.storage.HttpMethod
 import com.google.cloud.storage.Storage
 import com.google.cloud.storage.StorageException
 import com.google.protobuf.InvalidProtocolBufferException
+import com.google.protobuf.timestamp
 import io.grpc.Status
 import io.quarkus.grpc.GrpcService
 import io.quarkus.grpc.RegisterInterceptor
@@ -161,9 +162,9 @@ class AppDraftServiceImpl @Inject constructor(
             organizationId = organizationId,
             appPackageId = null,
             defaultListingLanguage = null,
-            submitted = false,
+            submittedAt = null,
             reviewId = null,
-            published = false,
+            publishedAt = null,
         )
             .also { it.persist() }
         AppDraftAcl(
@@ -212,7 +213,12 @@ class AppDraftServiceImpl @Inject constructor(
         val response = getAppDraftResponse {
             draft = appDraft {
                 id = appDraft.id.toString()
-                submitted = appDraft.submitted
+                appDraft.submittedAt?.let { submissionTimestamp ->
+                    submittedAt = timestamp {
+                        seconds = submissionTimestamp.toEpochSecond()
+                        nanos = submissionTimestamp.nano
+                    }
+                }
                 appDraft.appPackage?.let { pkg ->
                     appPackage = appPackage {
                         appId = pkg.appId
@@ -259,7 +265,12 @@ class AppDraftServiceImpl @Inject constructor(
             .map { appDraft ->
                 appDraft {
                     id = appDraft.id.toString()
-                    submitted = appDraft.submitted
+                    appDraft.submittedAt?.let { submissionTimestamp ->
+                        submittedAt = timestamp {
+                            seconds = submissionTimestamp.toEpochSecond()
+                            nanos = submissionTimestamp.nano
+                        }
+                    }
                     appDraft.appPackage?.let { pkg ->
                         appPackage = appPackage {
                             appId = pkg.appId
@@ -516,7 +527,7 @@ class AppDraftServiceImpl @Inject constructor(
             existingAcl.canReview = true
             existingAcl.canViewExistence = true
         }
-        appDraft.submitted = true
+        appDraft.submittedAt = OffsetDateTime.now()
 
         // Notify the reviewer that they are assigned to this draft before the transaction is
         // committed. This approach means reviewers may receive notifications for drafts they aren't
@@ -896,7 +907,7 @@ class AppDraftServiceImpl @Inject constructor(
             )
                 .persist()
         }
-        appDraft.published = true
+        appDraft.publishedAt = OffsetDateTime.now()
 
         return Uni.createFrom().item { publishAppDraftResponse {} }
     }
