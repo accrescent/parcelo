@@ -131,7 +131,8 @@ CREATE TABLE app_package_permissions (
     id bigint NOT NULL,
     app_package_id uuid NOT NULL,
     name text NOT NULL,
-    PRIMARY KEY (id)
+    PRIMARY KEY (id),
+    UNIQUE (app_package_id, name)
 );
 
 CREATE TABLE app_packages (
