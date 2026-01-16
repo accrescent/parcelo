@@ -7,8 +7,9 @@ package app.accrescent.server.parcelo.web
 import app.accrescent.server.parcelo.data.Organization
 import app.accrescent.server.parcelo.data.OrganizationAcl
 import app.accrescent.server.parcelo.data.User
-import app.accrescent.server.parcelo.security.ApiKey
-import app.accrescent.server.parcelo.security.ApiKeyType
+import app.accrescent.server.parcelo.security.IdType
+import app.accrescent.server.parcelo.security.Identifier
+import app.accrescent.server.parcelo.util.sha256Hash
 import io.quarkus.oidc.IdToken
 import io.quarkus.security.Authenticated
 import jakarta.inject.Inject
@@ -17,7 +18,6 @@ import jakarta.ws.rs.GET
 import jakarta.ws.rs.POST
 import jakarta.ws.rs.Path
 import org.eclipse.microprofile.jwt.JsonWebToken
-import java.util.UUID
 import app.accrescent.server.parcelo.data.ApiKey as DbApiKey
 
 @Authenticated
@@ -35,7 +35,7 @@ class SessionResource {
     @Path("/tokens")
     @Transactional
     fun generateToken(): TokenResponse {
-        val apiKey = ApiKey.generateNew(ApiKeyType.USER_SESSION)
+        val apiKey = Identifier.generateNew(IdType.USER_SESSION)
 
         // Get the current user's ID if they're registered. If they're not registered, register them
         // and create their organization.
@@ -43,8 +43,12 @@ class SessionResource {
             .findIdByGithubUserId(idToken.subject)
             ?.id
             ?: run {
-                val org = Organization(id = UUID.randomUUID()).also { it.persist() }
-                val user = User(id = UUID.randomUUID(), scopedUserId = idToken.subject)
+                val org = Organization(id = Identifier.generateNew(IdType.ORGANIZATION))
+                    .also { it.persist() }
+                val user = User(
+                    id = Identifier.generateNew(IdType.USER),
+                    scopedUserId = idToken.subject,
+                )
                     .also { it.persist() }
                 OrganizationAcl(
                     organizationId = org.id,
@@ -62,10 +66,10 @@ class SessionResource {
         // Create a new session token (which is just an API key) for the user
         DbApiKey(
             userId = userId,
-            apiKeyHash = apiKey.sha256Hash(),
+            apiKeyHash = sha256Hash(apiKey.toByteArray()),
         )
             .persist()
 
-        return TokenResponse(token = apiKey.rawValue())
+        return TokenResponse(token = apiKey)
     }
 }

@@ -25,8 +25,8 @@ class AppEditListing(
     @Id
     val id: UUID,
 
-    @Column(name = "app_edit_id", nullable = false)
-    val appEditId: UUID,
+    @Column(columnDefinition = "text", name = "app_edit_id", nullable = false)
+    val appEditId: String,
 
     @Column(columnDefinition = "text", nullable = false)
     val language: String,

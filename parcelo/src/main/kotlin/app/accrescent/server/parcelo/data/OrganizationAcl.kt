@@ -13,7 +13,6 @@ import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
 import jakarta.persistence.UniqueConstraint
-import java.util.UUID
 
 @Entity
 @Table(
@@ -21,11 +20,11 @@ import java.util.UUID
     uniqueConstraints = [UniqueConstraint(columnNames = ["organization_id", "user_id"])],
 )
 class OrganizationAcl(
-    @Column(name = "organization_id", nullable = false)
-    val organizationId: UUID,
+    @Column(columnDefinition = "text", name = "organization_id", nullable = false)
+    val organizationId: String,
 
-    @Column(name = "user_id", nullable = false)
-    val userId: UUID,
+    @Column(columnDefinition = "text", name = "user_id", nullable = false)
+    val userId: String,
 
     @Column(name = "can_create_app_drafts", nullable = false)
     val canCreateAppDrafts: Boolean,
@@ -48,7 +47,7 @@ class OrganizationAcl(
     private lateinit var user: User
 
     companion object : PanacheCompanion<OrganizationAcl> {
-        fun findByAppIdAndUserId(appId: String, userId: UUID): OrganizationAcl? {
+        fun findByAppIdAndUserId(appId: String, userId: String): OrganizationAcl? {
             return find(
                 "FROM OrganizationAcl organization_acls " +
                         "JOIN App apps " +
@@ -61,7 +60,7 @@ class OrganizationAcl(
                 .firstResult()
         }
 
-        fun findByOrganizationIdAndUserId(organizationId: UUID, userId: UUID): OrganizationAcl? {
+        fun findByOrganizationIdAndUserId(organizationId: String, userId: String): OrganizationAcl? {
             return find("WHERE organizationId = ?1 AND userId = ?2", organizationId, userId)
                 .firstResult()
         }

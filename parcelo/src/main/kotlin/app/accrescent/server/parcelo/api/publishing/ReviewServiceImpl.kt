@@ -33,7 +33,7 @@ import java.util.UUID
 class ReviewServiceImpl : ReviewService {
     @JvmRecord
     data class AppDraftAssignedToYouForPublishingEmail(
-        val appDraftId: UUID,
+        val appDraftId: String,
     ) : MailTemplate.MailTemplateInstance
 
     @Transactional
@@ -41,18 +41,17 @@ class ReviewServiceImpl : ReviewService {
         request: CreateAppDraftReviewRequest,
     ): Uni<CreateAppDraftReviewResponse> {
         val userId = AuthnContextKey.USER_ID.get()
-        // protovalidate ensures this is a valid UUID, so no need to catch IllegalArgumentException
-        val appDraftId = UUID.fromString(request.appDraftId)
 
-        val appDraft = AppDraft.findById(appDraftId)
-        val canViewExistence = PermissionService.userCanViewAppDraftExistence(userId, appDraftId)
+        val appDraft = AppDraft.findById(request.appDraftId)
+        val canViewExistence = PermissionService
+            .userCanViewAppDraftExistence(userId, request.appDraftId)
         if (!canViewExistence || appDraft == null) {
             throw Status
                 .NOT_FOUND
-                .withDescription("app draft \"$appDraftId\" not found")
+                .withDescription("app draft \"${request.appDraftId}\" not found")
                 .asRuntimeException()
         }
-        val canReview = PermissionService.userCanReviewAppDraft(userId, appDraftId)
+        val canReview = PermissionService.userCanReviewAppDraft(userId, request.appDraftId)
         if (!canReview) {
             throw Status
                 .PERMISSION_DENIED
@@ -84,10 +83,10 @@ class ReviewServiceImpl : ReviewService {
             .FAILED_PRECONDITION
             .withDescription("no publishers available to assign")
             .asRuntimeException()
-        val existingAcl = AppDraftAcl.findByAppDraftIdAndUserId(appDraftId, publisher.userId)
+        val existingAcl = AppDraftAcl.findByAppDraftIdAndUserId(request.appDraftId, publisher.userId)
         if (existingAcl == null) {
             AppDraftAcl(
-                appDraftId = appDraftId,
+                appDraftId = request.appDraftId,
                 userId = publisher.userId,
                 canDelete = false,
                 canEditListings = false,

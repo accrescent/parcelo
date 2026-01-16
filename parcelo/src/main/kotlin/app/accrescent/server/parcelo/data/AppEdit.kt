@@ -21,7 +21,8 @@ import java.util.UUID
 @Table(name = "app_edits")
 class AppEdit(
     @Id
-    val id: UUID,
+    @Column(columnDefinition = "text")
+    val id: String,
 
     @Column(columnDefinition = "text", name = "app_id", nullable = false)
     val appId: String,
@@ -53,7 +54,7 @@ class AppEdit(
     @JoinColumn(insertable = false, updatable = false)
     val review: Review? = null
 
-    companion object : PanacheCompanionBase<AppEdit, UUID> {
+    companion object : PanacheCompanionBase<AppEdit, String> {
         fun countActiveForApp(appId: String): Long {
             // An app edit is considered active if it is not in a terminal state. The terminal
             // states are:

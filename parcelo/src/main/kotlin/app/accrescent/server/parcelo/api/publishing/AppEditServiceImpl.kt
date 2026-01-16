@@ -7,6 +7,8 @@ package app.accrescent.server.parcelo.api.publishing
 import app.accrescent.appstore.publish.v1alpha1.AppEditService
 import app.accrescent.appstore.publish.v1alpha1.CreateAppEditRequest
 import app.accrescent.appstore.publish.v1alpha1.CreateAppEditResponse
+import app.accrescent.appstore.publish.v1alpha1.GetAppEditRequest
+import app.accrescent.appstore.publish.v1alpha1.GetAppEditResponse
 import app.accrescent.appstore.publish.v1alpha1.SubmitAppEditRequest
 import app.accrescent.appstore.publish.v1alpha1.SubmitAppEditResponse
 import app.accrescent.appstore.publish.v1alpha1.UpdateAppEditRequest
@@ -18,6 +20,8 @@ import app.accrescent.server.parcelo.data.AppEditListing
 import app.accrescent.server.parcelo.security.AuthnContextKey
 import app.accrescent.server.parcelo.security.GrpcAuthenticationInterceptor
 import app.accrescent.server.parcelo.security.GrpcRateLimitInterceptor
+import app.accrescent.server.parcelo.security.IdType
+import app.accrescent.server.parcelo.security.Identifier
 import app.accrescent.server.parcelo.security.PermissionService
 import app.accrescent.server.parcelo.validation.GrpcRequestValidationInterceptor
 import io.grpc.Status
@@ -65,7 +69,7 @@ class AppEditServiceImpl : AppEditService {
         }
 
         val appEdit = AppEdit(
-            id = UUID.randomUUID(),
+            id = Identifier.generateNew(IdType.APP_EDIT),
             appId = request.appId,
             createdAt = OffsetDateTime.now(),
             defaultListingLanguage = app.defaultListingLanguage,
@@ -86,9 +90,13 @@ class AppEditServiceImpl : AppEditService {
                 .persist()
         }
 
-        val response = createAppEditResponse { appEditId = appEdit.id.toString() }
+        val response = createAppEditResponse { appEditId = appEdit.id }
 
         return Uni.createFrom().item { response }
+    }
+
+    override fun getAppEdit(request: GetAppEditRequest): Uni<GetAppEditResponse> {
+        throw Status.UNIMPLEMENTED.asRuntimeException()
     }
 
     override fun updateAppEdit(request: UpdateAppEditRequest): Uni<UpdateAppEditResponse> {

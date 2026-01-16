@@ -28,7 +28,6 @@ import jakarta.enterprise.context.ApplicationScoped
 import org.jboss.logging.Logger
 import java.net.InetSocketAddress
 import java.time.Duration
-import java.util.UUID
 
 private const val BUCKET_TABLE_NAME = "rate_limit_buckets"
 private const val REMOVE_EXPIRED_BUCKET_BATCH_SIZE = 1000
@@ -154,7 +153,7 @@ private class GrpcRateLimitInterceptorImpl(
 }
 
 private sealed class Principal {
-    data class User(val userId: UUID) : Principal()
+    data class User(val userId: String) : Principal()
     data class IpAddress(val address: InetSocketAddress) : Principal()
 
     fun bucketKey(): String {

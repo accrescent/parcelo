@@ -21,7 +21,6 @@ import io.quarkus.grpc.RegisterInterceptor
 import io.smallrye.mutiny.Uni
 import jakarta.inject.Inject
 import jakarta.transaction.Transactional
-import java.util.UUID
 
 @GrpcService
 @RegisterInterceptor(GrpcAuthenticationInterceptor::class)
@@ -31,8 +30,6 @@ class ReviewerServiceImpl @Inject constructor(val config: ParceloConfig) : Revie
     @Transactional
     override fun createReviewer(request: CreateReviewerRequest): Uni<CreateReviewerResponse> {
         val userId = AuthnContextKey.USER_ID.get()
-        // protovalidate ensures this is a valid UUID, so no need to catch IllegalArgumentException
-        val userToPromoteId = UUID.fromString(request.userId)
 
         val authenticatedUser = User
             .findById(userId)
@@ -45,13 +42,13 @@ class ReviewerServiceImpl @Inject constructor(val config: ParceloConfig) : Revie
                 .withDescription("insufficient permission to create reviewers")
                 .asRuntimeException()
         }
-        if (!User.existsById(userToPromoteId)) {
+        if (!User.existsById(request.userId)) {
             throw Status
                 .NOT_FOUND
-                .withDescription("user with ID \"$userToPromoteId\" not found")
+                .withDescription("user with ID \"${request.userId}\" not found")
                 .asRuntimeException()
         }
-        if (Reviewer.existsByUserId(userToPromoteId)) {
+        if (Reviewer.existsByUserId(request.userId)) {
             throw Status
                 .ALREADY_EXISTS
                 .withDescription("specified user is already a reviewer")
@@ -60,7 +57,7 @@ class ReviewerServiceImpl @Inject constructor(val config: ParceloConfig) : Revie
 
         // Because this API is restricted to administrators, we don't need to verify ownership of
         // the email address
-        Reviewer(userId = userToPromoteId, email = request.email).persist()
+        Reviewer(userId = request.userId, email = request.email).persist()
 
         return Uni.createFrom().item { createReviewerResponse {} }
     }
