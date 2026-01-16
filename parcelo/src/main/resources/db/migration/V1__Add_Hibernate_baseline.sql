@@ -80,6 +80,7 @@ CREATE TABLE app_draft_upload_processing_jobs (
 );
 
 CREATE TABLE app_drafts (
+    created_at timestamp(6) with time zone NOT NULL,
     published_at timestamp(6) with time zone,
     submitted_at timestamp(6) with time zone,
     app_package_id uuid,
@@ -106,6 +107,7 @@ CREATE TABLE app_edit_listings (
 );
 
 CREATE TABLE app_edits (
+    created_at timestamp(6) with time zone NOT NULL,
     published_at timestamp(6) with time zone,
     app_package_id uuid NOT NULL,
     id uuid NOT NULL,
