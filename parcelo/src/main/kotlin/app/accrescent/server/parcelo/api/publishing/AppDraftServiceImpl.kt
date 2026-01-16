@@ -214,6 +214,10 @@ class AppDraftServiceImpl @Inject constructor(
         val response = getAppDraftResponse {
             draft = appDraft {
                 id = appDraft.id.toString()
+                createdAt = timestamp {
+                    seconds = appDraft.createdAt.toEpochSecond()
+                    nanos = appDraft.createdAt.nano
+                }
                 appDraft.defaultListingLanguage?.let { defaultListingLanguage = it }
                 appDraft.appPackage?.let { pkg ->
                     appPackage = appPackage {
@@ -273,6 +277,10 @@ class AppDraftServiceImpl @Inject constructor(
             .map { appDraft ->
                 appDraft {
                     id = appDraft.id.toString()
+                    createdAt = timestamp {
+                        seconds = appDraft.createdAt.toEpochSecond()
+                        nanos = appDraft.createdAt.nano
+                    }
                     appDraft.defaultListingLanguage?.let { defaultListingLanguage = it }
                     appDraft.appPackage?.let { pkg ->
                         appPackage = appPackage {
