@@ -15,7 +15,6 @@ import jakarta.persistence.Table
 import jakarta.persistence.UniqueConstraint
 import org.hibernate.annotations.OnDelete
 import org.hibernate.annotations.OnDeleteAction
-import java.util.UUID
 
 @Entity
 @Table(
@@ -23,11 +22,11 @@ import java.util.UUID
     uniqueConstraints = [UniqueConstraint(columnNames = ["app_draft_id", "user_id"])],
 )
 class AppDraftAcl(
-    @Column(name = "app_draft_id", nullable = false)
-    val appDraftId: UUID,
+    @Column(columnDefinition = "text", name = "app_draft_id", nullable = false)
+    val appDraftId: String,
 
-    @Column(name = "user_id", nullable = false)
-    val userId: UUID,
+    @Column(columnDefinition = "text", name = "user_id", nullable = false)
+    val userId: String,
 
     @Column(name = "can_delete", nullable = false)
     val canDelete: Boolean,
@@ -64,7 +63,7 @@ class AppDraftAcl(
     private lateinit var user: User
 
     companion object : PanacheCompanion<AppDraftAcl> {
-        fun findByAppDraftIdAndUserId(appDraftId: UUID, userId: UUID): AppDraftAcl? {
+        fun findByAppDraftIdAndUserId(appDraftId: String, userId: String): AppDraftAcl? {
             return find("WHERE appDraftId = ?1 AND userId = ?2", appDraftId, userId).firstResult()
         }
     }

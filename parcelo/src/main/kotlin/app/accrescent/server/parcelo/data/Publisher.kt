@@ -14,13 +14,12 @@ import jakarta.persistence.OneToOne
 import jakarta.persistence.Table
 import org.hibernate.annotations.OnDelete
 import org.hibernate.annotations.OnDeleteAction
-import java.util.UUID
 
 @Entity
 @Table(name = "publishers")
 class Publisher(
-    @Column(name = "user_id", nullable = false, unique = true)
-    val userId: UUID,
+    @Column(columnDefinition = "text", name = "user_id", nullable = false, unique = true)
+    val userId: String,
 
     @Column(columnDefinition = "text", nullable = false)
     val email: String,
@@ -31,7 +30,7 @@ class Publisher(
     lateinit var user: User
 
     companion object : PanacheCompanion<Publisher> {
-        fun existsByUserId(userId: UUID): Boolean {
+        fun existsByUserId(userId: String): Boolean {
             return count("WHERE userId = ?1", userId) > 0
         }
 

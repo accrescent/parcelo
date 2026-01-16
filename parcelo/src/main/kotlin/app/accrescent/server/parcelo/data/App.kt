@@ -29,8 +29,8 @@ class App(
     @Column(columnDefinition = "text", name = "default_listing_language", nullable = false)
     val defaultListingLanguage: String,
 
-    @Column(name = "organization_id", nullable = false)
-    val organizationId: UUID,
+    @Column(columnDefinition = "text", name = "organization_id", nullable = false)
+    val organizationId: String,
 
     @Column(name = "app_package_id", nullable = false)
     val appPackageId: UUID,
@@ -50,7 +50,7 @@ class App(
     lateinit var listings: Set<AppListing>
 
     companion object : PanacheCompanionBase<App, String> {
-        fun countInOrganization(organizationId: UUID): Long {
+        fun countInOrganization(organizationId: String): Long {
             return count("WHERE organizationId = ?1", organizationId)
         }
 
@@ -77,7 +77,7 @@ class App(
                 .list()
         }
 
-        fun findForUserByQuery(userId: UUID, pageSize: UInt, afterAppId: String?): List<App> {
+        fun findForUserByQuery(userId: String, pageSize: UInt, afterAppId: String?): List<App> {
             return if (afterAppId == null) {
                 find(
                     "FROM App apps " +

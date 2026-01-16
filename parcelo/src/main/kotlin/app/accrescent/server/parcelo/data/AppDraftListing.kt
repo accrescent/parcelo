@@ -28,8 +28,8 @@ class AppDraftListing(
     @Id
     val id: UUID,
 
-    @Column(name = "app_draft_id", nullable = false)
-    val appDraftId: UUID,
+    @Column(columnDefinition = "text", name = "app_draft_id", nullable = false)
+    val appDraftId: String,
 
     @Column(columnDefinition = "text", nullable = false)
     val language: String,
@@ -53,12 +53,12 @@ class AppDraftListing(
     val icon: Image? = null
 
     companion object : PanacheCompanionBase<AppDraftListing, UUID> {
-        fun findByAppDraftIdAndLanguage(appDraftId: UUID, language: String): AppDraftListing? {
+        fun findByAppDraftIdAndLanguage(appDraftId: String, language: String): AppDraftListing? {
             return find("WHERE appDraftId = ?1 AND language = ?2", appDraftId, language)
                 .firstResult()
         }
 
-        fun exists(appDraftId: UUID, language: String): Boolean {
+        fun exists(appDraftId: String, language: String): Boolean {
             return count("WHERE appDraftId = ?1 AND language = ?2", appDraftId, language) > 0
         }
     }

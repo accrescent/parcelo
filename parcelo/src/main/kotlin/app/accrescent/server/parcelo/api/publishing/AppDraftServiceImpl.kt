@@ -64,6 +64,8 @@ import app.accrescent.server.parcelo.publish.PublishedIcon
 import app.accrescent.server.parcelo.security.AuthnContextKey
 import app.accrescent.server.parcelo.security.GrpcAuthenticationInterceptor
 import app.accrescent.server.parcelo.security.GrpcRateLimitInterceptor
+import app.accrescent.server.parcelo.security.IdType
+import app.accrescent.server.parcelo.security.Identifier
 import app.accrescent.server.parcelo.security.PermissionService
 import app.accrescent.server.parcelo.util.TempFile
 import app.accrescent.server.parcelo.util.apkPaths
@@ -109,16 +111,14 @@ class AppDraftServiceImpl @Inject constructor(
 ) : AppDraftService {
     @JvmRecord
     data class AppDraftAssignedToYouForReviewEmail(
-        val appDraftId: UUID,
+        val appDraftId: String,
     ) : MailTemplate.MailTemplateInstance
 
     @Transactional
     override fun createAppDraft(request: CreateAppDraftRequest): Uni<CreateAppDraftResponse> {
         val userId = AuthnContextKey.USER_ID.get()
-        // protovalidate ensures this is a valid UUID, so no need to catch IllegalArgumentException
-        val organizationId = UUID.fromString(request.organizationId)
 
-        val canViewOrg = PermissionService.userCanViewOrganization(userId, organizationId)
+        val canViewOrg = PermissionService.userCanViewOrganization(userId, request.organizationId)
         if (!canViewOrg) {
             throw Status
                 .NOT_FOUND
@@ -127,7 +127,7 @@ class AppDraftServiceImpl @Inject constructor(
         }
 
         val canCreateAppDrafts = PermissionService
-            .userCanCreateAppDraftsInOrganization(userId, organizationId)
+            .userCanCreateAppDraftsInOrganization(userId, request.organizationId)
         if (!canCreateAppDrafts) {
             throw Status
                 .PERMISSION_DENIED
@@ -139,7 +139,7 @@ class AppDraftServiceImpl @Inject constructor(
         }
 
         val orgActiveAppDraftLimit = Organization
-            .findById(organizationId, LockModeType.PESSIMISTIC_WRITE)
+            .findById(request.organizationId, LockModeType.PESSIMISTIC_WRITE)
             ?.activeAppDraftLimit
             ?: run {
                 throw Status
@@ -147,7 +147,7 @@ class AppDraftServiceImpl @Inject constructor(
                     .withDescription("organization \"${request.organizationId}\" not found")
                     .asRuntimeException()
             }
-        val orgActiveAppDraftCount = AppDraft.countActiveInOrganization(organizationId)
+        val orgActiveAppDraftCount = AppDraft.countActiveInOrganization(request.organizationId)
         if (orgActiveAppDraftCount >= orgActiveAppDraftLimit) {
             throw Status
                 .RESOURCE_EXHAUSTED
@@ -158,8 +158,8 @@ class AppDraftServiceImpl @Inject constructor(
         }
 
         val appDraft = AppDraft(
-            id = UUID.randomUUID(),
-            organizationId = organizationId,
+            id = Identifier.generateNew(IdType.APP_DRAFT),
+            organizationId = request.organizationId,
             createdAt = OffsetDateTime.now(),
             appPackageId = null,
             defaultListingLanguage = null,
@@ -183,7 +183,7 @@ class AppDraftServiceImpl @Inject constructor(
             .persist()
 
         val response = createAppDraftResponse {
-            appDraftId = appDraft.id.toString()
+            appDraftId = appDraft.id
         }
 
         return Uni.createFrom().item { response }
@@ -192,18 +192,17 @@ class AppDraftServiceImpl @Inject constructor(
     @Transactional
     override fun getAppDraft(request: GetAppDraftRequest): Uni<GetAppDraftResponse> {
         val userId = AuthnContextKey.USER_ID.get()
-        // protovalidate ensures this is a valid UUID, so no need to catch IllegalArgumentException
-        val appDraftId = UUID.fromString(request.appDraftId)
 
-        val appDraft = AppDraft.findById(appDraftId)
-        val canViewExistence = PermissionService.userCanViewAppDraftExistence(userId, appDraftId)
+        val appDraft = AppDraft.findById(request.appDraftId)
+        val canViewExistence = PermissionService
+            .userCanViewAppDraftExistence(userId, request.appDraftId)
         if (!canViewExistence || appDraft == null) {
             throw Status
                 .NOT_FOUND
-                .withDescription("app draft \"$appDraftId\" not found")
+                .withDescription("app draft \"${request.appDraftId}\" not found")
                 .asRuntimeException()
         }
-        val canView = PermissionService.userCanViewAppDraft(userId, appDraftId)
+        val canView = PermissionService.userCanViewAppDraft(userId, request.appDraftId)
         if (!canView) {
             throw Status
                 .PERMISSION_DENIED
@@ -213,7 +212,7 @@ class AppDraftServiceImpl @Inject constructor(
 
         val response = getAppDraftResponse {
             draft = appDraft {
-                id = appDraft.id.toString()
+                id = appDraft.id
                 createdAt = timestamp {
                     seconds = appDraft.createdAt.toEpochSecond()
                     nanos = appDraft.createdAt.nano
@@ -262,7 +261,7 @@ class AppDraftServiceImpl @Inject constructor(
                     throw invalidPageTokenError
                 }
 
-                UUID.fromString(pageToken.lastAppDraftId)
+                pageToken.lastAppDraftId
             } catch (_: IllegalArgumentException) {
                 throw invalidPageTokenError
             } catch (_: InvalidProtocolBufferException) {
@@ -276,7 +275,7 @@ class AppDraftServiceImpl @Inject constructor(
             .findForUserByQuery(userId, pageSize, lastAppDraftId)
             .map { appDraft ->
                 appDraft {
-                    id = appDraft.id.toString()
+                    id = appDraft.id
                     createdAt = timestamp {
                         seconds = appDraft.createdAt.toEpochSecond()
                         nanos = appDraft.createdAt.nano
@@ -328,18 +327,18 @@ class AppDraftServiceImpl @Inject constructor(
         request: GetAppDraftUploadInfoRequest,
     ): Uni<GetAppDraftUploadInfoResponse> {
         val userId = AuthnContextKey.USER_ID.get()
-        // protovalidate ensures this is a valid UUID, so no need to catch IllegalArgumentException
-        val appDraftId = UUID.fromString(request.appDraftId)
 
-        val appDraft = AppDraft.findById(appDraftId)
-        val canViewExistence = PermissionService.userCanViewAppDraftExistence(userId, appDraftId)
+        val appDraft = AppDraft.findById(request.appDraftId)
+        val canViewExistence = PermissionService
+            .userCanViewAppDraftExistence(userId, request.appDraftId)
         if (!canViewExistence || appDraft == null) {
             throw Status
                 .NOT_FOUND
-                .withDescription("app draft \"$appDraftId\" not found")
+                .withDescription("app draft \"${request.appDraftId}\" not found")
                 .asRuntimeException()
         }
-        val canReplacePackage = PermissionService.userCanReplaceAppDraftPackage(userId, appDraftId)
+        val canReplacePackage = PermissionService
+            .userCanReplaceAppDraftPackage(userId, request.appDraftId)
         if (!canReplacePackage) {
             throw Status
                 .PERMISSION_DENIED
@@ -366,7 +365,7 @@ class AppDraftServiceImpl @Inject constructor(
             ),
         )
         AppDraftUploadProcessingJob(
-            appDraftId = appDraftId,
+            appDraftId = request.appDraftId,
             bucketId = blobInfo.bucket,
             objectId = blobInfo.name,
             completed = false,
@@ -386,18 +385,17 @@ class AppDraftServiceImpl @Inject constructor(
         request: GetAppDraftDownloadInfoRequest,
     ): Uni<GetAppDraftDownloadInfoResponse> {
         val userId = AuthnContextKey.USER_ID.get()
-        // protovalidate ensures this is a valid UUID, so no need to catch IllegalArgumentException
-        val appDraftId = UUID.fromString(request.appDraftId)
 
-        val appDraft = AppDraft.findById(appDraftId)
-        val canViewExistence = PermissionService.userCanViewAppDraftExistence(userId, appDraftId)
+        val appDraft = AppDraft.findById(request.appDraftId)
+        val canViewExistence = PermissionService
+            .userCanViewAppDraftExistence(userId, request.appDraftId)
         if (!canViewExistence || appDraft == null) {
             throw Status
                 .NOT_FOUND
-                .withDescription("app draft \"$appDraftId\" not found")
+                .withDescription("app draft \"${request.appDraftId}\" not found")
                 .asRuntimeException()
         }
-        val canReview = PermissionService.userCanReviewAppDraft(userId, appDraftId)
+        val canReview = PermissionService.userCanReviewAppDraft(userId, request.appDraftId)
         if (!canReview) {
             throw Status
                 .PERMISSION_DENIED
@@ -406,7 +404,7 @@ class AppDraftServiceImpl @Inject constructor(
         }
         val appPackage = appDraft.appPackage ?: throw Status
             .NOT_FOUND
-            .withDescription("app draft \"$appDraftId\" has no package")
+            .withDescription("app draft \"${request.appDraftId}\" has no package")
             .asRuntimeException()
 
         val apkSetBlob = BlobInfo.newBuilder(appPackage.bucketId, appPackage.objectId).build()
@@ -427,18 +425,17 @@ class AppDraftServiceImpl @Inject constructor(
     @Transactional
     override fun updateAppDraft(request: UpdateAppDraftRequest): Uni<UpdateAppDraftResponse> {
         val userId = AuthnContextKey.USER_ID.get()
-        // protovalidate ensures this is a valid UUID, so no need to catch IllegalArgumentException
-        val appDraftId = UUID.fromString(request.appDraftId)
 
-        val appDraft = AppDraft.findById(appDraftId)
-        val canViewExistence = PermissionService.userCanViewAppDraftExistence(userId, appDraftId)
+        val appDraft = AppDraft.findById(request.appDraftId)
+        val canViewExistence = PermissionService
+            .userCanViewAppDraftExistence(userId, request.appDraftId)
         if (!canViewExistence || appDraft == null) {
             throw Status
                 .NOT_FOUND
-                .withDescription("app draft \"$appDraftId\" not found")
+                .withDescription("app draft \"${request.appDraftId}\" not found")
                 .asRuntimeException()
         }
-        val canUpdate = PermissionService.userCanEditAppDraftListings(userId, appDraftId)
+        val canUpdate = PermissionService.userCanEditAppDraftListings(userId, request.appDraftId)
         if (!canUpdate) {
             throw Status
                 .PERMISSION_DENIED
@@ -463,18 +460,17 @@ class AppDraftServiceImpl @Inject constructor(
     @Transactional
     override fun submitAppDraft(request: SubmitAppDraftRequest): Uni<SubmitAppDraftResponse> {
         val userId = AuthnContextKey.USER_ID.get()
-        // protovalidate ensures this is a valid UUID, so no need to catch IllegalArgumentException
-        val appDraftId = UUID.fromString(request.appDraftId)
 
-        val appDraft = AppDraft.findById(appDraftId)
-        val canViewExistence = PermissionService.userCanViewAppDraftExistence(userId, appDraftId)
+        val appDraft = AppDraft.findById(request.appDraftId)
+        val canViewExistence = PermissionService
+            .userCanViewAppDraftExistence(userId, request.appDraftId)
         if (!canViewExistence || appDraft == null) {
             throw Status
                 .NOT_FOUND
-                .withDescription("app draft \"$appDraftId\" not found")
+                .withDescription("app draft \"${request.appDraftId}\" not found")
                 .asRuntimeException()
         }
-        val canSubmitDraft = PermissionService.userCanSubmitAppDraft(userId, appDraftId)
+        val canSubmitDraft = PermissionService.userCanSubmitAppDraft(userId, request.appDraftId)
         if (!canSubmitDraft) {
             throw Status
                 .PERMISSION_DENIED
@@ -531,10 +527,10 @@ class AppDraftServiceImpl @Inject constructor(
             .FAILED_PRECONDITION
             .withDescription("no reviewers available to assign")
             .asRuntimeException()
-        val existingAcl = AppDraftAcl.findByAppDraftIdAndUserId(appDraftId, reviewer.userId)
+        val existingAcl = AppDraftAcl.findByAppDraftIdAndUserId(request.appDraftId, reviewer.userId)
         if (existingAcl == null) {
             AppDraftAcl(
-                appDraftId = appDraftId,
+                appDraftId = request.appDraftId,
                 userId = reviewer.userId,
                 canDelete = false,
                 canEditListings = false,
@@ -568,23 +564,22 @@ class AppDraftServiceImpl @Inject constructor(
     @Transactional
     override fun deleteAppDraft(request: DeleteAppDraftRequest): Uni<DeleteAppDraftResponse> {
         val userId = AuthnContextKey.USER_ID.get()
-        // protovalidate ensures this is a valid UUID, so no need to catch IllegalArgumentException
-        val appDraftId = UUID.fromString(request.appDraftId)
 
-        val appDraft = AppDraft.findById(appDraftId)
-        val canViewExistence = PermissionService.userCanViewAppDraftExistence(userId, appDraftId)
+        val appDraft = AppDraft.findById(request.appDraftId)
+        val canViewExistence = PermissionService
+            .userCanViewAppDraftExistence(userId, request.appDraftId)
         if (!canViewExistence || appDraft == null) {
             throw Status
                 .NOT_FOUND
-                .withDescription("app draft \"$appDraftId\" not found")
+                .withDescription("app draft \"${request.appDraftId}\" not found")
                 .asRuntimeException()
         }
-        val canDeleteAppDraft = PermissionService.userCanDeleteAppDraft(userId, appDraftId)
+        val canDeleteAppDraft = PermissionService.userCanDeleteAppDraft(userId, request.appDraftId)
         if (!canDeleteAppDraft) {
             throw Status
                 .PERMISSION_DENIED
                 .withDescription(
-                    "insufficient permission to delete app draft \"$appDraftId\""
+                    "insufficient permission to delete app draft \"${request.appDraftId}\""
                 )
                 .asRuntimeException()
         }
@@ -618,32 +613,32 @@ class AppDraftServiceImpl @Inject constructor(
         request: CreateAppDraftListingRequest,
     ): Uni<CreateAppDraftListingResponse> {
         val userId = AuthnContextKey.USER_ID.get()
-        // protovalidate ensures this is a valid UUID, so no need to catch IllegalArgumentException
-        val appDraftId = UUID.fromString(request.appDraftId)
 
-        val appDraft = AppDraft.findById(appDraftId)
-        val canViewExistence = PermissionService.userCanViewAppDraftExistence(userId, appDraftId)
+        val appDraft = AppDraft.findById(request.appDraftId)
+        val canViewExistence = PermissionService
+            .userCanViewAppDraftExistence(userId, request.appDraftId)
         if (!canViewExistence || appDraft == null) {
             throw Status
                 .NOT_FOUND
-                .withDescription("app draft \"$appDraftId\" not found")
+                .withDescription("app draft \"${request.appDraftId}\" not found")
                 .asRuntimeException()
         }
-        val canCreateListings = PermissionService.userCanEditAppDraftListings(userId, appDraftId)
+        val canCreateListings = PermissionService
+            .userCanEditAppDraftListings(userId, request.appDraftId)
         if (!canCreateListings) {
             throw Status
                 .PERMISSION_DENIED
                 .withDescription(
                     "insufficient permission to create app listings for app draft " +
-                            "\"$appDraftId\""
+                            "\"${request.appDraftId}\""
                 )
                 .asRuntimeException()
         }
-        if (AppDraftListing.exists(appDraftId, request.language)) {
+        if (AppDraftListing.exists(request.appDraftId, request.language)) {
             throw Status
                 .ALREADY_EXISTS
                 .withDescription(
-                    "an app listing for app draft \"$appDraftId\" with language " +
+                    "an app listing for app draft \"${request.appDraftId}\" with language " +
                             "\"${request.language}\" already exists"
                 )
                 .asRuntimeException()
@@ -657,7 +652,7 @@ class AppDraftServiceImpl @Inject constructor(
 
         AppDraftListing(
             id = UUID.randomUUID(),
-            appDraftId = appDraftId,
+            appDraftId = request.appDraftId,
             language = request.language,
             name = request.name,
             shortDescription = request.shortDescription,
@@ -673,18 +668,18 @@ class AppDraftServiceImpl @Inject constructor(
         request: GetAppDraftListingIconUploadInfoRequest,
     ): Uni<GetAppDraftListingIconUploadInfoResponse> {
         val userId = AuthnContextKey.USER_ID.get()
-        // protovalidate ensures this is a valid UUID, so no need to catch IllegalArgumentException
-        val appDraftId = UUID.fromString(request.appDraftId)
 
-        val appDraft = AppDraft.findById(appDraftId)
-        val canViewExistence = PermissionService.userCanViewAppDraftExistence(userId, appDraftId)
+        val appDraft = AppDraft.findById(request.appDraftId)
+        val canViewExistence = PermissionService
+            .userCanViewAppDraftExistence(userId, request.appDraftId)
         if (!canViewExistence || appDraft == null) {
             throw Status
                 .NOT_FOUND
-                .withDescription("app draft \"$appDraftId\" not found")
+                .withDescription("app draft \"${request.appDraftId}\" not found")
                 .asRuntimeException()
         }
-        val canEditListingIcon = PermissionService.userCanEditAppDraftListings(userId, appDraftId)
+        val canEditListingIcon = PermissionService
+            .userCanEditAppDraftListings(userId, request.appDraftId)
         if (!canEditListingIcon) {
             throw Status
                 .PERMISSION_DENIED
@@ -698,7 +693,7 @@ class AppDraftServiceImpl @Inject constructor(
                 .asRuntimeException()
         }
         val appDraftListing = AppDraftListing
-            .findByAppDraftIdAndLanguage(appDraftId, request.language)
+            .findByAppDraftIdAndLanguage(request.appDraftId, request.language)
             ?: throw Status
                 .NOT_FOUND
                 .withDescription("listing with language \"${request.language}\" not found")
@@ -726,25 +721,23 @@ class AppDraftServiceImpl @Inject constructor(
         request: DeleteAppDraftListingRequest,
     ): Uni<DeleteAppDraftListingResponse> {
         val userId = AuthnContextKey.USER_ID.get()
-        // protovalidate ensures this is a valid UUID, so no need to catch IllegalArgumentException
-        val appDraftId = UUID.fromString(request.appDraftId)
 
-        val appDraft = AppDraft.findById(appDraftId)
-        val canViewExistence = PermissionService.userCanViewAppDraftExistence(userId, appDraftId)
+        val appDraft = AppDraft.findById(request.appDraftId)
+        val canViewExistence = PermissionService.userCanViewAppDraftExistence(userId, request.appDraftId)
         if (!canViewExistence || appDraft == null) {
             throw Status
                 .NOT_FOUND
-                .withDescription("app draft \"$appDraftId\" not found")
+                .withDescription("app draft \"${request.appDraftId}\" not found")
                 .asRuntimeException()
         }
         val canDeleteAppDraftListings = PermissionService
-            .userCanEditAppDraftListings(userId, appDraftId)
+            .userCanEditAppDraftListings(userId, request.appDraftId)
         if (!canDeleteAppDraftListings) {
             throw Status
                 .PERMISSION_DENIED
                 .withDescription(
                     "insufficient permission to delete listings for app draft "
-                            + "\"$appDraftId\""
+                            + "\"${request.appDraftId}\""
                 )
                 .asRuntimeException()
         }
@@ -755,12 +748,12 @@ class AppDraftServiceImpl @Inject constructor(
                 .asRuntimeException()
         }
         val appDraftListing = AppDraftListing
-            .findByAppDraftIdAndLanguage(appDraftId, request.language)
+            .findByAppDraftIdAndLanguage(request.appDraftId, request.language)
             ?: throw Status
                 .NOT_FOUND
                 .withDescription(
                     "listing with language \"${request.language}\" not found for app draft "
-                            + "\"$appDraftId\""
+                            + "\"${request.appDraftId}\""
                 )
                 .asRuntimeException()
 
@@ -784,18 +777,17 @@ class AppDraftServiceImpl @Inject constructor(
     @Transactional
     override fun publishAppDraft(request: PublishAppDraftRequest): Uni<PublishAppDraftResponse> {
         val userId = AuthnContextKey.USER_ID.get()
-        // protovalidate ensures this is a valid UUID, so no need to catch IllegalArgumentException
-        val appDraftId = UUID.fromString(request.appDraftId)
 
-        val appDraft = AppDraft.findById(appDraftId)
-        val canViewExistence = PermissionService.userCanViewAppDraftExistence(userId, appDraftId)
+        val appDraft = AppDraft.findById(request.appDraftId)
+        val canViewExistence = PermissionService
+            .userCanViewAppDraftExistence(userId, request.appDraftId)
         if (!canViewExistence || appDraft == null) {
             throw Status
                 .NOT_FOUND
-                .withDescription("app draft \"$appDraftId\" not found")
+                .withDescription("app draft \"${request.appDraftId}\" not found")
                 .asRuntimeException()
         }
-        val canPublish = PermissionService.userCanPublishAppDraft(userId, appDraftId)
+        val canPublish = PermissionService.userCanPublishAppDraft(userId, request.appDraftId)
         if (!canPublish) {
             throw Status
                 .PERMISSION_DENIED

@@ -22,7 +22,6 @@ import io.quarkus.grpc.GrpcService
 import io.quarkus.grpc.RegisterInterceptor
 import io.smallrye.mutiny.Uni
 import jakarta.transaction.Transactional
-import java.util.UUID
 import kotlin.io.encoding.Base64
 
 private const val DEFAULT_PAGE_SIZE = 50u
@@ -52,7 +51,7 @@ class OrganizationServiceImpl : OrganizationService {
                     throw invalidPageTokenError
                 }
 
-                UUID.fromString(token.lastOrganizationId)
+                token.lastOrganizationId
             } catch (_: IllegalArgumentException) {
                 throw invalidPageTokenError
             } catch (_: InvalidProtocolBufferException) {
@@ -66,7 +65,7 @@ class OrganizationServiceImpl : OrganizationService {
             .findForUserByQuery(userId, pageSize, lastOrganizationId)
             .map { organization ->
                 organization {
-                    id = organization.id.toString()
+                    id = organization.id
                 }
             }
 

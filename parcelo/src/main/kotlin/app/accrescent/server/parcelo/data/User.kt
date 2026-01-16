@@ -12,7 +12,6 @@ import jakarta.persistence.Entity
 import jakarta.persistence.Id
 import jakarta.persistence.Table
 import jakarta.persistence.UniqueConstraint
-import java.util.UUID
 
 @Entity
 @Table(
@@ -21,7 +20,8 @@ import java.util.UUID
 )
 class User(
     @Id
-    val id: UUID,
+    @Column(columnDefinition = "text")
+    val id: String,
 
     @Column(columnDefinition = "text", name = "scoped_user_id", nullable = false)
     val scopedUserId: String,
@@ -29,8 +29,8 @@ class User(
     @Column(columnDefinition = "text", name = "identity_provider", nullable = false)
     val identityProvider = "github"
 
-    companion object : PanacheCompanionBase<User, UUID> {
-        fun existsById(id: UUID): Boolean {
+    companion object : PanacheCompanionBase<User, String> {
+        fun existsById(id: String): Boolean {
             return count("WHERE id = ?1", id) > 0
         }
 
@@ -56,4 +56,4 @@ class User(
 }
 
 @RegisterForReflection
-data class UserId(val id: UUID)
+data class UserId(val id: String)

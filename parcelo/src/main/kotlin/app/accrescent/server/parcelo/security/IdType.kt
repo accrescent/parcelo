@@ -4,6 +4,10 @@
 
 package app.accrescent.server.parcelo.security
 
-enum class ApiKeyType {
+enum class IdType {
+    APP_DRAFT,
+    APP_EDIT,
+    ORGANIZATION,
+    USER,
     USER_SESSION,
 }

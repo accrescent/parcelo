@@ -36,10 +36,11 @@ import java.util.UUID
 )
 class AppDraft(
     @Id
-    val id: UUID,
+    @Column(columnDefinition = "text")
+    val id: String,
 
-    @Column(name = "organization_id", nullable = false)
-    val organizationId: UUID,
+    @Column(columnDefinition = "text", name = "organization_id", nullable = false)
+    val organizationId: String,
 
     @Column(name = "created_at", nullable = false)
     var createdAt: OffsetDateTime,
@@ -99,8 +100,8 @@ class AppDraft(
         ) == 0L
     }
 
-    companion object : PanacheCompanionBase<AppDraft, UUID> {
-        fun countActiveInOrganization(organizationId: UUID): Long {
+    companion object : PanacheCompanionBase<AppDraft, String> {
+        fun countActiveInOrganization(organizationId: String): Long {
             // An app draft is considered active if it is not in a terminal state. The terminal
             // states are:
             //
@@ -130,9 +131,9 @@ class AppDraft(
         }
 
         fun findForUserByQuery(
-            userId: UUID,
+            userId: String,
             pageSize: UInt,
-            afterAppDraftId: UUID?,
+            afterAppDraftId: String?,
         ): List<AppDraft> {
             return if (afterAppDraftId == null) {
                 find(

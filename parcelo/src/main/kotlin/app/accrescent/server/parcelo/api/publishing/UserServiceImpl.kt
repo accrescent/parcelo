@@ -26,7 +26,7 @@ class UserServiceImpl : UserService {
     override fun getSelf(request: GetSelfRequest): Uni<GetSelfResponse> {
         val userId = AuthnContextKey.USER_ID.get()
 
-        val response = getSelfResponse { this.userId = userId.toString() }
+        val response = getSelfResponse { this.userId = userId }
 
         return Uni.createFrom().item { response }
     }

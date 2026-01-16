@@ -26,8 +26,8 @@ CREATE SEQUENCE reviewers_seq START WITH 1 INCREMENT BY 50;
 
 CREATE TABLE api_keys (
     id bigint NOT NULL,
-    user_id uuid NOT NULL,
     api_key_hash text NOT NULL UNIQUE,
+    user_id text NOT NULL,
     PRIMARY KEY (id)
 );
 
@@ -41,8 +41,8 @@ CREATE TABLE app_draft_acls (
     can_view boolean NOT NULL,
     can_view_existence boolean NOT NULL,
     id bigint NOT NULL,
-    app_draft_id uuid NOT NULL,
-    user_id uuid NOT NULL,
+    app_draft_id text NOT NULL,
+    user_id text NOT NULL,
     PRIMARY KEY (id),
     UNIQUE (app_draft_id, user_id)
 );
@@ -58,9 +58,9 @@ CREATE TABLE app_draft_listing_icon_upload_jobs (
 );
 
 CREATE TABLE app_draft_listings (
-    app_draft_id uuid NOT NULL,
     icon_image_id uuid,
     id uuid NOT NULL,
+    app_draft_id text NOT NULL,
     language text NOT NULL,
     name text NOT NULL,
     short_description text NOT NULL,
@@ -72,7 +72,7 @@ CREATE TABLE app_draft_upload_processing_jobs (
     completed boolean NOT NULL,
     succeeded boolean NOT NULL,
     id bigint NOT NULL,
-    app_draft_id uuid NOT NULL UNIQUE,
+    app_draft_id text NOT NULL UNIQUE,
     bucket_id text NOT NULL,
     object_id text NOT NULL,
     PRIMARY KEY (id),
@@ -84,10 +84,10 @@ CREATE TABLE app_drafts (
     published_at timestamp(6) with time zone,
     submitted_at timestamp(6) with time zone,
     app_package_id uuid,
-    id uuid NOT NULL,
-    organization_id uuid NOT NULL,
     review_id uuid,
     default_listing_language text,
+    id text NOT NULL,
+    organization_id text NOT NULL,
     PRIMARY KEY (id),
     CHECK (app_package_id IS NOT NULL OR submitted_at IS NULL),
     CHECK (default_listing_language IS NOT NULL OR submitted_at IS NULL),
@@ -96,9 +96,9 @@ CREATE TABLE app_drafts (
 );
 
 CREATE TABLE app_edit_listings (
-    app_edit_id uuid NOT NULL,
     icon_image_id uuid NOT NULL,
     id uuid NOT NULL,
+    app_edit_id text NOT NULL,
     language text NOT NULL,
     name text NOT NULL,
     short_description text NOT NULL,
@@ -110,10 +110,10 @@ CREATE TABLE app_edits (
     created_at timestamp(6) with time zone NOT NULL,
     published_at timestamp(6) with time zone,
     app_package_id uuid NOT NULL,
-    id uuid NOT NULL,
     review_id uuid,
     app_id text NOT NULL,
     default_listing_language text NOT NULL,
+    id text NOT NULL,
     PRIMARY KEY (id)
 );
 
@@ -155,9 +155,9 @@ CREATE TABLE app_packages (
 CREATE TABLE apps (
     active_edit_limit integer NOT NULL,
     app_package_id uuid NOT NULL,
-    organization_id uuid NOT NULL,
     default_listing_language text NOT NULL,
     id text NOT NULL,
+    organization_id text NOT NULL,
     PRIMARY KEY (id)
 );
 
@@ -175,8 +175,8 @@ CREATE TABLE organization_acls (
     can_view_apps boolean NOT NULL,
     can_view_organization boolean NOT NULL,
     id bigint NOT NULL,
-    organization_id uuid NOT NULL,
-    user_id uuid NOT NULL,
+    organization_id text NOT NULL,
+    user_id text NOT NULL,
     PRIMARY KEY (id),
     UNIQUE (organization_id, user_id)
 );
@@ -184,7 +184,7 @@ CREATE TABLE organization_acls (
 CREATE TABLE organizations (
     active_app_draft_limit integer NOT NULL,
     published_app_limit integer NOT NULL,
-    id uuid NOT NULL,
+    id text NOT NULL,
     PRIMARY KEY (id)
 );
 
@@ -220,8 +220,8 @@ CREATE TABLE published_images (
 
 CREATE TABLE publishers (
     id bigint NOT NULL,
-    user_id uuid NOT NULL UNIQUE,
     email text NOT NULL,
+    user_id text NOT NULL UNIQUE,
     PRIMARY KEY (id)
 );
 
@@ -234,8 +234,8 @@ CREATE TABLE rejection_reasons (
 
 CREATE TABLE reviewers (
     id bigint NOT NULL,
-    user_id uuid NOT NULL UNIQUE,
     email text NOT NULL,
+    user_id text NOT NULL UNIQUE,
     PRIMARY KEY (id)
 );
 
@@ -246,7 +246,7 @@ CREATE TABLE reviews (
 );
 
 CREATE TABLE users (
-    id uuid NOT NULL,
+    id text NOT NULL,
     identity_provider text NOT NULL,
     scoped_user_id text NOT NULL,
     PRIMARY KEY (id),
