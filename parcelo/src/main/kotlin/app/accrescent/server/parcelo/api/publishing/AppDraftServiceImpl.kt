@@ -214,18 +214,24 @@ class AppDraftServiceImpl @Inject constructor(
             draft = appDraft {
                 id = appDraft.id.toString()
                 appDraft.defaultListingLanguage?.let { defaultListingLanguage = it }
-                appDraft.submittedAt?.let { submissionTimestamp ->
-                    submittedAt = timestamp {
-                        seconds = submissionTimestamp.toEpochSecond()
-                        nanos = submissionTimestamp.nano
-                    }
-                }
                 appDraft.appPackage?.let { pkg ->
                     appPackage = appPackage {
                         appId = pkg.appId
                         versionCode = pkg.versionCode.toLong()
                         versionName = pkg.versionName
                         targetSdk = pkg.targetSdk.toLong()
+                    }
+                }
+                appDraft.submittedAt?.let { submissionTimestamp ->
+                    submittedAt = timestamp {
+                        seconds = submissionTimestamp.toEpochSecond()
+                        nanos = submissionTimestamp.nano
+                    }
+                }
+                appDraft.publishedAt?.let { publicationTimestamp ->
+                    publishedAt = timestamp {
+                        seconds = publicationTimestamp.toEpochSecond()
+                        nanos = publicationTimestamp.nano
                     }
                 }
             }
@@ -267,18 +273,24 @@ class AppDraftServiceImpl @Inject constructor(
                 appDraft {
                     id = appDraft.id.toString()
                     appDraft.defaultListingLanguage?.let { defaultListingLanguage = it }
-                    appDraft.submittedAt?.let { submissionTimestamp ->
-                        submittedAt = timestamp {
-                            seconds = submissionTimestamp.toEpochSecond()
-                            nanos = submissionTimestamp.nano
-                        }
-                    }
                     appDraft.appPackage?.let { pkg ->
                         appPackage = appPackage {
                             appId = pkg.appId
                             versionCode = pkg.versionCode.toLong()
                             versionName = pkg.versionName
                             targetSdk = pkg.targetSdk.toLong()
+                        }
+                    }
+                    appDraft.submittedAt?.let { submissionTimestamp ->
+                        submittedAt = timestamp {
+                            seconds = submissionTimestamp.toEpochSecond()
+                            nanos = submissionTimestamp.nano
+                        }
+                    }
+                    appDraft.publishedAt?.let { publicationTimestamp ->
+                        publishedAt = timestamp {
+                            seconds = publicationTimestamp.toEpochSecond()
+                            nanos = publicationTimestamp.nano
                         }
                     }
                 }
