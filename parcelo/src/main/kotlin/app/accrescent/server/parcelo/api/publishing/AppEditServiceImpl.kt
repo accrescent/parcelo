@@ -25,6 +25,7 @@ import io.quarkus.grpc.GrpcService
 import io.quarkus.grpc.RegisterInterceptor
 import io.smallrye.mutiny.Uni
 import jakarta.transaction.Transactional
+import java.time.OffsetDateTime
 import java.util.UUID
 
 @GrpcService
@@ -66,6 +67,7 @@ class AppEditServiceImpl : AppEditService {
         val appEdit = AppEdit(
             id = UUID.randomUUID(),
             appId = request.appId,
+            createdAt = OffsetDateTime.now(),
             defaultListingLanguage = app.defaultListingLanguage,
             appPackageId = app.appPackageId,
             reviewId = null,

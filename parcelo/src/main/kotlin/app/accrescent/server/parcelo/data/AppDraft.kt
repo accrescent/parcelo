@@ -41,6 +41,9 @@ class AppDraft(
     @Column(name = "organization_id", nullable = false)
     val organizationId: UUID,
 
+    @Column(name = "created_at", nullable = false)
+    var createdAt: OffsetDateTime,
+
     @Column(name = "app_package_id")
     var appPackageId: UUID?,
 

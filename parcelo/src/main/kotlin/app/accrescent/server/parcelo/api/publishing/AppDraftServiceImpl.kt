@@ -160,6 +160,7 @@ class AppDraftServiceImpl @Inject constructor(
         val appDraft = AppDraft(
             id = UUID.randomUUID(),
             organizationId = organizationId,
+            createdAt = OffsetDateTime.now(),
             appPackageId = null,
             defaultListingLanguage = null,
             submittedAt = null,

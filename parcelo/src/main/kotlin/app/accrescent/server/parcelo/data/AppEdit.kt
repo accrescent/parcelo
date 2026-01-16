@@ -26,6 +26,9 @@ class AppEdit(
     @Column(columnDefinition = "text", name = "app_id", nullable = false)
     val appId: String,
 
+    @Column(name = "created_at", nullable = false)
+    var createdAt: OffsetDateTime,
+
     @Column(columnDefinition = "text", name = "default_listing_language", nullable = false)
     val defaultListingLanguage: String,
 
