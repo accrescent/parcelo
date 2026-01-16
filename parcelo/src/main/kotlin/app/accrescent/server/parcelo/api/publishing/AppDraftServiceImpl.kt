@@ -213,6 +213,7 @@ class AppDraftServiceImpl @Inject constructor(
         val response = getAppDraftResponse {
             draft = appDraft {
                 id = appDraft.id.toString()
+                appDraft.defaultListingLanguage?.let { defaultListingLanguage = it }
                 appDraft.submittedAt?.let { submissionTimestamp ->
                     submittedAt = timestamp {
                         seconds = submissionTimestamp.toEpochSecond()
@@ -265,6 +266,7 @@ class AppDraftServiceImpl @Inject constructor(
             .map { appDraft ->
                 appDraft {
                     id = appDraft.id.toString()
+                    appDraft.defaultListingLanguage?.let { defaultListingLanguage = it }
                     appDraft.submittedAt?.let { submissionTimestamp ->
                         submittedAt = timestamp {
                             seconds = submissionTimestamp.toEpochSecond()
