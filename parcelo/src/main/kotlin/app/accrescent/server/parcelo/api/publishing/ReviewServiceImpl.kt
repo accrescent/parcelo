@@ -16,6 +16,9 @@ import app.accrescent.server.parcelo.data.Review
 import app.accrescent.server.parcelo.security.AuthnContextKey
 import app.accrescent.server.parcelo.security.GrpcAuthenticationInterceptor
 import app.accrescent.server.parcelo.security.GrpcRateLimitInterceptor
+import app.accrescent.server.parcelo.security.ObjectReference
+import app.accrescent.server.parcelo.security.ObjectType
+import app.accrescent.server.parcelo.security.Permission
 import app.accrescent.server.parcelo.security.PermissionService
 import app.accrescent.server.parcelo.validation.GrpcRequestValidationInterceptor
 import io.grpc.Status
@@ -23,6 +26,7 @@ import io.quarkus.grpc.GrpcService
 import io.quarkus.grpc.RegisterInterceptor
 import io.quarkus.mailer.MailTemplate
 import io.smallrye.mutiny.Uni
+import jakarta.inject.Inject
 import jakarta.transaction.Transactional
 import java.util.UUID
 
@@ -30,7 +34,9 @@ import java.util.UUID
 @RegisterInterceptor(GrpcAuthenticationInterceptor::class)
 @RegisterInterceptor(GrpcRequestValidationInterceptor::class)
 @RegisterInterceptor(GrpcRateLimitInterceptor::class)
-class ReviewServiceImpl : ReviewService {
+class ReviewServiceImpl @Inject constructor(
+    private val permissionService: PermissionService,
+) : ReviewService {
     @JvmRecord
     data class AppDraftAssignedToYouForPublishingEmail(
         val appDraftId: String,
@@ -42,22 +48,32 @@ class ReviewServiceImpl : ReviewService {
     ): Uni<CreateAppDraftReviewResponse> {
         val userId = AuthnContextKey.USER_ID.get()
 
-        val appDraft = AppDraft.findById(request.appDraftId)
-        val canViewExistence = PermissionService
-            .userCanViewAppDraftExistence(userId, request.appDraftId)
-        if (!canViewExistence || appDraft == null) {
-            throw Status
-                .NOT_FOUND
-                .withDescription("app draft \"${request.appDraftId}\" not found")
-                .asRuntimeException()
-        }
-        val canReview = PermissionService.userCanReviewAppDraft(userId, request.appDraftId)
+        val canReview = permissionService.hasPermission(
+            ObjectReference(ObjectType.APP_DRAFT, request.appDraftId),
+            Permission.REVIEW,
+            ObjectReference(ObjectType.USER, userId),
+        )
         if (!canReview) {
-            throw Status
-                .PERMISSION_DENIED
-                .withDescription("insufficient permission to review app draft")
-                .asRuntimeException()
+            val exists = AppDraft.existsById(request.appDraftId)
+            val canViewExistence = permissionService.hasPermission(
+                ObjectReference(ObjectType.APP, request.appDraftId),
+                Permission.VIEW_EXISTENCE,
+                ObjectReference(ObjectType.USER, userId),
+            )
+
+            throw if (!exists || !canViewExistence) {
+                appDraftNotFoundException(request.appDraftId)
+            } else {
+                throw Status
+                    .PERMISSION_DENIED
+                    .withDescription("insufficient permission to review app draft")
+                    .asRuntimeException()
+            }
         }
+
+        val appDraft = AppDraft
+            .findById(request.appDraftId)
+            ?: throw appDraftNotFoundException(request.appDraftId)
         if (appDraft.reviewId != null) {
             throw Status
                 .ALREADY_EXISTS
@@ -89,11 +105,11 @@ class ReviewServiceImpl : ReviewService {
                 appDraftId = request.appDraftId,
                 userId = publisher.userId,
                 canDelete = false,
-                canEditListings = false,
                 canPublish = true,
                 canReplacePackage = false,
                 canReview = false,
                 canSubmit = false,
+                canUpdate = false,
                 canView = false,
                 canViewExistence = true,
             )
@@ -114,5 +130,12 @@ class ReviewServiceImpl : ReviewService {
             .sendAndAwait()
 
         return Uni.createFrom().item { createAppDraftReviewResponse {} }
+    }
+
+    private companion object {
+        private fun appDraftNotFoundException(appDraftId: String) = Status
+            .NOT_FOUND
+            .withDescription("app draft \"$appDraftId\" not found")
+            .asRuntimeException()
     }
 }
