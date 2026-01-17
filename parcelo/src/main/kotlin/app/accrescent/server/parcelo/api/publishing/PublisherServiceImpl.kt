@@ -14,6 +14,10 @@ import app.accrescent.server.parcelo.data.User
 import app.accrescent.server.parcelo.security.AuthnContextKey
 import app.accrescent.server.parcelo.security.GrpcAuthenticationInterceptor
 import app.accrescent.server.parcelo.security.GrpcRateLimitInterceptor
+import app.accrescent.server.parcelo.security.ObjectReference
+import app.accrescent.server.parcelo.security.ObjectType
+import app.accrescent.server.parcelo.security.Permission
+import app.accrescent.server.parcelo.security.PermissionService
 import app.accrescent.server.parcelo.validation.GrpcRequestValidationInterceptor
 import io.grpc.Status
 import io.quarkus.grpc.GrpcService
@@ -26,22 +30,38 @@ import jakarta.transaction.Transactional
 @RegisterInterceptor(GrpcAuthenticationInterceptor::class)
 @RegisterInterceptor(GrpcRequestValidationInterceptor::class)
 @RegisterInterceptor(GrpcRateLimitInterceptor::class)
-class PublisherServiceImpl @Inject constructor(val config: ParceloConfig) : PublisherService {
+class PublisherServiceImpl @Inject constructor(
+    val config: ParceloConfig,
+    private val permissionService: PermissionService,
+) : PublisherService {
     @Transactional
     override fun createPublisher(request: CreatePublisherRequest): Uni<CreatePublisherResponse> {
         val userId = AuthnContextKey.USER_ID.get()
 
-        val authenticatedUser = User
-            .findById(userId)
-            ?: throw Status.UNAUTHENTICATED.asRuntimeException()
-        val canCreatePublisher = config.admin().identityProvider() == authenticatedUser.identityProvider
-                && config.admin().scopedUserId() == authenticatedUser.scopedUserId
+        val canCreatePublisher = permissionService.hasPermission(
+            // PLATFORM is a singleton, so its resource ID is unused
+            ObjectReference(ObjectType.PLATFORM, ""),
+            Permission.CREATE_PUBLISHER,
+            ObjectReference(ObjectType.USER, userId),
+        )
         if (!canCreatePublisher) {
-            throw Status
-                .PERMISSION_DENIED
-                .withDescription("insufficient permission to create publishers")
-                .asRuntimeException()
+            val userExists = User.existsById(request.userId)
+            val canViewUserExistence = permissionService.hasPermission(
+                ObjectReference(ObjectType.USER, request.userId),
+                Permission.VIEW_EXISTENCE,
+                ObjectReference(ObjectType.USER, userId),
+            )
+
+            throw if (!userExists || !canViewUserExistence) {
+                userNotFoundException(request.userId)
+            } else {
+                throw Status
+                    .PERMISSION_DENIED
+                    .withDescription("insufficient permission to create reviewer")
+                    .asRuntimeException()
+            }
         }
+
         if (!User.existsById(request.userId)) {
             throw Status
                 .NOT_FOUND
@@ -60,5 +80,12 @@ class PublisherServiceImpl @Inject constructor(val config: ParceloConfig) : Publ
         Publisher(userId = request.userId, email = request.email).persist()
 
         return Uni.createFrom().item { createPublisherResponse {} }
+    }
+
+    private companion object {
+        private fun userNotFoundException(userId: String) = Status
+            .NOT_FOUND
+            .withDescription("user with ID \"$userId\" not found")
+            .asRuntimeException()
     }
 }

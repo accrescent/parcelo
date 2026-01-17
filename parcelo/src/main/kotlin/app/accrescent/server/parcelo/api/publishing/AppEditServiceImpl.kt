@@ -22,12 +22,16 @@ import app.accrescent.server.parcelo.security.GrpcAuthenticationInterceptor
 import app.accrescent.server.parcelo.security.GrpcRateLimitInterceptor
 import app.accrescent.server.parcelo.security.IdType
 import app.accrescent.server.parcelo.security.Identifier
+import app.accrescent.server.parcelo.security.ObjectReference
+import app.accrescent.server.parcelo.security.ObjectType
+import app.accrescent.server.parcelo.security.Permission
 import app.accrescent.server.parcelo.security.PermissionService
 import app.accrescent.server.parcelo.validation.GrpcRequestValidationInterceptor
 import io.grpc.Status
 import io.quarkus.grpc.GrpcService
 import io.quarkus.grpc.RegisterInterceptor
 import io.smallrye.mutiny.Uni
+import jakarta.inject.Inject
 import jakarta.transaction.Transactional
 import java.time.OffsetDateTime
 import java.util.UUID
@@ -36,15 +40,25 @@ import java.util.UUID
 @RegisterInterceptor(GrpcAuthenticationInterceptor::class)
 @RegisterInterceptor(GrpcRequestValidationInterceptor::class)
 @RegisterInterceptor(GrpcRateLimitInterceptor::class)
-class AppEditServiceImpl : AppEditService {
+class AppEditServiceImpl @Inject constructor(
+    private val permissionService: PermissionService,
+) : AppEditService {
     @Transactional
     override fun createAppEdit(request: CreateAppEditRequest): Uni<CreateAppEditResponse> {
         val userId = AuthnContextKey.USER_ID.get()
 
-        val canCreateAppEdit = PermissionService.userCanCreateAppEditForApp(userId, request.appId)
+        val canCreateAppEdit = permissionService.hasPermission(
+            ObjectReference(ObjectType.APP, request.appId),
+            Permission.CREATE_APP_EDIT,
+            ObjectReference(ObjectType.USER, userId),
+        )
         if (!canCreateAppEdit) {
             val appExists = App.existsById(request.appId)
-            val canViewAppExistence = PermissionService.userCanViewAppExistence(userId, request.appId)
+            val canViewAppExistence = permissionService.hasPermission(
+                ObjectReference(ObjectType.APP, request.appId),
+                Permission.VIEW_EXISTENCE,
+                ObjectReference(ObjectType.USER, userId),
+            )
 
             throw if (!canViewAppExistence || !appExists) {
                 appNotFoundException(request.appId)

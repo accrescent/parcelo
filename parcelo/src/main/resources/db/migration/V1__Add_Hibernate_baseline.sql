@@ -33,11 +33,11 @@ CREATE TABLE api_keys (
 
 CREATE TABLE app_draft_acls (
     can_delete boolean NOT NULL,
-    can_edit_listings boolean NOT NULL,
     can_publish boolean NOT NULL,
     can_replace_package boolean NOT NULL,
     can_review boolean NOT NULL,
     can_submit boolean NOT NULL,
+    can_update boolean NOT NULL,
     can_view boolean NOT NULL,
     can_view_existence boolean NOT NULL,
     id bigint NOT NULL,

@@ -66,6 +66,9 @@ import app.accrescent.server.parcelo.security.GrpcAuthenticationInterceptor
 import app.accrescent.server.parcelo.security.GrpcRateLimitInterceptor
 import app.accrescent.server.parcelo.security.IdType
 import app.accrescent.server.parcelo.security.Identifier
+import app.accrescent.server.parcelo.security.ObjectReference
+import app.accrescent.server.parcelo.security.ObjectType
+import app.accrescent.server.parcelo.security.Permission
 import app.accrescent.server.parcelo.security.PermissionService
 import app.accrescent.server.parcelo.util.TempFile
 import app.accrescent.server.parcelo.util.apkPaths
@@ -84,7 +87,6 @@ import io.quarkus.grpc.RegisterInterceptor
 import io.quarkus.mailer.MailTemplate
 import io.smallrye.mutiny.Uni
 import jakarta.inject.Inject
-import jakarta.persistence.LockModeType
 import jakarta.transaction.Transactional
 import java.time.OffsetDateTime
 import java.util.UUID
@@ -106,6 +108,7 @@ private const val MAX_PAGE_SIZE = 50u
 @RegisterInterceptor(GrpcRateLimitInterceptor::class)
 class AppDraftServiceImpl @Inject constructor(
     private val config: ParceloConfig,
+    private val permissionService: PermissionService,
     private val publishService: PublishService,
     private val storage: Storage,
 ) : AppDraftService {
@@ -118,35 +121,36 @@ class AppDraftServiceImpl @Inject constructor(
     override fun createAppDraft(request: CreateAppDraftRequest): Uni<CreateAppDraftResponse> {
         val userId = AuthnContextKey.USER_ID.get()
 
-        val canViewOrg = PermissionService.userCanViewOrganization(userId, request.organizationId)
-        if (!canViewOrg) {
-            throw Status
-                .NOT_FOUND
-                .withDescription("organization \"${request.organizationId}\" not found")
-                .asRuntimeException()
-        }
+        val canCreateAppDraft = permissionService.hasPermission(
+            ObjectReference(ObjectType.ORGANIZATION, request.organizationId),
+            Permission.CREATE_APP_DRAFT,
+            ObjectReference(ObjectType.USER, userId),
+        )
+        if (!canCreateAppDraft) {
+            val orgExists = Organization.existsById(request.organizationId)
+            val canViewOrgExistence = permissionService.hasPermission(
+                ObjectReference(ObjectType.ORGANIZATION, request.organizationId),
+                Permission.VIEW_EXISTENCE,
+                ObjectReference(ObjectType.USER, userId),
+            )
 
-        val canCreateAppDrafts = PermissionService
-            .userCanCreateAppDraftsInOrganization(userId, request.organizationId)
-        if (!canCreateAppDrafts) {
-            throw Status
-                .PERMISSION_DENIED
-                .withDescription(
-                    "insufficient permission to create app drafts in organization " +
-                            "\"${request.organizationId}\""
-                )
-                .asRuntimeException()
-        }
-
-        val orgActiveAppDraftLimit = Organization
-            .findById(request.organizationId, LockModeType.PESSIMISTIC_WRITE)
-            ?.activeAppDraftLimit
-            ?: run {
-                throw Status
-                    .NOT_FOUND
-                    .withDescription("organization \"${request.organizationId}\" not found")
+            throw if (!orgExists || !canViewOrgExistence) {
+                organizationNotFoundException(request.organizationId)
+            } else {
+                Status
+                    .PERMISSION_DENIED
+                    .withDescription(
+                        "insufficient permission to create app drafts in organization " +
+                                "\"${request.organizationId}\""
+                    )
                     .asRuntimeException()
             }
+        }
+
+        val organization = Organization
+            .findById(request.organizationId)
+            ?: throw organizationNotFoundException(request.organizationId)
+        val orgActiveAppDraftLimit = organization.activeAppDraftLimit
         val orgActiveAppDraftCount = AppDraft.countActiveInOrganization(request.organizationId)
         if (orgActiveAppDraftCount >= orgActiveAppDraftLimit) {
             throw Status
@@ -172,11 +176,11 @@ class AppDraftServiceImpl @Inject constructor(
             appDraftId = appDraft.id,
             userId = userId,
             canDelete = true,
-            canEditListings = true,
             canPublish = false,
             canReplacePackage = true,
             canReview = false,
             canSubmit = true,
+            canUpdate = true,
             canView = true,
             canViewExistence = true,
         )
@@ -193,23 +197,32 @@ class AppDraftServiceImpl @Inject constructor(
     override fun getAppDraft(request: GetAppDraftRequest): Uni<GetAppDraftResponse> {
         val userId = AuthnContextKey.USER_ID.get()
 
-        val appDraft = AppDraft.findById(request.appDraftId)
-        val canViewExistence = PermissionService
-            .userCanViewAppDraftExistence(userId, request.appDraftId)
-        if (!canViewExistence || appDraft == null) {
-            throw Status
-                .NOT_FOUND
-                .withDescription("app draft \"${request.appDraftId}\" not found")
-                .asRuntimeException()
-        }
-        val canView = PermissionService.userCanViewAppDraft(userId, request.appDraftId)
+        val canView = permissionService.hasPermission(
+            ObjectReference(ObjectType.APP_DRAFT, request.appDraftId),
+            Permission.VIEW,
+            ObjectReference(ObjectType.USER, userId),
+        )
         if (!canView) {
-            throw Status
-                .PERMISSION_DENIED
-                .withDescription("insufficient permission to view app draft")
-                .asRuntimeException()
+            val exists = AppDraft.existsById(request.appDraftId)
+            val canViewExistence = permissionService.hasPermission(
+                ObjectReference(ObjectType.APP_DRAFT, request.appDraftId),
+                Permission.VIEW_EXISTENCE,
+                ObjectReference(ObjectType.USER, userId),
+            )
+
+            throw if (!exists || !canViewExistence) {
+                appDraftNotFoundException(request.appDraftId)
+            } else {
+                Status
+                    .PERMISSION_DENIED
+                    .withDescription("insufficient permission to view app draft")
+                    .asRuntimeException()
+            }
         }
 
+        val appDraft = AppDraft
+            .findById(request.appDraftId)
+            ?: throw appDraftNotFoundException(request.appDraftId)
         val response = getAppDraftResponse {
             draft = appDraft {
                 id = appDraft.id
@@ -328,23 +341,32 @@ class AppDraftServiceImpl @Inject constructor(
     ): Uni<GetAppDraftUploadInfoResponse> {
         val userId = AuthnContextKey.USER_ID.get()
 
-        val appDraft = AppDraft.findById(request.appDraftId)
-        val canViewExistence = PermissionService
-            .userCanViewAppDraftExistence(userId, request.appDraftId)
-        if (!canViewExistence || appDraft == null) {
-            throw Status
-                .NOT_FOUND
-                .withDescription("app draft \"${request.appDraftId}\" not found")
-                .asRuntimeException()
-        }
-        val canReplacePackage = PermissionService
-            .userCanReplaceAppDraftPackage(userId, request.appDraftId)
+        val canReplacePackage = permissionService.hasPermission(
+            ObjectReference(ObjectType.APP_DRAFT, request.appDraftId),
+            Permission.REPLACE_PACKAGE,
+            ObjectReference(ObjectType.USER, userId),
+        )
         if (!canReplacePackage) {
-            throw Status
-                .PERMISSION_DENIED
-                .withDescription("insufficient permission to replace package")
-                .asRuntimeException()
+            val exists = AppDraft.existsById(request.appDraftId)
+            val canViewExistence = permissionService.hasPermission(
+                ObjectReference(ObjectType.APP_DRAFT, request.appDraftId),
+                Permission.VIEW_EXISTENCE,
+                ObjectReference(ObjectType.USER, userId),
+            )
+
+            throw if (!exists || !canViewExistence) {
+                appDraftNotFoundException(request.appDraftId)
+            } else {
+                Status
+                    .PERMISSION_DENIED
+                    .withDescription("insufficient permission to replace package")
+                    .asRuntimeException()
+            }
         }
+
+        val appDraft = AppDraft
+            .findById(request.appDraftId)
+            ?: throw appDraftNotFoundException(request.appDraftId)
         if (appDraft.submitted) {
             throw Status
                 .FAILED_PRECONDITION
@@ -386,22 +408,32 @@ class AppDraftServiceImpl @Inject constructor(
     ): Uni<GetAppDraftDownloadInfoResponse> {
         val userId = AuthnContextKey.USER_ID.get()
 
-        val appDraft = AppDraft.findById(request.appDraftId)
-        val canViewExistence = PermissionService
-            .userCanViewAppDraftExistence(userId, request.appDraftId)
-        if (!canViewExistence || appDraft == null) {
-            throw Status
-                .NOT_FOUND
-                .withDescription("app draft \"${request.appDraftId}\" not found")
-                .asRuntimeException()
+        val canDownload = permissionService.hasPermission(
+            ObjectReference(ObjectType.APP_DRAFT, request.appDraftId),
+            Permission.DOWNLOAD,
+            ObjectReference(ObjectType.USER, userId),
+        )
+        if (!canDownload) {
+            val exists = AppDraft.existsById(request.appDraftId)
+            val canViewExistence = permissionService.hasPermission(
+                ObjectReference(ObjectType.APP_DRAFT, request.appDraftId),
+                Permission.VIEW_EXISTENCE,
+                ObjectReference(ObjectType.USER, userId),
+            )
+
+            throw if (!exists || !canViewExistence) {
+                appDraftNotFoundException(request.appDraftId)
+            } else {
+                Status
+                    .PERMISSION_DENIED
+                    .withDescription("insufficient permission to download app draft")
+                    .asRuntimeException()
+            }
         }
-        val canReview = PermissionService.userCanReviewAppDraft(userId, request.appDraftId)
-        if (!canReview) {
-            throw Status
-                .PERMISSION_DENIED
-                .withDescription("insufficient permission to review app draft")
-                .asRuntimeException()
-        }
+
+        val appDraft = AppDraft
+            .findById(request.appDraftId)
+            ?: throw appDraftNotFoundException(request.appDraftId)
         val appPackage = appDraft.appPackage ?: throw Status
             .NOT_FOUND
             .withDescription("app draft \"${request.appDraftId}\" has no package")
@@ -426,22 +458,32 @@ class AppDraftServiceImpl @Inject constructor(
     override fun updateAppDraft(request: UpdateAppDraftRequest): Uni<UpdateAppDraftResponse> {
         val userId = AuthnContextKey.USER_ID.get()
 
-        val appDraft = AppDraft.findById(request.appDraftId)
-        val canViewExistence = PermissionService
-            .userCanViewAppDraftExistence(userId, request.appDraftId)
-        if (!canViewExistence || appDraft == null) {
-            throw Status
-                .NOT_FOUND
-                .withDescription("app draft \"${request.appDraftId}\" not found")
-                .asRuntimeException()
-        }
-        val canUpdate = PermissionService.userCanEditAppDraftListings(userId, request.appDraftId)
+        val canUpdate = permissionService.hasPermission(
+            ObjectReference(ObjectType.APP_DRAFT, request.appDraftId),
+            Permission.UPDATE,
+            ObjectReference(ObjectType.USER, userId),
+        )
         if (!canUpdate) {
-            throw Status
-                .PERMISSION_DENIED
-                .withDescription("insufficient permission to update default listing language")
-                .asRuntimeException()
+            val exists = AppDraft.existsById(request.appDraftId)
+            val canViewExistence = permissionService.hasPermission(
+                ObjectReference(ObjectType.APP_DRAFT, request.appDraftId),
+                Permission.VIEW_EXISTENCE,
+                ObjectReference(ObjectType.USER, userId),
+            )
+
+            throw if (!exists || !canViewExistence) {
+                appDraftNotFoundException(request.appDraftId)
+            } else {
+                Status
+                    .PERMISSION_DENIED
+                    .withDescription("insufficient permission to update app draft")
+                    .asRuntimeException()
+            }
         }
+
+        val appDraft = AppDraft
+            .findById(request.appDraftId)
+            ?: throw appDraftNotFoundException(request.appDraftId)
         if (appDraft.submitted) {
             throw Status
                 .FAILED_PRECONDITION
@@ -461,22 +503,32 @@ class AppDraftServiceImpl @Inject constructor(
     override fun submitAppDraft(request: SubmitAppDraftRequest): Uni<SubmitAppDraftResponse> {
         val userId = AuthnContextKey.USER_ID.get()
 
-        val appDraft = AppDraft.findById(request.appDraftId)
-        val canViewExistence = PermissionService
-            .userCanViewAppDraftExistence(userId, request.appDraftId)
-        if (!canViewExistence || appDraft == null) {
-            throw Status
-                .NOT_FOUND
-                .withDescription("app draft \"${request.appDraftId}\" not found")
-                .asRuntimeException()
+        val canSubmit = permissionService.hasPermission(
+            ObjectReference(ObjectType.APP_DRAFT, request.appDraftId),
+            Permission.SUBMIT,
+            ObjectReference(ObjectType.USER, userId),
+        )
+        if (!canSubmit) {
+            val exists = AppDraft.existsById(request.appDraftId)
+            val canViewExistence = permissionService.hasPermission(
+                ObjectReference(ObjectType.APP_DRAFT, request.appDraftId),
+                Permission.VIEW_EXISTENCE,
+                ObjectReference(ObjectType.USER, userId),
+            )
+
+            throw if (!exists || !canViewExistence) {
+                appDraftNotFoundException(request.appDraftId)
+            } else {
+                Status
+                    .PERMISSION_DENIED
+                    .withDescription("insufficient permission to submit app draft")
+                    .asRuntimeException()
+            }
         }
-        val canSubmitDraft = PermissionService.userCanSubmitAppDraft(userId, request.appDraftId)
-        if (!canSubmitDraft) {
-            throw Status
-                .PERMISSION_DENIED
-                .withDescription("insufficient permission to submit app draft")
-                .asRuntimeException()
-        }
+
+        val appDraft = AppDraft
+            .findById(request.appDraftId)
+            ?: throw appDraftNotFoundException(request.appDraftId)
         val appPackage = appDraft.appPackage ?: throw Status
             .FAILED_PRECONDITION
             .withDescription("draft must have a package uploaded before it can be submitted")
@@ -533,11 +585,11 @@ class AppDraftServiceImpl @Inject constructor(
                 appDraftId = request.appDraftId,
                 userId = reviewer.userId,
                 canDelete = false,
-                canEditListings = false,
                 canPublish = false,
                 canReplacePackage = false,
                 canReview = true,
                 canSubmit = false,
+                canUpdate = false,
                 canView = false,
                 canViewExistence = true,
             )
@@ -565,24 +617,32 @@ class AppDraftServiceImpl @Inject constructor(
     override fun deleteAppDraft(request: DeleteAppDraftRequest): Uni<DeleteAppDraftResponse> {
         val userId = AuthnContextKey.USER_ID.get()
 
-        val appDraft = AppDraft.findById(request.appDraftId)
-        val canViewExistence = PermissionService
-            .userCanViewAppDraftExistence(userId, request.appDraftId)
-        if (!canViewExistence || appDraft == null) {
-            throw Status
-                .NOT_FOUND
-                .withDescription("app draft \"${request.appDraftId}\" not found")
-                .asRuntimeException()
+        val canDelete = permissionService.hasPermission(
+            ObjectReference(ObjectType.APP_DRAFT, request.appDraftId),
+            Permission.DELETE,
+            ObjectReference(ObjectType.USER, userId),
+        )
+        if (!canDelete) {
+            val exists = AppDraft.existsById(request.appDraftId)
+            val canViewExistence = permissionService.hasPermission(
+                ObjectReference(ObjectType.APP_DRAFT, request.appDraftId),
+                Permission.VIEW_EXISTENCE,
+                ObjectReference(ObjectType.USER, userId),
+            )
+
+            throw if (!exists || !canViewExistence) {
+                appDraftNotFoundException(request.appDraftId)
+            } else {
+                Status
+                    .PERMISSION_DENIED
+                    .withDescription("insufficient permission to delete app draft")
+                    .asRuntimeException()
+            }
         }
-        val canDeleteAppDraft = PermissionService.userCanDeleteAppDraft(userId, request.appDraftId)
-        if (!canDeleteAppDraft) {
-            throw Status
-                .PERMISSION_DENIED
-                .withDescription(
-                    "insufficient permission to delete app draft \"${request.appDraftId}\""
-                )
-                .asRuntimeException()
-        }
+
+        val appDraft = AppDraft
+            .findById(request.appDraftId)
+            ?: throw appDraftNotFoundException(request.appDraftId)
         if (appDraft.submitted) {
             throw Status
                 .FAILED_PRECONDITION
@@ -614,26 +674,32 @@ class AppDraftServiceImpl @Inject constructor(
     ): Uni<CreateAppDraftListingResponse> {
         val userId = AuthnContextKey.USER_ID.get()
 
-        val appDraft = AppDraft.findById(request.appDraftId)
-        val canViewExistence = PermissionService
-            .userCanViewAppDraftExistence(userId, request.appDraftId)
-        if (!canViewExistence || appDraft == null) {
-            throw Status
-                .NOT_FOUND
-                .withDescription("app draft \"${request.appDraftId}\" not found")
-                .asRuntimeException()
+        val canCreateListing = permissionService.hasPermission(
+            ObjectReference(ObjectType.APP_DRAFT, request.appDraftId),
+            Permission.CREATE_LISTING,
+            ObjectReference(ObjectType.USER, userId),
+        )
+        if (!canCreateListing) {
+            val exists = AppDraft.existsById(request.appDraftId)
+            val canViewExistence = permissionService.hasPermission(
+                ObjectReference(ObjectType.APP_DRAFT, request.appDraftId),
+                Permission.VIEW_EXISTENCE,
+                ObjectReference(ObjectType.USER, userId),
+            )
+
+            throw if (!exists || !canViewExistence) {
+                appDraftNotFoundException(request.appDraftId)
+            } else {
+                Status
+                    .PERMISSION_DENIED
+                    .withDescription("insufficient permission to create app draft listing")
+                    .asRuntimeException()
+            }
         }
-        val canCreateListings = PermissionService
-            .userCanEditAppDraftListings(userId, request.appDraftId)
-        if (!canCreateListings) {
-            throw Status
-                .PERMISSION_DENIED
-                .withDescription(
-                    "insufficient permission to create app listings for app draft " +
-                            "\"${request.appDraftId}\""
-                )
-                .asRuntimeException()
-        }
+
+        val appDraft = AppDraft
+            .findById(request.appDraftId)
+            ?: throw appDraftNotFoundException(request.appDraftId)
         if (AppDraftListing.exists(request.appDraftId, request.language)) {
             throw Status
                 .ALREADY_EXISTS
@@ -669,23 +735,33 @@ class AppDraftServiceImpl @Inject constructor(
     ): Uni<GetAppDraftListingIconUploadInfoResponse> {
         val userId = AuthnContextKey.USER_ID.get()
 
-        val appDraft = AppDraft.findById(request.appDraftId)
-        val canViewExistence = PermissionService
-            .userCanViewAppDraftExistence(userId, request.appDraftId)
-        if (!canViewExistence || appDraft == null) {
-            throw Status
-                .NOT_FOUND
-                .withDescription("app draft \"${request.appDraftId}\" not found")
-                .asRuntimeException()
+        val canReplaceIcon = permissionService.hasPermission(
+            ObjectReference(ObjectType.APP_DRAFT, request.appDraftId),
+            Permission.REPLACE_LISTING_ICON,
+            ObjectReference(ObjectType.USER, userId),
+        )
+        if (!canReplaceIcon) {
+            val draftExists = AppDraft.existsById(request.appDraftId)
+            val listingExists = AppDraftListing.exists(request.appDraftId, request.language)
+            val canViewExistence = permissionService.hasPermission(
+                ObjectReference(ObjectType.APP_DRAFT, request.appDraftId),
+                Permission.VIEW_EXISTENCE,
+                ObjectReference(ObjectType.USER, userId),
+            )
+
+            throw when {
+                !draftExists || !canViewExistence -> appDraftNotFoundException(request.appDraftId)
+                !listingExists -> appDraftListingNotFoundException(request.language)
+                else -> throw Status
+                    .PERMISSION_DENIED
+                    .withDescription("insufficient permission to replace app listing icon")
+                    .asRuntimeException()
+            }
         }
-        val canEditListingIcon = PermissionService
-            .userCanEditAppDraftListings(userId, request.appDraftId)
-        if (!canEditListingIcon) {
-            throw Status
-                .PERMISSION_DENIED
-                .withDescription("insufficient permission to modify app listing icon")
-                .asRuntimeException()
-        }
+
+        val appDraft = AppDraft
+            .findById(request.appDraftId)
+            ?: throw appDraftNotFoundException(request.appDraftId)
         if (appDraft.submitted) {
             throw Status
                 .FAILED_PRECONDITION
@@ -694,10 +770,7 @@ class AppDraftServiceImpl @Inject constructor(
         }
         val appDraftListing = AppDraftListing
             .findByAppDraftIdAndLanguage(request.appDraftId, request.language)
-            ?: throw Status
-                .NOT_FOUND
-                .withDescription("listing with language \"${request.language}\" not found")
-                .asRuntimeException()
+            ?: throw appDraftListingNotFoundException(request.language)
 
         val uploadJob = AppDraftListingIconUploadJob(
             appDraftListingId = appDraftListing.id,
@@ -722,25 +795,33 @@ class AppDraftServiceImpl @Inject constructor(
     ): Uni<DeleteAppDraftListingResponse> {
         val userId = AuthnContextKey.USER_ID.get()
 
-        val appDraft = AppDraft.findById(request.appDraftId)
-        val canViewExistence = PermissionService.userCanViewAppDraftExistence(userId, request.appDraftId)
-        if (!canViewExistence || appDraft == null) {
-            throw Status
-                .NOT_FOUND
-                .withDescription("app draft \"${request.appDraftId}\" not found")
-                .asRuntimeException()
+        val canDelete = permissionService.hasPermission(
+            ObjectReference(ObjectType.APP_DRAFT, request.appDraftId),
+            Permission.DELETE_LISTING,
+            ObjectReference(ObjectType.USER, userId),
+        )
+        if (!canDelete) {
+            val draftExists = AppDraft.existsById(request.appDraftId)
+            val listingExists = AppDraftListing.exists(request.appDraftId, request.language)
+            val canViewExistence = permissionService.hasPermission(
+                ObjectReference(ObjectType.APP_DRAFT, request.appDraftId),
+                Permission.VIEW_EXISTENCE,
+                ObjectReference(ObjectType.USER, userId),
+            )
+
+            throw when {
+                !draftExists || !canViewExistence -> appDraftNotFoundException(request.appDraftId)
+                !listingExists -> appDraftListingNotFoundException(request.language)
+                else -> throw Status
+                    .PERMISSION_DENIED
+                    .withDescription("insufficient permission to delete app draft listing")
+                    .asRuntimeException()
+            }
         }
-        val canDeleteAppDraftListings = PermissionService
-            .userCanEditAppDraftListings(userId, request.appDraftId)
-        if (!canDeleteAppDraftListings) {
-            throw Status
-                .PERMISSION_DENIED
-                .withDescription(
-                    "insufficient permission to delete listings for app draft "
-                            + "\"${request.appDraftId}\""
-                )
-                .asRuntimeException()
-        }
+
+        val appDraft = AppDraft
+            .findById(request.appDraftId)
+            ?: throw appDraftNotFoundException(request.appDraftId)
         if (appDraft.submitted) {
             throw Status
                 .FAILED_PRECONDITION
@@ -749,13 +830,7 @@ class AppDraftServiceImpl @Inject constructor(
         }
         val appDraftListing = AppDraftListing
             .findByAppDraftIdAndLanguage(request.appDraftId, request.language)
-            ?: throw Status
-                .NOT_FOUND
-                .withDescription(
-                    "listing with language \"${request.language}\" not found for app draft "
-                            + "\"${request.appDraftId}\""
-                )
-                .asRuntimeException()
+            ?: throw appDraftListingNotFoundException(request.language)
 
         // Delete the associated icon (if it exists) and mark its associated blob for deletion
         appDraftListing.icon?.let { icon ->
@@ -778,29 +853,38 @@ class AppDraftServiceImpl @Inject constructor(
     override fun publishAppDraft(request: PublishAppDraftRequest): Uni<PublishAppDraftResponse> {
         val userId = AuthnContextKey.USER_ID.get()
 
-        val appDraft = AppDraft.findById(request.appDraftId)
-        val canViewExistence = PermissionService
-            .userCanViewAppDraftExistence(userId, request.appDraftId)
-        if (!canViewExistence || appDraft == null) {
-            throw Status
-                .NOT_FOUND
-                .withDescription("app draft \"${request.appDraftId}\" not found")
-                .asRuntimeException()
-        }
-        val canPublish = PermissionService.userCanPublishAppDraft(userId, request.appDraftId)
+        val canPublish = permissionService.hasPermission(
+            ObjectReference(ObjectType.APP_DRAFT, request.appDraftId),
+            Permission.PUBLISH,
+            ObjectReference(ObjectType.USER, userId),
+        )
         if (!canPublish) {
-            throw Status
-                .PERMISSION_DENIED
-                .withDescription("insufficient permission to publish app draft")
-                .asRuntimeException()
+            val exists = AppDraft.existsById(request.appDraftId)
+            val canViewExistence = permissionService.hasPermission(
+                ObjectReference(ObjectType.APP_DRAFT, request.appDraftId),
+                Permission.VIEW_EXISTENCE,
+                ObjectReference(ObjectType.USER, userId),
+            )
+
+            throw if (!exists || !canViewExistence) {
+                appDraftNotFoundException(request.appDraftId)
+            } else {
+                Status
+                    .PERMISSION_DENIED
+                    .withDescription("insufficient permission to publish app draft")
+                    .asRuntimeException()
+            }
         }
+
+        val appDraft = AppDraft
+            .findById(request.appDraftId)
+            ?: throw appDraftNotFoundException(request.appDraftId)
         if (appDraft.published) {
             throw Status
                 .ALREADY_EXISTS
                 .withDescription("the app draft has already been published")
                 .asRuntimeException()
         }
-
         val appPackage = appDraft.appPackage ?: throw Status
             .INTERNAL
             .withDescription("app draft has no package")
@@ -931,6 +1015,21 @@ class AppDraftServiceImpl @Inject constructor(
         private val invalidPageTokenError = Status
             .INVALID_ARGUMENT
             .withDescription("provided page token is invalid")
+            .asRuntimeException()
+
+        private fun appDraftListingNotFoundException(language: String) = Status
+            .NOT_FOUND
+            .withDescription("listing with language \"$language\" not found")
+            .asRuntimeException()
+
+        private fun appDraftNotFoundException(appDraftId: String) = Status
+            .NOT_FOUND
+            .withDescription("app draft \"$appDraftId\" not found")
+            .asRuntimeException()
+
+        private fun organizationNotFoundException(organizationId: String) = Status
+            .NOT_FOUND
+            .withDescription("organization \"$organizationId\" not found")
             .asRuntimeException()
     }
 }

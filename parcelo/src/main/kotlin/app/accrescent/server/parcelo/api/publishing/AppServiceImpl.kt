@@ -18,6 +18,9 @@ import app.accrescent.server.parcelo.data.App
 import app.accrescent.server.parcelo.security.AuthnContextKey
 import app.accrescent.server.parcelo.security.GrpcAuthenticationInterceptor
 import app.accrescent.server.parcelo.security.GrpcRateLimitInterceptor
+import app.accrescent.server.parcelo.security.ObjectReference
+import app.accrescent.server.parcelo.security.ObjectType
+import app.accrescent.server.parcelo.security.Permission
 import app.accrescent.server.parcelo.security.PermissionService
 import app.accrescent.server.parcelo.validation.GrpcRequestValidationInterceptor
 import com.google.protobuf.InvalidProtocolBufferException
@@ -25,6 +28,7 @@ import io.grpc.Status
 import io.quarkus.grpc.GrpcService
 import io.quarkus.grpc.RegisterInterceptor
 import io.smallrye.mutiny.Uni
+import jakarta.inject.Inject
 import jakarta.transaction.Transactional
 import kotlin.io.encoding.Base64
 
@@ -35,20 +39,37 @@ private const val MAX_PAGE_SIZE = 50u
 @RegisterInterceptor(GrpcAuthenticationInterceptor::class)
 @RegisterInterceptor(GrpcRequestValidationInterceptor::class)
 @RegisterInterceptor(GrpcRateLimitInterceptor::class)
-class AppServiceImpl : AppService {
+class AppServiceImpl @Inject constructor(
+    private val permissionService: PermissionService,
+) : AppService {
     @Transactional
     override fun getApp(request: GetAppRequest): Uni<GetAppResponse> {
         val userId = AuthnContextKey.USER_ID.get()
 
-        val app = App.findById(request.appId)
-        val canView = PermissionService.userCanViewApp(userId, request.appId)
-        if (!canView || app == null) {
-            throw Status
-                .NOT_FOUND
-                .withDescription("app with ID \"${request.appId}\" not found")
-                .asRuntimeException()
+        val canView = permissionService.hasPermission(
+            ObjectReference(ObjectType.APP, request.appId),
+            Permission.VIEW,
+            ObjectReference(ObjectType.USER, userId),
+        )
+        if (!canView) {
+            val exists = App.existsById(request.appId)
+            val canViewExistence = permissionService.hasPermission(
+                ObjectReference(ObjectType.APP, request.appId),
+                Permission.VIEW_EXISTENCE,
+                ObjectReference(ObjectType.USER, userId),
+            )
+
+            throw if (!exists || !canViewExistence) {
+                appNotFoundException(request.appId)
+            } else {
+                Status
+                    .PERMISSION_DENIED
+                    .withDescription("insufficient permission to view app")
+                    .asRuntimeException()
+            }
         }
 
+        val app = App.findById(request.appId) ?: throw appNotFoundException(request.appId)
         val response = getAppResponse {
             this.app = app {
                 id = app.id
@@ -113,6 +134,11 @@ class AppServiceImpl : AppService {
         private val invalidPageTokenError = Status
             .INVALID_ARGUMENT
             .withDescription("provided page token is invalid")
+            .asRuntimeException()
+
+        private fun appNotFoundException(appId: String) = Status
+            .NOT_FOUND
+            .withDescription("app with ID \"$appId\" not found")
             .asRuntimeException()
     }
 }

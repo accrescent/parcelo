@@ -117,6 +117,10 @@ class AppDraft(
             )
         }
 
+        fun existsById(id: String): Boolean {
+            return count("WHERE id = ?1", id) > 0
+        }
+
         fun findByProcessingJobBucketIdAndObjectId(bucketId: String, objectId: String): AppDraft? {
             return find(
                 "FROM AppDraft app_drafts " +

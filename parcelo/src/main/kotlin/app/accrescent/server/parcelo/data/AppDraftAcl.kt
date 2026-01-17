@@ -31,9 +31,6 @@ class AppDraftAcl(
     @Column(name = "can_delete", nullable = false)
     val canDelete: Boolean,
 
-    @Column(name = "can_edit_listings", nullable = false)
-    val canEditListings: Boolean,
-
     @Column(name = "can_publish", nullable = false)
     var canPublish: Boolean,
 
@@ -45,6 +42,9 @@ class AppDraftAcl(
 
     @Column(name = "can_submit", nullable = false)
     val canSubmit: Boolean,
+
+    @Column(name = "can_update", nullable = false)
+    val canUpdate: Boolean,
 
     @Column(name = "can_view", nullable = false)
     val canView: Boolean,
