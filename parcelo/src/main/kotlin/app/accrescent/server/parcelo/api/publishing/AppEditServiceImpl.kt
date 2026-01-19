@@ -17,6 +17,7 @@ import app.accrescent.appstore.publish.v1alpha1.appEdit
 import app.accrescent.appstore.publish.v1alpha1.appPackage
 import app.accrescent.appstore.publish.v1alpha1.createAppEditResponse
 import app.accrescent.appstore.publish.v1alpha1.getAppEditResponse
+import app.accrescent.appstore.publish.v1alpha1.updateAppEditResponse
 import app.accrescent.server.parcelo.data.App
 import app.accrescent.server.parcelo.data.AppEdit
 import app.accrescent.server.parcelo.data.AppEditListing
@@ -169,8 +170,55 @@ class AppEditServiceImpl @Inject constructor(
         return Uni.createFrom().item { response }
     }
 
+    @Transactional
     override fun updateAppEdit(request: UpdateAppEditRequest): Uni<UpdateAppEditResponse> {
-        throw Status.UNIMPLEMENTED.asRuntimeException()
+        val userId = AuthnContextKey.USER_ID.get()
+
+        val canUpdate = permissionService.hasPermission(
+            ObjectReference(ObjectType.APP_EDIT, request.appEditId),
+            Permission.UPDATE,
+            ObjectReference(ObjectType.USER, userId),
+        )
+        if (!canUpdate) {
+            val exists = AppEdit.existsById(request.appEditId)
+            val canViewExistence = permissionService.hasPermission(
+                ObjectReference(ObjectType.APP_EDIT, request.appEditId),
+                Permission.VIEW_EXISTENCE,
+                ObjectReference(ObjectType.USER, userId),
+            )
+
+            throw if (!exists || !canViewExistence) {
+                appEditNotFoundException(request.appEditId)
+            } else {
+                Status
+                    .PERMISSION_DENIED
+                    .withDescription("insufficient permission to update app edit")
+                    .asRuntimeException()
+            }
+        }
+
+        val appEdit = AppEdit
+            .findById(request.appEditId)
+            ?: throw appEditNotFoundException(request.appEditId)
+
+        // Update the app edit based on the update mask
+        if (request.updateMask.pathsList.contains("default_listing_language")) {
+            // Ensure referential integrity by requiring the default listing language to match an
+            // existing listing for the app edit
+            if (appEdit.hasListingForLanguage(request.defaultListingLanguage)) {
+                appEdit.defaultListingLanguage = request.defaultListingLanguage
+            } else {
+                throw Status
+                    .FAILED_PRECONDITION
+                    .withDescription(
+                        "no listing exists for default listing language " +
+                                "\"${request.defaultListingLanguage}\""
+                    )
+                    .asRuntimeException()
+            }
+        }
+
+        return Uni.createFrom().item { updateAppEditResponse {} }
     }
 
     override fun submitAppEdit(request: SubmitAppEditRequest): Uni<SubmitAppEditResponse> {
