@@ -83,6 +83,16 @@ class PermissionService @Inject constructor(private val config: ParceloConfig) {
                 else -> false
             }
 
+            ObjectType.APP_EDIT -> when (permission) {
+                Permission.VIEW,
+                Permission.VIEW_EXISTENCE,
+                    -> OrganizationAcl
+                    .findByAppEditIdAndUserId(resource.id, subject.id)
+                    ?.canEditApps == true
+
+                else -> false
+            }
+
             ObjectType.ORGANIZATION -> when (permission) {
                 Permission.CREATE_APP_DRAFT -> OrganizationAcl
                     .findByOrganizationIdAndUserId(resource.id, subject.id)

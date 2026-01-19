@@ -60,6 +60,21 @@ class OrganizationAcl(
                 .firstResult()
         }
 
+        fun findByAppEditIdAndUserId(appEditId: String, userId: String): OrganizationAcl? {
+            return find(
+                "FROM OrganizationAcl organization_acls " +
+                        "JOIN App apps " +
+                        "ON apps.organizationId = organization_acls.organizationId " +
+                        "JOIN AppEdit app_edits " +
+                        "ON app_edits.appId = apps.id " +
+                        "WHERE app_edits.id = ?1 " +
+                        "AND organization_acls.userId = ?2",
+                appEditId,
+                userId,
+            )
+                .firstResult()
+        }
+
         fun findByOrganizationIdAndUserId(organizationId: String, userId: String): OrganizationAcl? {
             return find("WHERE organizationId = ?1 AND userId = ?2", organizationId, userId)
                 .firstResult()

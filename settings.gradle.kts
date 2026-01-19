@@ -19,6 +19,7 @@ include(
     "testdata:android-app-valid",
     "testdata:android-app-valid2",
     "testdata:android-app-valid3",
+    "testdata:android-app-valid4",
 )
 
 dependencyResolutionManagement {
