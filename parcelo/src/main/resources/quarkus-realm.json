@@ -43,6 +43,12 @@
             "id": "2ed0eff8-a82a-43f7-900d-adf5b7520358",
             "enabled": true,
             "credentials": [{"type": "password", "value": "password"}]
+        },
+        {
+            "username": "user5",
+            "id": "8210769c-67e6-4ea5-aa1e-6b1646de5d7b",
+            "enabled": true,
+            "credentials": [{"type": "password", "value": "password"}]
         }
     ],
     "clients": [

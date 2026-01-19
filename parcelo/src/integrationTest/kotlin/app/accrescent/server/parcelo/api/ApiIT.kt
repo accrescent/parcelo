@@ -8,6 +8,7 @@ import app.accrescent.appstore.publish.v1alpha1.createAppDraftRequest
 import app.accrescent.appstore.publish.v1alpha1.createAppEditRequest
 import app.accrescent.appstore.publish.v1alpha1.createPublisherRequest
 import app.accrescent.appstore.publish.v1alpha1.createReviewerRequest
+import app.accrescent.appstore.publish.v1alpha1.getAppEditRequest
 import app.accrescent.appstore.publish.v1alpha1.getAppRequest
 import app.accrescent.appstore.publish.v1alpha1.getSelfRequest
 import app.accrescent.appstore.publish.v1alpha1.listAppDraftsRequest
@@ -335,5 +336,26 @@ class ApiIT {
         // organization quota
         val exception = assertThrows<StatusException> { appEditService.createAppEdit(request) }
         assertEquals(Status.Code.RESOURCE_EXHAUSTED, exception.status.code)
+    }
+
+    @Test
+    fun developerGetsCreatedAppEdit() {
+        val token = ApiUtils.generateSessionToken("user5")
+        val appEditService = ApiUtils.getAppEditServiceStub(token)
+        ApiUtils.publishApp("user5", "reviewer1", "publisher1", "valid4")
+
+        val createRequest = createAppEditRequest { appId = "com.example.valid4" }
+        val appEditId = appEditService.createAppEdit(createRequest).appEditId
+        val getRequest = getAppEditRequest { this.appEditId = appEditId }
+        val appEdit = appEditService.getAppEdit(getRequest).appEdit
+
+        // Assert that the newly created app edit is returned
+        assertEquals("en-US", appEdit.defaultListingLanguage)
+        assertTrue(appEdit.hasCreatedAt())
+        assertEquals("com.example.valid4", appEdit.appPackage.appId)
+        assertEquals(1, appEdit.appPackage.versionCode)
+        assertEquals("1.0", appEdit.appPackage.versionName)
+        assertEquals(36, appEdit.appPackage.targetSdk)
+        assertFalse(appEdit.hasPublishedAt())
     }
 }

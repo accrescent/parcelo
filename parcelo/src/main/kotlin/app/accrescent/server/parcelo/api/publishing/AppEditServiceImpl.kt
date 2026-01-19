@@ -13,7 +13,10 @@ import app.accrescent.appstore.publish.v1alpha1.SubmitAppEditRequest
 import app.accrescent.appstore.publish.v1alpha1.SubmitAppEditResponse
 import app.accrescent.appstore.publish.v1alpha1.UpdateAppEditRequest
 import app.accrescent.appstore.publish.v1alpha1.UpdateAppEditResponse
+import app.accrescent.appstore.publish.v1alpha1.appEdit
+import app.accrescent.appstore.publish.v1alpha1.appPackage
 import app.accrescent.appstore.publish.v1alpha1.createAppEditResponse
+import app.accrescent.appstore.publish.v1alpha1.getAppEditResponse
 import app.accrescent.server.parcelo.data.App
 import app.accrescent.server.parcelo.data.AppEdit
 import app.accrescent.server.parcelo.data.AppEditListing
@@ -27,6 +30,7 @@ import app.accrescent.server.parcelo.security.ObjectType
 import app.accrescent.server.parcelo.security.Permission
 import app.accrescent.server.parcelo.security.PermissionService
 import app.accrescent.server.parcelo.validation.GrpcRequestValidationInterceptor
+import com.google.protobuf.timestamp
 import io.grpc.Status
 import io.quarkus.grpc.GrpcService
 import io.quarkus.grpc.RegisterInterceptor
@@ -109,8 +113,60 @@ class AppEditServiceImpl @Inject constructor(
         return Uni.createFrom().item { response }
     }
 
+    @Transactional
     override fun getAppEdit(request: GetAppEditRequest): Uni<GetAppEditResponse> {
-        throw Status.UNIMPLEMENTED.asRuntimeException()
+        val userId = AuthnContextKey.USER_ID.get()
+
+        val canView = permissionService.hasPermission(
+            ObjectReference(ObjectType.APP_EDIT, request.appEditId),
+            Permission.VIEW,
+            ObjectReference(ObjectType.USER, userId),
+        )
+        if (!canView) {
+            val exists = AppEdit.existsById(request.appEditId)
+            val canViewExistence = permissionService.hasPermission(
+                ObjectReference(ObjectType.APP_EDIT, request.appEditId),
+                Permission.VIEW_EXISTENCE,
+                ObjectReference(ObjectType.USER, userId),
+            )
+
+            throw if (!exists || !canViewExistence) {
+                appEditNotFoundException(request.appEditId)
+            } else {
+                Status
+                    .PERMISSION_DENIED
+                    .withDescription("insufficient permission to view app edit")
+                    .asRuntimeException()
+            }
+        }
+
+        val appEdit = AppEdit
+            .findById(request.appEditId)
+            ?: throw appEditNotFoundException(request.appEditId)
+        val response = getAppEditResponse {
+            this.appEdit = appEdit {
+                id = appEdit.id
+                createdAt = timestamp {
+                    seconds = appEdit.createdAt.toEpochSecond()
+                    nanos = appEdit.createdAt.nano
+                }
+                defaultListingLanguage = appEdit.defaultListingLanguage
+                appPackage = appPackage {
+                    appId = appEdit.appPackage.appId
+                    versionCode = appEdit.appPackage.versionCode.toLong()
+                    versionName = appEdit.appPackage.versionName
+                    targetSdk = appEdit.appPackage.targetSdk.toLong()
+                }
+                appEdit.publishedAt?.let { publicationTimestamp ->
+                    publishedAt = timestamp {
+                        seconds = publicationTimestamp.toEpochSecond()
+                        nanos = publicationTimestamp.nano
+                    }
+                }
+            }
+        }
+
+        return Uni.createFrom().item { response }
     }
 
     override fun updateAppEdit(request: UpdateAppEditRequest): Uni<UpdateAppEditResponse> {
@@ -125,6 +181,11 @@ class AppEditServiceImpl @Inject constructor(
         private fun appNotFoundException(appId: String) = Status
             .NOT_FOUND
             .withDescription("app with ID \"$appId\" not found")
+            .asRuntimeException()
+
+        private fun appEditNotFoundException(appEditId: String) = Status
+            .NOT_FOUND
+            .withDescription("app edit with ID \"$appEditId\" not found")
             .asRuntimeException()
     }
 }
