@@ -31,7 +31,7 @@ class AppEdit(
     var createdAt: OffsetDateTime,
 
     @Column(columnDefinition = "text", name = "default_listing_language", nullable = false)
-    val defaultListingLanguage: String,
+    var defaultListingLanguage: String,
 
     @Column(name = "app_package_id", nullable = false)
     val appPackageId: UUID,
@@ -53,6 +53,16 @@ class AppEdit(
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(insertable = false, updatable = false)
     val review: Review? = null
+
+    fun hasListingForLanguage(language: String): Boolean {
+        return count(
+            "FROM AppEditListing app_edit_listings " +
+                    "WHERE app_edit_listings.appEditId = ?1 " +
+                    "AND app_edit_listings.language = ?2",
+            id,
+            language,
+        ) > 0
+    }
 
     companion object : PanacheCompanionBase<AppEdit, String> {
         fun countActiveForApp(appId: String): Long {

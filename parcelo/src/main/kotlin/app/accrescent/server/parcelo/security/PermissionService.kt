@@ -84,6 +84,7 @@ class PermissionService @Inject constructor(private val config: ParceloConfig) {
             }
 
             ObjectType.APP_EDIT -> when (permission) {
+                Permission.UPDATE,
                 Permission.VIEW,
                 Permission.VIEW_EXISTENCE,
                     -> OrganizationAcl

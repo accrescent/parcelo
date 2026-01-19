@@ -14,6 +14,7 @@ import app.accrescent.appstore.publish.v1alpha1.getSelfRequest
 import app.accrescent.appstore.publish.v1alpha1.listAppDraftsRequest
 import app.accrescent.appstore.publish.v1alpha1.listAppsRequest
 import app.accrescent.appstore.publish.v1alpha1.listOrganizationsRequest
+import app.accrescent.appstore.publish.v1alpha1.updateAppEditRequest
 import app.accrescent.appstore.v1.DeviceAttributes
 import app.accrescent.appstore.v1.getAppDownloadInfoRequest
 import app.accrescent.appstore.v1.getAppListingRequest
@@ -22,6 +23,7 @@ import app.accrescent.appstore.v1.getAppUpdateInfoRequest
 import app.accrescent.appstore.v1.listAppListingsRequest
 import app.accrescent.server.parcelo.testutil.ApiUtils
 import com.google.protobuf.TextFormat
+import com.google.protobuf.fieldMask
 import io.grpc.Status
 import io.grpc.StatusException
 import io.quarkus.test.junit.QuarkusIntegrationTest
@@ -357,5 +359,27 @@ class ApiIT {
         assertEquals("1.0", appEdit.appPackage.versionName)
         assertEquals(36, appEdit.appPackage.targetSdk)
         assertFalse(appEdit.hasPublishedAt())
+    }
+
+    @Test
+    fun developerTriesToUpdateAppEditDefaultListingLanguageWithoutMatchingListing() {
+        val appEditService = ApiUtils.getAppEditServiceStub(ApiUtils.generateSessionToken("user6"))
+        ApiUtils.publishApp("user6", "reviewer1", "publisher1", "valid5")
+        val createRequest = createAppEditRequest { appId = "com.example.valid5" }
+        val appEditId = appEditService.createAppEdit(createRequest).appEditId
+
+        val updateRequest = updateAppEditRequest {
+            this.appEditId = appEditId
+            defaultListingLanguage = "de-DE"
+            updateMask = fieldMask { paths.add("default_listing_language") }
+        }
+        val exception = assertThrows<StatusException> { appEditService.updateAppEdit(updateRequest) }
+
+        // Assert that the update failed
+        assertEquals(Status.Code.FAILED_PRECONDITION, exception.status.code)
+        assertEquals(
+            "no listing exists for default listing language \"de-DE\"",
+            exception.status.description,
+        )
     }
 }
