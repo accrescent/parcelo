@@ -10,6 +10,8 @@ CREATE SEQUENCE app_listings_seq START WITH 1 INCREMENT BY 50;
 
 CREATE SEQUENCE app_package_permissions_seq START WITH 1 INCREMENT BY 50;
 
+CREATE SEQUENCE background_jobs_seq START WITH 1 INCREMENT BY 50;
+
 CREATE SEQUENCE organization_acls_seq START WITH 1 INCREMENT BY 50;
 
 CREATE SEQUENCE orphaned_blobs_seq START WITH 1 INCREMENT BY 50;
@@ -80,6 +82,7 @@ CREATE TABLE app_draft_upload_processing_jobs (
 );
 
 CREATE TABLE app_drafts (
+    publishing boolean NOT NULL,
     created_at timestamp(6) with time zone NOT NULL,
     published_at timestamp(6) with time zone,
     submitted_at timestamp(6) with time zone,
@@ -92,7 +95,9 @@ CREATE TABLE app_drafts (
     CHECK (app_package_id IS NOT NULL OR submitted_at IS NULL),
     CHECK (default_listing_language IS NOT NULL OR submitted_at IS NULL),
     CHECK (submitted_at IS NOT NULL OR review_id IS NULL),
-    CHECK (review_id IS NOT NULL OR published_at IS NULL)
+    CHECK (review_id IS NOT NULL OR publishing = false),
+    CHECK (review_id IS NOT NULL OR published_at IS NULL),
+    CHECK (publishing = false OR published_at IS NULL)
 );
 
 CREATE TABLE app_edit_listings (
@@ -158,6 +163,15 @@ CREATE TABLE apps (
     default_listing_language text NOT NULL,
     id text NOT NULL,
     organization_id text NOT NULL,
+    PRIMARY KEY (id)
+);
+
+CREATE TABLE background_jobs (
+    createdAt timestamp(6) with time zone NOT NULL,
+    id bigint NOT NULL,
+    job_name text NOT NULL UNIQUE,
+    parent_id text NOT NULL,
+    type text NOT NULL CHECK ((type in ('PUBLISH_APP_DRAFT'))),
     PRIMARY KEY (id)
 );
 

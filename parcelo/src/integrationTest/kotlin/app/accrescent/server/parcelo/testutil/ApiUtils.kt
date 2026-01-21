@@ -21,6 +21,9 @@ import app.accrescent.appstore.publish.v1alpha1.listOrganizationsRequest
 import app.accrescent.appstore.publish.v1alpha1.publishAppDraftRequest
 import app.accrescent.appstore.publish.v1alpha1.submitAppDraftRequest
 import app.accrescent.appstore.publish.v1alpha1.updateAppDraftRequest
+import com.google.longrunning.GetOperationRequest
+import com.google.longrunning.Operation
+import com.google.longrunning.OperationsGrpc
 import com.google.protobuf.fieldMask
 import io.grpc.ManagedChannelBuilder
 import io.restassured.RestAssured.given
@@ -33,9 +36,11 @@ import org.htmlunit.WebClient
 import org.htmlunit.WebRequest
 import org.htmlunit.html.HtmlInput
 import org.htmlunit.html.HtmlPage
+import org.junit.jupiter.api.Assertions.assertTrue
 import java.io.File
 import java.io.StringReader
 import java.net.URI
+import java.time.Duration
 import kotlin.io.encoding.Base64
 import kotlin.use
 import app.accrescent.appstore.publish.v1alpha1.AppServiceGrpc as DevAppServiceGrpc
@@ -50,6 +55,8 @@ private const val SERVER_PORT_CONFIG_PROPERTY = "quarkus.http.test-port"
 private const val ENCODED_PNG = "iVBORw0KGgoAAAANSUhEUgAAAgAAAAIAAQMAAADOtka5AAAAA1BMVEUAAACnej3a" +
         "AAAANklEQVR42u3BAQEAAACCIP+vbkhAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB8G4IAAAFjdVCk" +
         "AAAAAElFTkSuQmCC"
+
+private const val PUBLISH_TIMEOUT_SECONDS = 60L
 
 object ApiUtils {
     private val config = ConfigProvider.getConfig()
@@ -74,6 +81,9 @@ object ApiUtils {
 
     fun getDevAppServiceStub(token: BearerToken): DevAppServiceGrpc.AppServiceBlockingV2Stub =
         DevAppServiceGrpc.newBlockingV2Stub(channel).withCallCredentials(token)
+
+    fun getOperationsServiceStub(token: BearerToken): OperationsGrpc.OperationsBlockingV2Stub =
+        OperationsGrpc.newBlockingV2Stub(channel).withCallCredentials(token)
 
     fun getPublisherServiceStub(
         token: BearerToken,
@@ -132,6 +142,7 @@ object ApiUtils {
         val token = generateSessionToken(submitter)
         val organizationService = getOrganizationServiceStub(token)
         val appDraftService = getAppDraftServiceStub(token)
+        val operationsService = getOperationsServiceStub(token)
 
         val reviewerToken = generateSessionToken(reviewer)
         val reviewService = getReviewServiceStub(reviewerToken)
@@ -198,6 +209,20 @@ object ApiUtils {
 
         // Publish the app draft
         val publishRequest = publishAppDraftRequest { this.appDraftId = appDraftId }
-        publisherAppDraftService.publishAppDraft(publishRequest)
+        val publishResponse = publisherAppDraftService.publishAppDraft(publishRequest)
+
+        // Wait for the app draft to be published
+        val getOperationRequest = GetOperationRequest
+            .newBuilder()
+            .setName(publishResponse.operation.name)
+            .build()
+        var operation = Operation.getDefaultInstance()
+        await()
+            .atMost(Duration.ofSeconds(PUBLISH_TIMEOUT_SECONDS))
+            .until {
+                operation = operationsService.getOperation(getOperationRequest)
+                operation.done
+            }
+        assertTrue(operation.hasResponse())
     }
 }

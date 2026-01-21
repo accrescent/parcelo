@@ -53,7 +53,7 @@ class AppPackage(
     val signingCertificate: ByteArray,
 
     @Column(name = "build_apks_result", nullable = false)
-    val buildApksResult: ByteArray,
+    var buildApksResult: ByteArray,
 ) : PanacheEntityBase {
     @OneToMany(cascade = [CascadeType.ALL], mappedBy = "appPackage")
     lateinit var publishedApks: List<PublishedApk>

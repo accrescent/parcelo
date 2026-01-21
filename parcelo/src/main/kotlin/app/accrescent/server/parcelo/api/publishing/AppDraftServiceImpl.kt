@@ -52,15 +52,13 @@ import app.accrescent.server.parcelo.data.AppDraftAcl
 import app.accrescent.server.parcelo.data.AppDraftListing
 import app.accrescent.server.parcelo.data.AppDraftListingIconUploadJob
 import app.accrescent.server.parcelo.data.AppDraftUploadProcessingJob
-import app.accrescent.server.parcelo.data.AppListing
-import app.accrescent.server.parcelo.data.Image
+import app.accrescent.server.parcelo.data.BackgroundJob
+import app.accrescent.server.parcelo.data.BackgroundJobType
 import app.accrescent.server.parcelo.data.Organization
 import app.accrescent.server.parcelo.data.OrphanedBlob
-import app.accrescent.server.parcelo.data.PublishedApk
-import app.accrescent.server.parcelo.data.PublishedImage
 import app.accrescent.server.parcelo.data.Reviewer
-import app.accrescent.server.parcelo.publish.PublishService
-import app.accrescent.server.parcelo.publish.PublishedIcon
+import app.accrescent.server.parcelo.jobs.JobDataKey
+import app.accrescent.server.parcelo.jobs.PublishAppDraftJob
 import app.accrescent.server.parcelo.security.AuthnContextKey
 import app.accrescent.server.parcelo.security.GrpcAuthenticationInterceptor
 import app.accrescent.server.parcelo.security.GrpcRateLimitInterceptor
@@ -70,15 +68,11 @@ import app.accrescent.server.parcelo.security.ObjectReference
 import app.accrescent.server.parcelo.security.ObjectType
 import app.accrescent.server.parcelo.security.Permission
 import app.accrescent.server.parcelo.security.PermissionService
-import app.accrescent.server.parcelo.util.TempFile
-import app.accrescent.server.parcelo.util.apkPaths
 import app.accrescent.server.parcelo.validation.GrpcRequestValidationInterceptor
-import com.android.bundle.Commands
-import com.google.cloud.storage.BlobId
 import com.google.cloud.storage.BlobInfo
 import com.google.cloud.storage.HttpMethod
 import com.google.cloud.storage.Storage
-import com.google.cloud.storage.StorageException
+import com.google.longrunning.Operation
 import com.google.protobuf.InvalidProtocolBufferException
 import com.google.protobuf.timestamp
 import io.grpc.Status
@@ -88,11 +82,14 @@ import io.quarkus.mailer.MailTemplate
 import io.smallrye.mutiny.Uni
 import jakarta.inject.Inject
 import jakarta.transaction.Transactional
+import org.quartz.JobBuilder
+import org.quartz.JobKey
+import org.quartz.Scheduler
+import org.quartz.TriggerBuilder
 import java.time.OffsetDateTime
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 import kotlin.io.encoding.Base64
-import kotlin.io.path.Path
 
 // 1 GiB
 private const val MAX_APK_SET_SIZE_BYTES = 1073741824
@@ -109,7 +106,7 @@ private const val MAX_PAGE_SIZE = 50u
 class AppDraftServiceImpl @Inject constructor(
     private val config: ParceloConfig,
     private val permissionService: PermissionService,
-    private val publishService: PublishService,
+    private val scheduler: Scheduler,
     private val storage: Storage,
 ) : AppDraftService {
     @JvmRecord
@@ -169,6 +166,7 @@ class AppDraftServiceImpl @Inject constructor(
             defaultListingLanguage = null,
             submittedAt = null,
             reviewId = null,
+            publishing = false,
             publishedAt = null,
         )
             .also { it.persist() }
@@ -879,136 +877,63 @@ class AppDraftServiceImpl @Inject constructor(
         val appDraft = AppDraft
             .findById(request.appDraftId)
             ?: throw appDraftNotFoundException(request.appDraftId)
-        if (appDraft.published) {
-            throw Status
-                .ALREADY_EXISTS
-                .withDescription("the app draft has already been published")
-                .asRuntimeException()
-        }
         val appPackage = appDraft.appPackage ?: throw Status
             .INTERNAL
             .withDescription("app draft has no package")
             .asRuntimeException()
-        val appId = appPackage.appId
-        val defaultListingLanguage = appDraft.defaultListingLanguage ?: throw Status
-            .INTERNAL
-            .withDescription("app draft has no default listing language")
-            .asRuntimeException()
-        val listingIcons = appDraft.listings.map {
-            val icon = it.icon ?: throw Status
-                .DATA_LOSS
-                .withDescription("listing for language \"${it.language}\" has no icon")
-                .asRuntimeException()
-            it.language to icon
-        }
-        if (App.existsById(appId)) {
-            throw Status
+        when {
+            appDraft.published -> throw Status
                 .ALREADY_EXISTS
-                .withDescription("an app with ID \"$appId\" has already been published")
+                .withDescription("the app draft has already been published")
                 .asRuntimeException()
-        }
 
-        // Parse the app package metadata
-        val buildApksResult = try {
-            Commands.BuildApksResult.parseFrom(appPackage.buildApksResult)
-        } catch (_: InvalidProtocolBufferException) {
-            throw Status
+            appDraft.publishing -> throw Status
+                .ALREADY_EXISTS
+                .withDescription("the app draft is already publishing")
+                .asRuntimeException()
+
+            appDraft.defaultListingLanguage == null -> throw Status
+                .INTERNAL
+                .withDescription("app draft has no default listing language")
+                .asRuntimeException()
+
+            appDraft.listings.any { it.icon == null } -> throw Status
                 .DATA_LOSS
-                .withDescription("app package metadata is invalid")
+                .withDescription("one or more app listings have no icon")
                 .asRuntimeException()
-        }
 
-        // Publish the APK set's APKs to an S3-compatible server.
-        //
-        // It is possible for this process to create orphan objects, i.e., objects that are stored
-        // remotely but untracked by our database. However, this creation occurs only if this RPC
-        // does not eventually complete successfully. That is, if this RPC is called and completes
-        // successfully for a given draft, it is guaranteed that no orphan objects exist for it even
-        // if previous calls have failed.
-        val pathsToApks = TempFile(Path(config.packageProcessingDirectory())).use { tempApkSet ->
-            try {
-                storage
-                    .get(BlobId.of(appPackage.bucketId, appPackage.objectId))
-                    .downloadTo(tempApkSet.path)
-            } catch (_: StorageException) {
-                throw Status
-                    .UNAVAILABLE
-                    .withDescription("failed to download app package")
-                    .asRuntimeException()
-            }
-
-            publishService.publishApks(
-                appId = buildApksResult.packageName,
-                versionCode = appPackage.versionCode,
-                apkSetPath = tempApkSet.path,
-                apkPaths = buildApksResult.apkPaths(),
-            )
-        }
-        // Publish the app's listing icons to an S3-compatible server.
-        //
-        // This process has the same orphan object guarantees as publishing an APK set's APKs.
-        val publishedIcons = mutableMapOf<String, Pair<Image, PublishedIcon>>()
-        for ((listingLanguage, icon) in listingIcons) {
-            TempFile(Path(config.packageProcessingDirectory())).use { tempIcon ->
-                try {
-                    storage.get(BlobId.of(icon.bucketId, icon.objectId)).downloadTo(tempIcon.path)
-                } catch (_: StorageException) {
-                    throw Status
-                        .UNAVAILABLE
-                        .withDescription("failed to download icon for listing \"$listingLanguage\"")
-                        .asRuntimeException()
-                }
-
-                val publishedIcon = publishService.publishIcon(
-                    appId = buildApksResult.packageName,
-                    listingLanguage = listingLanguage,
-                    iconPath = tempIcon.path,
-                )
-                publishedIcons.put(listingLanguage, Pair(icon, publishedIcon))
-            }
+            App.existsById(appPackage.appId) -> throw Status
+                .ALREADY_EXISTS
+                .withDescription("an app with ID \"${appPackage.appId}\" has already been published")
+                .asRuntimeException()
         }
 
         // Publish draft
-        App(
-            id = appId,
-            defaultListingLanguage = defaultListingLanguage,
-            organizationId = appDraft.organizationId,
-            appPackageId = appPackage.id,
+        val job = JobBuilder
+            .newJob(PublishAppDraftJob::class.java)
+            .withIdentity(JobKey.jobKey(UUID.randomUUID().toString()))
+            .withDescription("Publish app draft ${request.appDraftId}")
+            .usingJobData(JobDataKey.APP_DRAFT_ID, request.appDraftId)
+            .requestRecovery()
+            .storeDurably()
+            .build()
+        val trigger = TriggerBuilder.newTrigger().startNow().build()
+        scheduler.scheduleJob(job, trigger)
+
+        BackgroundJob(
+            type = BackgroundJobType.PUBLISH_APP_DRAFT,
+            parentId = appDraft.id,
+            jobName = job.key.name,
+            createdAt = OffsetDateTime.now(),
         )
             .persist()
-        for (draftListing in appDraft.listings) {
-            val remoteIcon = publishedIcons[draftListing.language] ?: throw Status
-                .INTERNAL
-                .withDescription("no published icon exists for language \"${draftListing.language}\"")
-                .asRuntimeException()
-            PublishedImage(
-                imageId = remoteIcon.first.id,
-                bucketId = remoteIcon.second.bucketId,
-                objectId = remoteIcon.second.objectId,
-            )
-                .persist()
-            AppListing(
-                appId = appId,
-                language = draftListing.language,
-                name = draftListing.name,
-                shortDescription = draftListing.shortDescription,
-                iconImageId = remoteIcon.first.id,
-            )
-                .persist()
-        }
-        for ((apkPath, apk) in pathsToApks) {
-            PublishedApk(
-                appPackageId = appPackage.id,
-                apkPath = apkPath,
-                bucketId = apk.bucketId,
-                objectId = apk.objectId,
-                size = apk.size,
-            )
-                .persist()
-        }
-        appDraft.publishedAt = OffsetDateTime.now()
+        appDraft.publishing = true
 
-        return Uni.createFrom().item { publishAppDraftResponse {} }
+        val response = publishAppDraftResponse {
+            operation = Operation.newBuilder().setName(job.key.name).setDone(false).build()
+        }
+
+        return Uni.createFrom().item { response }
     }
 
     private companion object {

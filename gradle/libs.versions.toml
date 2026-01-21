@@ -6,7 +6,7 @@
 agp = "8.13.2"
 apkanalyzer = "31.13.1"
 apksig = "8.13.1"
-app-publishing-api = "2544fe0f85204dba97deaf74f1dac84f"
+app-publishing-api = "059db13644b44b9cbae8b7bf3e46d46b"
 appstore-api = "v1.0.3"
 arrow = "2.2.0"
 bucket4j = "8.16.0"
@@ -31,6 +31,7 @@ flyway-database-postgresql = { module = "org.flywaydb:flyway-database-postgresql
 google-cloud-libraries-bom = { module = "com.google.cloud:libraries-bom", version.ref = "google-cloud-libraries-bom" }
 google-cloud-pubsub = { module = "com.google.cloud:google-cloud-pubsub" }
 google-cloud-storage = { module = "com.google.cloud:google-cloud-storage" }
+grpc-google-common-protos = { module = "com.google.api.grpc:grpc-google-common-protos" }
 htmlunit = { module = "org.htmlunit:htmlunit", version.ref = "htmlunit" }
 log4j-api = { module = "org.apache.logging.log4j:log4j-api" }
 log4j1 = { module = "log4j:log4j", version.ref = "log4j1" }
@@ -55,9 +56,9 @@ quarkus-junit5 = { module = "io.quarkus:quarkus-junit5" }
 quarkus-kotlin = { module = "io.quarkus:quarkus-kotlin" }
 quarkus-mailer = { module = "io.quarkus:quarkus-mailer" }
 quarkus-oidc = { module = "io.quarkus:quarkus-oidc" }
+quarkus-quartz = { module = "io.quarkus:quarkus-quartz" }
 quarkus-qute = { module = "io.quarkus:quarkus-qute" }
 quarkus-rest-jackson = { module = "io.quarkus:quarkus-rest-jackson" }
-quarkus-scheduler = { module = "io.quarkus:quarkus-scheduler" }
 rest-assured = { module = "io.rest-assured:rest-assured" }
 testcontainers = { module = "org.testcontainers:testcontainers"  }
 testcontainers-gcloud = { module = "org.testcontainers:gcloud" }
