@@ -30,8 +30,12 @@ import java.util.UUID
         CheckConstraint(constraint = "default_listing_language IS NOT NULL or submitted_at IS NULL"),
         // Forbid the draft from being reviewed if it is not submitted
         CheckConstraint(constraint = "submitted_at IS NOT NULL OR review_id IS NULL"),
+        // Forbid the draft from being in a publishing state if it is not reviewed
+        CheckConstraint(constraint = "review_id IS NOT NULL OR publishing = false"),
         // Forbid the draft from being published if it is not reviewed
         CheckConstraint(constraint = "review_id IS NOT NULL OR published_at IS NULL"),
+        // Forbid the draft from being publishing and published simultaneously
+        CheckConstraint(constraint = "publishing = false OR published_at IS NULL"),
     ],
 )
 class AppDraft(
@@ -56,6 +60,9 @@ class AppDraft(
 
     @Column(name = "review_id")
     var reviewId: UUID?,
+
+    @Column(nullable = false)
+    var publishing: Boolean,
 
     @Column(name = "published_at")
     var publishedAt: OffsetDateTime?,

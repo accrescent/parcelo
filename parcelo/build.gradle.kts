@@ -39,6 +39,7 @@ dependencies {
     implementation(libs.bucket4j.postgresql)
     implementation(libs.bundletool)
     implementation(libs.flyway.database.postgresql)
+    implementation(libs.grpc.google.common.protos)
     implementation(libs.protobuf.java)
     implementation(libs.protobuf.kotlin)
     implementation(libs.protovalidate)
@@ -52,9 +53,9 @@ dependencies {
     implementation(libs.quarkus.kotlin)
     implementation(libs.quarkus.mailer)
     implementation(libs.quarkus.oidc)
+    implementation(libs.quarkus.quartz)
     implementation(libs.quarkus.qute)
     implementation(libs.quarkus.rest.jackson)
-    implementation(libs.quarkus.scheduler)
     testImplementation(libs.awaitility)
     testImplementation(libs.htmlunit)
     testImplementation(libs.quarkus.junit5)
@@ -122,10 +123,13 @@ tasks.register<Exec>("downloadAppPublishingApiProtos") {
         "$projectDir/src/main/proto/",
     )
 
-    // Remove buf/validate/validate.proto so that Quarkus doesn't generate classes which conflict
-    // with those defined in our protovalidate dependency
     doLast {
+        // Remove buf/validate/validate.proto so that Quarkus doesn't generate classes which
+        // conflict with those defined in our protovalidate dependency
         file("$projectDir/src/main/proto/buf").deleteRecursively()
+        // Remove google/longrunning protos so generated classes don't conflict those pulled in
+        // transitively by our Google Cloud Pub/Sub dependency
+        file("$projectDir/src/main/proto/google").deleteRecursively()
     }
 }
 tasks.register<Exec>("downloadAppStoreApiProtos") {
