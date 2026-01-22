@@ -48,7 +48,7 @@ private class GrpcAuthenticationInterceptorImpl(
             call.close(Status.UNAUTHENTICATED, Metadata())
             return object : ServerCall.Listener<ReqT>() {}
         }
-        val userId = User.findIdByGithubUserId(idToken.subject)?.id ?: run {
+        val userId = User.findIdByOidcId(idToken.issuer, idToken.subject)?.id ?: run {
             call.close(Status.UNAUTHENTICATED, Metadata())
             return object : ServerCall.Listener<ReqT>() {}
         }

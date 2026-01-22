@@ -6,6 +6,7 @@ package app.accrescent.server.parcelo.security
 
 import app.accrescent.server.parcelo.config.ParceloConfig
 import app.accrescent.server.parcelo.data.AppDraftAcl
+import app.accrescent.server.parcelo.data.OidcProvider
 import app.accrescent.server.parcelo.data.OrganizationAcl
 import app.accrescent.server.parcelo.data.User
 import jakarta.enterprise.context.ApplicationScoped
@@ -116,8 +117,8 @@ class PermissionService @Inject constructor(private val config: ParceloConfig) {
                 Permission.CREATE_REVIEWER -> {
                     val user = User.findById(subject.id) ?: return false
 
-                    user.identityProvider == config.admin().identityProvider()
-                            && user.scopedUserId == config.admin().scopedUserId()
+                    user.oidcProvider == OidcProvider.fromConfig(config.admin().oidcProvider())
+                            && user.oidcSubject == config.admin().oidcSubject()
                 }
 
                 else -> false
