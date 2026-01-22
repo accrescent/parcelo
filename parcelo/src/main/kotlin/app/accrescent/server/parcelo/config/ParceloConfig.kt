@@ -33,9 +33,13 @@ interface ParceloConfig {
     fun pubSub(): PubSub
 
     interface Admin {
-        fun identityProvider(): String
+        fun oidcProvider(): OidcProvider
 
-        fun scopedUserId(): String
+        fun oidcSubject(): String
+    }
+
+    enum class OidcProvider {
+        LOCAL,
     }
 
     interface PubSub {

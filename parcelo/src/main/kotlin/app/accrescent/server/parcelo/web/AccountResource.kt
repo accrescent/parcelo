@@ -4,6 +4,7 @@
 
 package app.accrescent.server.parcelo.web
 
+import app.accrescent.server.parcelo.data.OidcProvider
 import app.accrescent.server.parcelo.data.Organization
 import app.accrescent.server.parcelo.data.OrganizationAcl
 import app.accrescent.server.parcelo.data.User
@@ -28,12 +29,14 @@ class AccountResource(@IdToken val idToken: JsonWebToken) {
     @Path("/register")
     @Transactional
     fun register() {
-        if (!User.existsByGithubUserId(idToken.subject)) {
+        if (!User.existsByOidcId(idToken.issuer, idToken.subject)) {
             val org = Organization(id = Identifier.generateNew(IdType.ORGANIZATION))
                 .also { it.persist() }
             val user = User(
                 id = Identifier.generateNew(IdType.USER),
-                scopedUserId = idToken.subject,
+                oidcProvider = OidcProvider.fromIssuer(idToken.issuer),
+                oidcIssuer = idToken.issuer,
+                oidcSubject = idToken.subject,
             )
                 .also { it.persist() }
             OrganizationAcl(

@@ -252,10 +252,11 @@ CREATE TABLE reviews (
 
 CREATE TABLE users (
     id text NOT NULL,
-    identity_provider text NOT NULL,
-    scoped_user_id text NOT NULL,
+    oidc_issuer text NOT NULL,
+    oidc_provider text NOT NULL CHECK ((oidc_provider in ('LOCAL','UNKNOWN'))),
+    oidc_subject text NOT NULL,
     PRIMARY KEY (id),
-    UNIQUE (identity_provider, scoped_user_id)
+    UNIQUE (oidc_issuer, oidc_subject)
 );
 
 ALTER TABLE IF EXISTS app_draft_acls
