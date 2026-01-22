@@ -1,5 +1,3 @@
-CREATE SEQUENCE api_keys_seq START WITH 1 INCREMENT BY 50;
-
 CREATE SEQUENCE app_draft_acls_seq START WITH 1 INCREMENT BY 50;
 
 CREATE SEQUENCE app_draft_listing_icon_upload_jobs_seq START WITH 1 INCREMENT BY 50;
@@ -25,13 +23,6 @@ CREATE SEQUENCE publishers_seq START WITH 1 INCREMENT BY 50;
 CREATE SEQUENCE rejection_reasons_seq START WITH 1 INCREMENT BY 50;
 
 CREATE SEQUENCE reviewers_seq START WITH 1 INCREMENT BY 50;
-
-CREATE TABLE api_keys (
-    id bigint NOT NULL,
-    api_key_hash text NOT NULL UNIQUE,
-    user_id text NOT NULL,
-    PRIMARY KEY (id)
-);
 
 CREATE TABLE app_draft_acls (
     can_delete boolean NOT NULL,
@@ -266,11 +257,6 @@ CREATE TABLE users (
     PRIMARY KEY (id),
     UNIQUE (identity_provider, scoped_user_id)
 );
-
-ALTER TABLE IF EXISTS api_keys
-    ADD CONSTRAINT FK89d4ddye91twgmx31epv7ro7h
-    FOREIGN KEY (user_id)
-    REFERENCES users;
 
 ALTER TABLE IF EXISTS app_draft_acls
     ADD CONSTRAINT FK3fwbegdr7onxcbw6psvtfec1i

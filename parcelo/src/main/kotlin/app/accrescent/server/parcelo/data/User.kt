@@ -34,17 +34,8 @@ class User(
             return count("WHERE id = ?1", id) > 0
         }
 
-        fun findIdByApiKeyHash(hash: String): UserId? {
-            return find(
-                "SELECT users.id " +
-                        "FROM User users " +
-                        "JOIN ApiKey api_keys " +
-                        "ON api_keys.userId = users.id " +
-                        "WHERE api_keys.apiKeyHash = ?1",
-                hash,
-            )
-                .project(UserId::class.java)
-                .firstResult()
+        fun existsByGithubUserId(userId: String): Boolean {
+            return count("WHERE identityProvider = 'github' AND scopedUserId = ?1", userId) > 0
         }
 
         fun findIdByGithubUserId(userId: String): UserId? {
