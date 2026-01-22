@@ -6,12 +6,12 @@ package app.accrescent.server.parcelo.testutil
 
 import io.grpc.CallCredentials
 import io.grpc.Metadata
+import io.quarkus.oidc.runtime.OidcUtils
 import java.util.concurrent.Executor
 
-data class BearerToken(val token: String) : CallCredentials() {
-    companion object {
-        private val AUTHORIZATION_HEADER_KEY =
-            Metadata.Key.of("authorization", Metadata.ASCII_STRING_MARSHALLER)
+data class OidcCookieCallCredentials(val cookieValue: String) : CallCredentials() {
+    private companion object {
+        private val COOKIE_HEADER_KEY = Metadata.Key.of("cookie", Metadata.ASCII_STRING_MARSHALLER)
     }
 
     override fun applyRequestMetadata(
@@ -19,7 +19,8 @@ data class BearerToken(val token: String) : CallCredentials() {
         appExecutor: Executor,
         applier: MetadataApplier,
     ) {
-        val metadata = Metadata().apply { put(AUTHORIZATION_HEADER_KEY, "Bearer $token") }
+        val metadata = Metadata()
+            .apply { put(COOKIE_HEADER_KEY, "${OidcUtils.SESSION_COOKIE_NAME}=$cookieValue") }
         applier.apply(metadata)
     }
 }

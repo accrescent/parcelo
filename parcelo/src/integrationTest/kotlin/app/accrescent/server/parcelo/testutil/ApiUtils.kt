@@ -25,9 +25,10 @@ import com.google.longrunning.GetOperationRequest
 import com.google.longrunning.Operation
 import com.google.longrunning.OperationsGrpc
 import com.google.protobuf.fieldMask
+import io.grpc.CallCredentials
 import io.grpc.ManagedChannelBuilder
+import io.quarkus.oidc.runtime.OidcUtils
 import io.restassured.RestAssured.given
-import jakarta.json.Json
 import org.awaitility.Awaitility.await
 import org.eclipse.microprofile.config.ConfigProvider
 import org.htmlunit.HttpMethod
@@ -38,11 +39,9 @@ import org.htmlunit.html.HtmlInput
 import org.htmlunit.html.HtmlPage
 import org.junit.jupiter.api.Assertions.assertTrue
 import java.io.File
-import java.io.StringReader
 import java.net.URI
 import java.time.Duration
 import kotlin.io.encoding.Base64
-import kotlin.use
 import app.accrescent.appstore.publish.v1alpha1.AppServiceGrpc as DevAppServiceGrpc
 import app.accrescent.appstore.v1.AppServiceGrpc as StoreAppServiceGrpc
 
@@ -72,82 +71,89 @@ object ApiUtils {
         .build()
 
     fun getAppDraftServiceStub(
-        token: BearerToken,
+        credentials: CallCredentials,
     ): AppDraftServiceGrpc.AppDraftServiceBlockingV2Stub =
-        AppDraftServiceGrpc.newBlockingV2Stub(channel).withCallCredentials(token)
+        AppDraftServiceGrpc.newBlockingV2Stub(channel).withCallCredentials(credentials)
 
-    fun getAppEditServiceStub(token: BearerToken): AppEditServiceGrpc.AppEditServiceBlockingV2Stub =
-        AppEditServiceGrpc.newBlockingV2Stub(channel).withCallCredentials(token)
+    fun getAppEditServiceStub(
+        credentials: CallCredentials,
+    ): AppEditServiceGrpc.AppEditServiceBlockingV2Stub =
+        AppEditServiceGrpc.newBlockingV2Stub(channel).withCallCredentials(credentials)
 
-    fun getDevAppServiceStub(token: BearerToken): DevAppServiceGrpc.AppServiceBlockingV2Stub =
-        DevAppServiceGrpc.newBlockingV2Stub(channel).withCallCredentials(token)
+    fun getDevAppServiceStub(
+        credentials: CallCredentials,
+    ): DevAppServiceGrpc.AppServiceBlockingV2Stub =
+        DevAppServiceGrpc.newBlockingV2Stub(channel).withCallCredentials(credentials)
 
-    fun getOperationsServiceStub(token: BearerToken): OperationsGrpc.OperationsBlockingV2Stub =
-        OperationsGrpc.newBlockingV2Stub(channel).withCallCredentials(token)
+    fun getOperationsServiceStub(
+        credentials: CallCredentials,
+    ): OperationsGrpc.OperationsBlockingV2Stub =
+        OperationsGrpc.newBlockingV2Stub(channel).withCallCredentials(credentials)
 
     fun getPublisherServiceStub(
-        token: BearerToken,
+        credentials: CallCredentials,
     ): PublisherServiceGrpc.PublisherServiceBlockingV2Stub =
-        PublisherServiceGrpc.newBlockingV2Stub(channel).withCallCredentials(token)
+        PublisherServiceGrpc.newBlockingV2Stub(channel).withCallCredentials(credentials)
 
-    fun getReviewServiceStub(token: BearerToken): ReviewServiceGrpc.ReviewServiceBlockingV2Stub =
-        ReviewServiceGrpc.newBlockingV2Stub(channel).withCallCredentials(token)
+    fun getReviewServiceStub(
+        credentials: CallCredentials,
+    ): ReviewServiceGrpc.ReviewServiceBlockingV2Stub =
+        ReviewServiceGrpc.newBlockingV2Stub(channel).withCallCredentials(credentials)
 
     fun getReviewerServiceStub(
-        token: BearerToken
+        credentials: CallCredentials
     ): ReviewerServiceGrpc.ReviewerServiceBlockingV2Stub =
-        ReviewerServiceGrpc.newBlockingV2Stub(channel).withCallCredentials(token)
+        ReviewerServiceGrpc.newBlockingV2Stub(channel).withCallCredentials(credentials)
 
     fun getStoreAppServiceStub(): StoreAppServiceGrpc.AppServiceBlockingV2Stub =
         StoreAppServiceGrpc.newBlockingV2Stub(channel)
 
-    fun getUserServiceStub(token: BearerToken): UserServiceGrpc.UserServiceBlockingV2Stub =
-        UserServiceGrpc.newBlockingV2Stub(channel).withCallCredentials(token)
+    fun getUserServiceStub(
+        credentials: CallCredentials,
+    ): UserServiceGrpc.UserServiceBlockingV2Stub =
+        UserServiceGrpc.newBlockingV2Stub(channel).withCallCredentials(credentials)
 
     fun getOrganizationServiceStub(
-        token: BearerToken,
+        token: CallCredentials,
     ): OrganizationServiceGrpc.OrganizationServiceBlockingV2Stub =
         OrganizationServiceGrpc.newBlockingV2Stub(channel).withCallCredentials(token)
 
-    fun generateSessionToken(username: String): BearerToken {
+    fun getCredentials(username: String): CallCredentials {
         return WebClient().use { webClient ->
             // Get rid of spurious warnings in test output
             webClient.options.isCssEnabled = false
 
             // Log in to Keycloak
             val loginPage: HtmlPage = webClient
-                .getPage("http://$serverHost:$serverPort/web/session/login")
+                .getPage("http://$serverHost:$serverPort/web/account/login")
             val loginForm = loginPage.forms[0]
             loginForm.getInputByName<HtmlInput>("username").type(username)
             loginForm.getInputByName<HtmlInput>("password").type(DEFAULT_USER_PASSWORD)
             loginForm.getButtonByName("login").click<HtmlPage>()
 
-            // Create a session token
-            val createApiKeyRequest = WebRequest(
-                URI.create("http://$serverHost:$serverPort/web/session/tokens").toURL(),
-                HttpMethod.POST,
+            // Register the user
+            val registerRequest = WebRequest(
+                URI.create("http://$serverHost:$serverPort/web/account/register").toURL(),
+                HttpMethod.PUT,
             )
-            val responsePage = webClient.getPage<Page>(createApiKeyRequest)
+            webClient.getPage<Page>(registerRequest)
 
-            // Parse the session token from the response
-            val sessionToken = Json
-                .createReader(StringReader(responsePage.webResponse.contentAsString))
-                .use { it.readObject().getString("token") }
+            val cookieValue = webClient.cookieManager.getCookie(OidcUtils.SESSION_COOKIE_NAME).value
 
-            BearerToken(sessionToken)
+            OidcCookieCallCredentials(cookieValue)
         }
     }
 
     fun publishApp(submitter: String, reviewer: String, publisher: String, apkSetName: String) {
-        val token = generateSessionToken(submitter)
+        val token = getCredentials(submitter)
         val organizationService = getOrganizationServiceStub(token)
         val appDraftService = getAppDraftServiceStub(token)
         val operationsService = getOperationsServiceStub(token)
 
-        val reviewerToken = generateSessionToken(reviewer)
+        val reviewerToken = getCredentials(reviewer)
         val reviewService = getReviewServiceStub(reviewerToken)
 
-        val publisherToken = generateSessionToken(publisher)
+        val publisherToken = getCredentials(publisher)
         val publisherAppDraftService = getAppDraftServiceStub(publisherToken)
 
         val organizationId = organizationService

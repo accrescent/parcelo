@@ -63,17 +63,17 @@ class ApiIT {
         }
 
     companion object {
-        val user1Token = ApiUtils.generateSessionToken("user1")
-        val user2Token = ApiUtils.generateSessionToken("user2")
+        val user1Token = ApiUtils.getCredentials("user1")
+        val user2Token = ApiUtils.getCredentials("user2")
 
         @BeforeAll
         @JvmStatic
         fun setup() {
             // Create the reviewer and publisher we use in this class
-            val adminToken = ApiUtils.generateSessionToken("admin1")
+            val adminToken = ApiUtils.getCredentials("admin1")
 
             val reviewerUserId = ApiUtils
-                .getUserServiceStub(ApiUtils.generateSessionToken("reviewer1"))
+                .getUserServiceStub(ApiUtils.getCredentials("reviewer1"))
                 .getSelf(getSelfRequest {})
                 .userId
             ApiUtils
@@ -84,7 +84,7 @@ class ApiIT {
                 })
 
             val publisherUserId = ApiUtils
-                .getUserServiceStub(ApiUtils.generateSessionToken("publisher1"))
+                .getUserServiceStub(ApiUtils.getCredentials("publisher1"))
                 .getSelf(getSelfRequest {})
                 .userId
             ApiUtils
@@ -306,7 +306,7 @@ class ApiIT {
 
     @Test
     fun developerListsAppDraftsWithAuthorizationForOne() {
-        val token = ApiUtils.generateSessionToken("user4")
+        val token = ApiUtils.getCredentials("user4")
         val appDraftService = ApiUtils.getAppDraftServiceStub(token)
         val organizationService = ApiUtils.getOrganizationServiceStub(token)
         val organizationId = organizationService
@@ -342,7 +342,7 @@ class ApiIT {
 
     @Test
     fun developerGetsCreatedAppEdit() {
-        val token = ApiUtils.generateSessionToken("user5")
+        val token = ApiUtils.getCredentials("user5")
         val appEditService = ApiUtils.getAppEditServiceStub(token)
         ApiUtils.publishApp("user5", "reviewer1", "publisher1", "valid4")
 
@@ -363,7 +363,7 @@ class ApiIT {
 
     @Test
     fun developerTriesToUpdateAppEditDefaultListingLanguageWithoutMatchingListing() {
-        val appEditService = ApiUtils.getAppEditServiceStub(ApiUtils.generateSessionToken("user6"))
+        val appEditService = ApiUtils.getAppEditServiceStub(ApiUtils.getCredentials("user6"))
         ApiUtils.publishApp("user6", "reviewer1", "publisher1", "valid5")
         val createRequest = createAppEditRequest { appId = "com.example.valid5" }
         val appEditId = appEditService.createAppEdit(createRequest).appEditId
