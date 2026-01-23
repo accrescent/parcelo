@@ -7,7 +7,6 @@ package app.accrescent.server.parcelo.publish
 import app.accrescent.server.parcelo.config.ParceloConfig
 import app.accrescent.server.parcelo.util.TempFile
 import app.accrescent.server.parcelo.util.sha256Hash
-import io.grpc.Status
 import io.minio.MinioClient
 import io.minio.UploadObjectArgs
 import jakarta.enterprise.context.ApplicationScoped
@@ -40,10 +39,9 @@ class PublishService @Inject constructor(
 
         ZipFile(apkSetPath.toFile()).use { zipFile ->
             for (apkPath in apkPaths) {
-                val entry = zipFile.getEntry(apkPath) ?: throw Status
-                    .DATA_LOSS
-                    .withDescription("app package missing APK entry")
-                    .asRuntimeException()
+                val entry = zipFile
+                    .getEntry(apkPath)
+                    ?: throw Exception("app package missing APK entry")
                 zipFile.getInputStream(entry).use { apkInputStream ->
                     TempFile(Path(config.packageProcessingDirectory())).use { tempApk ->
                         val bucketId = config.publishedArtifactBucket()
