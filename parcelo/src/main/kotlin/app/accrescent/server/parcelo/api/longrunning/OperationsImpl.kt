@@ -34,7 +34,7 @@ import com.google.rpc.Status as GoogleStatus
 @GrpcService
 @RegisterInterceptor(GrpcAuthenticationInterceptor::class)
 @RegisterInterceptor(GrpcRateLimitInterceptor::class)
-class OperationsService @Inject constructor(
+class OperationsImpl @Inject constructor(
     private val executor: ManagedExecutor,
     private val permissionService: PermissionService,
     private val scheduler: Scheduler,
