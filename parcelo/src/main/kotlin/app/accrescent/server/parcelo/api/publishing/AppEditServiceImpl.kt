@@ -5,10 +5,24 @@
 package app.accrescent.server.parcelo.api.publishing
 
 import app.accrescent.appstore.publish.v1alpha1.AppEditService
+import app.accrescent.appstore.publish.v1alpha1.CreateAppEditListingRequest
+import app.accrescent.appstore.publish.v1alpha1.CreateAppEditListingResponse
 import app.accrescent.appstore.publish.v1alpha1.CreateAppEditRequest
 import app.accrescent.appstore.publish.v1alpha1.CreateAppEditResponse
+import app.accrescent.appstore.publish.v1alpha1.DeleteAppEditListingRequest
+import app.accrescent.appstore.publish.v1alpha1.DeleteAppEditListingResponse
+import app.accrescent.appstore.publish.v1alpha1.DeleteAppEditRequest
+import app.accrescent.appstore.publish.v1alpha1.DeleteAppEditResponse
+import app.accrescent.appstore.publish.v1alpha1.GetAppEditDownloadInfoRequest
+import app.accrescent.appstore.publish.v1alpha1.GetAppEditDownloadInfoResponse
+import app.accrescent.appstore.publish.v1alpha1.GetAppEditListingIconUploadInfoRequest
+import app.accrescent.appstore.publish.v1alpha1.GetAppEditListingIconUploadInfoResponse
 import app.accrescent.appstore.publish.v1alpha1.GetAppEditRequest
 import app.accrescent.appstore.publish.v1alpha1.GetAppEditResponse
+import app.accrescent.appstore.publish.v1alpha1.GetAppEditUploadInfoRequest
+import app.accrescent.appstore.publish.v1alpha1.GetAppEditUploadInfoResponse
+import app.accrescent.appstore.publish.v1alpha1.ListAppEditsRequest
+import app.accrescent.appstore.publish.v1alpha1.ListAppEditsResponse
 import app.accrescent.appstore.publish.v1alpha1.SubmitAppEditRequest
 import app.accrescent.appstore.publish.v1alpha1.SubmitAppEditResponse
 import app.accrescent.appstore.publish.v1alpha1.UpdateAppEditRequest
@@ -170,6 +184,22 @@ class AppEditServiceImpl @Inject constructor(
         return Uni.createFrom().item { response }
     }
 
+    override fun listAppEdits(request: ListAppEditsRequest): Uni<ListAppEditsResponse> {
+        throw Status.UNIMPLEMENTED.asRuntimeException()
+    }
+
+    override fun getAppEditUploadInfo(
+        request: GetAppEditUploadInfoRequest,
+    ): Uni<GetAppEditUploadInfoResponse> {
+        throw Status.UNIMPLEMENTED.asRuntimeException()
+    }
+
+    override fun getAppEditDownloadInfo(
+        request: GetAppEditDownloadInfoRequest,
+    ): Uni<GetAppEditDownloadInfoResponse> {
+        throw Status.UNIMPLEMENTED.asRuntimeException()
+    }
+
     @Transactional
     override fun updateAppEdit(request: UpdateAppEditRequest): Uni<UpdateAppEditResponse> {
         val userId = AuthnContextKey.USER_ID.get()
@@ -222,6 +252,28 @@ class AppEditServiceImpl @Inject constructor(
     }
 
     override fun submitAppEdit(request: SubmitAppEditRequest): Uni<SubmitAppEditResponse> {
+        throw Status.UNIMPLEMENTED.asRuntimeException()
+    }
+
+    override fun deleteAppEdit(request: DeleteAppEditRequest): Uni<DeleteAppEditResponse> {
+        throw Status.UNIMPLEMENTED.asRuntimeException()
+    }
+
+    override fun createAppEditListing(
+        request: CreateAppEditListingRequest,
+    ): Uni<CreateAppEditListingResponse> {
+        throw Status.UNIMPLEMENTED.asRuntimeException()
+    }
+
+    override fun getAppEditListingIconUploadInfo(
+        request: GetAppEditListingIconUploadInfoRequest,
+    ): Uni<GetAppEditListingIconUploadInfoResponse> {
+        throw Status.UNIMPLEMENTED.asRuntimeException()
+    }
+
+    override fun deleteAppEditListing(
+        request: DeleteAppEditListingRequest,
+    ): Uni<DeleteAppEditListingResponse> {
         throw Status.UNIMPLEMENTED.asRuntimeException()
     }
 
