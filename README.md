@@ -1,5 +1,5 @@
 <!--
-Copyright 2024 Logan Magee
+SPDX-FileCopyrightText: © 2024 Logan Magee
 
 SPDX-License-Identifier: AGPL-3.0-only
 -->

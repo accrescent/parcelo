@@ -1,5 +1,5 @@
 <!--
-Copyright 2024 Logan Magee
+SPDX-FileCopyrightText: © 2024 Logan Magee
 
 SPDX-License-Identifier: AGPL-3.0-only
 -->
@@ -18,7 +18,7 @@ We require all code to have valid copyright and licensing information. If your c
 a new file, be sure to add the following header in a code comment:
 
 ```
-Copyright <current-year> Logan Magee
+SPDX-FileCopyrightText: © <current-year> Logan Magee
 
 SPDX-License-Identifier: AGPL-3.0-only
 ```
