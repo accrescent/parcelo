@@ -32,8 +32,11 @@ class App(
     @Column(columnDefinition = "text", name = "organization_id", nullable = false)
     val organizationId: String,
 
+    @Column(name = "entity_tag", nullable = false)
+    var entityTag: Int,
+
     @Column(name = "app_package_id", nullable = false)
-    val appPackageId: UUID,
+    var appPackageId: UUID,
 ) : PanacheEntityBase {
     @Column(name = "active_edit_limit", nullable = false)
     val activeEditLimit = DEFAULT_ACTIVE_EDIT_LIMIT

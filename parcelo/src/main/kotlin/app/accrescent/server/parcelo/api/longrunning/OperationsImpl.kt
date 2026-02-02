@@ -66,6 +66,9 @@ class OperationsImpl @Inject constructor(
         val resource = when (metadata.type) {
             BackgroundJobType.PUBLISH_APP_DRAFT ->
                 ObjectReference(ObjectType.APP_DRAFT, metadata.parentId)
+
+            BackgroundJobType.PUBLISH_APP_EDIT ->
+                ObjectReference(ObjectType.APP_EDIT, metadata.parentId)
         }
         val canView = permissionService.hasPermission(
             resource,

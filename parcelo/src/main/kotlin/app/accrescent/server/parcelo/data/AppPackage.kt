@@ -58,6 +58,9 @@ class AppPackage(
     @OneToMany(cascade = [CascadeType.ALL], mappedBy = "appPackage")
     lateinit var publishedApks: List<PublishedApk>
 
+    @OneToMany(cascade = [CascadeType.ALL], mappedBy = "appPackage")
+    lateinit var permissions: Set<AppPackagePermission>
+
     companion object : PanacheCompanionBase<AppPackage, UUID> {
         fun findByPublishedAppId(appId: String): AppPackage? {
             return find(

@@ -119,6 +119,7 @@ class PublishAppDraftJob @Inject constructor(
             id = appPackage.appId,
             defaultListingLanguage = defaultListingLanguage,
             organizationId = appDraft.organizationId,
+            entityTag = 0,
             appPackageId = appPackage.id,
         )
             .persist()

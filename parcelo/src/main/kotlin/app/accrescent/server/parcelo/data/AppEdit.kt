@@ -6,19 +6,34 @@ package app.accrescent.server.parcelo.data
 
 import io.quarkus.hibernate.orm.panache.kotlin.PanacheCompanionBase
 import io.quarkus.hibernate.orm.panache.kotlin.PanacheEntityBase
+import jakarta.persistence.CascadeType
+import jakarta.persistence.CheckConstraint
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.FetchType
 import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
+import jakarta.persistence.OneToMany
 import jakarta.persistence.OneToOne
 import jakarta.persistence.Table
 import java.time.OffsetDateTime
 import java.util.UUID
 
 @Entity
-@Table(name = "app_edits")
+@Table(
+    name = "app_edits",
+    check = [
+        // Forbid the edit from being reviewed if it is not submitted
+        CheckConstraint(constraint = "submitted_at IS NOT NULL OR review_id IS NULL"),
+        // Forbid the edit from being in a publishing state if it is not submitted
+        CheckConstraint(constraint = "submitted_at IS NOT NULL OR publishing = false"),
+        // Forbid the edit from being published if it is not submitted
+        CheckConstraint(constraint = "submitted_at IS NOT NULL OR published_at IS NULL"),
+        // Forbid the edit from being publishing and published simultaneously
+        CheckConstraint(constraint = "publishing = false OR published_at IS NULL"),
+    ]
+)
 class AppEdit(
     @Id
     @Column(columnDefinition = "text")
@@ -30,18 +45,33 @@ class AppEdit(
     @Column(name = "created_at", nullable = false)
     var createdAt: OffsetDateTime,
 
+    @Column(name = "expected_app_entity_tag", nullable = false)
+    val expectedAppEntityTag: Int,
+
     @Column(columnDefinition = "text", name = "default_listing_language", nullable = false)
     var defaultListingLanguage: String,
 
     @Column(name = "app_package_id", nullable = false)
     val appPackageId: UUID,
 
+    @Column(name = "submitted_at")
+    var submittedAt: OffsetDateTime?,
+
     @Column(name = "review_id")
     val reviewId: UUID?,
+
+    @Column(nullable = false)
+    var publishing: Boolean,
 
     @Column(name = "published_at")
     var publishedAt: OffsetDateTime?,
 ) : PanacheEntityBase {
+    val submitted: Boolean
+        get() = submittedAt != null
+
+    val published: Boolean
+        get() = publishedAt != null
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(insertable = false, updatable = false)
     lateinit var app: App
@@ -54,6 +84,9 @@ class AppEdit(
     @JoinColumn(insertable = false, updatable = false)
     val review: Review? = null
 
+    @OneToMany(cascade = [CascadeType.ALL], mappedBy = "appEdit")
+    lateinit var listings: List<AppEditListing>
+
     fun hasListingForLanguage(language: String): Boolean {
         return count(
             "FROM AppEditListing app_edit_listings " +
@@ -65,6 +98,18 @@ class AppEdit(
     }
 
     companion object : PanacheCompanionBase<AppEdit, String> {
+        fun activeAndSubmittedEditExistsForAppId(appId: String): Boolean {
+            return count(
+                "LEFT JOIN Review reviews " +
+                        "ON reviews.id = reviewId " +
+                        "WHERE appId = ?1 " +
+                        "AND submittedAt IS NOT NULL " +
+                        "AND publishedAt IS NULL " +
+                        "AND (reviews.approved IS NULL OR reviews.approved = true)",
+                appId,
+            ) > 0
+        }
+
         fun countActiveForApp(appId: String): Long {
             // An app edit is considered active if it is not in a terminal state. The terminal
             // states are:
