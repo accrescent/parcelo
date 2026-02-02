@@ -50,6 +50,10 @@ class AppEditListing(
     val icon: Image? = null
 
     companion object : PanacheCompanionBase<AppEditListing, UUID> {
+        fun findByAppEditIdAndLanguage(appEditId: String, language: String): AppEditListing? {
+            return find("WHERE appEditId = ?1 AND language = ?2", appEditId, language).firstResult()
+        }
+
         fun exists(appEditId: String, language: String): Boolean {
             return count("WHERE appEditId = ?1 AND language = ?2", appEditId, language) > 0
         }

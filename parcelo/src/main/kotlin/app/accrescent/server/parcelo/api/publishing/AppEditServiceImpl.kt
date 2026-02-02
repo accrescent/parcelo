@@ -31,6 +31,7 @@ import app.accrescent.appstore.publish.v1alpha1.appEdit
 import app.accrescent.appstore.publish.v1alpha1.appPackage
 import app.accrescent.appstore.publish.v1alpha1.createAppEditListingResponse
 import app.accrescent.appstore.publish.v1alpha1.createAppEditResponse
+import app.accrescent.appstore.publish.v1alpha1.deleteAppEditListingResponse
 import app.accrescent.appstore.publish.v1alpha1.deleteAppEditResponse
 import app.accrescent.appstore.publish.v1alpha1.getAppEditResponse
 import app.accrescent.appstore.publish.v1alpha1.submitAppEditResponse
@@ -599,10 +600,68 @@ class AppEditServiceImpl @Inject constructor(
         throw Status.UNIMPLEMENTED.asRuntimeException()
     }
 
+    @Transactional
     override fun deleteAppEditListing(
         request: DeleteAppEditListingRequest,
     ): Uni<DeleteAppEditListingResponse> {
-        throw Status.UNIMPLEMENTED.asRuntimeException()
+        val userId = AuthnContextKey.USER_ID.get()
+
+        val canDelete = permissionService.hasPermission(
+            ObjectReference(ObjectType.APP_EDIT, request.appEditId),
+            Permission.DELETE_LISTING,
+            ObjectReference(ObjectType.USER, userId)
+        )
+        if (!canDelete) {
+            val exists = AppEdit.existsById(request.appEditId)
+            val canViewExistence = permissionService.hasPermission(
+                ObjectReference(ObjectType.APP_EDIT, request.appEditId),
+                Permission.VIEW_EXISTENCE,
+                ObjectReference(ObjectType.USER, userId),
+            )
+
+            throw if (!exists || !canViewExistence) {
+                appEditNotFoundException(request.appEditId)
+            } else {
+                Status
+                    .PERMISSION_DENIED
+                    .withDescription("insufficient permission to delete app edit listing")
+                    .asRuntimeException()
+            }
+        }
+
+        val appEdit = AppEdit
+            .findById(request.appEditId)
+            ?: throw appEditNotFoundException(request.appEditId)
+        when {
+            appEdit.submitted -> throw Status
+                .FAILED_PRECONDITION
+                .withDescription("submitted edits cannot be modified")
+                .asRuntimeException()
+
+            request.language == appEdit.defaultListingLanguage -> throw Status
+                .FAILED_PRECONDITION
+                .withDescription("cannot delete listing for the default listing language")
+                .asRuntimeException()
+        }
+        val appEditListing = AppEditListing
+            .findByAppEditIdAndLanguage(request.appEditId, request.language)
+            ?: throw appEditListingNotFoundException(request.language)
+
+        // Delete the associated icon if one exists
+        appEditListing.icon?.let { icon ->
+            OrphanedBlob(
+                bucketId = icon.bucketId,
+                objectId = icon.objectId,
+                orphanedOn = OffsetDateTime.now()
+            )
+                .persist()
+            icon.delete()
+        }
+
+        // Delete the listing
+        appEditListing.delete()
+
+        return Uni.createFrom().item { deleteAppEditListingResponse {} }
     }
 
     private companion object {
@@ -614,6 +673,11 @@ class AppEditServiceImpl @Inject constructor(
         private fun appEditNotFoundException(appEditId: String) = Status
             .NOT_FOUND
             .withDescription("app edit with ID \"$appEditId\" not found")
+            .asRuntimeException()
+
+        private fun appEditListingNotFoundException(language: String) = Status
+            .NOT_FOUND
+            .withDescription("listing with language \"$language\" not found")
             .asRuntimeException()
     }
 }
