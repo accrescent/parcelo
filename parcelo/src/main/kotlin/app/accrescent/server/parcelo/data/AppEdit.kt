@@ -97,6 +97,15 @@ class AppEdit(
         ) > 0
     }
 
+    fun allListingsHaveIcon(): Boolean {
+        return count(
+            "FROM AppEditListing app_edit_listings " +
+                    "WHERE app_edit_listings.appEditId = ?1 " +
+                    "AND app_edit_listings.iconImageId IS NULL",
+            id,
+        ) == 0L
+    }
+
     companion object : PanacheCompanionBase<AppEdit, String> {
         fun activeAndSubmittedEditExistsForAppId(appId: String): Boolean {
             return count(

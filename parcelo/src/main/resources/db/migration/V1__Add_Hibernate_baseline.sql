@@ -103,7 +103,7 @@ CREATE TABLE app_edit_acls (
 );
 
 CREATE TABLE app_edit_listings (
-    icon_image_id uuid NOT NULL,
+    icon_image_id uuid,
     id uuid NOT NULL,
     app_edit_id text NOT NULL,
     language text NOT NULL,

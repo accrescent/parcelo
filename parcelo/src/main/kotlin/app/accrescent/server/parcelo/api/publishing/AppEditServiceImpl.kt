@@ -29,6 +29,7 @@ import app.accrescent.appstore.publish.v1alpha1.UpdateAppEditRequest
 import app.accrescent.appstore.publish.v1alpha1.UpdateAppEditResponse
 import app.accrescent.appstore.publish.v1alpha1.appEdit
 import app.accrescent.appstore.publish.v1alpha1.appPackage
+import app.accrescent.appstore.publish.v1alpha1.createAppEditListingResponse
 import app.accrescent.appstore.publish.v1alpha1.createAppEditResponse
 import app.accrescent.appstore.publish.v1alpha1.deleteAppEditResponse
 import app.accrescent.appstore.publish.v1alpha1.getAppEditResponse
@@ -374,6 +375,11 @@ class AppEditServiceImpl @Inject constructor(
                 .withDescription("app edit has been invalidated by another submission")
                 .asRuntimeException()
 
+            !appEdit.allListingsHaveIcon() -> throw Status
+                .FAILED_PRECONDITION
+                .withDescription("all edit listings must have an icon")
+                .asRuntimeException()
+
             AppEdit.activeAndSubmittedEditExistsForAppId(appEdit.appId) -> throw Status
                 .FAILED_PRECONDITION
                 .withDescription("an active edit is already submitted for this app")
@@ -530,10 +536,61 @@ class AppEditServiceImpl @Inject constructor(
         return Uni.createFrom().item { deleteAppEditResponse {} }
     }
 
+    @Transactional
     override fun createAppEditListing(
         request: CreateAppEditListingRequest,
     ): Uni<CreateAppEditListingResponse> {
-        throw Status.UNIMPLEMENTED.asRuntimeException()
+        val userId = AuthnContextKey.USER_ID.get()
+
+        val canCreateListing = permissionService.hasPermission(
+            ObjectReference(ObjectType.APP_EDIT, request.appEditId),
+            Permission.CREATE_LISTING,
+            ObjectReference(ObjectType.USER, userId),
+        )
+        if (!canCreateListing) {
+            val exists = AppEdit.existsById(request.appEditId)
+            val canViewExistence = permissionService.hasPermission(
+                ObjectReference(ObjectType.APP_EDIT, request.appEditId),
+                Permission.VIEW_EXISTENCE,
+                ObjectReference(ObjectType.USER, userId),
+            )
+
+            throw if (!exists || !canViewExistence) {
+                appEditNotFoundException(request.appEditId)
+            } else {
+                Status
+                    .PERMISSION_DENIED
+                    .withDescription("insufficient permission to create app edit listing")
+                    .asRuntimeException()
+            }
+        }
+
+        val appEdit = AppEdit
+            .findById(request.appEditId)
+            ?: throw appEditNotFoundException(request.appEditId)
+        when {
+            AppEditListing.exists(request.appEditId, request.language) -> throw Status
+                .ALREADY_EXISTS
+                .withDescription("an app listing with that language already exists")
+                .asRuntimeException()
+
+            appEdit.submitted -> throw Status
+                .FAILED_PRECONDITION
+                .withDescription("submitted edits cannot be modified")
+                .asRuntimeException()
+        }
+
+        AppEditListing(
+            id = UUID.randomUUID(),
+            appEditId = request.appEditId,
+            language = request.language,
+            name = request.name,
+            shortDescription = request.shortDescription,
+            iconImageId = null,
+        )
+            .persist()
+
+        return Uni.createFrom().item { createAppEditListingResponse {} }
     }
 
     override fun getAppEditListingIconUploadInfo(

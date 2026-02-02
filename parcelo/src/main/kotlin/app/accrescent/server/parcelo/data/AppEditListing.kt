@@ -4,6 +4,7 @@
 
 package app.accrescent.server.parcelo.data
 
+import io.quarkus.hibernate.orm.panache.kotlin.PanacheCompanionBase
 import io.quarkus.hibernate.orm.panache.kotlin.PanacheEntityBase
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
@@ -37,8 +38,8 @@ class AppEditListing(
     @Column(columnDefinition = "text", name = "short_description", nullable = false)
     val shortDescription: String,
 
-    @Column(name = "icon_image_id", nullable = false)
-    var iconImageId: UUID,
+    @Column(name = "icon_image_id")
+    var iconImageId: UUID?,
 ) : PanacheEntityBase {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "app_edit_id", insertable = false, updatable = false)
@@ -46,5 +47,11 @@ class AppEditListing(
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "icon_image_id", insertable = false, updatable = false)
-    lateinit var icon: Image
+    val icon: Image? = null
+
+    companion object : PanacheCompanionBase<AppEditListing, UUID> {
+        fun exists(appEditId: String, language: String): Boolean {
+            return count("WHERE appEditId = ?1 AND language = ?2", appEditId, language) > 0
+        }
+    }
 }
