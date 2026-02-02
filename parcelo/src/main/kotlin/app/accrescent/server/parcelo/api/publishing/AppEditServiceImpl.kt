@@ -33,6 +33,7 @@ import app.accrescent.appstore.publish.v1alpha1.createAppEditListingResponse
 import app.accrescent.appstore.publish.v1alpha1.createAppEditResponse
 import app.accrescent.appstore.publish.v1alpha1.deleteAppEditListingResponse
 import app.accrescent.appstore.publish.v1alpha1.deleteAppEditResponse
+import app.accrescent.appstore.publish.v1alpha1.getAppEditDownloadInfoResponse
 import app.accrescent.appstore.publish.v1alpha1.getAppEditResponse
 import app.accrescent.appstore.publish.v1alpha1.listAppEditsResponse
 import app.accrescent.appstore.publish.v1alpha1.submitAppEditResponse
@@ -60,6 +61,7 @@ import app.accrescent.server.parcelo.security.ObjectType
 import app.accrescent.server.parcelo.security.Permission
 import app.accrescent.server.parcelo.security.PermissionService
 import app.accrescent.server.parcelo.validation.GrpcRequestValidationInterceptor
+import com.google.cloud.storage.BlobInfo
 import com.google.cloud.storage.Storage
 import com.google.longrunning.Operation
 import com.google.protobuf.InvalidProtocolBufferException
@@ -77,6 +79,7 @@ import org.quartz.Scheduler
 import org.quartz.TriggerBuilder
 import java.time.OffsetDateTime
 import java.util.UUID
+import java.util.concurrent.TimeUnit
 import kotlin.io.encoding.Base64
 
 private const val ANDROID_PERMISSION_PREFIX = "android.permission."
@@ -113,6 +116,8 @@ private val PERMISSIONS_ALLOWED_WITHOUT_REVIEW = setOf(
     // Haptics aren't worth reviewing for our purposes.
     "android.permission.VIBRATE",
 )
+
+private const val DOWNLOAD_URL_EXPIRATION_SECONDS = 30L
 
 private const val DEFAULT_PAGE_SIZE = 50u
 private const val MAX_PAGE_SIZE = 50u
@@ -345,10 +350,53 @@ class AppEditServiceImpl @Inject constructor(
         throw Status.UNIMPLEMENTED.asRuntimeException()
     }
 
+    @Transactional
     override fun getAppEditDownloadInfo(
         request: GetAppEditDownloadInfoRequest,
     ): Uni<GetAppEditDownloadInfoResponse> {
-        throw Status.UNIMPLEMENTED.asRuntimeException()
+        val userId = AuthnContextKey.USER_ID.get()
+
+        val canDownload = permissionService.hasPermission(
+            ObjectReference(ObjectType.APP_EDIT, request.appEditId),
+            Permission.DOWNLOAD,
+            ObjectReference(ObjectType.USER, userId),
+        )
+        if (!canDownload) {
+            val exists = AppEdit.existsById(request.appEditId)
+            val canViewExistence = permissionService.hasPermission(
+                ObjectReference(ObjectType.APP_EDIT, request.appEditId),
+                Permission.VIEW_EXISTENCE,
+                ObjectReference(ObjectType.USER, userId)
+            )
+
+            throw if (!exists || !canViewExistence) {
+                appEditNotFoundException(request.appEditId)
+            } else {
+                Status
+                    .PERMISSION_DENIED
+                    .withDescription("insufficient permission to download app edit")
+                    .asRuntimeException()
+            }
+        }
+
+        val appEdit = AppEdit
+            .findById(request.appEditId)
+            ?: throw appEditNotFoundException(request.appEditId)
+        val appPackage = appEdit.appPackage
+
+        val apkSetBlob = BlobInfo.newBuilder(appPackage.bucketId, appPackage.objectId).build()
+        val downloadUrl = storage.signUrl(
+            apkSetBlob,
+            DOWNLOAD_URL_EXPIRATION_SECONDS,
+            TimeUnit.SECONDS,
+            Storage.SignUrlOption.withV4Signature(),
+        )
+
+        val response = getAppEditDownloadInfoResponse {
+            apkSetUrl = downloadUrl.toString()
+        }
+
+        return Uni.createFrom().item { response }
     }
 
     @Transactional
