@@ -107,13 +107,18 @@ class PublishAppEditJob @Inject constructor(
         // This process has the same orphan object guarantees as publishing an APK set's APKs.
         val appListings = appEdit.app.listings.associateBy(AppListing::language)
         for (editListing in appEdit.listings) {
+            val editListingIcon = editListing
+                .icon
+                ?: throw Exception(
+                    "no icon found for listing ${editListing.language} of edit ${editListing.appEditId}"
+                )
             val appListing = appListings[editListing.language]
             if (appListing == null) {
                 // Create a new app listing based on the edit listing, publishing the latter's icon
                 val publishedIcon = TempFile(Path(config.packageProcessingDirectory()))
                     .use { tempIcon ->
                         storage
-                            .get(BlobId.of(editListing.icon.bucketId, editListing.icon.objectId))
+                            .get(BlobId.of(editListingIcon.bucketId, editListingIcon.objectId))
                             .downloadTo(tempIcon.path)
 
                         publishService.publishIcon(
@@ -123,7 +128,7 @@ class PublishAppEditJob @Inject constructor(
                         )
                     }
                 PublishedImage(
-                    imageId = editListing.iconImageId,
+                    imageId = editListingIcon.id,
                     bucketId = publishedIcon.bucketId,
                     objectId = publishedIcon.objectId,
                 )
@@ -133,7 +138,7 @@ class PublishAppEditJob @Inject constructor(
                     language = editListing.language,
                     name = editListing.name,
                     shortDescription = editListing.shortDescription,
-                    iconImageId = editListing.iconImageId,
+                    iconImageId = editListingIcon.id,
                 )
                     .persist()
             } else {
@@ -143,7 +148,7 @@ class PublishAppEditJob @Inject constructor(
                     val publishedIcon = TempFile(Path(config.packageProcessingDirectory()))
                         .use { tempIcon ->
                             storage
-                                .get(BlobId.of(editListing.icon.bucketId, editListing.icon.objectId))
+                                .get(BlobId.of(editListingIcon.bucketId, editListingIcon.objectId))
                                 .downloadTo(tempIcon.path)
 
                             publishService.publishIcon(
@@ -154,12 +159,12 @@ class PublishAppEditJob @Inject constructor(
                         }
 
                     PublishedImage(
-                        imageId = editListing.iconImageId,
+                        imageId = editListingIcon.id,
                         bucketId = publishedIcon.bucketId,
                         objectId = publishedIcon.objectId,
                     )
                         .persist()
-                    appListing.iconImageId = editListing.iconImageId
+                    appListing.iconImageId = editListingIcon.id
                 }
 
                 appListing.name = editListing.name
