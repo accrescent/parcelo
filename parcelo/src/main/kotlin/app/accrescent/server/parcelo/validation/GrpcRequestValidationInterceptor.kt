@@ -12,6 +12,7 @@ import app.accrescent.appstore.publish.v1alpha1.CreatePublisherRequest
 import app.accrescent.appstore.publish.v1alpha1.CreateReviewerRequest
 import app.accrescent.appstore.publish.v1alpha1.DeleteAppDraftListingRequest
 import app.accrescent.appstore.publish.v1alpha1.DeleteAppDraftRequest
+import app.accrescent.appstore.publish.v1alpha1.DeleteAppEditRequest
 import app.accrescent.appstore.publish.v1alpha1.GetAppDraftDownloadInfoRequest
 import app.accrescent.appstore.publish.v1alpha1.GetAppDraftListingIconUploadInfoRequest
 import app.accrescent.appstore.publish.v1alpha1.GetAppDraftRequest
@@ -58,6 +59,7 @@ class GrpcRequestValidationInterceptor : ServerInterceptor {
                 CreateReviewerRequest.getDescriptor(),
                 DeleteAppDraftListingRequest.getDescriptor(),
                 DeleteAppDraftRequest.getDescriptor(),
+                DeleteAppEditRequest.getDescriptor(),
                 GetAppDownloadInfoRequest.getDescriptor(),
                 GetAppDraftDownloadInfoRequest.getDescriptor(),
                 GetAppDraftListingIconUploadInfoRequest.getDescriptor(),
