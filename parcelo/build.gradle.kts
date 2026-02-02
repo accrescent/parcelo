@@ -65,6 +65,7 @@ dependencies {
     testApkSets(project(":testdata:android-app-valid3"))
     testApkSets(project(":testdata:android-app-valid4"))
     testApkSets(project(":testdata:android-app-valid5"))
+    testApkSets(project(":testdata:android-app-valid6"))
 }
 
 group = "app.accrescent.server"

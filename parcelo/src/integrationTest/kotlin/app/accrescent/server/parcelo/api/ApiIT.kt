@@ -14,6 +14,7 @@ import app.accrescent.appstore.publish.v1alpha1.getSelfRequest
 import app.accrescent.appstore.publish.v1alpha1.listAppDraftsRequest
 import app.accrescent.appstore.publish.v1alpha1.listAppsRequest
 import app.accrescent.appstore.publish.v1alpha1.listOrganizationsRequest
+import app.accrescent.appstore.publish.v1alpha1.submitAppEditRequest
 import app.accrescent.appstore.publish.v1alpha1.updateAppEditRequest
 import app.accrescent.appstore.v1.DeviceAttributes
 import app.accrescent.appstore.v1.getAppDownloadInfoRequest
@@ -22,17 +23,21 @@ import app.accrescent.appstore.v1.getAppPackageInfoRequest
 import app.accrescent.appstore.v1.getAppUpdateInfoRequest
 import app.accrescent.appstore.v1.listAppListingsRequest
 import app.accrescent.server.parcelo.testutil.ApiUtils
+import com.google.longrunning.GetOperationRequest
+import com.google.longrunning.Operation
 import com.google.protobuf.TextFormat
 import com.google.protobuf.fieldMask
 import io.grpc.Status
 import io.grpc.StatusException
 import io.quarkus.test.junit.QuarkusIntegrationTest
+import org.awaitility.Awaitility.await
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import java.time.Duration
 
 private const val APP_ACTIVE_EDIT_LIMIT = 3
 private const val ORGANIZATION_ACTIVE_APP_DRAFT_LIMIT = 3
@@ -40,6 +45,8 @@ private const val ORGANIZATION_PUBLISHED_APP_LIMIT = 1
 
 private const val ANCIENT_DEVICE_DEVICE_ATTRIBUTES_PATH = "ancient-device-device-attributes.txtpb"
 private const val PIXEL_9_EMULATOR_DEVICE_ATTRIBUTES_PATH = "pixel-9-emulator-device-attributes.txtpb"
+
+private const val PUBLISH_TIMEOUT_SECONDS = 60L
 
 @QuarkusIntegrationTest
 class ApiIT {
@@ -381,5 +388,32 @@ class ApiIT {
             "no listing exists for default listing language \"de-DE\"",
             exception.status.description,
         )
+    }
+
+    @Test
+    fun developerSubmitsAppEditWithNoChanges() {
+        val credentials = ApiUtils.getCredentials("user7")
+        val appEditService = ApiUtils.getAppEditServiceStub(credentials)
+        val operationsService = ApiUtils.getOperationsServiceStub(credentials)
+        ApiUtils.publishApp("user7", "reviewer1", "publisher1", "valid6")
+        val createRequest = createAppEditRequest { appId = "com.example.valid6" }
+        val appEditId = appEditService.createAppEdit(createRequest).appEditId
+
+        val submitRequest = submitAppEditRequest { this.appEditId = appEditId }
+        val response = appEditService.submitAppEdit(submitRequest)
+
+        assertTrue(response.hasOperation())
+        val getOperationRequest = GetOperationRequest
+            .newBuilder()
+            .setName(response.operation.name)
+            .build()
+        var operation = Operation.getDefaultInstance()
+        await()
+            .atMost(Duration.ofSeconds(PUBLISH_TIMEOUT_SECONDS))
+            .until {
+                operation = operationsService.getOperation(getOperationRequest)
+                operation.done
+            }
+        assertTrue(operation.hasResponse())
     }
 }

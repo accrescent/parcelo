@@ -29,13 +29,13 @@ class AppListing(
     val language: String,
 
     @Column(columnDefinition = "text", nullable = false)
-    val name: String,
+    var name: String,
 
     @Column(columnDefinition = "text", name = "short_description", nullable = false)
-    val shortDescription: String,
+    var shortDescription: String,
 
     @Column(name = "icon_image_id", nullable = false)
-    val iconImageId: UUID,
+    var iconImageId: UUID,
 ) : PanacheEntity() {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(insertable = false, updatable = false)

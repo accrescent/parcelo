@@ -4,6 +4,8 @@ CREATE SEQUENCE app_draft_listing_icon_upload_jobs_seq START WITH 1 INCREMENT BY
 
 CREATE SEQUENCE app_draft_upload_processing_jobs_seq START WITH 1 INCREMENT BY 50;
 
+CREATE SEQUENCE app_edit_acls_seq START WITH 1 INCREMENT BY 50;
+
 CREATE SEQUENCE app_listings_seq START WITH 1 INCREMENT BY 50;
 
 CREATE SEQUENCE app_package_permissions_seq START WITH 1 INCREMENT BY 50;
@@ -91,6 +93,15 @@ CREATE TABLE app_drafts (
     CHECK (publishing = false OR published_at IS NULL)
 );
 
+CREATE TABLE app_edit_acls (
+    can_review boolean NOT NULL,
+    id bigint NOT NULL,
+    app_edit_id text NOT NULL,
+    user_id text NOT NULL,
+    PRIMARY KEY (id),
+    UNIQUE (app_edit_id, user_id)
+);
+
 CREATE TABLE app_edit_listings (
     icon_image_id uuid NOT NULL,
     id uuid NOT NULL,
@@ -103,14 +114,21 @@ CREATE TABLE app_edit_listings (
 );
 
 CREATE TABLE app_edits (
+    expected_app_entity_tag integer NOT NULL,
+    publishing boolean NOT NULL,
     created_at timestamp(6) with time zone NOT NULL,
     published_at timestamp(6) with time zone,
+    submitted_at timestamp(6) with time zone,
     app_package_id uuid NOT NULL,
     review_id uuid,
     app_id text NOT NULL,
     default_listing_language text NOT NULL,
     id text NOT NULL,
-    PRIMARY KEY (id)
+    PRIMARY KEY (id),
+    CHECK (submitted_at IS NOT NULL OR review_id IS NULL),
+    CHECK (submitted_at IS NOT NULL OR publishing = false),
+    CHECK (submitted_at IS NOT NULL OR published_at IS NULL),
+    CHECK (publishing = false OR published_at IS NULL)
 );
 
 CREATE TABLE app_listings (
@@ -150,6 +168,7 @@ CREATE TABLE app_packages (
 
 CREATE TABLE apps (
     active_edit_limit integer NOT NULL,
+    entity_tag integer NOT NULL,
     app_package_id uuid NOT NULL,
     default_listing_language text NOT NULL,
     id text NOT NULL,
@@ -162,7 +181,7 @@ CREATE TABLE background_jobs (
     id bigint NOT NULL,
     job_name text NOT NULL UNIQUE,
     parent_id text NOT NULL,
-    type text NOT NULL CHECK ((type in ('PUBLISH_APP_DRAFT'))),
+    type text NOT NULL CHECK ((type in ('PUBLISH_APP_DRAFT','PUBLISH_APP_EDIT'))),
     PRIMARY KEY (id)
 );
 

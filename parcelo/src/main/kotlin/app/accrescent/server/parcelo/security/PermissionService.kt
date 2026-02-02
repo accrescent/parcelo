@@ -6,6 +6,7 @@ package app.accrescent.server.parcelo.security
 
 import app.accrescent.server.parcelo.config.ParceloConfig
 import app.accrescent.server.parcelo.data.AppDraftAcl
+import app.accrescent.server.parcelo.data.AppEditAcl
 import app.accrescent.server.parcelo.data.OidcProvider
 import app.accrescent.server.parcelo.data.OrganizationAcl
 import app.accrescent.server.parcelo.data.User
@@ -85,6 +86,11 @@ class PermissionService @Inject constructor(private val config: ParceloConfig) {
             }
 
             ObjectType.APP_EDIT -> when (permission) {
+                Permission.REVIEW -> AppEditAcl
+                    .findByAppEditIdAndUserId(resource.id, subject.id)
+                    ?.canReview == true
+
+                Permission.SUBMIT,
                 Permission.UPDATE,
                 Permission.VIEW,
                 Permission.VIEW_EXISTENCE,

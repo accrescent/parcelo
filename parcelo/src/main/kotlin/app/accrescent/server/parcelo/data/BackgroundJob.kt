@@ -15,6 +15,7 @@ import java.time.OffsetDateTime
 
 enum class BackgroundJobType {
     PUBLISH_APP_DRAFT,
+    PUBLISH_APP_EDIT,
 }
 
 @Entity

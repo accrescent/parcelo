@@ -1,0 +1,1 @@
+A new app edit with ID {appEditId} has been assigned to you for review.
