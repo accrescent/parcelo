@@ -119,7 +119,7 @@ class AppDraft(
                         "ON reviews.id = reviewId " +
                         "WHERE organizationId = ?1 " +
                         "AND publishedAt IS NULL " +
-                        "AND (reviews.approved IS NULL OR reviews.approved = false)",
+                        "AND (reviews.approved IS NULL OR reviews.approved = true)",
                 organizationId,
             )
         }
