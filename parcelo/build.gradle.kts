@@ -58,7 +58,7 @@ dependencies {
     implementation(libs.quarkus.rest.jackson)
     testImplementation(libs.awaitility)
     testImplementation(libs.htmlunit)
-    testImplementation(libs.quarkus.junit5)
+    testImplementation(libs.quarkus.junit)
     testImplementation(libs.rest.assured)
     testApkSets(project(":testdata:android-app-valid"))
     testApkSets(project(":testdata:android-app-valid2"))

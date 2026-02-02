@@ -18,7 +18,7 @@ kotlin = "2.3.0"
 log4j1 = "1.2.17"
 minio = "8.6.0"
 protovalidate = "1.1.0"
-quarkus = "3.29.3"
+quarkus = "3.31.1"
 
 [libraries]
 apkanalyzer = { module = "com.android.tools.apkparser:apkanalyzer", version.ref = "apkanalyzer" }
@@ -52,7 +52,7 @@ quarkus-hibernate-orm-panache-kotlin = { module = "io.quarkus:quarkus-hibernate-
 quarkus-hibernate-validator = { module = "io.quarkus:quarkus-hibernate-validator" }
 quarkus-jaxb = { module = "io.quarkus:quarkus-jaxb" }
 quarkus-jdbc-postgresql = { module = "io.quarkus:quarkus-jdbc-postgresql" }
-quarkus-junit5 = { module = "io.quarkus:quarkus-junit5" }
+quarkus-junit = { module = "io.quarkus:quarkus-junit" }
 quarkus-kotlin = { module = "io.quarkus:quarkus-kotlin" }
 quarkus-mailer = { module = "io.quarkus:quarkus-mailer" }
 quarkus-oidc = { module = "io.quarkus:quarkus-oidc" }
@@ -61,8 +61,8 @@ quarkus-qute = { module = "io.quarkus:quarkus-qute" }
 quarkus-rest-jackson = { module = "io.quarkus:quarkus-rest-jackson" }
 rest-assured = { module = "io.rest-assured:rest-assured" }
 testcontainers = { module = "org.testcontainers:testcontainers"  }
-testcontainers-gcloud = { module = "org.testcontainers:gcloud" }
-testcontainers-minio = { module = "org.testcontainers:minio" }
+testcontainers-gcloud = { module = "org.testcontainers:testcontainers-gcloud" }
+testcontainers-minio = { module = "org.testcontainers:testcontainers-minio" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
