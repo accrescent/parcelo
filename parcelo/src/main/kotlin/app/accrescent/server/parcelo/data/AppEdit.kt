@@ -138,5 +138,47 @@ class AppEdit(
         fun existsById(id: String): Boolean {
             return count("WHERE id = ?1", id) > 0
         }
+
+        fun findForAppAndUserByQuery(
+            appId: String,
+            userId: String,
+            pageSize: UInt,
+            afterAppEditId: String?,
+        ): List<AppEdit> {
+            return if (afterAppEditId == null) {
+                find(
+                    "FROM AppEdit app_edits " +
+                            "JOIN App apps " +
+                            "ON apps.id = app_edits.appId " +
+                            "JOIN OrganizationAcl organization_acls " +
+                            "ON organization_acls.organizationId = apps.organizationId " +
+                            "WHERE app_edits.appId = ?1 " +
+                            "AND organization_acls.userId = ?2 " +
+                            "AND organization_acls.canViewApps = true " +
+                            "ORDER by app_edits.id ASC limit ?3",
+                    appId,
+                    userId,
+                    pageSize.toLong(),
+                )
+            } else {
+                find(
+                    "FROM AppEdit app_edits " +
+                            "JOIN App apps " +
+                            "ON apps.id = app_edits.appId " +
+                            "JOIN OrganizationAcl organization_acls " +
+                            "ON organization_acls.organizationId = apps.organizationId " +
+                            "WHERE app_edits.appId = ?1 " +
+                            "AND organization_acls.userId = ?2 " +
+                            "AND organization_acls.canViewApps = true " +
+                            "AND app_edits.id > ?3 " +
+                            "ORDER by app_edits.id ASC limit ?4",
+                    appId,
+                    userId,
+                    afterAppEditId,
+                    pageSize.toLong(),
+                )
+            }
+                .list()
+        }
     }
 }

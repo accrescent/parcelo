@@ -34,8 +34,11 @@ import app.accrescent.appstore.publish.v1alpha1.createAppEditResponse
 import app.accrescent.appstore.publish.v1alpha1.deleteAppEditListingResponse
 import app.accrescent.appstore.publish.v1alpha1.deleteAppEditResponse
 import app.accrescent.appstore.publish.v1alpha1.getAppEditResponse
+import app.accrescent.appstore.publish.v1alpha1.listAppEditsResponse
 import app.accrescent.appstore.publish.v1alpha1.submitAppEditResponse
 import app.accrescent.appstore.publish.v1alpha1.updateAppEditResponse
+import app.accrescent.parcelo.impl.v1.ListAppEditsPageToken
+import app.accrescent.parcelo.impl.v1.listAppEditsPageToken
 import app.accrescent.server.parcelo.config.ParceloConfig
 import app.accrescent.server.parcelo.data.App
 import app.accrescent.server.parcelo.data.AppEdit
@@ -59,6 +62,7 @@ import app.accrescent.server.parcelo.security.PermissionService
 import app.accrescent.server.parcelo.validation.GrpcRequestValidationInterceptor
 import com.google.cloud.storage.Storage
 import com.google.longrunning.Operation
+import com.google.protobuf.InvalidProtocolBufferException
 import com.google.protobuf.timestamp
 import io.grpc.Status
 import io.quarkus.grpc.GrpcService
@@ -73,6 +77,7 @@ import org.quartz.Scheduler
 import org.quartz.TriggerBuilder
 import java.time.OffsetDateTime
 import java.util.UUID
+import kotlin.io.encoding.Base64
 
 private const val ANDROID_PERMISSION_PREFIX = "android.permission."
 private val PERMISSIONS_ALLOWED_WITHOUT_REVIEW = setOf(
@@ -108,6 +113,9 @@ private val PERMISSIONS_ALLOWED_WITHOUT_REVIEW = setOf(
     // Haptics aren't worth reviewing for our purposes.
     "android.permission.VIBRATE",
 )
+
+private const val DEFAULT_PAGE_SIZE = 50u
+private const val MAX_PAGE_SIZE = 50u
 
 @GrpcService
 @RegisterInterceptor(GrpcAuthenticationInterceptor::class)
@@ -255,8 +263,80 @@ class AppEditServiceImpl @Inject constructor(
         return Uni.createFrom().item { response }
     }
 
+    @Transactional
     override fun listAppEdits(request: ListAppEditsRequest): Uni<ListAppEditsResponse> {
-        throw Status.UNIMPLEMENTED.asRuntimeException()
+        val userId = AuthnContextKey.USER_ID.get()
+
+        val pageSize = if (request.hasPageSize() && request.pageSize != 0) {
+            request.pageSize.toUInt().coerceAtMost(MAX_PAGE_SIZE)
+        } else {
+            DEFAULT_PAGE_SIZE
+        }
+        val lastAppEditId = if (request.hasPageToken()) {
+            try {
+                val tokenBytes = Base64.UrlSafe.decode(request.pageToken)
+                val pageToken = ListAppEditsPageToken.parseFrom(tokenBytes)
+                if (!pageToken.hasLastAppEditId()) {
+                    throw invalidPageTokenError
+                }
+
+                pageToken.lastAppEditId
+            } catch (_: IllegalArgumentException) {
+                throw invalidPageTokenError
+            } catch (_: InvalidProtocolBufferException) {
+                throw invalidPageTokenError
+            }
+        } else {
+            null
+        }
+
+        val appEdits = AppEdit
+            .findForAppAndUserByQuery(request.appId, userId, pageSize, lastAppEditId)
+            .map { appEdit ->
+                appEdit {
+                    id = appEdit.id
+                    createdAt = timestamp {
+                        seconds = appEdit.createdAt.toEpochSecond()
+                        nanos = appEdit.createdAt.nano
+                    }
+                    defaultListingLanguage = appEdit.defaultListingLanguage
+                    appPackage = appPackage {
+                        appId = appEdit.appPackage.appId
+                        versionCode = appEdit.appPackage.versionCode.toLong()
+                        versionName = appEdit.appPackage.versionName
+                        targetSdk = appEdit.appPackage.targetSdk.toLong()
+                    }
+                    appEdit.submittedAt?.let { submissionTimestamp ->
+                        submittedAt = timestamp {
+                            seconds = submissionTimestamp.toEpochSecond()
+                            nanos = submissionTimestamp.nano
+                        }
+                    }
+                    appEdit.publishedAt?.let { publicationTimestamp ->
+                        publishedAt = timestamp {
+                            seconds = publicationTimestamp.toEpochSecond()
+                            nanos = publicationTimestamp.nano
+                        }
+                    }
+                }
+            }
+
+        val response = if (appEdits.isNotEmpty()) {
+            // Set a page token indicating there may be more results
+            val pageToken = listAppEditsPageToken {
+                this.lastAppEditId = appEdits.last().id
+            }
+            val encodedPageToken = Base64.UrlSafe.encode(pageToken.toByteArray())
+
+            listAppEditsResponse {
+                this.appEdits.addAll(appEdits)
+                nextPageToken = encodedPageToken
+            }
+        } else {
+            listAppEditsResponse {}
+        }
+
+        return Uni.createFrom().item { response }
     }
 
     override fun getAppEditUploadInfo(
@@ -665,6 +745,11 @@ class AppEditServiceImpl @Inject constructor(
     }
 
     private companion object {
+        private val invalidPageTokenError = Status
+            .INVALID_ARGUMENT
+            .withDescription("provided page token is invalid")
+            .asRuntimeException()
+
         private fun appNotFoundException(appId: String) = Status
             .NOT_FOUND
             .withDescription("app with ID \"$appId\" not found")
