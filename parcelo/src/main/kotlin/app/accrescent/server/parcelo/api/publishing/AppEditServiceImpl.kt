@@ -30,6 +30,7 @@ import app.accrescent.appstore.publish.v1alpha1.UpdateAppEditResponse
 import app.accrescent.appstore.publish.v1alpha1.appEdit
 import app.accrescent.appstore.publish.v1alpha1.appPackage
 import app.accrescent.appstore.publish.v1alpha1.createAppEditResponse
+import app.accrescent.appstore.publish.v1alpha1.deleteAppEditResponse
 import app.accrescent.appstore.publish.v1alpha1.getAppEditResponse
 import app.accrescent.appstore.publish.v1alpha1.submitAppEditResponse
 import app.accrescent.appstore.publish.v1alpha1.updateAppEditResponse
@@ -40,6 +41,7 @@ import app.accrescent.server.parcelo.data.AppEditAcl
 import app.accrescent.server.parcelo.data.AppEditListing
 import app.accrescent.server.parcelo.data.BackgroundJob
 import app.accrescent.server.parcelo.data.BackgroundJobType
+import app.accrescent.server.parcelo.data.OrphanedBlob
 import app.accrescent.server.parcelo.data.Reviewer
 import app.accrescent.server.parcelo.jobs.JobDataKey
 import app.accrescent.server.parcelo.jobs.PublishAppEditJob
@@ -474,8 +476,58 @@ class AppEditServiceImpl @Inject constructor(
         return Uni.createFrom().item { response }
     }
 
+    @Transactional
     override fun deleteAppEdit(request: DeleteAppEditRequest): Uni<DeleteAppEditResponse> {
-        throw Status.UNIMPLEMENTED.asRuntimeException()
+        val userId = AuthnContextKey.USER_ID.get()
+
+        // Check permissions
+        val canDelete = permissionService.hasPermission(
+            ObjectReference(ObjectType.APP_EDIT, request.appEditId),
+            Permission.DELETE,
+            ObjectReference(ObjectType.USER, userId),
+        )
+        if (!canDelete) {
+            val exists = AppEdit.existsById(request.appEditId)
+            val canViewExistence = permissionService.hasPermission(
+                ObjectReference(ObjectType.APP_EDIT, request.appEditId),
+                Permission.VIEW_EXISTENCE,
+                ObjectReference(ObjectType.USER, userId),
+            )
+
+            throw if (!exists || !canViewExistence) {
+                appEditNotFoundException(request.appEditId)
+            } else {
+                Status
+                    .PERMISSION_DENIED
+                    .withDescription("insufficient permission to delete app edit")
+                    .asRuntimeException()
+            }
+        }
+
+        // Check preconditions
+        val appEdit = AppEdit
+            .findById(request.appEditId)
+            ?: throw appEditNotFoundException(request.appEditId)
+        if (appEdit.submitted) {
+            throw Status
+                .FAILED_PRECONDITION
+                .withDescription("submitted app edits cannot be deleted")
+                .asRuntimeException()
+        }
+
+        // Delete the associated package if it's different from that of the published app
+        if (appEdit.appPackageId != appEdit.app.appPackageId) {
+            OrphanedBlob(
+                bucketId = appEdit.appPackage.bucketId,
+                objectId = appEdit.appPackage.objectId,
+                orphanedOn = OffsetDateTime.now(),
+            )
+                .persist()
+            appEdit.appPackage.delete()
+        }
+        appEdit.delete()
+
+        return Uni.createFrom().item { deleteAppEditResponse {} }
     }
 
     override fun createAppEditListing(
