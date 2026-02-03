@@ -24,7 +24,7 @@ import io.quarkus.deployment.builditem.DevServicesResultBuildItem
 import io.quarkus.deployment.dev.devservices.DevServicesConfig
 import io.quarkus.devservices.common.ConfigureUtil
 import org.testcontainers.containers.Network
-import org.testcontainers.containers.PubSubEmulatorContainer
+import org.testcontainers.gcloud.PubSubEmulatorContainer
 import org.testcontainers.utility.DockerImageName
 import java.util.Optional
 import kotlin.jvm.optionals.getOrDefault
