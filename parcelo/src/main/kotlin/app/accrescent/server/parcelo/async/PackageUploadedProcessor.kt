@@ -141,7 +141,7 @@ class PackageUploadedProcessor @Inject constructor(
                 return
             }
 
-        val apkSet = TempFile(Path(config.packageProcessingDirectory()))
+        val apkSet = TempFile(Path(config.fileProcessingDirectory()))
             .use { tempFile ->
                 try {
                     storage.get(BlobId.of(bucketId, objectId)).downloadTo(tempFile.path)
@@ -151,7 +151,7 @@ class PackageUploadedProcessor @Inject constructor(
                     return
                 }
 
-                ApkSet.parse(tempFile.path, Path(config.packageProcessingDirectory()))
+                ApkSet.parse(tempFile.path, Path(config.fileProcessingDirectory()))
             }
             .getOrElse {
                 QuarkusTransaction

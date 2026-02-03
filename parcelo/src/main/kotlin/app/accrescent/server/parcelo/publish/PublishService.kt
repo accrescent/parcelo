@@ -43,7 +43,7 @@ class PublishService @Inject constructor(
                     .getEntry(apkPath)
                     ?: throw Exception("app package missing APK entry")
                 zipFile.getInputStream(entry).use { apkInputStream ->
-                    TempFile(Path(config.packageProcessingDirectory())).use { tempApk ->
+                    TempFile(Path(config.fileProcessingDirectory())).use { tempApk ->
                         val bucketId = config.publishedArtifactBucket()
                         val objectId = apkPathToObjectId(apkPath, appId, versionCode)
                         val size = tempApk.path.outputStream().use { apkInputStream.copyTo(it) }
