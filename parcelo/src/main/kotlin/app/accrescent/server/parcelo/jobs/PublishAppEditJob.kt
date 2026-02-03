@@ -4,9 +4,11 @@
 
 package app.accrescent.server.parcelo.jobs
 
+import app.accrescent.appstore.publish.v1alpha1.PublishAppEditResult
 import app.accrescent.server.parcelo.config.ParceloConfig
 import app.accrescent.server.parcelo.data.AppEdit
 import app.accrescent.server.parcelo.data.AppListing
+import app.accrescent.server.parcelo.data.BackgroundOperation
 import app.accrescent.server.parcelo.data.PublishedImage
 import app.accrescent.server.parcelo.publish.PublishService
 import app.accrescent.server.parcelo.util.TempFile
@@ -14,19 +16,19 @@ import app.accrescent.server.parcelo.util.apkPaths
 import com.android.bundle.Commands
 import com.google.cloud.storage.BlobId
 import com.google.cloud.storage.Storage
+import io.grpc.Status
 import io.quarkus.logging.Log
 import jakarta.inject.Inject
 import jakarta.transaction.Transactional
 import org.quartz.DisallowConcurrentExecution
 import org.quartz.Job
 import org.quartz.JobExecutionContext
-import org.quartz.PersistJobDataAfterExecution
 import java.time.OffsetDateTime
 import kotlin.io.path.Path
 import app.accrescent.server.parcelo.data.PublishedApk as DbPublishedApk
+import com.google.rpc.Status as GoogleStatus
 
 @DisallowConcurrentExecution
-@PersistJobDataAfterExecution
 class PublishAppEditJob @Inject constructor(
     private val config: ParceloConfig,
     private val publishService: PublishService,
@@ -34,25 +36,49 @@ class PublishAppEditJob @Inject constructor(
 ) : Job {
     @Transactional
     override fun execute(context: JobExecutionContext) {
+        val jobName = context.jobDetail.key.name
+        val operation = BackgroundOperation.findByJobName(jobName) ?: run {
+            Log.error("background operation with job name $jobName not found, skipping")
+            return
+        }
         val appEditId = try {
             context.mergedJobDataMap.getString(JobDataKey.APP_EDIT_ID) ?: run {
                 Log.error("app edit ID not found in merged job data map")
-                context.jobDetail.jobDataMap[JobDataKey.SUCCESS] = false.toString()
+                operation.result = GoogleStatus
+                    .newBuilder()
+                    .setCode(Status.Code.INTERNAL.value())
+                    .setMessage("app edit ID parameter not found in job context")
+                    .build()
+                    .toByteArray()
+                operation.succeeded = false
                 return
             }
         } catch (_: ClassCastException) {
             Log.error("app edit ID not found in merged job data map")
-            context.jobDetail.jobDataMap[JobDataKey.SUCCESS] = false.toString()
+            operation.result = GoogleStatus
+                .newBuilder()
+                .setCode(Status.Code.INTERNAL.value())
+                .setMessage("app edit ID parameter was not the right type")
+                .build()
+                .toByteArray()
+            operation.succeeded = false
             return
         }
 
         try {
             publishAppEdit(appEditId)
-            context.jobDetail.jobDataMap[JobDataKey.SUCCESS] = true.toString()
+            operation.result = PublishAppEditResult.getDefaultInstance().toByteArray()
+            operation.succeeded = true
         } catch (t: Throwable) {
             AppEdit.findById(appEditId)?.publishing = false
             Log.warn("app edit publishing failed", t)
-            context.jobDetail.jobDataMap[JobDataKey.SUCCESS] = false.toString()
+            operation.result = GoogleStatus
+                .newBuilder()
+                .setCode(Status.Code.INTERNAL.value())
+                .setMessage("an unknown internal error occurred")
+                .build()
+                .toByteArray()
+            operation.succeeded = false
         }
     }
 

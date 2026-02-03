@@ -4,10 +4,11 @@
 
 package app.accrescent.server.parcelo.api.longrunning
 
+import app.accrescent.appstore.publish.v1alpha1.PublishAppDraftResult
+import app.accrescent.appstore.publish.v1alpha1.PublishAppEditResult
 import app.accrescent.server.parcelo.data.AppDraft
-import app.accrescent.server.parcelo.data.BackgroundJob
-import app.accrescent.server.parcelo.data.BackgroundJobType
-import app.accrescent.server.parcelo.jobs.JobDataKey
+import app.accrescent.server.parcelo.data.BackgroundOperation
+import app.accrescent.server.parcelo.data.BackgroundOperationType
 import app.accrescent.server.parcelo.security.AuthnContextKey
 import app.accrescent.server.parcelo.security.GrpcAuthenticationInterceptor
 import app.accrescent.server.parcelo.security.GrpcRateLimitInterceptor
@@ -15,11 +16,13 @@ import app.accrescent.server.parcelo.security.ObjectReference
 import app.accrescent.server.parcelo.security.ObjectType
 import app.accrescent.server.parcelo.security.Permission
 import app.accrescent.server.parcelo.security.PermissionService
+import arrow.core.Either
+import arrow.core.left
+import arrow.core.right
 import com.google.longrunning.GetOperationRequest
 import com.google.longrunning.Operation
 import com.google.longrunning.OperationsGrpc
 import com.google.protobuf.Any
-import com.google.rpc.Code
 import io.grpc.Status
 import io.grpc.stub.StreamObserver
 import io.quarkus.grpc.GrpcService
@@ -27,7 +30,6 @@ import io.quarkus.grpc.RegisterInterceptor
 import jakarta.inject.Inject
 import jakarta.transaction.Transactional
 import org.eclipse.microprofile.context.ManagedExecutor
-import org.quartz.JobKey
 import org.quartz.Scheduler
 import com.google.rpc.Status as GoogleStatus
 
@@ -54,20 +56,16 @@ class OperationsImpl @Inject constructor(
         request: GetOperationRequest,
         responseObserver: StreamObserver<Operation>,
     ) {
-        val metadata = BackgroundJob.findByJobName(request.name) ?: run {
-            responseObserver.onError(operationNotFoundException(request.name))
-            return
-        }
-        val jobDetail = scheduler.getJobDetail(JobKey.jobKey(request.name)) ?: run {
+        val metadata = BackgroundOperation.findByJobName(request.name) ?: run {
             responseObserver.onError(operationNotFoundException(request.name))
             return
         }
 
         val resource = when (metadata.type) {
-            BackgroundJobType.PUBLISH_APP_DRAFT ->
+            BackgroundOperationType.PUBLISH_APP_DRAFT ->
                 ObjectReference(ObjectType.APP_DRAFT, metadata.parentId)
 
-            BackgroundJobType.PUBLISH_APP_EDIT ->
+            BackgroundOperationType.PUBLISH_APP_EDIT ->
                 ObjectReference(ObjectType.APP_EDIT, metadata.parentId)
         }
         val canView = permissionService.hasPermission(
@@ -98,25 +96,26 @@ class OperationsImpl @Inject constructor(
             return
         }
 
-        val success = if (jobDetail.jobDataMap.containsKey(JobDataKey.SUCCESS)) {
-            jobDetail.jobDataMap.getBoolean(JobDataKey.SUCCESS)
-        } else {
-            null
+        val result = metadata.result?.let {
+            if (metadata.succeeded) {
+                when (metadata.type) {
+                    BackgroundOperationType.PUBLISH_APP_DRAFT -> PublishAppDraftResult.parseFrom(it)
+                    BackgroundOperationType.PUBLISH_APP_EDIT -> PublishAppEditResult.parseFrom(it)
+                }.right()
+            } else {
+                GoogleStatus.parseFrom(it).left()
+            }
         }
 
         val operation = Operation
             .newBuilder()
             .apply {
                 name = request.name
-                done = success != null
-                if (success != null) {
-                    if (success) {
-                        response = Any.getDefaultInstance()
-                    } else {
-                        error = GoogleStatus
-                            .newBuilder()
-                            .apply { code = Code.INTERNAL_VALUE }
-                            .build()
+                done = result != null
+                if (result != null) {
+                    when (result) {
+                        is Either.Left -> error = result.value
+                        is Either.Right -> response = Any.pack(result.value)
                     }
                 }
             }
