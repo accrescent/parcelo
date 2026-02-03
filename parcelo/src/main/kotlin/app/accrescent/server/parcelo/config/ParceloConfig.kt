@@ -19,11 +19,11 @@ interface ParceloConfig {
 
     fun artifactsBaseUrl(): String
 
+    fun fileProcessingDirectory(): String
+
     fun imageUploadServiceBaseUrl(): String
 
     fun listingImageBucket(): String
-
-    fun packageProcessingDirectory(): String
 
     fun publishedArtifactBucket(): String
 

@@ -82,7 +82,7 @@ class PublishAppDraftJob @Inject constructor(
         // does not eventually complete successfully. That is, if this RPC is called and completes
         // successfully for a given draft, it is guaranteed that no orphan objects exist for it even
         // if previous calls have failed.
-        val pathsToApks = TempFile(Path(config.packageProcessingDirectory())).use { tempApkSet ->
+        val pathsToApks = TempFile(Path(config.fileProcessingDirectory())).use { tempApkSet ->
             storage
                 .get(BlobId.of(appPackage.bucketId, appPackage.objectId))
                 .downloadTo(tempApkSet.path)
@@ -102,7 +102,7 @@ class PublishAppDraftJob @Inject constructor(
         for (listing in appDraft.listings) {
             val icon = listing.icon ?: throw Exception("no icon found for listing ${listing.language}")
 
-            TempFile(Path(config.packageProcessingDirectory())).use { tempIcon ->
+            TempFile(Path(config.fileProcessingDirectory())).use { tempIcon ->
                 storage.get(BlobId.of(icon.bucketId, icon.objectId)).downloadTo(tempIcon.path)
 
                 val publishedIcon = publishService.publishIcon(

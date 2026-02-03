@@ -75,7 +75,7 @@ class PublishAppEditJob @Inject constructor(
             // this job does not eventually complete successfully. That is, if this job is called
             // and completes successfully for a given edit, it is guaranteed that no orphan objects
             // exist for it even if previous calls have failed.
-            TempFile(Path(config.packageProcessingDirectory()))
+            TempFile(Path(config.fileProcessingDirectory()))
                 .use { tempApkSet ->
                     storage
                         .get(BlobId.of(appEdit.appPackage.bucketId, appEdit.appPackage.objectId))
@@ -115,7 +115,7 @@ class PublishAppEditJob @Inject constructor(
             val appListing = appListings[editListing.language]
             if (appListing == null) {
                 // Create a new app listing based on the edit listing, publishing the latter's icon
-                val publishedIcon = TempFile(Path(config.packageProcessingDirectory()))
+                val publishedIcon = TempFile(Path(config.fileProcessingDirectory()))
                     .use { tempIcon ->
                         storage
                             .get(BlobId.of(editListingIcon.bucketId, editListingIcon.objectId))
@@ -145,7 +145,7 @@ class PublishAppEditJob @Inject constructor(
                 // Update the app listing based on the edit listing's contents, publishing a new
                 // icon if necessary
                 if (editListing.iconImageId != appListing.iconImageId) {
-                    val publishedIcon = TempFile(Path(config.packageProcessingDirectory()))
+                    val publishedIcon = TempFile(Path(config.fileProcessingDirectory()))
                         .use { tempIcon ->
                             storage
                                 .get(BlobId.of(editListingIcon.bucketId, editListingIcon.objectId))
