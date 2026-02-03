@@ -15,6 +15,8 @@ import app.accrescent.appstore.publish.v1alpha1.DeleteAppDraftRequest
 import app.accrescent.appstore.publish.v1alpha1.DeleteAppDraftResponse
 import app.accrescent.appstore.publish.v1alpha1.GetAppDraftDownloadInfoRequest
 import app.accrescent.appstore.publish.v1alpha1.GetAppDraftDownloadInfoResponse
+import app.accrescent.appstore.publish.v1alpha1.GetAppDraftListingIconDownloadInfoRequest
+import app.accrescent.appstore.publish.v1alpha1.GetAppDraftListingIconDownloadInfoResponse
 import app.accrescent.appstore.publish.v1alpha1.GetAppDraftListingIconUploadInfoRequest
 import app.accrescent.appstore.publish.v1alpha1.GetAppDraftListingIconUploadInfoResponse
 import app.accrescent.appstore.publish.v1alpha1.GetAppDraftRequest
@@ -785,6 +787,12 @@ class AppDraftServiceImpl @Inject constructor(
         }
 
         return Uni.createFrom().item { response }
+    }
+
+    override fun getAppDraftListingIconDownloadInfo(
+        request: GetAppDraftListingIconDownloadInfoRequest,
+    ): Uni<GetAppDraftListingIconDownloadInfoResponse> {
+        throw Status.UNIMPLEMENTED.asRuntimeException()
     }
 
     @Transactional
