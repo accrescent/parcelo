@@ -10,7 +10,7 @@ CREATE SEQUENCE app_listings_seq START WITH 1 INCREMENT BY 50;
 
 CREATE SEQUENCE app_package_permissions_seq START WITH 1 INCREMENT BY 50;
 
-CREATE SEQUENCE background_jobs_seq START WITH 1 INCREMENT BY 50;
+CREATE SEQUENCE background_operations_seq START WITH 1 INCREMENT BY 50;
 
 CREATE SEQUENCE organization_acls_seq START WITH 1 INCREMENT BY 50;
 
@@ -176,13 +176,16 @@ CREATE TABLE apps (
     PRIMARY KEY (id)
 );
 
-CREATE TABLE background_jobs (
+CREATE TABLE background_operations (
+    succeeded boolean NOT NULL,
     createdAt timestamp(6) with time zone NOT NULL,
     id bigint NOT NULL,
     job_name text NOT NULL UNIQUE,
     parent_id text NOT NULL,
     type text NOT NULL CHECK ((type in ('PUBLISH_APP_DRAFT','PUBLISH_APP_EDIT'))),
-    PRIMARY KEY (id)
+    result bytea,
+    PRIMARY KEY (id),
+    CHECK (result IS NOT NULL OR succeeded = false)
 );
 
 CREATE TABLE images (

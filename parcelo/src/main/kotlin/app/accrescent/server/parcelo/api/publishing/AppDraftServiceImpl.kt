@@ -55,8 +55,8 @@ import app.accrescent.server.parcelo.data.AppDraftAcl
 import app.accrescent.server.parcelo.data.AppDraftListing
 import app.accrescent.server.parcelo.data.AppDraftListingIconUploadJob
 import app.accrescent.server.parcelo.data.AppDraftUploadProcessingJob
-import app.accrescent.server.parcelo.data.BackgroundJob
-import app.accrescent.server.parcelo.data.BackgroundJobType
+import app.accrescent.server.parcelo.data.BackgroundOperation
+import app.accrescent.server.parcelo.data.BackgroundOperationType
 import app.accrescent.server.parcelo.data.Organization
 import app.accrescent.server.parcelo.data.OrphanedBlob
 import app.accrescent.server.parcelo.data.Reviewer
@@ -972,11 +972,13 @@ class AppDraftServiceImpl @Inject constructor(
         val trigger = TriggerBuilder.newTrigger().startNow().build()
         scheduler.scheduleJob(job, trigger)
 
-        BackgroundJob(
-            type = BackgroundJobType.PUBLISH_APP_DRAFT,
+        BackgroundOperation(
+            type = BackgroundOperationType.PUBLISH_APP_DRAFT,
             parentId = appDraft.id,
             jobName = job.key.name,
             createdAt = OffsetDateTime.now(),
+            result = null,
+            succeeded = false,
         )
             .persist()
         appDraft.publishing = true

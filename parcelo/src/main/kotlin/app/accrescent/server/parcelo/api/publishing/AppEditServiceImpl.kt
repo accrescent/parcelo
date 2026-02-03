@@ -45,8 +45,8 @@ import app.accrescent.server.parcelo.data.App
 import app.accrescent.server.parcelo.data.AppEdit
 import app.accrescent.server.parcelo.data.AppEditAcl
 import app.accrescent.server.parcelo.data.AppEditListing
-import app.accrescent.server.parcelo.data.BackgroundJob
-import app.accrescent.server.parcelo.data.BackgroundJobType
+import app.accrescent.server.parcelo.data.BackgroundOperation
+import app.accrescent.server.parcelo.data.BackgroundOperationType
 import app.accrescent.server.parcelo.data.OrphanedBlob
 import app.accrescent.server.parcelo.data.Reviewer
 import app.accrescent.server.parcelo.jobs.JobDataKey
@@ -593,11 +593,13 @@ class AppEditServiceImpl @Inject constructor(
             val trigger = TriggerBuilder.newTrigger().startNow().build()
             scheduler.scheduleJob(job, trigger)
 
-            BackgroundJob(
-                type = BackgroundJobType.PUBLISH_APP_EDIT,
+            BackgroundOperation(
+                type = BackgroundOperationType.PUBLISH_APP_EDIT,
                 parentId = appEdit.id,
                 jobName = job.key.name,
                 createdAt = OffsetDateTime.now(),
+                result = null,
+                succeeded = false,
             )
                 .persist()
             appEdit.publishing = true
