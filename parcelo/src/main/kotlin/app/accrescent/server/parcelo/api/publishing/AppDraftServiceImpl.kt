@@ -38,6 +38,7 @@ import app.accrescent.appstore.publish.v1alpha1.createAppDraftResponse
 import app.accrescent.appstore.publish.v1alpha1.deleteAppDraftListingResponse
 import app.accrescent.appstore.publish.v1alpha1.deleteAppDraftResponse
 import app.accrescent.appstore.publish.v1alpha1.getAppDraftDownloadInfoResponse
+import app.accrescent.appstore.publish.v1alpha1.getAppDraftListingIconDownloadInfoResponse
 import app.accrescent.appstore.publish.v1alpha1.getAppDraftListingIconUploadInfoResponse
 import app.accrescent.appstore.publish.v1alpha1.getAppDraftResponse
 import app.accrescent.appstore.publish.v1alpha1.getAppDraftUploadInfoResponse
@@ -789,10 +790,53 @@ class AppDraftServiceImpl @Inject constructor(
         return Uni.createFrom().item { response }
     }
 
+    @Transactional
     override fun getAppDraftListingIconDownloadInfo(
         request: GetAppDraftListingIconDownloadInfoRequest,
     ): Uni<GetAppDraftListingIconDownloadInfoResponse> {
-        throw Status.UNIMPLEMENTED.asRuntimeException()
+        val userId = AuthnContextKey.USER_ID.get()
+
+        val canDownload = permissionService.hasPermission(
+            ObjectReference(ObjectType.APP_DRAFT, request.appDraftId),
+            Permission.DOWNLOAD_LISTING_ICONS,
+            ObjectReference(ObjectType.USER, userId),
+        )
+        if (!canDownload) {
+            val exists = AppDraft.existsById(request.appDraftId)
+            val canViewExistence = permissionService.hasPermission(
+                ObjectReference(ObjectType.APP_DRAFT, request.appDraftId),
+                Permission.VIEW_EXISTENCE,
+                ObjectReference(ObjectType.USER, userId),
+            )
+
+            throw if (!exists || !canViewExistence) {
+                appDraftNotFoundException(request.appDraftId)
+            } else {
+                Status
+                    .PERMISSION_DENIED
+                    .withDescription("insufficient permission to download app draft listing icon")
+                    .asRuntimeException()
+            }
+        }
+
+        val appDraftListing = AppDraftListing
+            .findByAppDraftIdAndLanguage(request.appDraftId, request.language)
+            ?: throw appDraftListingNotFoundException(request.language)
+        val icon = appDraftListing.icon ?: throw appDraftListingIconNotFoundException(request.language)
+
+        val iconBlob = BlobInfo.newBuilder(icon.bucketId, icon.objectId).build()
+        val downloadUrl = storage.signUrl(
+            iconBlob,
+            DOWNLOAD_URL_EXPIRATION_SECONDS,
+            TimeUnit.SECONDS,
+            Storage.SignUrlOption.withV4Signature(),
+        )
+
+        val response = getAppDraftListingIconDownloadInfoResponse {
+            iconUrl = downloadUrl.toString()
+        }
+
+        return Uni.createFrom().item { response }
     }
 
     @Transactional
@@ -953,6 +997,11 @@ class AppDraftServiceImpl @Inject constructor(
         private fun appDraftListingNotFoundException(language: String) = Status
             .NOT_FOUND
             .withDescription("listing with language \"$language\" not found")
+            .asRuntimeException()
+
+        private fun appDraftListingIconNotFoundException(language: String) = Status
+            .NOT_FOUND
+            .withDescription("listing with language \"$language\" has no icon")
             .asRuntimeException()
 
         private fun appDraftNotFoundException(appDraftId: String) = Status
