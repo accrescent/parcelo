@@ -584,7 +584,7 @@ class AppEditServiceImpl @Inject constructor(
             // Publish the edit immediately
             val job = JobBuilder
                 .newJob(PublishAppEditJob::class.java)
-                .withIdentity(JobKey.jobKey(UUID.randomUUID().toString()))
+                .withIdentity(JobKey.jobKey(Identifier.generateNew(IdType.OPERATION)))
                 .withDescription("Publish app edit \"${request.appEditId}\"")
                 .usingJobData(JobDataKey.APP_EDIT_ID, request.appEditId)
                 .requestRecovery()
@@ -593,19 +593,19 @@ class AppEditServiceImpl @Inject constructor(
             val trigger = TriggerBuilder.newTrigger().startNow().build()
             scheduler.scheduleJob(job, trigger)
 
-            BackgroundOperation(
+            val backgroundOperation = BackgroundOperation(
+                id = job.key.name,
                 type = BackgroundOperationType.PUBLISH_APP_EDIT,
                 parentId = appEdit.id,
-                jobName = job.key.name,
                 createdAt = OffsetDateTime.now(),
                 result = null,
                 succeeded = false,
             )
-                .persist()
+                .also { it.persist() }
             appEdit.publishing = true
 
             submitAppEditResponse {
-                operation = Operation.newBuilder().setName(job.key.name).build()
+                operation = Operation.newBuilder().setName(backgroundOperation.id).build()
             }
         }
         appEdit.submittedAt = OffsetDateTime.now()

@@ -4,6 +4,7 @@
 
 package app.accrescent.server.parcelo.async
 
+import app.accrescent.appstore.publish.v1alpha1.UploadAppDraftResult
 import app.accrescent.quarkus.gcp.pubsub.PubSubHelper
 import app.accrescent.server.parcelo.config.ParceloConfig
 import app.accrescent.server.parcelo.data.AppDraft
@@ -22,6 +23,7 @@ import com.google.cloud.storage.BlobId
 import com.google.cloud.storage.Storage
 import com.google.cloud.storage.StorageException
 import com.google.pubsub.v1.PubsubMessage
+import io.grpc.Status
 import io.quarkus.narayana.jta.QuarkusTransaction
 import io.quarkus.runtime.ShutdownEvent
 import io.quarkus.runtime.StartupEvent
@@ -35,6 +37,7 @@ import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
 import java.util.UUID
 import kotlin.io.path.Path
+import com.google.rpc.Status as GoogleStatus
 
 private const val BUCKET_ID_KEY = "bucketId"
 private const val EVENT_TIME_KEY = "eventTime"
@@ -156,7 +159,20 @@ class PackageUploadedProcessor @Inject constructor(
             .getOrElse {
                 QuarkusTransaction
                     .joiningExisting()
-                    .call { AppDraftUploadProcessingJob.markFailed(bucketId, objectId) }
+                    .call {
+                        AppDraftUploadProcessingJob
+                            .findByBucketIdAndObjectId(bucketId, objectId)
+                            ?.backgroundOperation
+                            ?.let { operation ->
+                                operation.result = GoogleStatus
+                                    .newBuilder()
+                                    .setCode(Status.Code.INTERNAL.value())
+                                    .setMessage("unknown internal error occurred parsing APK set")
+                                    .build()
+                                    .toByteArray()
+                                operation.succeeded = false
+                            }
+                    }
 
                 if (it is ApkSetParseError.IoError) {
                     // I/O errors are a result of problematic server state, not the APK set, so we
@@ -222,6 +238,9 @@ class PackageUploadedProcessor @Inject constructor(
                         )
                         return@call
                     }
+                val job = AppDraftUploadProcessingJob
+                    .findByBucketIdAndObjectId(bucketId, objectId)
+                    ?: return@call
 
                 val uploadNotNew = appDraft
                     .appPackage
@@ -274,7 +293,12 @@ class PackageUploadedProcessor @Inject constructor(
                     }
 
                 OrphanedBlob.deleteByBucketIdAndObjectId(newBlob.bucket, newBlob.name)
-                AppDraftUploadProcessingJob.markSucceeded(bucketId, objectId)
+
+                AppDraftUploadProcessingJob.findByBucketIdAndObjectId(bucketId, objectId)
+                job.backgroundOperation.result = UploadAppDraftResult
+                    .getDefaultInstance()
+                    .toByteArray()
+                job.backgroundOperation.succeeded = true
             }
 
         consumer.ack()

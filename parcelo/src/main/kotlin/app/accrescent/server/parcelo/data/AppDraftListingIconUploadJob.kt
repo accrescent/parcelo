@@ -26,31 +26,24 @@ class AppDraftListingIconUploadJob(
     @Column(name = "upload_key", nullable = false, unique = true)
     val uploadKey: UUID,
 
-    @Column(name = "completed", nullable = false)
-    var completed: Boolean,
-
-    @Column(name = "succeeded", nullable = false)
-    var succeeded: Boolean,
-
     @Column(name = "expires_at", nullable = false)
     var expiresAt: OffsetDateTime,
+
+    @Column(columnDefinition = "text", name = "background_operation_id", nullable = false)
+    val backgroundOperationId: String,
 ) : PanacheEntity() {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "app_draft_listing_id", insertable = false, updatable = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
     lateinit var appDraftListing: AppDraftListing
 
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "background_operation_id", insertable = false, updatable = false)
+    lateinit var backgroundOperation: BackgroundOperation
+
     companion object : PanacheCompanion<AppDraftListingIconUploadJob> {
         fun findByUploadKey(uploadKey: UUID): AppDraftListingIconUploadJob? {
             return find("WHERE uploadKey = ?1", uploadKey).firstResult()
-        }
-
-        fun markFailed(uploadKey: UUID) {
-            update("SET completed = true, succeeded = false WHERE uploadKey = ?1", uploadKey)
-        }
-
-        fun markSucceeded(uploadKey: UUID) {
-            update("SET completed = true, succeeded = true WHERE uploadKey = ?1", uploadKey)
         }
     }
 }

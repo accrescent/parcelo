@@ -6,6 +6,8 @@ package app.accrescent.server.parcelo.api.longrunning
 
 import app.accrescent.appstore.publish.v1alpha1.PublishAppDraftResult
 import app.accrescent.appstore.publish.v1alpha1.PublishAppEditResult
+import app.accrescent.appstore.publish.v1alpha1.UploadAppDraftListingIconResult
+import app.accrescent.appstore.publish.v1alpha1.UploadAppDraftResult
 import app.accrescent.server.parcelo.data.AppDraft
 import app.accrescent.server.parcelo.data.BackgroundOperation
 import app.accrescent.server.parcelo.data.BackgroundOperationType
@@ -56,13 +58,15 @@ class OperationsImpl @Inject constructor(
         request: GetOperationRequest,
         responseObserver: StreamObserver<Operation>,
     ) {
-        val metadata = BackgroundOperation.findByJobName(request.name) ?: run {
+        val metadata = BackgroundOperation.findById(request.name) ?: run {
             responseObserver.onError(operationNotFoundException(request.name))
             return
         }
 
         val resource = when (metadata.type) {
-            BackgroundOperationType.PUBLISH_APP_DRAFT ->
+            BackgroundOperationType.PUBLISH_APP_DRAFT,
+            BackgroundOperationType.UPLOAD_APP_DRAFT,
+            BackgroundOperationType.UPLOAD_APP_DRAFT_LISTING_ICON ->
                 ObjectReference(ObjectType.APP_DRAFT, metadata.parentId)
 
             BackgroundOperationType.PUBLISH_APP_EDIT ->
@@ -101,6 +105,9 @@ class OperationsImpl @Inject constructor(
                 when (metadata.type) {
                     BackgroundOperationType.PUBLISH_APP_DRAFT -> PublishAppDraftResult.parseFrom(it)
                     BackgroundOperationType.PUBLISH_APP_EDIT -> PublishAppEditResult.parseFrom(it)
+                    BackgroundOperationType.UPLOAD_APP_DRAFT -> UploadAppDraftResult.parseFrom(it)
+                    BackgroundOperationType.UPLOAD_APP_DRAFT_LISTING_ICON ->
+                        UploadAppDraftListingIconResult.parseFrom(it)
                 }.right()
             } else {
                 GoogleStatus.parseFrom(it).left()

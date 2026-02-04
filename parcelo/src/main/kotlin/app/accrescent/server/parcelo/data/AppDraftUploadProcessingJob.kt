@@ -31,32 +31,24 @@ class AppDraftUploadProcessingJob(
     @Column(columnDefinition = "text", name = "object_id", nullable = false)
     val objectId: String,
 
-    @Column(nullable = false)
-    val completed: Boolean,
-
-    @Column(nullable = false)
-    val succeeded: Boolean,
+    @Column(columnDefinition = "text", name = "background_operation_id", nullable = false)
+    val backgroundOperationId: String,
 ) : PanacheEntity() {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "app_draft_id", insertable = false, updatable = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
     private lateinit var appDraft: AppDraft
 
-    companion object : PanacheCompanion<AppDraftUploadProcessingJob> {
-        fun markFailed(bucketId: String, objectId: String) {
-            update(
-                "SET completed = true, succeeded = false WHERE bucketId = ?1 AND objectId = ?2",
-                bucketId,
-                objectId,
-            )
-        }
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "background_operation_id", insertable = false, updatable = false)
+    lateinit var backgroundOperation: BackgroundOperation
 
-        fun markSucceeded(bucketId: String, objectId: String) {
-            update(
-                "SET completed = true, succeeded = true WHERE bucketId = ?1 AND objectId = ?2",
-                bucketId,
-                objectId,
-            )
+    companion object : PanacheCompanion<AppDraftUploadProcessingJob> {
+        fun findByBucketIdAndObjectId(
+            bucketId: String,
+            objectId: String,
+        ): AppDraftUploadProcessingJob? {
+            return find("WHERE bucketId = ?1 AND objectId = ?2", bucketId, objectId).firstResult()
         }
     }
 }
