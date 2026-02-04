@@ -19,18 +19,17 @@ interface ParceloConfig {
 
     fun artifactsBaseUrl(): String
 
+    fun draftListingIconUploadBucket(): String
+
     fun fileProcessingDirectory(): String
 
-    fun imageUploadServiceBaseUrl(): String
-
     fun listingImageBucket(): String
+
+    fun objectStorageNotifications(): ObjectStorageNotifications
 
     fun publishedArtifactBucket(): String
 
     fun rateLimits(): RateLimits
-
-    @WithName("pubsub")
-    fun pubSub(): PubSub
 
     interface Admin {
         fun oidcProvider(): OidcProvider
@@ -38,13 +37,21 @@ interface ParceloConfig {
         fun oidcSubject(): String
     }
 
-    enum class OidcProvider {
-        LOCAL,
+    interface ObjectStorageNotification {
+        @WithName("pubsub-project-id")
+        fun pubSubProjectId(): String
+
+        @WithName("pubsub-subscription-name")
+        fun pubSubSubscriptionName(): String
     }
 
-    interface PubSub {
-        fun projectId(): String
-        fun subscriptionName(): String
+    interface ObjectStorageNotifications {
+        fun appDraftUploads(): ObjectStorageNotification
+        fun appDraftListingIconUploads(): ObjectStorageNotification
+    }
+
+    enum class OidcProvider {
+        LOCAL,
     }
 
     interface RateLimit {

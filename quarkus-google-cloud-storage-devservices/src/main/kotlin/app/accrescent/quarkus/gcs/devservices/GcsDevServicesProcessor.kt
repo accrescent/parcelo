@@ -76,7 +76,7 @@ class GcsDevServicesProcessor {
 
 private class QuarkusGcsContainer(
     imageName: Optional<String>,
-    private val notificationsConfig: Optional<NotificationsConfig>,
+    private val notificationConfigs: List<NotificationsConfig>,
     private val pubSubConnectionItem: Optional<PubSubConnectionItem>,
 ) : GenericContainer<QuarkusGcsContainer>(
     DockerImageName
@@ -105,18 +105,14 @@ private class QuarkusGcsContainer(
         addFixedExposedPort(reservedPort, FAKE_GCS_SERVER_PORT)
 
         val commandFlags = mutableListOf("-scheme", "http", "-external-url", "http://$host:$reservedPort")
-        notificationsConfig.ifPresent { notificationsConfig ->
+        for (config in notificationConfigs) {
             commandFlags.addAll(
                 listOf(
-                    "-event.pubsub-project-id",
-                    notificationsConfig.pubsubProjectId(),
-                    "-event.pubsub-topic",
-                    notificationsConfig.pubsubTopic(),
+                    "-event.config",
+                    "bucket=${config.bucket()};project=${config.pubsubProjectId()};" +
+                            "topic=${config.pubsubTopic()}",
                 )
             )
-            notificationsConfig.bucket().ifPresent { bucket ->
-                commandFlags.addAll(listOf("-event.bucket", bucket))
-            }
         }
         pubSubConnectionItem.ifPresent { pubsub ->
             withNetwork(pubsub.network)

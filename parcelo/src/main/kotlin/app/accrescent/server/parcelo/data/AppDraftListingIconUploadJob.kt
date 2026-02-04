@@ -12,22 +12,25 @@ import jakarta.persistence.FetchType
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
+import jakarta.persistence.UniqueConstraint
 import org.hibernate.annotations.OnDelete
 import org.hibernate.annotations.OnDeleteAction
-import java.time.OffsetDateTime
 import java.util.UUID
 
 @Entity
-@Table(name = "app_draft_listing_icon_upload_jobs")
+@Table(
+    name = "app_draft_listing_icon_upload_jobs",
+    uniqueConstraints = [UniqueConstraint(columnNames = ["bucket_id", "object_id"])],
+)
 class AppDraftListingIconUploadJob(
     @Column(name = "app_draft_listing_id", nullable = false)
     val appDraftListingId: UUID,
 
-    @Column(name = "upload_key", nullable = false, unique = true)
-    val uploadKey: UUID,
+    @Column(columnDefinition = "text", name = "bucket_id", nullable = false)
+    val bucketId: String,
 
-    @Column(name = "expires_at", nullable = false)
-    var expiresAt: OffsetDateTime,
+    @Column(columnDefinition = "text", name = "object_id", nullable = false)
+    val objectId: String,
 
     @Column(columnDefinition = "text", name = "background_operation_id", nullable = false)
     val backgroundOperationId: String,
@@ -42,8 +45,11 @@ class AppDraftListingIconUploadJob(
     lateinit var backgroundOperation: BackgroundOperation
 
     companion object : PanacheCompanion<AppDraftListingIconUploadJob> {
-        fun findByUploadKey(uploadKey: UUID): AppDraftListingIconUploadJob? {
-            return find("WHERE uploadKey = ?1", uploadKey).firstResult()
+        fun findByBucketIdAndObjectId(
+            bucketId: String,
+            objectId: String,
+        ): AppDraftListingIconUploadJob? {
+            return find("WHERE bucketId = ?1 AND objectId = ?2", bucketId, objectId).firstResult()
         }
     }
 }
