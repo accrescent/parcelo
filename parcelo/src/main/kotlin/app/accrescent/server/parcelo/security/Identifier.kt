@@ -16,6 +16,7 @@ object Identifier {
         val prefix = when (type) {
             IdType.APP_DRAFT -> "ad"
             IdType.APP_EDIT -> "ae"
+            IdType.OPERATION -> "op"
             IdType.ORGANIZATION -> "org"
             IdType.USER -> "user"
             IdType.USER_SESSION -> "accu"

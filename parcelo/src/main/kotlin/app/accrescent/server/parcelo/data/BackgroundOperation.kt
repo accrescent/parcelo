@@ -4,19 +4,22 @@
 
 package app.accrescent.server.parcelo.data
 
-import io.quarkus.hibernate.orm.panache.kotlin.PanacheCompanion
-import io.quarkus.hibernate.orm.panache.kotlin.PanacheEntity
+import io.quarkus.hibernate.orm.panache.kotlin.PanacheCompanionBase
+import io.quarkus.hibernate.orm.panache.kotlin.PanacheEntityBase
 import jakarta.persistence.CheckConstraint
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.EnumType
 import jakarta.persistence.Enumerated
+import jakarta.persistence.Id
 import jakarta.persistence.Table
 import java.time.OffsetDateTime
 
 enum class BackgroundOperationType {
     PUBLISH_APP_DRAFT,
     PUBLISH_APP_EDIT,
+    UPLOAD_APP_DRAFT,
+    UPLOAD_APP_DRAFT_LISTING_ICON,
 }
 
 @Entity
@@ -28,15 +31,16 @@ enum class BackgroundOperationType {
     ],
 )
 class BackgroundOperation(
+    @Id
+    @Column(columnDefinition = "text")
+    val id: String,
+
     @Column(columnDefinition = "text", nullable = false)
     @Enumerated(EnumType.STRING)
     val type: BackgroundOperationType,
 
     @Column(columnDefinition = "text", name = "parent_id", nullable = false)
     val parentId: String,
-
-    @Column(columnDefinition = "text", name = "job_name", nullable = false, unique = true)
-    val jobName: String,
 
     @Column(nullable = false)
     var createdAt: OffsetDateTime,
@@ -45,10 +49,6 @@ class BackgroundOperation(
 
     @Column(nullable = false)
     var succeeded: Boolean,
-) : PanacheEntity() {
-    companion object : PanacheCompanion<BackgroundOperation> {
-        fun findByJobName(name: String): BackgroundOperation? {
-            return find("WHERE jobName = ?1", name).firstResult()
-        }
-    }
+) : PanacheEntityBase {
+    companion object : PanacheCompanionBase<BackgroundOperation, String>
 }

@@ -387,17 +387,27 @@ class AppDraftServiceImpl @Inject constructor(
                 mapOf("X-Goog-Content-Length-Range" to "0,$MAX_APK_SET_SIZE_BYTES")
             ),
         )
+
+        val backgroundOperation = BackgroundOperation(
+            id = Identifier.generateNew(IdType.OPERATION),
+            type = BackgroundOperationType.UPLOAD_APP_DRAFT,
+            parentId = request.appDraftId,
+            createdAt = OffsetDateTime.now(),
+            result = null,
+            succeeded = false,
+        )
+            .also { it.persist() }
         AppDraftUploadProcessingJob(
             appDraftId = request.appDraftId,
             bucketId = blobInfo.bucket,
             objectId = blobInfo.name,
-            completed = false,
-            succeeded = false,
+            backgroundOperationId = backgroundOperation.id,
         )
             .persist()
 
         val response = getAppDraftUploadInfoResponse {
             apkSetUploadUrl = uploadUrl.toString()
+            processingOperation = Operation.newBuilder().setName(backgroundOperation.id).build()
         }
 
         return Uni.createFrom().item { response }
@@ -773,18 +783,27 @@ class AppDraftServiceImpl @Inject constructor(
             .findByAppDraftIdAndLanguage(request.appDraftId, request.language)
             ?: throw appDraftListingNotFoundException(request.language)
 
+        val backgroundOperation = BackgroundOperation(
+            id = Identifier.generateNew(IdType.OPERATION),
+            type = BackgroundOperationType.UPLOAD_APP_DRAFT_LISTING_ICON,
+            parentId = request.appDraftId,
+            createdAt = OffsetDateTime.now(),
+            result = null,
+            succeeded = false,
+        )
+            .also { it.persist() }
         val uploadJob = AppDraftListingIconUploadJob(
             appDraftListingId = appDraftListing.id,
             uploadKey = UUID.randomUUID(),
-            completed = false,
-            succeeded = false,
             expiresAt = OffsetDateTime.now().plusSeconds(UPLOAD_URL_EXPIRATION_SECONDS),
+            backgroundOperationId = backgroundOperation.id,
         )
             .also { it.persist() }
 
         val response = getAppDraftListingIconUploadInfoResponse {
             uploadUrl = ImageUploadService
                 .createUploadUrl(config.imageUploadServiceBaseUrl(), uploadJob.uploadKey)
+            processingOperation = Operation.newBuilder().setName(backgroundOperation.id).build()
         }
 
         return Uni.createFrom().item { response }
@@ -963,7 +982,7 @@ class AppDraftServiceImpl @Inject constructor(
         // Publish draft
         val job = JobBuilder
             .newJob(PublishAppDraftJob::class.java)
-            .withIdentity(JobKey.jobKey(UUID.randomUUID().toString()))
+            .withIdentity(JobKey.jobKey(Identifier.generateNew(IdType.OPERATION)))
             .withDescription("Publish app draft ${request.appDraftId}")
             .usingJobData(JobDataKey.APP_DRAFT_ID, request.appDraftId)
             .requestRecovery()
@@ -972,19 +991,19 @@ class AppDraftServiceImpl @Inject constructor(
         val trigger = TriggerBuilder.newTrigger().startNow().build()
         scheduler.scheduleJob(job, trigger)
 
-        BackgroundOperation(
+        val backgroundOperation = BackgroundOperation(
+            id = job.key.name,
             type = BackgroundOperationType.PUBLISH_APP_DRAFT,
             parentId = appDraft.id,
-            jobName = job.key.name,
             createdAt = OffsetDateTime.now(),
             result = null,
             succeeded = false,
         )
-            .persist()
+            .also { it.persist() }
         appDraft.publishing = true
 
         val response = publishAppDraftResponse {
-            operation = Operation.newBuilder().setName(job.key.name).setDone(false).build()
+            operation = Operation.newBuilder().setName(backgroundOperation.id).setDone(false).build()
         }
 
         return Uni.createFrom().item { response }

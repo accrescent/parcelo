@@ -4,6 +4,7 @@
 
 package app.accrescent.server.parcelo.api.publishing
 
+import app.accrescent.appstore.publish.v1alpha1.UploadAppDraftListingIconResult
 import app.accrescent.server.parcelo.config.ParceloConfig
 import app.accrescent.server.parcelo.data.AppDraftListingIconUploadJob
 import app.accrescent.server.parcelo.data.Image
@@ -12,6 +13,7 @@ import com.google.cloud.storage.BlobId
 import com.google.cloud.storage.BlobInfo
 import com.google.cloud.storage.Storage
 import com.google.cloud.storage.StorageException
+import io.grpc.Status
 import io.quarkus.narayana.jta.QuarkusTransaction
 import jakarta.inject.Inject
 import jakarta.ws.rs.PUT
@@ -25,6 +27,7 @@ import javax.imageio.IIOException
 import javax.imageio.ImageIO
 import kotlin.io.path.fileSize
 import kotlin.io.path.inputStream
+import com.google.rpc.Status as GoogleStatus
 import java.nio.file.Path as FsPath
 
 // 1 MiB
@@ -86,7 +89,17 @@ class ImageUploadService @Inject constructor(
         } catch (_: IIOException) {
             QuarkusTransaction
                 .joiningExisting()
-                .call { AppDraftListingIconUploadJob.markFailed(key) }
+                .call {
+                    AppDraftListingIconUploadJob.findByUploadKey(key)?.backgroundOperation?.let {
+                        it.result = GoogleStatus
+                            .newBuilder()
+                            .setCode(Status.Code.INVALID_ARGUMENT.value())
+                            .setMessage("file is not a valid PNG")
+                            .build()
+                            .toByteArray()
+                        it.succeeded = false
+                    }
+                }
             return Response.ok().build()
         }
 
@@ -94,7 +107,17 @@ class ImageUploadService @Inject constructor(
         if (image.width != REQUIRED_IMAGE_WIDTH || image.height != REQUIRED_IMAGE_HEIGHT) {
             QuarkusTransaction
                 .joiningExisting()
-                .call { AppDraftListingIconUploadJob.markFailed(key) }
+                .call {
+                    AppDraftListingIconUploadJob.findByUploadKey(key)?.backgroundOperation?.let {
+                        it.result = GoogleStatus
+                            .newBuilder()
+                            .setCode(Status.Code.INVALID_ARGUMENT.value())
+                            .setMessage("uploaded PNG is not 512x512 pixels")
+                            .build()
+                            .toByteArray()
+                        it.succeeded = false
+                    }
+                }
             return Response.ok().build()
         }
 
@@ -156,7 +179,10 @@ class ImageUploadService @Inject constructor(
                 }
 
             OrphanedBlob.deleteByBucketIdAndObjectId(blobId.bucket, blobId.name)
-            AppDraftListingIconUploadJob.markSucceeded(key)
+            job.backgroundOperation.result = UploadAppDraftListingIconResult
+                .getDefaultInstance()
+                .toByteArray()
+            job.backgroundOperation.succeeded = true
         }
 
         return Response.ok().build()

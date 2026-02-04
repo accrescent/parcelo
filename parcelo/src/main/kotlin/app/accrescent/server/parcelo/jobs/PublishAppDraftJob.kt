@@ -40,9 +40,9 @@ class PublishAppDraftJob @Inject constructor(
 ) : Job {
     @Transactional
     override fun execute(context: JobExecutionContext) {
-        val jobName = context.jobDetail.key.name
-        val operation = BackgroundOperation.findByJobName(jobName) ?: run {
-            Log.error("background operation with job name $jobName not found, skipping")
+        val jobId = context.jobDetail.key.name
+        val operation = BackgroundOperation.findById(jobId) ?: run {
+            Log.error("background operation with job ID $jobId not found, skipping")
             return
         }
         val appDraftId = try {

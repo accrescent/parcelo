@@ -10,8 +10,6 @@ CREATE SEQUENCE app_listings_seq START WITH 1 INCREMENT BY 50;
 
 CREATE SEQUENCE app_package_permissions_seq START WITH 1 INCREMENT BY 50;
 
-CREATE SEQUENCE background_operations_seq START WITH 1 INCREMENT BY 50;
-
 CREATE SEQUENCE organization_acls_seq START WITH 1 INCREMENT BY 50;
 
 CREATE SEQUENCE orphaned_blobs_seq START WITH 1 INCREMENT BY 50;
@@ -43,12 +41,11 @@ CREATE TABLE app_draft_acls (
 );
 
 CREATE TABLE app_draft_listing_icon_upload_jobs (
-    completed boolean NOT NULL,
-    succeeded boolean NOT NULL,
     expires_at timestamp(6) with time zone NOT NULL,
     id bigint NOT NULL,
     app_draft_listing_id uuid NOT NULL,
     upload_key uuid NOT NULL UNIQUE,
+    background_operation_id text NOT NULL,
     PRIMARY KEY (id)
 );
 
@@ -64,10 +61,9 @@ CREATE TABLE app_draft_listings (
 );
 
 CREATE TABLE app_draft_upload_processing_jobs (
-    completed boolean NOT NULL,
-    succeeded boolean NOT NULL,
     id bigint NOT NULL,
     app_draft_id text NOT NULL UNIQUE,
+    background_operation_id text NOT NULL,
     bucket_id text NOT NULL,
     object_id text NOT NULL,
     PRIMARY KEY (id),
@@ -179,10 +175,9 @@ CREATE TABLE apps (
 CREATE TABLE background_operations (
     succeeded boolean NOT NULL,
     createdAt timestamp(6) with time zone NOT NULL,
-    id bigint NOT NULL,
-    job_name text NOT NULL UNIQUE,
+    id text NOT NULL,
     parent_id text NOT NULL,
-    type text NOT NULL CHECK ((type in ('PUBLISH_APP_DRAFT','PUBLISH_APP_EDIT'))),
+    type text NOT NULL CHECK ((type in ('PUBLISH_APP_DRAFT','PUBLISH_APP_EDIT','UPLOAD_APP_DRAFT','UPLOAD_APP_DRAFT_LISTING_ICON'))),
     result bytea,
     PRIMARY KEY (id),
     CHECK (result IS NOT NULL OR succeeded = false)
@@ -299,6 +294,11 @@ ALTER TABLE IF EXISTS app_draft_listing_icon_upload_jobs
     REFERENCES app_draft_listings
     ON DELETE CASCADE;
 
+ALTER TABLE IF EXISTS app_draft_listing_icon_upload_jobs
+    ADD CONSTRAINT FKnfr45yr7er1bd47omrmecrnv0
+    FOREIGN KEY (background_operation_id)
+    REFERENCES background_operations;
+
 ALTER TABLE IF EXISTS app_draft_listings
     ADD CONSTRAINT FK4y08yv4wo0l36pb279jad6veu
     FOREIGN KEY (app_draft_id)
@@ -315,6 +315,11 @@ ALTER TABLE IF EXISTS app_draft_upload_processing_jobs
     FOREIGN KEY (app_draft_id)
     REFERENCES app_drafts
     ON DELETE CASCADE;
+
+ALTER TABLE IF EXISTS app_draft_upload_processing_jobs
+    ADD CONSTRAINT FKo5dgu6m2o5dlf2xk20llhupyc
+    FOREIGN KEY (background_operation_id)
+    REFERENCES background_operations;
 
 ALTER TABLE IF EXISTS app_drafts
     ADD CONSTRAINT FKewychoo24el8v947ntj9oq59k
