@@ -39,22 +39,18 @@ import java.util.UUID
 import kotlin.io.path.Path
 import com.google.rpc.Status as GoogleStatus
 
-private const val BUCKET_ID_KEY = "bucketId"
 private const val EVENT_TIME_KEY = "eventTime"
-private const val EVENT_TYPE_KEY = "eventType"
-private const val EVENT_TYPE_OBJECT_FINALIZE = "OBJECT_FINALIZE"
-private const val OBJECT_ID_KEY = "objectId"
 
 private const val OBJECT_ORPHAN_TIMEOUT_DAYS = 1L
 
 @ApplicationScoped
-class PackageUploadedProcessor @Inject constructor(
+class AppDraftUploadedProcessor @Inject constructor(
     private val config: ParceloConfig,
     private val pubSubHelper: PubSubHelper,
     private val storage: Storage,
 ) {
     private companion object {
-        private val LOG = Logger.getLogger(PackageUploadedProcessor::class.java)
+        private val LOG = Logger.getLogger(AppDraftUploadedProcessor::class.java)
     }
 
     private val messageReceiver =
@@ -62,9 +58,10 @@ class PackageUploadedProcessor @Inject constructor(
     private lateinit var subscriber: SubscriberInterface
 
     fun onStart(@Observes startupEvent: StartupEvent) {
+        val config = config.objectStorageNotifications().appDraftUploads()
         subscriber = pubSubHelper.createSubscriber(
-            config.pubSub().projectId(),
-            config.pubSub().subscriptionName(),
+            config.pubSubProjectId(),
+            config.pubSubSubscriptionName(),
             messageReceiver,
         )
         subscriber.startAsync().awaitRunning()

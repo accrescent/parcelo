@@ -19,5 +19,5 @@ interface GcsDevServicesConfig {
 
     fun buckets(): Optional<List<String>>
 
-    fun notifications(): Optional<NotificationsConfig>
+    fun notifications(): List<NotificationsConfig>
 }

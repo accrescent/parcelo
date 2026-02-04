@@ -9,7 +9,7 @@ import java.util.Optional
 
 @ConfigMapping(prefix = "notifications")
 interface NotificationsConfig {
-    fun bucket(): Optional<String>
+    fun bucket(): String
 
     fun pubsubProjectId(): String
 

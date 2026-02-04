@@ -96,6 +96,9 @@ import kotlin.io.encoding.Base64
 
 // 1 GiB
 private const val MAX_APK_SET_SIZE_BYTES = 1073741824
+
+// 1 MiB
+private const val MAX_ICON_SIZE_BYTES = 1048576
 private const val UPLOAD_URL_EXPIRATION_SECONDS = 30L
 private const val DOWNLOAD_URL_EXPIRATION_SECONDS = 30L
 
@@ -783,6 +786,19 @@ class AppDraftServiceImpl @Inject constructor(
             .findByAppDraftIdAndLanguage(request.appDraftId, request.language)
             ?: throw appDraftListingNotFoundException(request.language)
 
+        val blobInfo = BlobInfo
+            .newBuilder(config.draftListingIconUploadBucket(), UUID.randomUUID().toString()).build()
+        val uploadUrl = storage.signUrl(
+            blobInfo,
+            UPLOAD_URL_EXPIRATION_SECONDS,
+            TimeUnit.SECONDS,
+            Storage.SignUrlOption.withV4Signature(),
+            Storage.SignUrlOption.httpMethod(HttpMethod.PUT),
+            Storage.SignUrlOption.withExtHeaders(
+                mapOf("X-Goog-Content-Length-Range" to "0,$MAX_ICON_SIZE_BYTES")
+            ),
+        )
+
         val backgroundOperation = BackgroundOperation(
             id = Identifier.generateNew(IdType.OPERATION),
             type = BackgroundOperationType.UPLOAD_APP_DRAFT_LISTING_ICON,
@@ -792,17 +808,16 @@ class AppDraftServiceImpl @Inject constructor(
             succeeded = false,
         )
             .also { it.persist() }
-        val uploadJob = AppDraftListingIconUploadJob(
+        AppDraftListingIconUploadJob(
             appDraftListingId = appDraftListing.id,
-            uploadKey = UUID.randomUUID(),
-            expiresAt = OffsetDateTime.now().plusSeconds(UPLOAD_URL_EXPIRATION_SECONDS),
+            bucketId = blobInfo.bucket,
+            objectId = blobInfo.name,
             backgroundOperationId = backgroundOperation.id,
         )
-            .also { it.persist() }
+            .persist()
 
         val response = getAppDraftListingIconUploadInfoResponse {
-            uploadUrl = ImageUploadService
-                .createUploadUrl(config.imageUploadServiceBaseUrl(), uploadJob.uploadKey)
+            this.uploadUrl = uploadUrl.toString()
             processingOperation = Operation.newBuilder().setName(backgroundOperation.id).build()
         }
 

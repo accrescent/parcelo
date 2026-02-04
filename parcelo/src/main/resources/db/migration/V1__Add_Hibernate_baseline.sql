@@ -41,12 +41,13 @@ CREATE TABLE app_draft_acls (
 );
 
 CREATE TABLE app_draft_listing_icon_upload_jobs (
-    expires_at timestamp(6) with time zone NOT NULL,
     id bigint NOT NULL,
     app_draft_listing_id uuid NOT NULL,
-    upload_key uuid NOT NULL UNIQUE,
     background_operation_id text NOT NULL,
-    PRIMARY KEY (id)
+    bucket_id text NOT NULL,
+    object_id text NOT NULL,
+    PRIMARY KEY (id),
+    UNIQUE (bucket_id, object_id)
 );
 
 CREATE TABLE app_draft_listings (

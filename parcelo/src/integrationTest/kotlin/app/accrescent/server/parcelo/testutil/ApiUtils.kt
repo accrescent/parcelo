@@ -182,10 +182,26 @@ object ApiUtils {
             this.appDraftId = appDraftId
             language = "en-US"
         }
-        val iconUploadUrl = appDraftService
+        val iconUploadResponse = appDraftService
             .getAppDraftListingIconUploadInfo(getAppDraftListingIconUploadInfoRequest)
-            .uploadUrl
-        given().body(Base64.decode(ENCODED_PNG)).put(iconUploadUrl).then().statusCode(200)
+        given()
+            .header("Host", "storage.googleapis.com")
+            .body(Base64.decode(ENCODED_PNG))
+            .put(iconUploadResponse.uploadUrl)
+            .then()
+            .statusCode(200)
+
+        // Wait for the icon to be processed
+        val getIconUploadOpRequest = GetOperationRequest
+            .newBuilder()
+            .setName(iconUploadResponse.processingOperation.name)
+            .build()
+        var iconUploadOp = Operation.getDefaultInstance()
+        await().until {
+            iconUploadOp = operationsService.getOperation(getIconUploadOpRequest)
+            iconUploadOp.done
+        }
+        assertTrue(iconUploadOp.hasResponse())
 
         // Upload the APK set
         val getUploadInfoRequest = getAppDraftUploadInfoRequest { this.appDraftId = appDraftId }
