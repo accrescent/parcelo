@@ -10,6 +10,7 @@ import jakarta.persistence.Entity
 import jakarta.persistence.Id
 import jakarta.persistence.Table
 import jakarta.persistence.UniqueConstraint
+import java.time.OffsetDateTime
 import java.util.UUID
 
 @Entity
@@ -26,4 +27,7 @@ class Image(
 
     @Column(columnDefinition = "text", name = "object_id", nullable = false)
     var objectId: String,
+
+    @Column(name = "upload_pub_sub_event_time", nullable = false)
+    var uploadPubSubEventTime: OffsetDateTime,
 ) : PanacheEntityBase
