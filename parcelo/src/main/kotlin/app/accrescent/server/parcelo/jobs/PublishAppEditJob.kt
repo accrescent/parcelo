@@ -103,9 +103,13 @@ class PublishAppEditJob @Inject constructor(
             // exist for it even if previous calls have failed.
             TempFile(Path(config.fileProcessingDirectory()))
                 .use { tempApkSet ->
-                    storage
+                    val blob = storage
                         .get(BlobId.of(appEdit.appPackage.bucketId, appEdit.appPackage.objectId))
-                        .downloadTo(tempApkSet.path)
+                        ?: run {
+                            Log.error("blob for app package ${appEdit.appPackage.id} not found")
+                            throw Exception("blob for app package ${appEdit.appPackage.id} not found")
+                        }
+                    blob.downloadTo(tempApkSet.path)
 
                     publishService.publishApks(
                         appId = appEdit.appPackage.appId,
@@ -143,9 +147,13 @@ class PublishAppEditJob @Inject constructor(
                 // Create a new app listing based on the edit listing, publishing the latter's icon
                 val publishedIcon = TempFile(Path(config.fileProcessingDirectory()))
                     .use { tempIcon ->
-                        storage
+                        val blob = storage
                             .get(BlobId.of(editListingIcon.bucketId, editListingIcon.objectId))
-                            .downloadTo(tempIcon.path)
+                            ?: run {
+                                Log.error("blob for icon ${editListingIcon.id} not found")
+                                throw Exception("blob for icon ${editListingIcon.id} not fogund")
+                            }
+                        blob.downloadTo(tempIcon.path)
 
                         publishService.publishIcon(
                             appId = appEdit.appPackage.appId,
@@ -173,9 +181,13 @@ class PublishAppEditJob @Inject constructor(
                 if (editListing.iconImageId != appListing.iconImageId) {
                     val publishedIcon = TempFile(Path(config.fileProcessingDirectory()))
                         .use { tempIcon ->
-                            storage
+                            val blob = storage
                                 .get(BlobId.of(editListingIcon.bucketId, editListingIcon.objectId))
-                                .downloadTo(tempIcon.path)
+                                ?: run {
+                                    Log.error("blob for icon ${editListingIcon.id} not found")
+                                    throw Exception("blob for icon ${editListingIcon.id} not found")
+                                }
+                            blob.downloadTo(tempIcon.path)
 
                             publishService.publishIcon(
                                 appId = appEdit.appPackage.appId,

@@ -140,7 +140,12 @@ class AppDraftUploadedProcessor @Inject constructor(
         val apkSet = TempFile(Path(config.fileProcessingDirectory()))
             .use { tempFile ->
                 try {
-                    storage.get(BlobId.of(bucketId, objectId)).downloadTo(tempFile.path)
+                    val blob = storage.get(BlobId.of(bucketId, objectId)) ?: run {
+                        Log.warn("blob at bucket $bucketId and object $objectId not found, skipping")
+                        consumer.ack()
+                        return
+                    }
+                    blob.downloadTo(tempFile.path)
                 } catch (e: StorageException) {
                     Log.error("error downloading object $objectId from bucket $bucketId: ${e.message}")
                     consumer.nack()
