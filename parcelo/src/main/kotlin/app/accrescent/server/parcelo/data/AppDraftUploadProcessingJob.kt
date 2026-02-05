@@ -37,7 +37,7 @@ class AppDraftUploadProcessingJob(
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "app_draft_id", insertable = false, updatable = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
-    private lateinit var appDraft: AppDraft
+    lateinit var appDraft: AppDraft
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "background_operation_id", insertable = false, updatable = false)

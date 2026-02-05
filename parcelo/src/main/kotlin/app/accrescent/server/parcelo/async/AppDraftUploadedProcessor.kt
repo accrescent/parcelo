@@ -7,7 +7,6 @@ package app.accrescent.server.parcelo.async
 import app.accrescent.appstore.publish.v1alpha1.UploadAppDraftResult
 import app.accrescent.quarkus.gcp.pubsub.PubSubHelper
 import app.accrescent.server.parcelo.config.ParceloConfig
-import app.accrescent.server.parcelo.data.AppDraft
 import app.accrescent.server.parcelo.data.AppDraftUploadProcessingJob
 import app.accrescent.server.parcelo.data.AppPackage
 import app.accrescent.server.parcelo.data.AppPackagePermission
@@ -21,7 +20,6 @@ import com.google.cloud.pubsub.v1.MessageReceiver
 import com.google.cloud.pubsub.v1.SubscriberInterface
 import com.google.cloud.storage.BlobId
 import com.google.cloud.storage.Storage
-import com.google.cloud.storage.StorageException
 import com.google.pubsub.v1.PubsubMessage
 import io.grpc.Status
 import io.quarkus.logging.Log
@@ -32,16 +30,10 @@ import jakarta.enterprise.context.ApplicationScoped
 import jakarta.enterprise.event.Observes
 import jakarta.inject.Inject
 import java.time.OffsetDateTime
-import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
-import java.time.format.DateTimeParseException
 import java.util.UUID
 import kotlin.io.path.Path
 import com.google.rpc.Status as GoogleStatus
-
-private const val EVENT_TIME_KEY = "eventTime"
-
-private const val OBJECT_ORPHAN_TIMEOUT_DAYS = 1L
 
 @ApplicationScoped
 class AppDraftUploadedProcessor @Inject constructor(
@@ -90,10 +82,12 @@ class AppDraftUploadedProcessor @Inject constructor(
     //    recorded, it is skipped because it is obsoleted by the later upload event.
     // 3. Use proper transaction isolation. Saving a successful processing result occurs in a highly
     //    consistent PostgreSQL SERIALIZABLE transaction, ensuring that processing doesn't result
-    //    in undesirable state, e.g., untracked orphan blobs.
+    //    in undesirable state, e.g., lost updates.
     //
     // [1]: https://docs.cloud.google.com/pubsub/docs/subscription-overview#default_properties
-    fun processMessage(message: PubsubMessage, consumer: AckReplyConsumer) {
+    private fun processMessage(message: PubsubMessage, consumer: AckReplyConsumer) {
+        // Parse message details, skipping the message if it's invalid, i.e., if it isn't an object
+        // storage notification of the expected type
         val eventType = message.attributesMap[EVENT_TYPE_KEY] ?: run {
             Log.warn("received message without $EVENT_TYPE_KEY key, skipping")
             consumer.ack()
@@ -105,7 +99,7 @@ class AppDraftUploadedProcessor @Inject constructor(
             return
         }
         val bucketId = message.attributesMap[BUCKET_ID_KEY] ?: run {
-            Log.error("received message without $BUCKET_ID_KEY key, skipping")
+            Log.warn("received message without $BUCKET_ID_KEY key, skipping")
             consumer.ack()
             return
         }
@@ -116,189 +110,159 @@ class AppDraftUploadedProcessor @Inject constructor(
         }
         val eventTime = message
             .attributesMap[EVENT_TIME_KEY]
-            ?.let {
-                try {
-                    // Strictly speaking, Google's documentation
-                    // (https://cloud.google.com/storage/docs/pubsub-notifications#attributes)
-                    // guarantees that eventTime is in RFC 3339 format, which is not strictly
-                    // compatible with ISO 8601. However, it appears that eventTime is formatted
-                    // within the subset of ISO 8601 which is compatible with RFC 3339, so it is
-                    // probably safe to use an ISO 8601 parser.
-                    OffsetDateTime.parse(it, DateTimeFormatter.ISO_OFFSET_DATE_TIME)
-                } catch (e: DateTimeParseException) {
-                    Log.error("event time '$it' was not in in correct format: ${e.message}")
-                    consumer.nack()
-                    return
-                }
-            }
+            // Strictly speaking, Google's documentation
+            // (https://cloud.google.com/storage/docs/pubsub-notifications#attributes) guarantees
+            // that eventTime is in RFC 3339 format, which is not strictly compatible with ISO 8601.
+            // However, it appears that eventTime is formatted within the subset of ISO 8601 which
+            // is compatible with RFC 3339, so it is probably safe to use an ISO 8601 parser.
+            ?.let { OffsetDateTime.parse(it, DateTimeFormatter.ISO_OFFSET_DATE_TIME) }
             ?: run {
                 Log.warn("received message without $EVENT_TIME_KEY key, skipping")
                 consumer.ack()
                 return
             }
 
+        QuarkusTransaction.disallowingExisting().call {
+            // Skip processing if the job is not found, processing has already completed, or the
+            // upload event isn't new
+            val job = AppDraftUploadProcessingJob.findByBucketIdAndObjectId(bucketId, objectId) ?: run {
+                Log.warn("no job found for bucket $bucketId and object $objectId, skipping")
+                return@call
+            }
+            if (job.backgroundOperation.result != null) {
+                Log.warn("job for bucket $bucketId and object $objectId already completed, skipping")
+                return@call
+            }
+            val uploadEventIsNew = job
+                .appDraft
+                .appPackage
+                ?.uploadPubSubEventTime
+                ?.let { eventTime.isAfter(it) } != false
+            if (!uploadEventIsNew) {
+                Log.warn("upload did not occur after last recorded upload, skipping")
+                return@call
+            }
+
+            try {
+                processEvent(ObjectUploadEvent(bucketId, objectId, eventTime), job)
+            } catch (t: Throwable) {
+                Log.error("an error occurred processing job ${job.id}", t)
+                job.backgroundOperation.result = GoogleStatus
+                    .newBuilder()
+                    .setCode(Status.Code.INTERNAL.value())
+                    .setMessage("an unknown internal error has occurred")
+                    .build()
+                    .toByteArray()
+            }
+        }
+
+        consumer.ack()
+    }
+
+    private fun processEvent(event: ObjectUploadEvent, job: AppDraftUploadProcessingJob) {
+        // Parse an APK set from the uploaded file
         val apkSet = TempFile(Path(config.fileProcessingDirectory()))
             .use { tempFile ->
-                try {
-                    val blob = storage.get(BlobId.of(bucketId, objectId)) ?: run {
-                        Log.warn("blob at bucket $bucketId and object $objectId not found, skipping")
-                        consumer.ack()
-                        return
-                    }
-                    blob.downloadTo(tempFile.path)
-                } catch (e: StorageException) {
-                    Log.error("error downloading object $objectId from bucket $bucketId: ${e.message}")
-                    consumer.nack()
+                val blob = storage.get(BlobId.of(event.bucketId, event.objectId)) ?: run {
+                    Log.warn(
+                        "blob at bucket ${event.bucketId} and object ${event.objectId} not found," +
+                                " skipping"
+                    )
                     return
                 }
+                blob.downloadTo(tempFile.path)
 
                 ApkSet.parse(tempFile.path, Path(config.fileProcessingDirectory()))
             }
             .getOrElse {
-                QuarkusTransaction
-                    .joiningExisting()
-                    .call {
-                        AppDraftUploadProcessingJob
-                            .findByBucketIdAndObjectId(bucketId, objectId)
-                            ?.backgroundOperation
-                            ?.let { operation ->
-                                operation.result = GoogleStatus
-                                    .newBuilder()
-                                    .setCode(Status.Code.INTERNAL.value())
-                                    .setMessage("unknown internal error occurred parsing APK set")
-                                    .build()
-                                    .toByteArray()
-                                operation.succeeded = false
-                            }
-                    }
+                val code = when (it) {
+                    ApkSetParseError.InvalidFormat,
+                    is ApkSetParseError.RequirementError -> Status.Code.INVALID_ARGUMENT
 
-                if (it is ApkSetParseError.IoError) {
-                    // I/O errors are a result of problematic server state, not the APK set, so we
-                    // shouldn't fail processing for them
-                    consumer.nack()
-                } else {
-                    consumer.ack()
+                    ApkSetParseError.IoError -> Status.Code.INTERNAL
                 }
+                val message = when (it) {
+                    ApkSetParseError.InvalidFormat -> "the upload is not a valid APK set"
+                    ApkSetParseError.IoError -> "unknown I/O error parsing APK set"
+                    ApkSetParseError.RequirementError.Debuggable -> "the app is debuggable"
+                    ApkSetParseError.RequirementError.LowTargetSdk ->
+                        "the app's target SDK is lower than the required minimum"
+
+                    ApkSetParseError.RequirementError.Missing64BitCode ->
+                        "the app has 32-bit code but is missing corresponding 64-bit code"
+
+                    ApkSetParseError.RequirementError.NoModernSignature ->
+                        "the app has not been signed with a modern signature format"
+
+                    ApkSetParseError.RequirementError.SignedWithDebugCert ->
+                        "the app has been signed with a debug certificate"
+
+                    ApkSetParseError.RequirementError.SignedWithMultipleCerts ->
+                        "the app has been signed with multiple certificates"
+
+                    ApkSetParseError.RequirementError.TestOnly -> "the app is marked test-only"
+                }
+                job.backgroundOperation.result = GoogleStatus
+                    .newBuilder()
+                    .setCode(code.value())
+                    .setMessage(message)
+                    .build()
+                    .toByteArray()
                 return
             }
 
-        val oldBlobId = BlobId.of(bucketId, objectId)
-        val newBlobId = BlobId.of(config.appPackageBucket(), UUID.randomUUID().toString())
+        // Copy the APK set into a separate bucket.
+        //
+        // We choose here to not delete the original object so that this message receiver can be
+        // idempotent, i.e., so that it can successfully run again if Pub/Sub delivers the same
+        // notification again.
+        //
+        // To prevent object accumulation in the upload bucket, we instead recommend using
+        // Object Lifecycle Management.
+        val copyRequest = Storage.CopyRequest.of(
+            BlobId.of(event.bucketId, event.objectId),
+            BlobId.of(config.appPackageBucket(), UUID.randomUUID().toString()),
+        )
+        val newBlob = storage.copy(copyRequest).result
 
-        // Mark the new object as an orphan temporarily so that if it is persisted in GCS but never
-        // attached to an app draft (e.g., because the app draft is deleted after object persistence
-        // but before the package is persisted to it), it is still tracked in our database so it can
-        // be deleted later.
-        QuarkusTransaction
-            .joiningExisting()
-            .call {
-                OrphanedBlob(
-                    bucketId = newBlobId.bucket,
-                    objectId = newBlobId.name,
-                    // Orphan the object in the future so that it isn't culled before we've
-                    // finished processing it in this handler
-                    orphanedOn = OffsetDateTime
-                        .now(ZoneOffset.UTC)
-                        .plusDays(OBJECT_ORPHAN_TIMEOUT_DAYS),
-                )
-                    .persist()
-            }
-
-        val copyRequest = Storage
-            .CopyRequest
-            .newBuilder()
-            .setSource(oldBlobId)
-            .setTarget(newBlobId)
-            .build()
-        val newBlob = try {
-            // We choose here to not delete the original object so that this message receiver can be
-            // idempotent, i.e., so that it can successfully run again if Pub/Sub delivers the same
-            // notification again.
-            //
-            // To prevent object accumulation in the upload bucket, we instead recommend using
-            // Object Lifecycle Management.
-            storage.copy(copyRequest).result
-        } catch (e: StorageException) {
-            Log.error("failed to copy app to long-term storage: ${e.message}")
-            consumer.nack()
-            return
+        // Create and persist the new package
+        val newPackage = AppPackage(
+            id = UUID.randomUUID(),
+            bucketId = newBlob.bucket,
+            objectId = newBlob.name,
+            uploadPubSubEventTime = event.timestamp,
+            appId = apkSet.applicationId,
+            versionCode = apkSet.versionCode,
+            versionName = apkSet.versionName,
+            targetSdk = apkSet.targetSdk,
+            signingCertificate = apkSet.signingCert.encoded,
+            buildApksResult = apkSet.buildApksResult.toByteArray(),
+        )
+            .also { it.persist() }
+        for (permission in apkSet.permissions) {
+            AppPackagePermission(
+                appPackageId = newPackage.id,
+                name = permission.name,
+                maxSdkVersion = permission.maxSdkVersion,
+            )
+                .persist()
+        }
+        val existingPackage = job.appDraft.appPackage
+        if (existingPackage == null) {
+            job.appDraft.appPackageId = newPackage.id
+        } else {
+            // Orphan the package's old blob since it is no longer needed
+            OrphanedBlob(
+                bucketId = existingPackage.bucketId,
+                objectId = existingPackage.objectId,
+                orphanedOn = OffsetDateTime.now(),
+            )
+                .persist()
+            job.appDraft.appPackageId = newPackage.id
+            existingPackage.delete()
         }
 
-        QuarkusTransaction
-            .joiningExisting()
-            .call {
-                val appDraft = AppDraft
-                    .findByProcessingJobBucketIdAndObjectId(bucketId, objectId)
-                    ?: run {
-                        Log.warn(
-                            "app draft upload job for object $objectId in bucket $bucketId " +
-                                    "not found, skipping"
-                        )
-                        return@call
-                    }
-                val job = AppDraftUploadProcessingJob
-                    .findByBucketIdAndObjectId(bucketId, objectId)
-                    ?: return@call
-
-                val uploadNotNew = appDraft
-                    .appPackage
-                    ?.uploadPubSubEventTime
-                    ?.let { !eventTime.isAfter(it) } == true
-                if (uploadNotNew) {
-                    Log.warn("upload did not occur after last recorded upload, skipping")
-                    return@call
-                }
-
-                appDraft
-                    .appPackage
-                    ?.let { existingPackage ->
-                        // Orphan the package's old blob since it is no longer needed
-                        OrphanedBlob(
-                            bucketId = existingPackage.bucketId,
-                            objectId = existingPackage.objectId,
-                            orphanedOn = OffsetDateTime.now(),
-                        )
-                            .persist()
-
-                        existingPackage.bucketId = newBlob.bucket
-                        existingPackage.objectId = newBlob.name
-                        existingPackage.uploadPubSubEventTime = eventTime
-                        existingPackage.appId = apkSet.applicationId
-                    }
-                    ?: run {
-                        val appPackage = AppPackage(
-                            id = UUID.randomUUID(),
-                            bucketId = newBlob.bucket,
-                            objectId = newBlob.name,
-                            uploadPubSubEventTime = eventTime,
-                            appId = apkSet.applicationId,
-                            versionCode = apkSet.versionCode,
-                            versionName = apkSet.versionName,
-                            targetSdk = apkSet.targetSdk,
-                            signingCertificate = apkSet.signingCert.encoded,
-                            buildApksResult = apkSet.buildApksResult.toByteArray(),
-                        )
-                            .also { it.persist() }
-                        for (permission in apkSet.permissions) {
-                            AppPackagePermission(
-                                appPackageId = appPackage.id,
-                                name = permission.name,
-                                maxSdkVersion = permission.maxSdkVersion,
-                            )
-                                .persist()
-                        }
-                        appDraft.appPackageId = appPackage.id
-                    }
-
-                OrphanedBlob.deleteByBucketIdAndObjectId(newBlob.bucket, newBlob.name)
-
-                AppDraftUploadProcessingJob.findByBucketIdAndObjectId(bucketId, objectId)
-                job.backgroundOperation.result = UploadAppDraftResult
-                    .getDefaultInstance()
-                    .toByteArray()
-                job.backgroundOperation.succeeded = true
-            }
-
-        consumer.ack()
+        job.backgroundOperation.result = UploadAppDraftResult.getDefaultInstance().toByteArray()
+        job.backgroundOperation.succeeded = true
     }
 }

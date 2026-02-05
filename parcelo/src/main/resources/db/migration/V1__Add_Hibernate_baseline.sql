@@ -185,6 +185,7 @@ CREATE TABLE background_operations (
 );
 
 CREATE TABLE images (
+    upload_pub_sub_event_time timestamp(6) with time zone NOT NULL,
     id uuid NOT NULL,
     bucket_id text NOT NULL,
     object_id text NOT NULL,
