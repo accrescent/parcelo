@@ -95,23 +95,23 @@ class AppDraftUploadedProcessor @Inject constructor(
     // [1]: https://docs.cloud.google.com/pubsub/docs/subscription-overview#default_properties
     fun processMessage(message: PubsubMessage, consumer: AckReplyConsumer) {
         val eventType = message.attributesMap[EVENT_TYPE_KEY] ?: run {
-            Log.error("received message without $EVENT_TYPE_KEY key")
-            consumer.nack()
+            Log.warn("received message without $EVENT_TYPE_KEY key, skipping")
+            consumer.ack()
             return
         }
         if (eventType != EVENT_TYPE_OBJECT_FINALIZE) {
-            Log.error("expected event type of $EVENT_TYPE_OBJECT_FINALIZE but got $eventType")
-            consumer.nack()
+            Log.warn("expected event type of $EVENT_TYPE_OBJECT_FINALIZE but got $eventType, skipping")
+            consumer.ack()
             return
         }
         val bucketId = message.attributesMap[BUCKET_ID_KEY] ?: run {
-            Log.error("received message without $BUCKET_ID_KEY key")
-            consumer.nack()
+            Log.error("received message without $BUCKET_ID_KEY key, skipping")
+            consumer.ack()
             return
         }
         val objectId = message.attributesMap[OBJECT_ID_KEY] ?: run {
-            Log.error("received message without $OBJECT_ID_KEY key")
-            consumer.nack()
+            Log.warn("received message without $OBJECT_ID_KEY key, skipping")
+            consumer.ack()
             return
         }
         val eventTime = message
@@ -132,8 +132,8 @@ class AppDraftUploadedProcessor @Inject constructor(
                 }
             }
             ?: run {
-                Log.error("received message without $EVENT_TIME_KEY key")
-                consumer.nack()
+                Log.warn("received message without $EVENT_TIME_KEY key, skipping")
+                consumer.ack()
                 return
             }
 
