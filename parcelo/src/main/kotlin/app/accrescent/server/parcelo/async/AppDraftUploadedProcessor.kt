@@ -24,13 +24,13 @@ import com.google.cloud.storage.Storage
 import com.google.cloud.storage.StorageException
 import com.google.pubsub.v1.PubsubMessage
 import io.grpc.Status
+import io.quarkus.logging.Log
 import io.quarkus.narayana.jta.QuarkusTransaction
 import io.quarkus.runtime.ShutdownEvent
 import io.quarkus.runtime.StartupEvent
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.enterprise.event.Observes
 import jakarta.inject.Inject
-import org.jboss.logging.Logger
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
@@ -49,10 +49,6 @@ class AppDraftUploadedProcessor @Inject constructor(
     private val pubSubHelper: PubSubHelper,
     private val storage: Storage,
 ) {
-    private companion object {
-        private val LOG = Logger.getLogger(AppDraftUploadedProcessor::class.java)
-    }
-
     private val messageReceiver =
         MessageReceiver { message, consumer -> processMessage(message, consumer) }
     private lateinit var subscriber: SubscriberInterface
@@ -99,22 +95,22 @@ class AppDraftUploadedProcessor @Inject constructor(
     // [1]: https://docs.cloud.google.com/pubsub/docs/subscription-overview#default_properties
     fun processMessage(message: PubsubMessage, consumer: AckReplyConsumer) {
         val eventType = message.attributesMap[EVENT_TYPE_KEY] ?: run {
-            LOG.error("received message without $EVENT_TYPE_KEY key")
+            Log.error("received message without $EVENT_TYPE_KEY key")
             consumer.nack()
             return
         }
         if (eventType != EVENT_TYPE_OBJECT_FINALIZE) {
-            LOG.error("expected event type of $EVENT_TYPE_OBJECT_FINALIZE but got $eventType")
+            Log.error("expected event type of $EVENT_TYPE_OBJECT_FINALIZE but got $eventType")
             consumer.nack()
             return
         }
         val bucketId = message.attributesMap[BUCKET_ID_KEY] ?: run {
-            LOG.error("received message without $BUCKET_ID_KEY key")
+            Log.error("received message without $BUCKET_ID_KEY key")
             consumer.nack()
             return
         }
         val objectId = message.attributesMap[OBJECT_ID_KEY] ?: run {
-            LOG.error("received message without $OBJECT_ID_KEY key")
+            Log.error("received message without $OBJECT_ID_KEY key")
             consumer.nack()
             return
         }
@@ -130,13 +126,13 @@ class AppDraftUploadedProcessor @Inject constructor(
                     // probably safe to use an ISO 8601 parser.
                     OffsetDateTime.parse(it, DateTimeFormatter.ISO_OFFSET_DATE_TIME)
                 } catch (e: DateTimeParseException) {
-                    LOG.error("event time '$it' was not in in correct format: ${e.message}")
+                    Log.error("event time '$it' was not in in correct format: ${e.message}")
                     consumer.nack()
                     return
                 }
             }
             ?: run {
-                LOG.error("received message without $EVENT_TIME_KEY key")
+                Log.error("received message without $EVENT_TIME_KEY key")
                 consumer.nack()
                 return
             }
@@ -146,7 +142,7 @@ class AppDraftUploadedProcessor @Inject constructor(
                 try {
                     storage.get(BlobId.of(bucketId, objectId)).downloadTo(tempFile.path)
                 } catch (e: StorageException) {
-                    LOG.error("error downloading object $objectId from bucket $bucketId: ${e.message}")
+                    Log.error("error downloading object $objectId from bucket $bucketId: ${e.message}")
                     consumer.nack()
                     return
                 }
@@ -218,7 +214,7 @@ class AppDraftUploadedProcessor @Inject constructor(
             // Object Lifecycle Management.
             storage.copy(copyRequest).result
         } catch (e: StorageException) {
-            LOG.error("failed to copy app to long-term storage: ${e.message}")
+            Log.error("failed to copy app to long-term storage: ${e.message}")
             consumer.nack()
             return
         }
@@ -229,7 +225,7 @@ class AppDraftUploadedProcessor @Inject constructor(
                 val appDraft = AppDraft
                     .findByProcessingJobBucketIdAndObjectId(bucketId, objectId)
                     ?: run {
-                        LOG.warn(
+                        Log.warn(
                             "app draft upload job for object $objectId in bucket $bucketId " +
                                     "not found, skipping"
                         )
@@ -244,7 +240,7 @@ class AppDraftUploadedProcessor @Inject constructor(
                     ?.uploadPubSubEventTime
                     ?.let { !eventTime.isAfter(it) } == true
                 if (uploadNotNew) {
-                    LOG.warn("upload did not occur after last recorded upload, skipping")
+                    Log.warn("upload did not occur after last recorded upload, skipping")
                     return@call
                 }
 

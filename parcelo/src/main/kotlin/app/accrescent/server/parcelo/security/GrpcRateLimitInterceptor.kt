@@ -21,11 +21,11 @@ import io.grpc.ServerCall
 import io.grpc.ServerCallHandler
 import io.grpc.ServerInterceptor
 import io.grpc.Status
+import io.quarkus.logging.Log
 import io.quarkus.scheduler.Scheduled
 import io.vertx.core.Vertx
 import io.vertx.grpc.BlockingServerInterceptor
 import jakarta.enterprise.context.ApplicationScoped
-import org.jboss.logging.Logger
 import java.net.InetSocketAddress
 import java.time.Duration
 
@@ -48,7 +48,6 @@ private class GrpcRateLimitInterceptorImpl(
 ) : ServerInterceptor {
     private companion object {
         private val BUCKET_KEEP_AFTER_REFILL_DURATION = Duration.ofSeconds(30)
-        private val LOG = Logger.getLogger(GrpcRateLimitInterceptorImpl::class.java)
 
         private val UPLOAD_APIS_METHODS = setOf(
             AppDraftServiceGrpc.getGetAppDraftUploadInfoMethod().fullMethodName,
@@ -128,15 +127,15 @@ private class GrpcRateLimitInterceptorImpl(
 
     @Scheduled(every = REMOVE_EXPIRED_BUCKET_JOB_PERIOD)
     fun removeExpiredBuckets() {
-        LOG.info("Attempting to remove expired rate limit buckets")
+        Log.info("Attempting to remove expired rate limit buckets")
 
         var removed: Int
         do {
             removed = proxyManager.removeExpired(REMOVE_EXPIRED_BUCKET_BATCH_SIZE)
             if (removed > 0) {
-                LOG.info("Removed $removed expired rate limit buckets")
+                Log.info("Removed $removed expired rate limit buckets")
             } else {
-                LOG.info("There are no expired buckets to remove")
+                Log.info("There are no expired buckets to remove")
             }
         } while (removed > REMOVED_EXPIRED_BUCKET_CONTINUE_THRESHOLD)
     }
