@@ -109,9 +109,11 @@ class PublishAppDraftJob @Inject constructor(
         // successfully for a given draft, it is guaranteed that no orphan objects exist for it even
         // if previous calls have failed.
         val pathsToApks = TempFile(Path(config.fileProcessingDirectory())).use { tempApkSet ->
-            storage
-                .get(BlobId.of(appPackage.bucketId, appPackage.objectId))
-                .downloadTo(tempApkSet.path)
+            val blob = storage.get(BlobId.of(appPackage.bucketId, appPackage.objectId)) ?: run {
+                Log.error("blob for app package ${appPackage.id} not found")
+                throw Exception("blob for app package ${appPackage.id} not found")
+            }
+            blob.downloadTo(tempApkSet.path)
 
             publishService.publishApks(
                 appId = buildApksResult.packageName,
@@ -129,7 +131,11 @@ class PublishAppDraftJob @Inject constructor(
             val icon = listing.icon ?: throw Exception("no icon found for listing ${listing.language}")
 
             TempFile(Path(config.fileProcessingDirectory())).use { tempIcon ->
-                storage.get(BlobId.of(icon.bucketId, icon.objectId)).downloadTo(tempIcon.path)
+                val blob = storage.get(BlobId.of(icon.bucketId, icon.objectId)) ?: run {
+                    Log.error("blob for icon ${icon.id} not found")
+                    throw Exception("blob for icon ${icon.id} not found")
+                }
+                blob.downloadTo(tempIcon.path)
 
                 val publishedIcon = publishService.publishIcon(
                     appId = buildApksResult.packageName,
