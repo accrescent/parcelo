@@ -154,6 +154,7 @@ class PublishAppDraftJob @Inject constructor(
             organizationId = appDraft.organizationId,
             entityTag = 0,
             appPackageId = appPackage.id,
+            publiclyListed = true,
         )
             .persist()
         for ((listing, icon, publishedIcon) in publishedIcons) {

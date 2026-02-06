@@ -131,7 +131,7 @@ class AppServiceImpl(private val config: ParceloConfig) : AppService {
         }
 
         val defaultListingLanguages = App
-            .findDefaultListingLanguagesByQuery(pageSize, skip, pageToken?.lastAppId)
+            .findDefaultListingLanguagesForPubliclyListedByQuery(pageSize, skip, pageToken?.lastAppId)
             .associateBy(
                 AppDefaultListingLanguage::id,
                 AppDefaultListingLanguage::defaultListingLanguage,
