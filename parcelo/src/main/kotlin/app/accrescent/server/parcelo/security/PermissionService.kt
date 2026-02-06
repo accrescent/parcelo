@@ -26,7 +26,8 @@ class PermissionService @Inject constructor(private val config: ParceloConfig) {
 
         return when (resource.type) {
             ObjectType.APP -> when (permission) {
-                Permission.CREATE_APP_EDIT -> OrganizationAcl
+                Permission.CREATE_APP_EDIT,
+                Permission.UPDATE -> OrganizationAcl
                     .findByAppIdAndUserId(resource.id, subject.id)
                     ?.canEditApps == true
 

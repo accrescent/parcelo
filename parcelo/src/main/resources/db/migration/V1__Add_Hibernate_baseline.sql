@@ -174,6 +174,7 @@ CREATE TABLE app_packages (
 CREATE TABLE apps (
     active_edit_limit integer NOT NULL,
     entity_tag integer NOT NULL,
+    publicly_listed boolean NOT NULL,
     app_package_id uuid NOT NULL,
     default_listing_language text NOT NULL,
     id text NOT NULL,

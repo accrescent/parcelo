@@ -9,9 +9,12 @@ import app.accrescent.appstore.publish.v1alpha1.GetAppRequest
 import app.accrescent.appstore.publish.v1alpha1.GetAppResponse
 import app.accrescent.appstore.publish.v1alpha1.ListAppsRequest
 import app.accrescent.appstore.publish.v1alpha1.ListAppsResponse
+import app.accrescent.appstore.publish.v1alpha1.UpdateAppRequest
+import app.accrescent.appstore.publish.v1alpha1.UpdateAppResponse
 import app.accrescent.appstore.publish.v1alpha1.app
 import app.accrescent.appstore.publish.v1alpha1.getAppResponse
 import app.accrescent.appstore.publish.v1alpha1.listAppsResponse
+import app.accrescent.appstore.publish.v1alpha1.updateAppResponse
 import app.accrescent.parcelo.impl.v1.ListAppsPageToken
 import app.accrescent.parcelo.impl.v1.listAppsPageToken
 import app.accrescent.server.parcelo.data.App
@@ -130,6 +133,42 @@ class AppServiceImpl @Inject constructor(
         }
 
         return Uni.createFrom().item { response }
+    }
+
+    @Transactional
+    override fun updateApp(request: UpdateAppRequest): Uni<UpdateAppResponse> {
+        val userId = AuthnContextKey.USER_ID.get()
+
+        val canUpdate = permissionService.hasPermission(
+            ObjectReference(ObjectType.APP, request.appId),
+            Permission.UPDATE,
+            ObjectReference(ObjectType.USER, userId),
+        )
+        if (!canUpdate) {
+            val exists = App.existsById(request.appId)
+            val canViewExistence = permissionService.hasPermission(
+                ObjectReference(ObjectType.APP, request.appId),
+                Permission.VIEW_EXISTENCE,
+                ObjectReference(ObjectType.USER, userId),
+            )
+
+            throw if (!exists || !canViewExistence) {
+                appNotFoundException(request.appId)
+            } else {
+                Status
+                    .PERMISSION_DENIED
+                    .withDescription("insufficient permission to modify app")
+                    .asRuntimeException()
+            }
+        }
+
+        // Update the app based on the update mask
+        val app = App.findById(request.appId) ?: throw appNotFoundException(request.appId)
+        if (request.updateMask.pathsList.contains("publicly_listed")) {
+            app.publiclyListed = request.publiclyListed
+        }
+
+        return Uni.createFrom().item { updateAppResponse {} }
     }
 
     private companion object {

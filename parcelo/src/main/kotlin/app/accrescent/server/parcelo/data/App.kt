@@ -37,6 +37,9 @@ class App(
 
     @Column(name = "app_package_id", nullable = false)
     var appPackageId: UUID,
+
+    @Column(name = "publicly_listed", nullable = false)
+    var publiclyListed: Boolean,
 ) : PanacheEntityBase {
     @Column(name = "active_edit_limit", nullable = false)
     val activeEditLimit = DEFAULT_ACTIVE_EDIT_LIMIT
@@ -61,16 +64,20 @@ class App(
             return count("WHERE id = ?1", id) > 0
         }
 
-        fun findDefaultListingLanguagesByQuery(
+        fun findDefaultListingLanguagesForPubliclyListedByQuery(
             pageSize: UInt,
             skip: UInt,
             afterAppId: String?,
         ): List<AppDefaultListingLanguage> {
             return if (afterAppId == null) {
-                find("ORDER BY id ASC LIMIT ?1 OFFSET ?2", pageSize.toLong(), skip.toLong())
+                find(
+                    "WHERE publiclyListed = true ORDER BY id ASC LIMIT ?1 OFFSET ?2",
+                    pageSize.toLong(),
+                    skip.toLong(),
+                )
             } else {
                 find(
-                    "WHERE id > ?1 ORDER BY id ASC LIMIT ?2 OFFSET ?3",
+                    "WHERE publiclyListed = true AND id > ?1 ORDER BY id ASC LIMIT ?2 OFFSET ?3",
                     afterAppId,
                     pageSize.toLong(),
                     skip.toLong(),

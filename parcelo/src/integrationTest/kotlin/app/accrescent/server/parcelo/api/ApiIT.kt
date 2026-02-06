@@ -17,6 +17,7 @@ import app.accrescent.appstore.publish.v1alpha1.listAppsRequest
 import app.accrescent.appstore.publish.v1alpha1.listOrganizationsRequest
 import app.accrescent.appstore.publish.v1alpha1.submitAppEditRequest
 import app.accrescent.appstore.publish.v1alpha1.updateAppEditRequest
+import app.accrescent.appstore.publish.v1alpha1.updateAppRequest
 import app.accrescent.appstore.v1.DeviceAttributes
 import app.accrescent.appstore.v1.getAppDownloadInfoRequest
 import app.accrescent.appstore.v1.getAppListingRequest
@@ -472,5 +473,34 @@ class ApiIT {
                 submitOp.done
             }
         assertTrue(submitOp.hasResponse())
+    }
+
+    @Test
+    fun developerUnlistsPublishedApp() {
+        val credentials = ApiUtils.getCredentials("user9")
+        val devAppService = ApiUtils.getDevAppServiceStub(credentials)
+
+        // Publish an app
+        ApiUtils.publishApp("user9", "reviewer1", "publisher1", "valid8")
+
+        // Verify the published app shows up in public listings
+        val listingsPreUpdate = storeAppService
+            .listAppListings(listAppListingsRequest {})
+            .listingsList
+        assertTrue { listingsPreUpdate.any { it.appId == "com.example.valid8" } }
+
+        // Unlist the app
+        val updateRequest = updateAppRequest {
+            appId = "com.example.valid8"
+            publiclyListed = false
+            updateMask = fieldMask { paths.add("publicly_listed") }
+        }
+        devAppService.updateApp(updateRequest)
+
+        // Verify the app no longer shows up in public listings
+        val listingsPostUpdate = storeAppService
+            .listAppListings(listAppListingsRequest {})
+            .listingsList
+        assertTrue { listingsPostUpdate.none { it.appId == "com.example.valid8" } }
     }
 }
