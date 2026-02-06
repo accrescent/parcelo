@@ -35,6 +35,7 @@ import app.accrescent.appstore.publish.v1alpha1.deleteAppEditListingResponse
 import app.accrescent.appstore.publish.v1alpha1.deleteAppEditResponse
 import app.accrescent.appstore.publish.v1alpha1.getAppEditDownloadInfoResponse
 import app.accrescent.appstore.publish.v1alpha1.getAppEditResponse
+import app.accrescent.appstore.publish.v1alpha1.getAppEditUploadInfoResponse
 import app.accrescent.appstore.publish.v1alpha1.listAppEditsResponse
 import app.accrescent.appstore.publish.v1alpha1.submitAppEditResponse
 import app.accrescent.appstore.publish.v1alpha1.updateAppEditResponse
@@ -45,6 +46,7 @@ import app.accrescent.server.parcelo.data.App
 import app.accrescent.server.parcelo.data.AppEdit
 import app.accrescent.server.parcelo.data.AppEditAcl
 import app.accrescent.server.parcelo.data.AppEditListing
+import app.accrescent.server.parcelo.data.AppEditUploadProcessingJob
 import app.accrescent.server.parcelo.data.BackgroundOperation
 import app.accrescent.server.parcelo.data.BackgroundOperationType
 import app.accrescent.server.parcelo.data.OrphanedBlob
@@ -62,6 +64,7 @@ import app.accrescent.server.parcelo.security.Permission
 import app.accrescent.server.parcelo.security.PermissionService
 import app.accrescent.server.parcelo.validation.GrpcRequestValidationInterceptor
 import com.google.cloud.storage.BlobInfo
+import com.google.cloud.storage.HttpMethod
 import com.google.cloud.storage.Storage
 import com.google.longrunning.Operation
 import com.google.protobuf.InvalidProtocolBufferException
@@ -116,8 +119,6 @@ private val PERMISSIONS_ALLOWED_WITHOUT_REVIEW = setOf(
     // Haptics aren't worth reviewing for our purposes.
     "android.permission.VIBRATE",
 )
-
-private const val DOWNLOAD_URL_EXPIRATION_SECONDS = 30L
 
 private const val DEFAULT_PAGE_SIZE = 50u
 private const val MAX_PAGE_SIZE = 50u
@@ -344,10 +345,81 @@ class AppEditServiceImpl @Inject constructor(
         return Uni.createFrom().item { response }
     }
 
+    @Transactional
     override fun getAppEditUploadInfo(
         request: GetAppEditUploadInfoRequest,
     ): Uni<GetAppEditUploadInfoResponse> {
-        throw Status.UNIMPLEMENTED.asRuntimeException()
+        val userId = AuthnContextKey.USER_ID.get()
+
+        val canReplacePackage = permissionService.hasPermission(
+            ObjectReference(ObjectType.APP_EDIT, request.appEditId),
+            Permission.REPLACE_PACKAGE,
+            ObjectReference(ObjectType.USER, userId),
+        )
+        if (!canReplacePackage) {
+            val exists = AppEdit.existsById(request.appEditId)
+            val canViewExistence = permissionService.hasPermission(
+                ObjectReference(ObjectType.APP_EDIT, request.appEditId),
+                Permission.VIEW_EXISTENCE,
+                ObjectReference(ObjectType.USER, userId),
+            )
+
+            throw if (!exists || !canViewExistence) {
+                appEditNotFoundException(request.appEditId)
+            } else {
+                Status
+                    .PERMISSION_DENIED
+                    .withDescription("insufficient permission to replace package")
+                    .asRuntimeException()
+            }
+        }
+
+        val appEdit = AppEdit
+            .findById(request.appEditId)
+            ?: throw appEditNotFoundException(request.appEditId)
+        if (appEdit.submitted) {
+            throw Status
+                .FAILED_PRECONDITION
+                .withDescription("submitted edits cannot be modified")
+                .asRuntimeException()
+        }
+
+        val blobInfo = BlobInfo
+            .newBuilder(config.editUploadBucket(), UUID.randomUUID().toString()).build()
+        val uploadUrl = storage.signUrl(
+            blobInfo,
+            UPLOAD_URL_EXPIRATION_SECONDS,
+            TimeUnit.SECONDS,
+            Storage.SignUrlOption.withV4Signature(),
+            Storage.SignUrlOption.httpMethod(HttpMethod.PUT),
+            Storage.SignUrlOption.withExtHeaders(
+                mapOf("X-Goog-Content-Length-Range" to "0,$MAX_APK_SET_SIZE_BYTES")
+            )
+        )
+
+        val backgroundOperation = BackgroundOperation(
+            id = Identifier.generateNew(IdType.OPERATION),
+            type = BackgroundOperationType.UPLOAD_APP_EDIT,
+            parentId = request.appEditId,
+            createdAt = OffsetDateTime.now(),
+            result = null,
+            succeeded = false,
+        )
+            .also { it.persist() }
+        AppEditUploadProcessingJob(
+            appEditId = request.appEditId,
+            bucketId = blobInfo.bucket,
+            objectId = blobInfo.name,
+            backgroundOperationId = backgroundOperation.id,
+        )
+            .persist()
+
+        val response = getAppEditUploadInfoResponse {
+            apkSetUploadUrl = uploadUrl.toString()
+            processingOperation = Operation.newBuilder().setName(backgroundOperation.id).build()
+        }
+
+        return Uni.createFrom().item { response }
     }
 
     @Transactional

@@ -9,6 +9,7 @@ import app.accrescent.appstore.publish.v1alpha1.createAppEditRequest
 import app.accrescent.appstore.publish.v1alpha1.createPublisherRequest
 import app.accrescent.appstore.publish.v1alpha1.createReviewerRequest
 import app.accrescent.appstore.publish.v1alpha1.getAppEditRequest
+import app.accrescent.appstore.publish.v1alpha1.getAppEditUploadInfoRequest
 import app.accrescent.appstore.publish.v1alpha1.getAppRequest
 import app.accrescent.appstore.publish.v1alpha1.getSelfRequest
 import app.accrescent.appstore.publish.v1alpha1.listAppDraftsRequest
@@ -30,6 +31,7 @@ import com.google.protobuf.fieldMask
 import io.grpc.Status
 import io.grpc.StatusException
 import io.quarkus.test.junit.QuarkusIntegrationTest
+import io.restassured.RestAssured.given
 import org.awaitility.Awaitility.await
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -37,6 +39,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import java.io.File
 import java.time.Duration
 
 private const val APP_ACTIVE_EDIT_LIMIT = 3
@@ -415,5 +418,57 @@ class ApiIT {
                 operation.done
             }
         assertTrue(operation.hasResponse())
+    }
+
+    @Test
+    fun developerSubmitsAppEditWithValidPackageChange() {
+        val credentials = ApiUtils.getCredentials("user8")
+        val appEditService = ApiUtils.getAppEditServiceStub(credentials)
+        val operationsService = ApiUtils.getOperationsServiceStub(credentials)
+        ApiUtils.publishApp("user8", "reviewer1", "publisher1", "valid7")
+        val createRequest = createAppEditRequest { appId = "com.example.valid7" }
+        val appEditId = appEditService.createAppEdit(createRequest).appEditId
+
+        // Upload the APK set
+        val uploadInfoRequest = getAppEditUploadInfoRequest { this.appEditId = appEditId }
+        val uploadInfoResponse = appEditService.getAppEditUploadInfo(uploadInfoRequest)
+        val updateApkSetPath = System.getProperty("testdata.apkset.valid7-update.path")
+        given()
+            .header("Host", "storage.googleapis.com")
+            .body(File(updateApkSetPath))
+            .put(uploadInfoResponse.apkSetUploadUrl)
+            .then()
+            .statusCode(200)
+
+        // Wait for the upload to be processed successfully
+        val getUploadOpRequest = GetOperationRequest
+            .newBuilder()
+            .setName(uploadInfoResponse.processingOperation.name)
+            .build()
+        var uploadOp = Operation.getDefaultInstance()
+        await().until {
+            uploadOp = operationsService.getOperation(getUploadOpRequest)
+            uploadOp.done
+        }
+        assertTrue(uploadOp.hasResponse())
+
+        // Submit the app edit
+        val submitRequest = submitAppEditRequest { this.appEditId = appEditId }
+        val submitResponse = appEditService.submitAppEdit(submitRequest)
+
+        // Wait for the submission to be processed successfully
+        assertTrue(submitResponse.hasOperation())
+        val getSubmitOpRequest = GetOperationRequest
+            .newBuilder()
+            .setName(submitResponse.operation.name)
+            .build()
+        var submitOp = Operation.getDefaultInstance()
+        await()
+            .atMost(Duration.ofSeconds(PUBLISH_TIMEOUT_SECONDS))
+            .until {
+                submitOp = operationsService.getOperation(getSubmitOpRequest)
+                submitOp.done
+            }
+        assertTrue(submitOp.hasResponse())
     }
 }

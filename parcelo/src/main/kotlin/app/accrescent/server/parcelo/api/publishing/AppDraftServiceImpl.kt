@@ -94,13 +94,8 @@ import java.util.UUID
 import java.util.concurrent.TimeUnit
 import kotlin.io.encoding.Base64
 
-// 1 GiB
-private const val MAX_APK_SET_SIZE_BYTES = 1073741824
-
 // 1 MiB
 private const val MAX_ICON_SIZE_BYTES = 1048576
-private const val UPLOAD_URL_EXPIRATION_SECONDS = 30L
-private const val DOWNLOAD_URL_EXPIRATION_SECONDS = 30L
 
 private const val DEFAULT_PAGE_SIZE = 50u
 private const val MAX_PAGE_SIZE = 50u

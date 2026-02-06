@@ -21,6 +21,8 @@ interface ParceloConfig {
 
     fun draftListingIconUploadBucket(): String
 
+    fun editUploadBucket(): String
+
     fun fileProcessingDirectory(): String
 
     fun listingImageBucket(): String
@@ -48,6 +50,7 @@ interface ParceloConfig {
     interface ObjectStorageNotifications {
         fun appDraftUploads(): ObjectStorageNotification
         fun appDraftListingIconUploads(): ObjectStorageNotification
+        fun appEditUploads(): ObjectStorageNotification
     }
 
     enum class OidcProvider {

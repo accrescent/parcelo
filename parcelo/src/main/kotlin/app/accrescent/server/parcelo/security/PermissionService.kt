@@ -90,6 +90,7 @@ class PermissionService @Inject constructor(private val config: ParceloConfig) {
                     .findByAppEditIdAndUserId(resource.id, subject.id)
                     ?.canReview == true
 
+                Permission.REPLACE_PACKAGE,
                 Permission.SUBMIT,
                 Permission.UPDATE,
                 Permission.VIEW,
