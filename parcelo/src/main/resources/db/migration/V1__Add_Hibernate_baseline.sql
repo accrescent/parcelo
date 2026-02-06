@@ -187,7 +187,7 @@ CREATE TABLE apps (
 
 CREATE TABLE background_operations (
     succeeded boolean NOT NULL,
-    createdAt timestamp(6) with time zone NOT NULL,
+    created_at timestamp(6) with time zone NOT NULL,
     id text NOT NULL,
     parent_id text NOT NULL,
     type text NOT NULL CHECK ((type in ('PUBLISH_APP_DRAFT','PUBLISH_APP_EDIT','UPLOAD_APP_DRAFT','UPLOAD_APP_DRAFT_LISTING_ICON','UPLOAD_APP_EDIT'))),
