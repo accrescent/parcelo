@@ -23,16 +23,16 @@ import org.hibernate.annotations.OnDeleteAction
 )
 class AppDraftUploadProcessingJob(
     @Column(columnDefinition = "text", name = "app_draft_id", nullable = false)
-    val appDraftId: String,
+    var appDraftId: String,
 
     @Column(columnDefinition = "text", name = "bucket_id", nullable = false)
-    val bucketId: String,
+    var bucketId: String,
 
     @Column(columnDefinition = "text", name = "object_id", nullable = false)
-    val objectId: String,
+    var objectId: String,
 
     @Column(columnDefinition = "text", name = "background_operation_id", nullable = false)
-    val backgroundOperationId: String,
+    var backgroundOperationId: String,
 ) : PanacheEntity() {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "app_draft_id", insertable = false, updatable = false)

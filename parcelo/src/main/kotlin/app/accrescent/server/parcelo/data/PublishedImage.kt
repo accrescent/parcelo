@@ -22,13 +22,13 @@ import java.util.UUID
 )
 class PublishedImage(
     @Column(name = "image_id", nullable = false)
-    val imageId: UUID,
+    var imageId: UUID,
 
     @Column(columnDefinition = "text", name = "bucket_id", nullable = false)
-    val bucketId: String,
+    var bucketId: String,
 
     @Column(columnDefinition = "text", name = "object_id", nullable = false)
-    val objectId: String,
+    var objectId: String,
 ) : PanacheEntity() {
     @OneToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "image_id", insertable = false, updatable = false)

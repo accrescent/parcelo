@@ -24,7 +24,7 @@ import java.util.UUID
 )
 class AppPackage(
     @Id
-    val id: UUID,
+    var id: UUID,
 
     @Column(columnDefinition = "text", name = "bucket_id", nullable = false)
     var bucketId: String,
@@ -32,8 +32,6 @@ class AppPackage(
     @Column(columnDefinition = "text", name = "object_id", nullable = false)
     var objectId: String,
 
-    // This field must be a var instead of a val so that Hibernate can properly populate it from the
-    // database
     @Column(name = "upload_pub_sub_event_time", nullable = false)
     var uploadPubSubEventTime: OffsetDateTime,
 
@@ -41,16 +39,16 @@ class AppPackage(
     var appId: String,
 
     @Column(name = "version_code", nullable = false)
-    val versionCode: Int,
+    var versionCode: Int,
 
     @Column(columnDefinition = "text", name = "version_name", nullable = false)
-    val versionName: String,
+    var versionName: String,
 
     @Column(name = "target_sdk", nullable = false)
-    val targetSdk: Int,
+    var targetSdk: Int,
 
     @Column(name = "signing_certificate", nullable = false)
-    val signingCertificate: ByteArray,
+    var signingCertificate: ByteArray,
 
     @Column(name = "build_apks_result", nullable = false)
     var buildApksResult: ByteArray,

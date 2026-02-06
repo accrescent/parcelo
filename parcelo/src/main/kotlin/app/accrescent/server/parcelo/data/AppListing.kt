@@ -21,7 +21,7 @@ import java.util.UUID
 @Table(name = "app_listings")
 class AppListing(
     @EmbeddedId
-    val id: ListingId,
+    var id: ListingId,
 
     @Column(columnDefinition = "text", nullable = false)
     var name: String,
@@ -80,10 +80,10 @@ class AppListing(
 @Embeddable
 data class ListingId(
     @Column(columnDefinition = "text", name = "app_id", nullable = false)
-    val appId: String,
+    var appId: String,
 
     @Column(columnDefinition = "text", nullable = false)
-    val language: String,
+    var language: String,
 )
 
 @RegisterForReflection

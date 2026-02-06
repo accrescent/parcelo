@@ -23,31 +23,31 @@ import org.hibernate.annotations.OnDeleteAction
 )
 class AppDraftAcl(
     @Column(columnDefinition = "text", name = "app_draft_id", nullable = false)
-    val appDraftId: String,
+    var appDraftId: String,
 
     @Column(columnDefinition = "text", name = "user_id", nullable = false)
-    val userId: String,
+    var userId: String,
 
     @Column(name = "can_delete", nullable = false)
-    val canDelete: Boolean,
+    var canDelete: Boolean,
 
     @Column(name = "can_publish", nullable = false)
     var canPublish: Boolean,
 
     @Column(name = "can_replace_package", nullable = false)
-    val canReplacePackage: Boolean,
+    var canReplacePackage: Boolean,
 
     @Column(name = "can_review", nullable = false)
     var canReview: Boolean,
 
     @Column(name = "can_submit", nullable = false)
-    val canSubmit: Boolean,
+    var canSubmit: Boolean,
 
     @Column(name = "can_update", nullable = false)
-    val canUpdate: Boolean,
+    var canUpdate: Boolean,
 
     @Column(name = "can_view", nullable = false)
-    val canView: Boolean,
+    var canView: Boolean,
 
     @Column(name = "can_view_existence", nullable = false)
     var canViewExistence: Boolean,

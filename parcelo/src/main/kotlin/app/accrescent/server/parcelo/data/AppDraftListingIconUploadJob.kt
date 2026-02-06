@@ -24,16 +24,16 @@ import java.util.UUID
 )
 class AppDraftListingIconUploadJob(
     @Column(name = "app_draft_listing_id", nullable = false)
-    val appDraftListingId: UUID,
+    var appDraftListingId: UUID,
 
     @Column(columnDefinition = "text", name = "bucket_id", nullable = false)
-    val bucketId: String,
+    var bucketId: String,
 
     @Column(columnDefinition = "text", name = "object_id", nullable = false)
-    val objectId: String,
+    var objectId: String,
 
     @Column(columnDefinition = "text", name = "background_operation_id", nullable = false)
-    val backgroundOperationId: String,
+    var backgroundOperationId: String,
 ) : PanacheEntity() {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "app_draft_listing_id", insertable = false, updatable = false)

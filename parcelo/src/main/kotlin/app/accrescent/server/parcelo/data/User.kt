@@ -45,17 +45,17 @@ enum class OidcProvider {
 class User(
     @Id
     @Column(columnDefinition = "text")
-    val id: String,
+    var id: String,
 
     @Enumerated(EnumType.STRING)
     @Column(columnDefinition = "text", name = "oidc_provider", nullable = false)
-    val oidcProvider: OidcProvider,
+    var oidcProvider: OidcProvider,
 
     @Column(columnDefinition = "text", name = "oidc_issuer", nullable = false)
-    val oidcIssuer: String,
+    var oidcIssuer: String,
 
     @Column(columnDefinition = "text", name = "oidc_subject", nullable = false)
-    val oidcSubject: String,
+    var oidcSubject: String,
 ) : PanacheEntityBase {
     companion object : PanacheCompanionBase<User, String> {
         fun existsById(id: String): Boolean {

@@ -24,13 +24,13 @@ private const val DEFAULT_ACTIVE_EDIT_LIMIT = 3
 class App(
     @Id
     @Column(columnDefinition = "text")
-    val id: String,
+    var id: String,
 
     @Column(columnDefinition = "text", name = "default_listing_language", nullable = false)
-    val defaultListingLanguage: String,
+    var defaultListingLanguage: String,
 
     @Column(columnDefinition = "text", name = "organization_id", nullable = false)
-    val organizationId: String,
+    var organizationId: String,
 
     @Column(name = "entity_tag", nullable = false)
     var entityTag: Int,
@@ -42,7 +42,7 @@ class App(
     var publiclyListed: Boolean,
 ) : PanacheEntityBase {
     @Column(name = "active_edit_limit", nullable = false)
-    val activeEditLimit = DEFAULT_ACTIVE_EDIT_LIMIT
+    var activeEditLimit = DEFAULT_ACTIVE_EDIT_LIMIT
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(insertable = false, updatable = false)

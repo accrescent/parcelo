@@ -19,10 +19,10 @@ private const val DEFAULT_PUBLISHED_APP_LIMIT = 1
 class Organization(
     @Id
     @Column(columnDefinition = "text")
-    val id: String,
+    var id: String,
 ) : PanacheEntityBase {
     @Column(name = "active_app_draft_limit", nullable = false)
-    val activeAppDraftLimit = DEFAULT_ACTIVE_APP_DRAFT_LIMIT
+    var activeAppDraftLimit = DEFAULT_ACTIVE_APP_DRAFT_LIMIT
 
     @Column(name = "published_app_limit", nullable = false)
     var publishedAppLimit = DEFAULT_PUBLISHED_APP_LIMIT

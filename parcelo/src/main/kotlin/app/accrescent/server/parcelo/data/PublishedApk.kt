@@ -25,19 +25,19 @@ import java.util.UUID
 )
 class PublishedApk(
     @Column(name = "app_package_id", nullable = false)
-    val appPackageId: UUID,
+    var appPackageId: UUID,
 
     @Column(columnDefinition = "text", name = "apk_path", nullable = false)
-    val apkPath: String,
+    var apkPath: String,
 
     @Column(columnDefinition = "text", name = "bucket_id", nullable = false)
-    val bucketId: String,
+    var bucketId: String,
 
     @Column(columnDefinition = "text", name = "object_id", nullable = false)
-    val objectId: String,
+    var objectId: String,
 
     @Column(nullable = false)
-    val size: ULong,
+    var size: ULong,
 ) : PanacheEntity() {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "app_package_id", insertable = false, updatable = false)

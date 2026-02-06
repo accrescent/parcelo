@@ -21,22 +21,22 @@ import jakarta.persistence.UniqueConstraint
 )
 class OrganizationAcl(
     @Column(columnDefinition = "text", name = "organization_id", nullable = false)
-    val organizationId: String,
+    var organizationId: String,
 
     @Column(columnDefinition = "text", name = "user_id", nullable = false)
-    val userId: String,
+    var userId: String,
 
     @Column(name = "can_create_app_drafts", nullable = false)
-    val canCreateAppDrafts: Boolean,
+    var canCreateAppDrafts: Boolean,
 
     @Column(name = "can_edit_apps", nullable = false)
-    val canEditApps: Boolean,
+    var canEditApps: Boolean,
 
     @Column(name = "can_view_apps", nullable = false)
-    val canViewApps: Boolean,
+    var canViewApps: Boolean,
 
     @Column(name = "can_view_organization", nullable = false)
-    val canViewOrganization: Boolean,
+    var canViewOrganization: Boolean,
 ) : PanacheEntity() {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(insertable = false, updatable = false)

@@ -26,19 +26,19 @@ import java.util.UUID
 )
 class AppDraftListing(
     @Id
-    val id: UUID,
+    var id: UUID,
 
     @Column(columnDefinition = "text", name = "app_draft_id", nullable = false)
-    val appDraftId: String,
+    var appDraftId: String,
 
     @Column(columnDefinition = "text", nullable = false)
-    val language: String,
+    var language: String,
 
     @Column(columnDefinition = "text", nullable = false)
-    val name: String,
+    var name: String,
 
     @Column(columnDefinition = "text", name = "short_description", nullable = false)
-    val shortDescription: String,
+    var shortDescription: String,
 
     @Column(name = "icon_image_id")
     var iconImageId: UUID?,
@@ -50,7 +50,7 @@ class AppDraftListing(
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "icon_image_id", insertable = false, updatable = false)
-    val icon: Image? = null
+    var icon: Image? = null
 
     companion object : PanacheCompanionBase<AppDraftListing, UUID> {
         fun findByAppDraftIdAndLanguage(appDraftId: String, language: String): AppDraftListing? {

@@ -41,10 +41,10 @@ import java.util.UUID
 class AppDraft(
     @Id
     @Column(columnDefinition = "text")
-    val id: String,
+    var id: String,
 
     @Column(columnDefinition = "text", name = "organization_id", nullable = false)
-    val organizationId: String,
+    var organizationId: String,
 
     @Column(name = "created_at", nullable = false)
     var createdAt: OffsetDateTime,
@@ -79,11 +79,11 @@ class AppDraft(
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "app_package_id", insertable = false, updatable = false)
-    val appPackage: AppPackage? = null
+    var appPackage: AppPackage? = null
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(insertable = false, updatable = false)
-    val review: Review? = null
+    var review: Review? = null
 
     @OneToMany(cascade = [CascadeType.ALL], mappedBy = "appDraft")
     lateinit var listings: List<AppDraftListing>
