@@ -261,6 +261,7 @@ class ApiIT {
         // Assert that the app is retrieved successfully
         assertEquals("com.example.valid", app.id)
         assertEquals("en-US", app.defaultListingLanguage)
+        assertTrue(app.publiclyListed)
     }
 
     @Test
@@ -284,6 +285,7 @@ class ApiIT {
         assertEquals(1, apps.size)
         assertEquals("com.example.valid", apps[0].id)
         assertEquals("en-US", apps[0].defaultListingLanguage)
+        assertTrue(apps[0].publiclyListed)
     }
 
     @Test

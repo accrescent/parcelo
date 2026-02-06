@@ -74,6 +74,7 @@ class AppServiceImpl @Inject constructor(
             this.app = app {
                 id = app.id
                 defaultListingLanguage = app.defaultListingLanguage
+                publiclyListed = true
             }
         }
 
@@ -111,6 +112,7 @@ class AppServiceImpl @Inject constructor(
             app {
                 id = app.id
                 defaultListingLanguage = app.defaultListingLanguage
+                publiclyListed = true
             }
         }
 
