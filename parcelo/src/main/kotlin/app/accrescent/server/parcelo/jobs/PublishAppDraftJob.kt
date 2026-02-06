@@ -12,6 +12,7 @@ import app.accrescent.server.parcelo.data.AppDraftListing
 import app.accrescent.server.parcelo.data.AppListing
 import app.accrescent.server.parcelo.data.BackgroundOperation
 import app.accrescent.server.parcelo.data.Image
+import app.accrescent.server.parcelo.data.ListingId
 import app.accrescent.server.parcelo.data.PublishedApk
 import app.accrescent.server.parcelo.data.PublishedImage
 import app.accrescent.server.parcelo.publish.PublishService
@@ -163,8 +164,7 @@ class PublishAppDraftJob @Inject constructor(
             )
                 .persist()
             AppListing(
-                appId = appPackage.appId,
-                language = listing.language,
+                id = ListingId(appPackage.appId, listing.language),
                 name = listing.name,
                 shortDescription = listing.shortDescription,
                 iconImageId = icon.id,

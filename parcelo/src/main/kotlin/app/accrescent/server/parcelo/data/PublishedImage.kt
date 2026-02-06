@@ -39,8 +39,8 @@ class PublishedImage(
             return find(
                 "JOIN AppListing app_listings " +
                         "ON app_listings.iconImageId = imageId " +
-                        "WHERE app_listings.appId = ?1 " +
-                        "AND app_listings.language = ?2",
+                        "WHERE app_listings.id.appId = ?1 " +
+                        "AND app_listings.id.language = ?2",
                 appId,
                 language,
             )
