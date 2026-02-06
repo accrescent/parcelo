@@ -22,7 +22,7 @@ import org.hibernate.annotations.OnDeleteAction
     uniqueConstraints = [UniqueConstraint(columnNames = ["bucket_id", "object_id"])],
 )
 class AppDraftUploadProcessingJob(
-    @Column(columnDefinition = "text", name = "app_draft_id", nullable = false, unique = true)
+    @Column(columnDefinition = "text", name = "app_draft_id", nullable = false)
     val appDraftId: String,
 
     @Column(columnDefinition = "text", name = "bucket_id", nullable = false)
