@@ -43,7 +43,7 @@ class BackgroundOperation(
     @Column(columnDefinition = "text", name = "parent_id", nullable = false)
     val parentId: String,
 
-    @Column(nullable = false)
+    @Column(name = "created_at", nullable = false)
     var createdAt: OffsetDateTime,
 
     var result: ByteArray?,
