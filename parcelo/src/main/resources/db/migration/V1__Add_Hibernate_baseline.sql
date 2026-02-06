@@ -65,7 +65,7 @@ CREATE TABLE app_draft_listings (
 
 CREATE TABLE app_draft_upload_processing_jobs (
     id bigint NOT NULL,
-    app_draft_id text NOT NULL UNIQUE,
+    app_draft_id text NOT NULL,
     background_operation_id text NOT NULL,
     bucket_id text NOT NULL,
     object_id text NOT NULL,
