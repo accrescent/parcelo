@@ -84,7 +84,7 @@ class AppServiceImpl(private val config: ParceloConfig) : AppService {
                 .withDescription("listing for best matching language not found")
                 .asRuntimeException()
         val publishedIcon = PublishedImage
-            .findIconByAppIdAndListingLanguage(app.id, appListing.language)
+            .findIconByAppIdAndListingLanguage(app.id, appListing.id.language)
             ?: throw Status
                 .DATA_LOSS
                 .withDescription("published icon for listing \"$bestMatchingLanguage\" not found")
@@ -92,7 +92,7 @@ class AppServiceImpl(private val config: ParceloConfig) : AppService {
         val response = getAppListingResponse {
             listing = appListing {
                 appId = app.id
-                language = appListing.language
+                language = appListing.id.language
                 name = appListing.name
                 shortDescription = appListing.shortDescription
                 icon = image {
@@ -157,15 +157,15 @@ class AppServiceImpl(private val config: ParceloConfig) : AppService {
             .findByIdsOrdered(bestMatchingLanguages)
             .map {
                 val publishedIcon = PublishedImage
-                    .findIconByAppIdAndListingLanguage(it.appId, it.language)
+                    .findIconByAppIdAndListingLanguage(it.id.appId, it.id.language)
                     ?: throw Status
                         .DATA_LOSS
-                        .withDescription("published icon for listing \"${it.language}\" not found")
+                        .withDescription("published icon for listing \"${it.id.language}\" not found")
                         .asRuntimeException()
 
                 appListing {
-                    appId = it.appId
-                    language = it.language
+                    appId = it.id.appId
+                    language = it.id.language
                     name = it.name
                     shortDescription = it.shortDescription
                     icon = image {

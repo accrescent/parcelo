@@ -194,7 +194,7 @@ class AppEditServiceImpl @Inject constructor(
             AppEditListing(
                 id = UUID.randomUUID(),
                 appEditId = appEdit.id,
-                language = listing.language,
+                language = listing.id.language,
                 name = listing.name,
                 shortDescription = listing.shortDescription,
                 iconImageId = listing.iconImageId,
@@ -608,7 +608,7 @@ class AppEditServiceImpl @Inject constructor(
             }
 
         // Determine whether any listing changes require review
-        val appListings = appEdit.app.listings.associateBy { it.language }
+        val appListings = appEdit.app.listings.associateBy { it.id.language }
         val editListings = appEdit.listings
         val descriptionChangesRequiringReview = editListings
             .filter { listing ->

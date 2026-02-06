@@ -8,8 +8,6 @@ CREATE SEQUENCE app_edit_acls_seq START WITH 1 INCREMENT BY 50;
 
 CREATE SEQUENCE app_edit_upload_processing_jobs_seq START WITH 1 INCREMENT BY 50;
 
-CREATE SEQUENCE app_listings_seq START WITH 1 INCREMENT BY 50;
-
 CREATE SEQUENCE app_package_permissions_seq START WITH 1 INCREMENT BY 50;
 
 CREATE SEQUENCE organization_acls_seq START WITH 1 INCREMENT BY 50;
@@ -141,14 +139,12 @@ CREATE TABLE app_edits (
 );
 
 CREATE TABLE app_listings (
-    id bigint NOT NULL,
     icon_image_id uuid NOT NULL,
     app_id text NOT NULL,
     language text NOT NULL,
     name text NOT NULL,
     short_description text NOT NULL,
-    PRIMARY KEY (id),
-    UNIQUE (app_id, language)
+    PRIMARY KEY (app_id, language)
 );
 
 CREATE TABLE app_package_permissions (

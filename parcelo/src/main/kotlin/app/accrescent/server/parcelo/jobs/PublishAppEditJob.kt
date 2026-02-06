@@ -9,6 +9,7 @@ import app.accrescent.server.parcelo.config.ParceloConfig
 import app.accrescent.server.parcelo.data.AppEdit
 import app.accrescent.server.parcelo.data.AppListing
 import app.accrescent.server.parcelo.data.BackgroundOperation
+import app.accrescent.server.parcelo.data.ListingId
 import app.accrescent.server.parcelo.data.PublishedImage
 import app.accrescent.server.parcelo.publish.PublishService
 import app.accrescent.server.parcelo.util.TempFile
@@ -135,7 +136,7 @@ class PublishAppEditJob @Inject constructor(
         // Publish the app's listing icons to an S3-compatible server.
         //
         // This process has the same orphan object guarantees as publishing an APK set's APKs.
-        val appListings = appEdit.app.listings.associateBy(AppListing::language)
+        val appListings = appEdit.app.listings.associateBy { it.id.language }
         for (editListing in appEdit.listings) {
             val editListingIcon = editListing
                 .icon
@@ -168,8 +169,7 @@ class PublishAppEditJob @Inject constructor(
                 )
                     .persist()
                 AppListing(
-                    appId = appEdit.appPackage.appId,
-                    language = editListing.language,
+                    id = ListingId(appEdit.appPackage.appId, editListing.language),
                     name = editListing.name,
                     shortDescription = editListing.shortDescription,
                     iconImageId = editListingIcon.id,
