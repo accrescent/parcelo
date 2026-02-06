@@ -24,3 +24,10 @@ jobs:
       - run: ./gradlew test
       - run: ./gradlew quarkusIntTest
       - run: ./gradlew quarkusIntTest -Dquarkus.native.enabled=true -Dquarkus.package.jar.enabled=false
+      - if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: test-output
+          path: |
+            parcelo/build/quarkus.log
+            parcelo/build/reports/tests/
