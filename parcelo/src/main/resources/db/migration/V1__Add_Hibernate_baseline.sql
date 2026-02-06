@@ -6,6 +6,8 @@ CREATE SEQUENCE app_draft_upload_processing_jobs_seq START WITH 1 INCREMENT BY 5
 
 CREATE SEQUENCE app_edit_acls_seq START WITH 1 INCREMENT BY 50;
 
+CREATE SEQUENCE app_edit_upload_processing_jobs_seq START WITH 1 INCREMENT BY 50;
+
 CREATE SEQUENCE app_listings_seq START WITH 1 INCREMENT BY 50;
 
 CREATE SEQUENCE app_package_permissions_seq START WITH 1 INCREMENT BY 50;
@@ -110,6 +112,16 @@ CREATE TABLE app_edit_listings (
     UNIQUE (app_edit_id, language)
 );
 
+CREATE TABLE app_edit_upload_processing_jobs (
+    id bigint NOT NULL,
+    app_edit_id text NOT NULL,
+    background_operation_id text NOT NULL,
+    bucket_id text NOT NULL,
+    object_id text NOT NULL,
+    PRIMARY KEY (id),
+    UNIQUE (bucket_id, object_id)
+);
+
 CREATE TABLE app_edits (
     expected_app_entity_tag integer NOT NULL,
     publishing boolean NOT NULL,
@@ -178,7 +190,7 @@ CREATE TABLE background_operations (
     createdAt timestamp(6) with time zone NOT NULL,
     id text NOT NULL,
     parent_id text NOT NULL,
-    type text NOT NULL CHECK ((type in ('PUBLISH_APP_DRAFT','PUBLISH_APP_EDIT','UPLOAD_APP_DRAFT','UPLOAD_APP_DRAFT_LISTING_ICON'))),
+    type text NOT NULL CHECK ((type in ('PUBLISH_APP_DRAFT','PUBLISH_APP_EDIT','UPLOAD_APP_DRAFT','UPLOAD_APP_DRAFT_LISTING_ICON','UPLOAD_APP_EDIT'))),
     result bytea,
     PRIMARY KEY (id),
     CHECK (result IS NOT NULL OR succeeded = false)
@@ -347,6 +359,17 @@ ALTER TABLE IF EXISTS app_edit_listings
     ADD CONSTRAINT FKojyernf1xpkkd6tl2aybighet
     FOREIGN KEY (icon_image_id)
     REFERENCES images;
+
+ALTER TABLE IF EXISTS app_edit_upload_processing_jobs
+    ADD CONSTRAINT FK23rht5i586wcjjayikthmpbq1
+    FOREIGN KEY (app_edit_id)
+    REFERENCES app_edits
+    ON DELETE CASCADE;
+
+ALTER TABLE IF EXISTS app_edit_upload_processing_jobs
+    ADD CONSTRAINT FK9aiah9u0jkutndw3ukx2o2ykk
+    FOREIGN KEY (background_operation_id)
+    REFERENCES background_operations;
 
 ALTER TABLE IF EXISTS app_edits
     ADD CONSTRAINT FK37f96egr7eyanbvg9rg5af749

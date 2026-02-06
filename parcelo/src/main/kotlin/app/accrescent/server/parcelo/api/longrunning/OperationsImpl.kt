@@ -8,6 +8,7 @@ import app.accrescent.appstore.publish.v1alpha1.PublishAppDraftResult
 import app.accrescent.appstore.publish.v1alpha1.PublishAppEditResult
 import app.accrescent.appstore.publish.v1alpha1.UploadAppDraftListingIconResult
 import app.accrescent.appstore.publish.v1alpha1.UploadAppDraftResult
+import app.accrescent.appstore.publish.v1alpha1.UploadAppEditResult
 import app.accrescent.server.parcelo.data.AppDraft
 import app.accrescent.server.parcelo.data.BackgroundOperation
 import app.accrescent.server.parcelo.data.BackgroundOperationType
@@ -69,7 +70,8 @@ class OperationsImpl @Inject constructor(
             BackgroundOperationType.UPLOAD_APP_DRAFT_LISTING_ICON ->
                 ObjectReference(ObjectType.APP_DRAFT, metadata.parentId)
 
-            BackgroundOperationType.PUBLISH_APP_EDIT ->
+            BackgroundOperationType.PUBLISH_APP_EDIT,
+            BackgroundOperationType.UPLOAD_APP_EDIT ->
                 ObjectReference(ObjectType.APP_EDIT, metadata.parentId)
         }
         val canView = permissionService.hasPermission(
@@ -108,6 +110,8 @@ class OperationsImpl @Inject constructor(
                     BackgroundOperationType.UPLOAD_APP_DRAFT -> UploadAppDraftResult.parseFrom(it)
                     BackgroundOperationType.UPLOAD_APP_DRAFT_LISTING_ICON ->
                         UploadAppDraftListingIconResult.parseFrom(it)
+
+                    BackgroundOperationType.UPLOAD_APP_EDIT -> UploadAppEditResult.parseFrom(it)
                 }.right()
             } else {
                 GoogleStatus.parseFrom(it).left()

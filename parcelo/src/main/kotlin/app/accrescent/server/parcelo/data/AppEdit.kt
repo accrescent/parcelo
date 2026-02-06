@@ -52,7 +52,7 @@ class AppEdit(
     var defaultListingLanguage: String,
 
     @Column(name = "app_package_id", nullable = false)
-    val appPackageId: UUID,
+    var appPackageId: UUID,
 
     @Column(name = "submitted_at")
     var submittedAt: OffsetDateTime?,
