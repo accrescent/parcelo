@@ -19,13 +19,13 @@ import java.time.OffsetDateTime
 )
 class OrphanedBlob(
     @Column(columnDefinition = "text", name = "bucket_id", nullable = false)
-    val bucketId: String,
+    var bucketId: String,
 
     @Column(columnDefinition = "text", name = "object_id", nullable = false)
-    val objectId: String,
+    var objectId: String,
 
     @Column(name = "orphaned_on", nullable = false)
-    val orphanedOn: OffsetDateTime,
+    var orphanedOn: OffsetDateTime,
 ) : PanacheEntity() {
     companion object : PanacheCompanion<OrphanedBlob> {
         fun deleteByBucketIdAndObjectId(bucketId: String, objectId: String) {

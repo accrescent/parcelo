@@ -34,14 +34,14 @@ enum class BackgroundOperationType {
 class BackgroundOperation(
     @Id
     @Column(columnDefinition = "text")
-    val id: String,
+    var id: String,
 
     @Column(columnDefinition = "text", nullable = false)
     @Enumerated(EnumType.STRING)
-    val type: BackgroundOperationType,
+    var type: BackgroundOperationType,
 
     @Column(columnDefinition = "text", name = "parent_id", nullable = false)
-    val parentId: String,
+    var parentId: String,
 
     @Column(name = "created_at", nullable = false)
     var createdAt: OffsetDateTime,

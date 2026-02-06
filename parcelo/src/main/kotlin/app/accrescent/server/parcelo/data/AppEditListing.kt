@@ -24,19 +24,19 @@ import java.util.UUID
 )
 class AppEditListing(
     @Id
-    val id: UUID,
+    var id: UUID,
 
     @Column(columnDefinition = "text", name = "app_edit_id", nullable = false)
-    val appEditId: String,
+    var appEditId: String,
 
     @Column(columnDefinition = "text", nullable = false)
-    val language: String,
+    var language: String,
 
     @Column(columnDefinition = "text", nullable = false)
-    val name: String,
+    var name: String,
 
     @Column(columnDefinition = "text", name = "short_description", nullable = false)
-    val shortDescription: String,
+    var shortDescription: String,
 
     @Column(name = "icon_image_id")
     var iconImageId: UUID?,
@@ -47,7 +47,7 @@ class AppEditListing(
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "icon_image_id", insertable = false, updatable = false)
-    val icon: Image? = null
+    var icon: Image? = null
 
     companion object : PanacheCompanionBase<AppEditListing, UUID> {
         fun findByAppEditIdAndLanguage(appEditId: String, language: String): AppEditListing? {

@@ -15,8 +15,8 @@ import java.util.UUID
 @Table(name = "reviews")
 class Review(
     @Id
-    val id: UUID,
+    var id: UUID,
 
     @Column(nullable = false)
-    val approved: Boolean,
+    var approved: Boolean,
 ) : PanacheEntityBase

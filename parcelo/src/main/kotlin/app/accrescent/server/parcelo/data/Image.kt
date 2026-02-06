@@ -20,7 +20,7 @@ import java.util.UUID
 )
 class Image(
     @Id
-    val id: UUID,
+    var id: UUID,
 
     @Column(columnDefinition = "text", name = "bucket_id", nullable = false)
     var bucketId: String,

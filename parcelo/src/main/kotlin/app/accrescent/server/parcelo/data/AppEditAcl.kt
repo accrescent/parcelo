@@ -18,10 +18,10 @@ import jakarta.persistence.UniqueConstraint
 )
 class AppEditAcl(
     @Column(columnDefinition = "text", name = "app_edit_id", nullable = false)
-    val appEditId: String,
+    var appEditId: String,
 
     @Column(columnDefinition = "text", name = "user_id", nullable = false)
-    val userId: String,
+    var userId: String,
 
     @Column(name = "can_review", nullable = false)
     var canReview: Boolean,

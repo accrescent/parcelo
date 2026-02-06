@@ -19,10 +19,10 @@ import org.hibernate.annotations.OnDeleteAction
 @Table(name = "publishers")
 class Publisher(
     @Column(columnDefinition = "text", name = "user_id", nullable = false, unique = true)
-    val userId: String,
+    var userId: String,
 
     @Column(columnDefinition = "text", nullable = false)
-    val email: String,
+    var email: String,
 ) : PanacheEntity() {
     @OneToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(insertable = false, updatable = false)

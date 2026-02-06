@@ -17,10 +17,10 @@ import java.util.UUID
 @Table(name = "rejection_reasons")
 class RejectionReason(
     @Column(name = "review_id", nullable = false)
-    val reviewId: UUID,
+    var reviewId: UUID,
 
     @Column(columnDefinition = "text", nullable = false)
-    val reason: String,
+    var reason: String,
 ) : PanacheEntity() {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(insertable = false, updatable = false)

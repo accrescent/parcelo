@@ -37,16 +37,16 @@ import java.util.UUID
 class AppEdit(
     @Id
     @Column(columnDefinition = "text")
-    val id: String,
+    var id: String,
 
     @Column(columnDefinition = "text", name = "app_id", nullable = false)
-    val appId: String,
+    var appId: String,
 
     @Column(name = "created_at", nullable = false)
     var createdAt: OffsetDateTime,
 
     @Column(name = "expected_app_entity_tag", nullable = false)
-    val expectedAppEntityTag: Int,
+    var expectedAppEntityTag: Int,
 
     @Column(columnDefinition = "text", name = "default_listing_language", nullable = false)
     var defaultListingLanguage: String,
@@ -58,7 +58,7 @@ class AppEdit(
     var submittedAt: OffsetDateTime?,
 
     @Column(name = "review_id")
-    val reviewId: UUID?,
+    var reviewId: UUID?,
 
     @Column(nullable = false)
     var publishing: Boolean,
@@ -82,7 +82,7 @@ class AppEdit(
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(insertable = false, updatable = false)
-    val review: Review? = null
+    var review: Review? = null
 
     @OneToMany(cascade = [CascadeType.ALL], mappedBy = "appEdit")
     lateinit var listings: List<AppEditListing>

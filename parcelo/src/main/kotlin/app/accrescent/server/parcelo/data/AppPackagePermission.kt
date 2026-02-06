@@ -23,13 +23,13 @@ import java.util.UUID
 )
 class AppPackagePermission(
     @Column(name = "app_package_id", nullable = false)
-    val appPackageId: UUID,
+    var appPackageId: UUID,
 
     @Column(columnDefinition = "text", nullable = false)
-    val name: String,
+    var name: String,
 
     @Column(name = "max_sdk_version")
-    val maxSdkVersion: Int?,
+    var maxSdkVersion: Int?,
 ) : PanacheEntity() {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "app_package_id", insertable = false, updatable = false)
