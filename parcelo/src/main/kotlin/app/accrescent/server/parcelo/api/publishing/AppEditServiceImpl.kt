@@ -74,6 +74,7 @@ import io.quarkus.grpc.GrpcService
 import io.quarkus.grpc.RegisterInterceptor
 import io.quarkus.mailer.MailTemplate
 import io.smallrye.mutiny.Uni
+import jakarta.enterprise.inject.Instance
 import jakarta.inject.Inject
 import jakarta.transaction.Transactional
 import org.quartz.JobBuilder
@@ -130,7 +131,7 @@ private const val MAX_PAGE_SIZE = 50u
 class AppEditServiceImpl @Inject constructor(
     private val config: ParceloConfig,
     private val permissionService: PermissionService,
-    private val scheduler: Scheduler,
+    private val scheduler: Instance<Scheduler>,
     private val storage: Storage,
 ) : AppEditService {
     @JvmRecord
@@ -663,7 +664,7 @@ class AppEditServiceImpl @Inject constructor(
                 .storeDurably()
                 .build()
             val trigger = TriggerBuilder.newTrigger().startNow().build()
-            scheduler.scheduleJob(job, trigger)
+            scheduler.get().scheduleJob(job, trigger)
 
             val backgroundOperation = BackgroundOperation(
                 id = job.key.name,
