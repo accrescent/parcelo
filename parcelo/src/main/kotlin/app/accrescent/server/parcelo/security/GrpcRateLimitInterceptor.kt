@@ -5,6 +5,7 @@
 package app.accrescent.server.parcelo.security
 
 import app.accrescent.console.v1alpha1.AppDraftServiceGrpc
+import app.accrescent.console.v1alpha1.AppEditServiceGrpc
 import app.accrescent.server.parcelo.config.ParceloConfig
 import app.accrescent.server.parcelo.security.Principal.IpAddress
 import app.accrescent.server.parcelo.security.Principal.User
@@ -52,6 +53,8 @@ private class GrpcRateLimitInterceptorImpl(
         private val UPLOAD_APIS_METHODS = setOf(
             AppDraftServiceGrpc.getCreateAppDraftUploadOperationMethod().fullMethodName,
             AppDraftServiceGrpc.getCreateAppDraftListingIconUploadOperationMethod().fullMethodName,
+            AppEditServiceGrpc.getCreateAppEditUploadOperationMethod().fullMethodName,
+            AppEditServiceGrpc.getCreateAppEditListingIconUploadOperationMethod().fullMethodName,
         )
     }
 
