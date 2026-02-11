@@ -3,5 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 /accrescent/appstore
+/accrescent/console
 /android
 /google
+/protoc-gen-openapiv2

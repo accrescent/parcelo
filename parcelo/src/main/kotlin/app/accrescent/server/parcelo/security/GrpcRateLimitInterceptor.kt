@@ -4,7 +4,7 @@
 
 package app.accrescent.server.parcelo.security
 
-import app.accrescent.appstore.publish.v1alpha1.AppDraftServiceGrpc
+import app.accrescent.console.v1alpha1.AppDraftServiceGrpc
 import app.accrescent.server.parcelo.config.ParceloConfig
 import app.accrescent.server.parcelo.security.Principal.IpAddress
 import app.accrescent.server.parcelo.security.Principal.User
@@ -50,8 +50,8 @@ private class GrpcRateLimitInterceptorImpl(
         private val BUCKET_KEEP_AFTER_REFILL_DURATION = Duration.ofSeconds(30)
 
         private val UPLOAD_APIS_METHODS = setOf(
-            AppDraftServiceGrpc.getGetAppDraftUploadInfoMethod().fullMethodName,
-            AppDraftServiceGrpc.getGetAppDraftListingIconUploadInfoMethod().fullMethodName,
+            AppDraftServiceGrpc.getCreateAppDraftUploadOperationMethod().fullMethodName,
+            AppDraftServiceGrpc.getCreateAppDraftListingIconUploadOperationMethod().fullMethodName,
         )
     }
 

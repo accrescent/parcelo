@@ -2,19 +2,19 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only
 
-package app.accrescent.server.parcelo.api.publishing
+package app.accrescent.server.parcelo.api.console
 
-import app.accrescent.appstore.publish.v1alpha1.AppService
-import app.accrescent.appstore.publish.v1alpha1.GetAppRequest
-import app.accrescent.appstore.publish.v1alpha1.GetAppResponse
-import app.accrescent.appstore.publish.v1alpha1.ListAppsRequest
-import app.accrescent.appstore.publish.v1alpha1.ListAppsResponse
-import app.accrescent.appstore.publish.v1alpha1.UpdateAppRequest
-import app.accrescent.appstore.publish.v1alpha1.UpdateAppResponse
-import app.accrescent.appstore.publish.v1alpha1.app
-import app.accrescent.appstore.publish.v1alpha1.getAppResponse
-import app.accrescent.appstore.publish.v1alpha1.listAppsResponse
-import app.accrescent.appstore.publish.v1alpha1.updateAppResponse
+import app.accrescent.console.v1alpha1.AppService
+import app.accrescent.console.v1alpha1.GetAppRequest
+import app.accrescent.console.v1alpha1.GetAppResponse
+import app.accrescent.console.v1alpha1.ListAppsRequest
+import app.accrescent.console.v1alpha1.ListAppsResponse
+import app.accrescent.console.v1alpha1.UpdateAppRequest
+import app.accrescent.console.v1alpha1.UpdateAppResponse
+import app.accrescent.console.v1alpha1.app
+import app.accrescent.console.v1alpha1.getAppResponse
+import app.accrescent.console.v1alpha1.listAppsResponse
+import app.accrescent.console.v1alpha1.updateAppResponse
 import app.accrescent.parcelo.impl.v1.ListAppsPageToken
 import app.accrescent.parcelo.impl.v1.listAppsPageToken
 import app.accrescent.server.parcelo.data.App

@@ -2,50 +2,50 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only
 
-package app.accrescent.server.parcelo.api.publishing
+package app.accrescent.server.parcelo.api.console
 
-import app.accrescent.appstore.publish.v1alpha1.AppDraftService
-import app.accrescent.appstore.publish.v1alpha1.CreateAppDraftListingRequest
-import app.accrescent.appstore.publish.v1alpha1.CreateAppDraftListingResponse
-import app.accrescent.appstore.publish.v1alpha1.CreateAppDraftRequest
-import app.accrescent.appstore.publish.v1alpha1.CreateAppDraftResponse
-import app.accrescent.appstore.publish.v1alpha1.DeleteAppDraftListingRequest
-import app.accrescent.appstore.publish.v1alpha1.DeleteAppDraftListingResponse
-import app.accrescent.appstore.publish.v1alpha1.DeleteAppDraftRequest
-import app.accrescent.appstore.publish.v1alpha1.DeleteAppDraftResponse
-import app.accrescent.appstore.publish.v1alpha1.GetAppDraftDownloadInfoRequest
-import app.accrescent.appstore.publish.v1alpha1.GetAppDraftDownloadInfoResponse
-import app.accrescent.appstore.publish.v1alpha1.GetAppDraftListingIconDownloadInfoRequest
-import app.accrescent.appstore.publish.v1alpha1.GetAppDraftListingIconDownloadInfoResponse
-import app.accrescent.appstore.publish.v1alpha1.GetAppDraftListingIconUploadInfoRequest
-import app.accrescent.appstore.publish.v1alpha1.GetAppDraftListingIconUploadInfoResponse
-import app.accrescent.appstore.publish.v1alpha1.GetAppDraftRequest
-import app.accrescent.appstore.publish.v1alpha1.GetAppDraftResponse
-import app.accrescent.appstore.publish.v1alpha1.GetAppDraftUploadInfoRequest
-import app.accrescent.appstore.publish.v1alpha1.GetAppDraftUploadInfoResponse
-import app.accrescent.appstore.publish.v1alpha1.ListAppDraftsRequest
-import app.accrescent.appstore.publish.v1alpha1.ListAppDraftsResponse
-import app.accrescent.appstore.publish.v1alpha1.PublishAppDraftRequest
-import app.accrescent.appstore.publish.v1alpha1.PublishAppDraftResponse
-import app.accrescent.appstore.publish.v1alpha1.SubmitAppDraftRequest
-import app.accrescent.appstore.publish.v1alpha1.SubmitAppDraftResponse
-import app.accrescent.appstore.publish.v1alpha1.UpdateAppDraftRequest
-import app.accrescent.appstore.publish.v1alpha1.UpdateAppDraftResponse
-import app.accrescent.appstore.publish.v1alpha1.appDraft
-import app.accrescent.appstore.publish.v1alpha1.appPackage
-import app.accrescent.appstore.publish.v1alpha1.createAppDraftListingResponse
-import app.accrescent.appstore.publish.v1alpha1.createAppDraftResponse
-import app.accrescent.appstore.publish.v1alpha1.deleteAppDraftListingResponse
-import app.accrescent.appstore.publish.v1alpha1.deleteAppDraftResponse
-import app.accrescent.appstore.publish.v1alpha1.getAppDraftDownloadInfoResponse
-import app.accrescent.appstore.publish.v1alpha1.getAppDraftListingIconDownloadInfoResponse
-import app.accrescent.appstore.publish.v1alpha1.getAppDraftListingIconUploadInfoResponse
-import app.accrescent.appstore.publish.v1alpha1.getAppDraftResponse
-import app.accrescent.appstore.publish.v1alpha1.getAppDraftUploadInfoResponse
-import app.accrescent.appstore.publish.v1alpha1.listAppDraftsResponse
-import app.accrescent.appstore.publish.v1alpha1.publishAppDraftResponse
-import app.accrescent.appstore.publish.v1alpha1.submitAppDraftResponse
-import app.accrescent.appstore.publish.v1alpha1.updateAppDraftResponse
+import app.accrescent.console.v1alpha1.AppDraftService
+import app.accrescent.console.v1alpha1.CreateAppDraftListingIconUploadOperationRequest
+import app.accrescent.console.v1alpha1.CreateAppDraftListingIconUploadOperationResponse
+import app.accrescent.console.v1alpha1.CreateAppDraftListingRequest
+import app.accrescent.console.v1alpha1.CreateAppDraftListingResponse
+import app.accrescent.console.v1alpha1.CreateAppDraftRequest
+import app.accrescent.console.v1alpha1.CreateAppDraftResponse
+import app.accrescent.console.v1alpha1.CreateAppDraftUploadOperationRequest
+import app.accrescent.console.v1alpha1.CreateAppDraftUploadOperationResponse
+import app.accrescent.console.v1alpha1.DeleteAppDraftListingRequest
+import app.accrescent.console.v1alpha1.DeleteAppDraftListingResponse
+import app.accrescent.console.v1alpha1.DeleteAppDraftRequest
+import app.accrescent.console.v1alpha1.DeleteAppDraftResponse
+import app.accrescent.console.v1alpha1.GetAppDraftDownloadInfoRequest
+import app.accrescent.console.v1alpha1.GetAppDraftDownloadInfoResponse
+import app.accrescent.console.v1alpha1.GetAppDraftListingIconDownloadInfoRequest
+import app.accrescent.console.v1alpha1.GetAppDraftListingIconDownloadInfoResponse
+import app.accrescent.console.v1alpha1.GetAppDraftRequest
+import app.accrescent.console.v1alpha1.GetAppDraftResponse
+import app.accrescent.console.v1alpha1.ListAppDraftsRequest
+import app.accrescent.console.v1alpha1.ListAppDraftsResponse
+import app.accrescent.console.v1alpha1.PublishAppDraftRequest
+import app.accrescent.console.v1alpha1.PublishAppDraftResponse
+import app.accrescent.console.v1alpha1.SubmitAppDraftRequest
+import app.accrescent.console.v1alpha1.SubmitAppDraftResponse
+import app.accrescent.console.v1alpha1.UpdateAppDraftRequest
+import app.accrescent.console.v1alpha1.UpdateAppDraftResponse
+import app.accrescent.console.v1alpha1.appDraft
+import app.accrescent.console.v1alpha1.appPackage
+import app.accrescent.console.v1alpha1.createAppDraftListingIconUploadOperationResponse
+import app.accrescent.console.v1alpha1.createAppDraftListingResponse
+import app.accrescent.console.v1alpha1.createAppDraftResponse
+import app.accrescent.console.v1alpha1.createAppDraftUploadOperationResponse
+import app.accrescent.console.v1alpha1.deleteAppDraftListingResponse
+import app.accrescent.console.v1alpha1.deleteAppDraftResponse
+import app.accrescent.console.v1alpha1.getAppDraftDownloadInfoResponse
+import app.accrescent.console.v1alpha1.getAppDraftListingIconDownloadInfoResponse
+import app.accrescent.console.v1alpha1.getAppDraftResponse
+import app.accrescent.console.v1alpha1.listAppDraftsResponse
+import app.accrescent.console.v1alpha1.publishAppDraftResponse
+import app.accrescent.console.v1alpha1.submitAppDraftResponse
+import app.accrescent.console.v1alpha1.updateAppDraftResponse
 import app.accrescent.parcelo.impl.v1.ListAppDraftsPageToken
 import app.accrescent.parcelo.impl.v1.listAppDraftsPageToken
 import app.accrescent.server.parcelo.config.ParceloConfig
@@ -336,9 +336,9 @@ class AppDraftServiceImpl @Inject constructor(
     }
 
     @Transactional
-    override fun getAppDraftUploadInfo(
-        request: GetAppDraftUploadInfoRequest,
-    ): Uni<GetAppDraftUploadInfoResponse> {
+    override fun createAppDraftUploadOperation(
+        request: CreateAppDraftUploadOperationRequest,
+    ): Uni<CreateAppDraftUploadOperationResponse> {
         val userId = AuthnContextKey.USER_ID.get()
 
         val canReplacePackage = permissionService.hasPermission(
@@ -404,7 +404,7 @@ class AppDraftServiceImpl @Inject constructor(
         )
             .persist()
 
-        val response = getAppDraftUploadInfoResponse {
+        val response = createAppDraftUploadOperationResponse {
             apkSetUploadUrl = uploadUrl.toString()
             processingOperation = Operation.newBuilder().setName(backgroundOperation.id).build()
         }
@@ -740,9 +740,9 @@ class AppDraftServiceImpl @Inject constructor(
     }
 
     @Transactional
-    override fun getAppDraftListingIconUploadInfo(
-        request: GetAppDraftListingIconUploadInfoRequest,
-    ): Uni<GetAppDraftListingIconUploadInfoResponse> {
+    override fun createAppDraftListingIconUploadOperation(
+        request: CreateAppDraftListingIconUploadOperationRequest,
+    ): Uni<CreateAppDraftListingIconUploadOperationResponse> {
         val userId = AuthnContextKey.USER_ID.get()
 
         val canReplaceIcon = permissionService.hasPermission(
@@ -812,7 +812,7 @@ class AppDraftServiceImpl @Inject constructor(
         )
             .persist()
 
-        val response = getAppDraftListingIconUploadInfoResponse {
+        val response = createAppDraftListingIconUploadOperationResponse {
             this.uploadUrl = uploadUrl.toString()
             processingOperation = Operation.newBuilder().setName(backgroundOperation.id).build()
         }

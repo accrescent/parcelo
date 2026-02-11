@@ -4,23 +4,23 @@
 
 package app.accrescent.server.parcelo.testutil
 
-import app.accrescent.appstore.publish.v1alpha1.AppDraftServiceGrpc
-import app.accrescent.appstore.publish.v1alpha1.AppEditServiceGrpc
-import app.accrescent.appstore.publish.v1alpha1.OrganizationServiceGrpc
-import app.accrescent.appstore.publish.v1alpha1.PublisherServiceGrpc
-import app.accrescent.appstore.publish.v1alpha1.ReviewServiceGrpc
-import app.accrescent.appstore.publish.v1alpha1.ReviewerServiceGrpc
-import app.accrescent.appstore.publish.v1alpha1.UserServiceGrpc
-import app.accrescent.appstore.publish.v1alpha1.createAppDraftListingRequest
-import app.accrescent.appstore.publish.v1alpha1.createAppDraftRequest
-import app.accrescent.appstore.publish.v1alpha1.createAppDraftReviewRequest
-import app.accrescent.appstore.publish.v1alpha1.getAppDraftListingIconUploadInfoRequest
-import app.accrescent.appstore.publish.v1alpha1.getAppDraftRequest
-import app.accrescent.appstore.publish.v1alpha1.getAppDraftUploadInfoRequest
-import app.accrescent.appstore.publish.v1alpha1.listOrganizationsRequest
-import app.accrescent.appstore.publish.v1alpha1.publishAppDraftRequest
-import app.accrescent.appstore.publish.v1alpha1.submitAppDraftRequest
-import app.accrescent.appstore.publish.v1alpha1.updateAppDraftRequest
+import app.accrescent.console.v1alpha1.AppDraftServiceGrpc
+import app.accrescent.console.v1alpha1.AppEditServiceGrpc
+import app.accrescent.console.v1alpha1.OrganizationServiceGrpc
+import app.accrescent.console.v1alpha1.PublisherServiceGrpc
+import app.accrescent.console.v1alpha1.ReviewServiceGrpc
+import app.accrescent.console.v1alpha1.ReviewerServiceGrpc
+import app.accrescent.console.v1alpha1.UserServiceGrpc
+import app.accrescent.console.v1alpha1.createAppDraftListingIconUploadOperationRequest
+import app.accrescent.console.v1alpha1.createAppDraftListingRequest
+import app.accrescent.console.v1alpha1.createAppDraftRequest
+import app.accrescent.console.v1alpha1.createAppDraftReviewRequest
+import app.accrescent.console.v1alpha1.createAppDraftUploadOperationRequest
+import app.accrescent.console.v1alpha1.getAppDraftRequest
+import app.accrescent.console.v1alpha1.listOrganizationsRequest
+import app.accrescent.console.v1alpha1.publishAppDraftRequest
+import app.accrescent.console.v1alpha1.submitAppDraftRequest
+import app.accrescent.console.v1alpha1.updateAppDraftRequest
 import com.google.longrunning.GetOperationRequest
 import com.google.longrunning.Operation
 import com.google.longrunning.OperationsGrpc
@@ -42,8 +42,8 @@ import java.io.File
 import java.net.URI
 import java.time.Duration
 import kotlin.io.encoding.Base64
-import app.accrescent.appstore.publish.v1alpha1.AppServiceGrpc as DevAppServiceGrpc
 import app.accrescent.appstore.v1.AppServiceGrpc as StoreAppServiceGrpc
+import app.accrescent.console.v1alpha1.AppServiceGrpc as DevAppServiceGrpc
 
 private const val DEFAULT_SERVER_HOST = "localhost"
 private const val DEFAULT_SERVER_PORT = 8081
@@ -178,12 +178,12 @@ object ApiUtils {
         appDraftService.createAppDraftListing(createAppDraftListingRequest)
 
         // Upload the listing icon
-        val getAppDraftListingIconUploadInfoRequest = getAppDraftListingIconUploadInfoRequest {
+        val uploadIconRequest = createAppDraftListingIconUploadOperationRequest {
             this.appDraftId = appDraftId
             language = "en-US"
         }
         val iconUploadResponse = appDraftService
-            .getAppDraftListingIconUploadInfo(getAppDraftListingIconUploadInfoRequest)
+            .createAppDraftListingIconUploadOperation(uploadIconRequest)
         given()
             .header("Host", "storage.googleapis.com")
             .body(Base64.decode(ENCODED_PNG))
@@ -204,8 +204,10 @@ object ApiUtils {
         assertTrue(iconUploadOp.hasResponse())
 
         // Upload the APK set
-        val getUploadInfoRequest = getAppDraftUploadInfoRequest { this.appDraftId = appDraftId }
-        val apkSetUploadUrl = appDraftService.getAppDraftUploadInfo(getUploadInfoRequest).apkSetUploadUrl
+        val uploadDraftRequest = createAppDraftUploadOperationRequest { this.appDraftId = appDraftId }
+        val apkSetUploadUrl = appDraftService
+            .createAppDraftUploadOperation(uploadDraftRequest)
+            .apkSetUploadUrl
         val apkSetPath = System.getProperty("testdata.apkset.$apkSetName.path")
         given()
             .header("Host", "storage.googleapis.com")

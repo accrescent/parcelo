@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only
 
-package app.accrescent.server.parcelo.api.publishing
+package app.accrescent.server.parcelo.api.console
 
 const val DOWNLOAD_URL_EXPIRATION_SECONDS = 30L
 

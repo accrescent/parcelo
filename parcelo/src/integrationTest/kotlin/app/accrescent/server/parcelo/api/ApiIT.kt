@@ -4,26 +4,26 @@
 
 package app.accrescent.server.parcelo.api
 
-import app.accrescent.appstore.publish.v1alpha1.createAppDraftRequest
-import app.accrescent.appstore.publish.v1alpha1.createAppEditRequest
-import app.accrescent.appstore.publish.v1alpha1.createPublisherRequest
-import app.accrescent.appstore.publish.v1alpha1.createReviewerRequest
-import app.accrescent.appstore.publish.v1alpha1.getAppEditRequest
-import app.accrescent.appstore.publish.v1alpha1.getAppEditUploadInfoRequest
-import app.accrescent.appstore.publish.v1alpha1.getAppRequest
-import app.accrescent.appstore.publish.v1alpha1.getSelfRequest
-import app.accrescent.appstore.publish.v1alpha1.listAppDraftsRequest
-import app.accrescent.appstore.publish.v1alpha1.listAppsRequest
-import app.accrescent.appstore.publish.v1alpha1.listOrganizationsRequest
-import app.accrescent.appstore.publish.v1alpha1.submitAppEditRequest
-import app.accrescent.appstore.publish.v1alpha1.updateAppEditRequest
-import app.accrescent.appstore.publish.v1alpha1.updateAppRequest
 import app.accrescent.appstore.v1.DeviceAttributes
 import app.accrescent.appstore.v1.getAppDownloadInfoRequest
 import app.accrescent.appstore.v1.getAppListingRequest
 import app.accrescent.appstore.v1.getAppPackageInfoRequest
 import app.accrescent.appstore.v1.getAppUpdateInfoRequest
 import app.accrescent.appstore.v1.listAppListingsRequest
+import app.accrescent.console.v1alpha1.createAppDraftRequest
+import app.accrescent.console.v1alpha1.createAppEditRequest
+import app.accrescent.console.v1alpha1.createAppEditUploadOperationRequest
+import app.accrescent.console.v1alpha1.createPublisherRequest
+import app.accrescent.console.v1alpha1.createReviewerRequest
+import app.accrescent.console.v1alpha1.getAppEditRequest
+import app.accrescent.console.v1alpha1.getAppRequest
+import app.accrescent.console.v1alpha1.getSelfRequest
+import app.accrescent.console.v1alpha1.listAppDraftsRequest
+import app.accrescent.console.v1alpha1.listAppsRequest
+import app.accrescent.console.v1alpha1.listOrganizationsRequest
+import app.accrescent.console.v1alpha1.submitAppEditRequest
+import app.accrescent.console.v1alpha1.updateAppEditRequest
+import app.accrescent.console.v1alpha1.updateAppRequest
 import app.accrescent.server.parcelo.testutil.ApiUtils
 import com.google.longrunning.GetOperationRequest
 import com.google.longrunning.Operation
@@ -433,8 +433,8 @@ class ApiIT {
         val appEditId = appEditService.createAppEdit(createRequest).appEditId
 
         // Upload the APK set
-        val uploadInfoRequest = getAppEditUploadInfoRequest { this.appEditId = appEditId }
-        val uploadInfoResponse = appEditService.getAppEditUploadInfo(uploadInfoRequest)
+        val uploadInfoRequest = createAppEditUploadOperationRequest { this.appEditId = appEditId }
+        val uploadInfoResponse = appEditService.createAppEditUploadOperation(uploadInfoRequest)
         val updateApkSetPath = System.getProperty("testdata.apkset.valid7-update.path")
         given()
             .header("Host", "storage.googleapis.com")

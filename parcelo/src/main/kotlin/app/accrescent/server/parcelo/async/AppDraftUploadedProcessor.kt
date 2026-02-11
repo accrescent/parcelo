@@ -4,7 +4,7 @@
 
 package app.accrescent.server.parcelo.async
 
-import app.accrescent.appstore.publish.v1alpha1.UploadAppDraftResult
+import app.accrescent.console.v1alpha1.UploadAppDraftResult
 import app.accrescent.quarkus.gcp.pubsub.PubSubHelper
 import app.accrescent.server.parcelo.config.ParceloConfig
 import app.accrescent.server.parcelo.data.AppDraftUploadProcessingJob

@@ -4,7 +4,7 @@
 
 package app.accrescent.server.parcelo.jobs
 
-import app.accrescent.appstore.publish.v1alpha1.PublishAppEditResult
+import app.accrescent.console.v1alpha1.PublishAppEditResult
 import app.accrescent.server.parcelo.config.ParceloConfig
 import app.accrescent.server.parcelo.data.AppEdit
 import app.accrescent.server.parcelo.data.AppListing

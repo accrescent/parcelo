@@ -2,43 +2,43 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only
 
-package app.accrescent.server.parcelo.api.publishing
+package app.accrescent.server.parcelo.api.console
 
-import app.accrescent.appstore.publish.v1alpha1.AppEditService
-import app.accrescent.appstore.publish.v1alpha1.CreateAppEditListingRequest
-import app.accrescent.appstore.publish.v1alpha1.CreateAppEditListingResponse
-import app.accrescent.appstore.publish.v1alpha1.CreateAppEditRequest
-import app.accrescent.appstore.publish.v1alpha1.CreateAppEditResponse
-import app.accrescent.appstore.publish.v1alpha1.DeleteAppEditListingRequest
-import app.accrescent.appstore.publish.v1alpha1.DeleteAppEditListingResponse
-import app.accrescent.appstore.publish.v1alpha1.DeleteAppEditRequest
-import app.accrescent.appstore.publish.v1alpha1.DeleteAppEditResponse
-import app.accrescent.appstore.publish.v1alpha1.GetAppEditDownloadInfoRequest
-import app.accrescent.appstore.publish.v1alpha1.GetAppEditDownloadInfoResponse
-import app.accrescent.appstore.publish.v1alpha1.GetAppEditListingIconUploadInfoRequest
-import app.accrescent.appstore.publish.v1alpha1.GetAppEditListingIconUploadInfoResponse
-import app.accrescent.appstore.publish.v1alpha1.GetAppEditRequest
-import app.accrescent.appstore.publish.v1alpha1.GetAppEditResponse
-import app.accrescent.appstore.publish.v1alpha1.GetAppEditUploadInfoRequest
-import app.accrescent.appstore.publish.v1alpha1.GetAppEditUploadInfoResponse
-import app.accrescent.appstore.publish.v1alpha1.ListAppEditsRequest
-import app.accrescent.appstore.publish.v1alpha1.ListAppEditsResponse
-import app.accrescent.appstore.publish.v1alpha1.SubmitAppEditRequest
-import app.accrescent.appstore.publish.v1alpha1.SubmitAppEditResponse
-import app.accrescent.appstore.publish.v1alpha1.UpdateAppEditRequest
-import app.accrescent.appstore.publish.v1alpha1.UpdateAppEditResponse
-import app.accrescent.appstore.publish.v1alpha1.appEdit
-import app.accrescent.appstore.publish.v1alpha1.appPackage
-import app.accrescent.appstore.publish.v1alpha1.createAppEditListingResponse
-import app.accrescent.appstore.publish.v1alpha1.createAppEditResponse
-import app.accrescent.appstore.publish.v1alpha1.deleteAppEditListingResponse
-import app.accrescent.appstore.publish.v1alpha1.deleteAppEditResponse
-import app.accrescent.appstore.publish.v1alpha1.getAppEditDownloadInfoResponse
-import app.accrescent.appstore.publish.v1alpha1.getAppEditResponse
-import app.accrescent.appstore.publish.v1alpha1.getAppEditUploadInfoResponse
-import app.accrescent.appstore.publish.v1alpha1.listAppEditsResponse
-import app.accrescent.appstore.publish.v1alpha1.submitAppEditResponse
-import app.accrescent.appstore.publish.v1alpha1.updateAppEditResponse
+import app.accrescent.console.v1alpha1.AppEditService
+import app.accrescent.console.v1alpha1.CreateAppEditListingIconUploadOperationRequest
+import app.accrescent.console.v1alpha1.CreateAppEditListingIconUploadOperationResponse
+import app.accrescent.console.v1alpha1.CreateAppEditListingRequest
+import app.accrescent.console.v1alpha1.CreateAppEditListingResponse
+import app.accrescent.console.v1alpha1.CreateAppEditRequest
+import app.accrescent.console.v1alpha1.CreateAppEditResponse
+import app.accrescent.console.v1alpha1.CreateAppEditUploadOperationRequest
+import app.accrescent.console.v1alpha1.CreateAppEditUploadOperationResponse
+import app.accrescent.console.v1alpha1.DeleteAppEditListingRequest
+import app.accrescent.console.v1alpha1.DeleteAppEditListingResponse
+import app.accrescent.console.v1alpha1.DeleteAppEditRequest
+import app.accrescent.console.v1alpha1.DeleteAppEditResponse
+import app.accrescent.console.v1alpha1.GetAppEditDownloadInfoRequest
+import app.accrescent.console.v1alpha1.GetAppEditDownloadInfoResponse
+import app.accrescent.console.v1alpha1.GetAppEditRequest
+import app.accrescent.console.v1alpha1.GetAppEditResponse
+import app.accrescent.console.v1alpha1.ListAppEditsRequest
+import app.accrescent.console.v1alpha1.ListAppEditsResponse
+import app.accrescent.console.v1alpha1.SubmitAppEditRequest
+import app.accrescent.console.v1alpha1.SubmitAppEditResponse
+import app.accrescent.console.v1alpha1.UpdateAppEditRequest
+import app.accrescent.console.v1alpha1.UpdateAppEditResponse
+import app.accrescent.console.v1alpha1.appEdit
+import app.accrescent.console.v1alpha1.appPackage
+import app.accrescent.console.v1alpha1.createAppEditListingResponse
+import app.accrescent.console.v1alpha1.createAppEditResponse
+import app.accrescent.console.v1alpha1.createAppEditUploadOperationResponse
+import app.accrescent.console.v1alpha1.deleteAppEditListingResponse
+import app.accrescent.console.v1alpha1.deleteAppEditResponse
+import app.accrescent.console.v1alpha1.getAppEditDownloadInfoResponse
+import app.accrescent.console.v1alpha1.getAppEditResponse
+import app.accrescent.console.v1alpha1.listAppEditsResponse
+import app.accrescent.console.v1alpha1.submitAppEditResponse
+import app.accrescent.console.v1alpha1.updateAppEditResponse
 import app.accrescent.parcelo.impl.v1.ListAppEditsPageToken
 import app.accrescent.parcelo.impl.v1.listAppEditsPageToken
 import app.accrescent.server.parcelo.config.ParceloConfig
@@ -347,9 +347,9 @@ class AppEditServiceImpl @Inject constructor(
     }
 
     @Transactional
-    override fun getAppEditUploadInfo(
-        request: GetAppEditUploadInfoRequest,
-    ): Uni<GetAppEditUploadInfoResponse> {
+    override fun createAppEditUploadOperation(
+        request: CreateAppEditUploadOperationRequest,
+    ): Uni<CreateAppEditUploadOperationResponse> {
         val userId = AuthnContextKey.USER_ID.get()
 
         val canReplacePackage = permissionService.hasPermission(
@@ -415,7 +415,7 @@ class AppEditServiceImpl @Inject constructor(
         )
             .persist()
 
-        val response = getAppEditUploadInfoResponse {
+        val response = createAppEditUploadOperationResponse {
             apkSetUploadUrl = uploadUrl.toString()
             processingOperation = Operation.newBuilder().setName(backgroundOperation.id).build()
         }
@@ -797,9 +797,9 @@ class AppEditServiceImpl @Inject constructor(
         return Uni.createFrom().item { createAppEditListingResponse {} }
     }
 
-    override fun getAppEditListingIconUploadInfo(
-        request: GetAppEditListingIconUploadInfoRequest,
-    ): Uni<GetAppEditListingIconUploadInfoResponse> {
+    override fun createAppEditListingIconUploadOperation(
+        request: CreateAppEditListingIconUploadOperationRequest,
+    ): Uni<CreateAppEditListingIconUploadOperationResponse> {
         throw Status.UNIMPLEMENTED.asRuntimeException()
     }
 

@@ -2,12 +2,12 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only
 
-package app.accrescent.server.parcelo.api.publishing
+package app.accrescent.server.parcelo.api.console
 
-import app.accrescent.appstore.publish.v1alpha1.GetSelfRequest
-import app.accrescent.appstore.publish.v1alpha1.GetSelfResponse
-import app.accrescent.appstore.publish.v1alpha1.UserService
-import app.accrescent.appstore.publish.v1alpha1.getSelfResponse
+import app.accrescent.console.v1alpha1.GetSelfRequest
+import app.accrescent.console.v1alpha1.GetSelfResponse
+import app.accrescent.console.v1alpha1.UserService
+import app.accrescent.console.v1alpha1.getSelfResponse
 import app.accrescent.server.parcelo.security.AuthnContextKey
 import app.accrescent.server.parcelo.security.GrpcAuthenticationInterceptor
 import app.accrescent.server.parcelo.security.GrpcRateLimitInterceptor

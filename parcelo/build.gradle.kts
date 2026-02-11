@@ -108,8 +108,8 @@ tasks.bufLint {
     enabled = false
 }
 
-tasks.register<Exec>("downloadAppPublishingApiProtos") {
-    inputs.property("app.accrescent.server.parcelo.app-publishing-api-version", libs.versions.app.publishing.api)
+tasks.register<Exec>("downloadConsoleApiProtos") {
+    inputs.property("app.accrescent.server.parcelo.console-api-version", libs.versions.console.api)
     outputs.dir("$projectDir/src/main/proto/accrescent")
 
     val bufExecutable = configurations.getByName(BUF_BINARY_CONFIGURATION_NAME).singleFile
@@ -117,12 +117,12 @@ tasks.register<Exec>("downloadAppPublishingApiProtos") {
         bufExecutable.setExecutable(true)
     }
 
-    val appPublishingApiVersion = inputs.properties["app.accrescent.server.parcelo.app-publishing-api-version"]
+    val consoleApiVersion = inputs.properties["app.accrescent.server.parcelo.console-api-version"]
 
     commandLine(
         bufExecutable.absolutePath,
         "export",
-        "buf.build/accrescent/app-publishing-api:$appPublishingApiVersion",
+        "buf.build/accrescent/console-api:$consoleApiVersion",
         "--output",
         "$projectDir/src/main/proto/",
     )
@@ -162,7 +162,7 @@ tasks.register<Exec>("downloadAppStoreApiProtos") {
     }
 }
 tasks.register("downloadProtos") {
-    dependsOn(tasks.getByName("downloadAppPublishingApiProtos"))
+    dependsOn(tasks.getByName("downloadConsoleApiProtos"))
     dependsOn(tasks.getByName("downloadAppStoreApiProtos"))
 }
 tasks.quarkusGenerateCode {

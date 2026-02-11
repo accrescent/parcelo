@@ -2,13 +2,13 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only
 
-package app.accrescent.server.parcelo.api.publishing
+package app.accrescent.server.parcelo.api.console
 
-import app.accrescent.appstore.publish.v1alpha1.ListOrganizationsRequest
-import app.accrescent.appstore.publish.v1alpha1.ListOrganizationsResponse
-import app.accrescent.appstore.publish.v1alpha1.OrganizationService
-import app.accrescent.appstore.publish.v1alpha1.listOrganizationsResponse
-import app.accrescent.appstore.publish.v1alpha1.organization
+import app.accrescent.console.v1alpha1.ListOrganizationsRequest
+import app.accrescent.console.v1alpha1.ListOrganizationsResponse
+import app.accrescent.console.v1alpha1.OrganizationService
+import app.accrescent.console.v1alpha1.listOrganizationsResponse
+import app.accrescent.console.v1alpha1.organization
 import app.accrescent.parcelo.impl.v1.ListOrganizationsPageToken
 import app.accrescent.parcelo.impl.v1.listOrganizationsPageToken
 import app.accrescent.server.parcelo.data.Organization

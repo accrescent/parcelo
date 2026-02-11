@@ -2,12 +2,12 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-only
 
-package app.accrescent.server.parcelo.api.publishing
+package app.accrescent.server.parcelo.api.console
 
-import app.accrescent.appstore.publish.v1alpha1.CreatePublisherRequest
-import app.accrescent.appstore.publish.v1alpha1.CreatePublisherResponse
-import app.accrescent.appstore.publish.v1alpha1.PublisherService
-import app.accrescent.appstore.publish.v1alpha1.createPublisherResponse
+import app.accrescent.console.v1alpha1.CreatePublisherRequest
+import app.accrescent.console.v1alpha1.CreatePublisherResponse
+import app.accrescent.console.v1alpha1.PublisherService
+import app.accrescent.console.v1alpha1.createPublisherResponse
 import app.accrescent.server.parcelo.config.ParceloConfig
 import app.accrescent.server.parcelo.data.Publisher
 import app.accrescent.server.parcelo.data.User
