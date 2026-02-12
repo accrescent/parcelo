@@ -4,8 +4,10 @@
 
 package app.accrescent.server.parcelo.async
 
+import app.accrescent.console.v1alpha1.ErrorReason
 import app.accrescent.console.v1alpha1.UploadAppEditResult
 import app.accrescent.quarkus.gcp.pubsub.PubSubHelper
+import app.accrescent.server.parcelo.api.error.ConsoleApiError
 import app.accrescent.server.parcelo.config.ParceloConfig
 import app.accrescent.server.parcelo.data.AppEditUploadProcessingJob
 import app.accrescent.server.parcelo.data.AppPackage
@@ -20,7 +22,6 @@ import com.google.cloud.pubsub.v1.SubscriberInterface
 import com.google.cloud.storage.BlobId
 import com.google.cloud.storage.Storage
 import com.google.pubsub.v1.PubsubMessage
-import io.grpc.Status
 import io.quarkus.logging.Log
 import io.quarkus.narayana.jta.QuarkusTransaction
 import io.quarkus.runtime.ShutdownEvent
@@ -32,7 +33,6 @@ import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 import java.util.UUID
 import kotlin.io.path.Path
-import com.google.rpc.Status as GoogleStatus
 
 @ApplicationScoped
 class AppEditUploadedProcessor @Inject constructor(
@@ -146,11 +146,11 @@ class AppEditUploadedProcessor @Inject constructor(
                 processEvent(ObjectUploadEvent(bucketId, objectId, eventTime), job)
             } catch (t: Throwable) {
                 Log.error("an error occurred processing job ${job.id}", t)
-                job.backgroundOperation.result = GoogleStatus
-                    .newBuilder()
-                    .setCode(Status.Code.INTERNAL.value())
-                    .setMessage("an unknown internal error has occurred")
-                    .build()
+                job.backgroundOperation.result = ConsoleApiError(
+                    ErrorReason.ERROR_REASON_INTERNAL,
+                    "an unknown internal error has occurred",
+                )
+                    .toStatus()
                     .toByteArray()
             }
         }
@@ -174,34 +174,30 @@ class AppEditUploadedProcessor @Inject constructor(
                 ApkSet.parse(tempFile.path, Path(config.fileProcessingDirectory()))
             }
             .getOrElse {
-                job.backgroundOperation.result = it.toStatus().toByteArray()
+                job.backgroundOperation.result = it.toConsoleApiError().toStatus().toByteArray()
                 return
             }
 
         // Verify the APK set is valid for this app
         when {
             apkSet.applicationId != job.appEdit.app.id -> {
-                job.backgroundOperation.result = GoogleStatus
-                    .newBuilder()
-                    .setCode(Status.Code.FAILED_PRECONDITION.value())
-                    .setMessage(
-                        "APK set app ID \"${apkSet.applicationId}\" does not match expected app " +
-                                "ID ${job.appEdit.app.id}"
-                    )
-                    .build()
+                job.backgroundOperation.result = ConsoleApiError(
+                    ErrorReason.ERROR_REASON_APP_ID_MISMATCH,
+                    "APK set app ID \"${apkSet.applicationId}\" does not match expected app ID " +
+                            job.appEdit.app.id,
+                )
+                    .toStatus()
                     .toByteArray()
                 return
             }
 
             apkSet.versionCode <= job.appEdit.app.appPackage.versionCode -> {
-                job.backgroundOperation.result = GoogleStatus
-                    .newBuilder()
-                    .setCode(Status.Code.FAILED_PRECONDITION.value())
-                    .setMessage(
-                        "APK set version code ${apkSet.versionCode} is not more than app version " +
-                                "code ${job.appEdit.appPackage.versionCode}"
-                    )
-                    .build()
+                job.backgroundOperation.result = ConsoleApiError(
+                    ErrorReason.ERROR_REASON_NOT_AN_UPGRADE,
+                    "APK set version code ${apkSet.versionCode} is not more than app version code" +
+                            " ${job.appEdit.appPackage.versionCode}"
+                )
+                    .toStatus()
                     .toByteArray()
                 return
             }
@@ -210,11 +206,11 @@ class AppEditUploadedProcessor @Inject constructor(
                 .signingCert
                 .encoded
                 .contentEquals(job.appEdit.app.appPackage.signingCertificate) -> {
-                job.backgroundOperation.result = GoogleStatus
-                    .newBuilder()
-                    .setCode(Status.Code.FAILED_PRECONDITION.value())
-                    .setMessage("APK set signing certificate does not match app signing certificate")
-                    .build()
+                job.backgroundOperation.result = ConsoleApiError(
+                    ErrorReason.ERROR_REASON_SIGNING_CERT_MISMATCH,
+                    "APK set signing certificate does not match app signing certificate",
+                )
+                    .toStatus()
                     .toByteArray()
                 return
             }

@@ -18,7 +18,7 @@ data class ConsoleApiError(
     private val reason: ErrorReason,
     private val message: String,
 ) {
-    fun toStatusRuntimeException(): StatusRuntimeException {
+    fun toStatus(): GoogleStatus {
         val code = when (reason) {
             ErrorReason.ERROR_REASON_UNSPECIFIED,
             ErrorReason.UNRECOGNIZED ->
@@ -29,12 +29,27 @@ data class ConsoleApiError(
             ErrorReason.ERROR_REASON_RATE_LIMIT_EXCEEDED -> Status.Code.RESOURCE_EXHAUSTED
 
             ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION -> Status.Code.PERMISSION_DENIED
-            ErrorReason.ERROR_REASON_INVALID_REQUEST -> Status.Code.INVALID_ARGUMENT
+            ErrorReason.ERROR_REASON_INVALID_REQUEST,
+            ErrorReason.ERROR_REASON_INVALID_IMAGE,
+            ErrorReason.ERROR_REASON_INCORRECT_IMAGE_DIMENSIONS,
+            ErrorReason.ERROR_REASON_INVALID_PACKAGE,
+            ErrorReason.ERROR_REASON_PACKAGE_DEBUGGABLE,
+            ErrorReason.ERROR_REASON_LOW_TARGET_SDK,
+            ErrorReason.ERROR_REASON_MISSING_64_BIT_CODE,
+            ErrorReason.ERROR_REASON_NO_MODERN_SIGNATURE,
+            ErrorReason.ERROR_REASON_DEBUG_SIGNER,
+            ErrorReason.ERROR_REASON_MULTIPLE_SIGNERS,
+            ErrorReason.ERROR_REASON_TEST_ONLY,
+                -> Status.Code.INVALID_ARGUMENT
+
             ErrorReason.ERROR_REASON_RESOURCE_IMMUTABLE,
             ErrorReason.ERROR_REASON_RESOURCE_INCOMPLETE,
             ErrorReason.ERROR_REASON_ASSIGNEE_UNAVAILABLE,
             ErrorReason.ERROR_REASON_RESOURCE_INVALIDATED,
-            ErrorReason.ERROR_REASON_CONSTRAINT_VIOLATION -> Status.Code.FAILED_PRECONDITION
+            ErrorReason.ERROR_REASON_CONSTRAINT_VIOLATION,
+            ErrorReason.ERROR_REASON_APP_ID_MISMATCH,
+            ErrorReason.ERROR_REASON_NOT_AN_UPGRADE,
+            ErrorReason.ERROR_REASON_SIGNING_CERT_MISMATCH -> Status.Code.FAILED_PRECONDITION
 
             ErrorReason.ERROR_REASON_ALREADY_SUBMITTED,
             ErrorReason.ERROR_REASON_RESOURCE_CONFLICT,
@@ -60,6 +75,10 @@ data class ConsoleApiError(
             .addDetails(Any.pack(errorInfo))
             .build()
 
-        return StatusProto.toStatusRuntimeException(status)
+        return status
+    }
+
+    fun toStatusRuntimeException(): StatusRuntimeException {
+        return StatusProto.toStatusRuntimeException(toStatus())
     }
 }

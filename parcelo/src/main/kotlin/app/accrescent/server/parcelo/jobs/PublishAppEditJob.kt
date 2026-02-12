@@ -4,7 +4,9 @@
 
 package app.accrescent.server.parcelo.jobs
 
+import app.accrescent.console.v1alpha1.ErrorReason
 import app.accrescent.console.v1alpha1.PublishAppEditResult
+import app.accrescent.server.parcelo.api.error.ConsoleApiError
 import app.accrescent.server.parcelo.config.ParceloConfig
 import app.accrescent.server.parcelo.data.AppEdit
 import app.accrescent.server.parcelo.data.AppListing
@@ -17,7 +19,6 @@ import app.accrescent.server.parcelo.util.apkPaths
 import com.android.bundle.Commands
 import com.google.cloud.storage.BlobId
 import com.google.cloud.storage.Storage
-import io.grpc.Status
 import io.quarkus.logging.Log
 import jakarta.inject.Inject
 import jakarta.transaction.Transactional
@@ -27,7 +28,6 @@ import org.quartz.JobExecutionContext
 import java.time.OffsetDateTime
 import kotlin.io.path.Path
 import app.accrescent.server.parcelo.data.PublishedApk as DbPublishedApk
-import com.google.rpc.Status as GoogleStatus
 
 @DisallowConcurrentExecution
 class PublishAppEditJob @Inject constructor(
@@ -45,22 +45,22 @@ class PublishAppEditJob @Inject constructor(
         val appEditId = try {
             context.mergedJobDataMap.getString(JobDataKey.APP_EDIT_ID) ?: run {
                 Log.error("app edit ID not found in merged job data map")
-                operation.result = GoogleStatus
-                    .newBuilder()
-                    .setCode(Status.Code.INTERNAL.value())
-                    .setMessage("app edit ID parameter not found in job context")
-                    .build()
+                operation.result = ConsoleApiError(
+                    ErrorReason.ERROR_REASON_INTERNAL,
+                    "app edit ID parameter not found in job context",
+                )
+                    .toStatus()
                     .toByteArray()
                 operation.succeeded = false
                 return
             }
         } catch (_: ClassCastException) {
             Log.error("app edit ID not found in merged job data map")
-            operation.result = GoogleStatus
-                .newBuilder()
-                .setCode(Status.Code.INTERNAL.value())
-                .setMessage("app edit ID parameter was not the right type")
-                .build()
+            operation.result = ConsoleApiError(
+                ErrorReason.ERROR_REASON_INTERNAL,
+                "app edit ID parameter was not the right type",
+            )
+                .toStatus()
                 .toByteArray()
             operation.succeeded = false
             return
@@ -73,11 +73,11 @@ class PublishAppEditJob @Inject constructor(
         } catch (t: Throwable) {
             AppEdit.findById(appEditId)?.publishing = false
             Log.warn("app edit publishing failed", t)
-            operation.result = GoogleStatus
-                .newBuilder()
-                .setCode(Status.Code.INTERNAL.value())
-                .setMessage("an unknown internal error occurred")
-                .build()
+            operation.result = ConsoleApiError(
+                ErrorReason.ERROR_REASON_INTERNAL,
+                "an unknown internal error occurred",
+            )
+                .toStatus()
                 .toByteArray()
             operation.succeeded = false
         }

@@ -4,8 +4,10 @@
 
 package app.accrescent.server.parcelo.async
 
+import app.accrescent.console.v1alpha1.ErrorReason
 import app.accrescent.console.v1alpha1.UploadAppDraftListingIconResult
 import app.accrescent.quarkus.gcp.pubsub.PubSubHelper
+import app.accrescent.server.parcelo.api.error.ConsoleApiError
 import app.accrescent.server.parcelo.config.ParceloConfig
 import app.accrescent.server.parcelo.data.AppDraftListingIconUploadJob
 import app.accrescent.server.parcelo.data.Image
@@ -17,7 +19,6 @@ import com.google.cloud.pubsub.v1.SubscriberInterface
 import com.google.cloud.storage.BlobId
 import com.google.cloud.storage.Storage
 import com.google.pubsub.v1.PubsubMessage
-import io.grpc.Status
 import io.quarkus.logging.Log
 import io.quarkus.narayana.jta.QuarkusTransaction
 import io.quarkus.runtime.ShutdownEvent
@@ -31,7 +32,6 @@ import javax.imageio.IIOException
 import javax.imageio.ImageIO
 import kotlin.io.path.Path
 import kotlin.io.path.inputStream
-import com.google.rpc.Status as GoogleStatus
 
 private const val PNG_FORMAT_NAME = "PNG"
 private const val REQUIRED_IMAGE_WIDTH = 512
@@ -149,11 +149,11 @@ class AppDraftListingIconUploadedProcessor(
                 processEvent(ObjectUploadEvent(bucketId, objectId, eventTime), job)
             } catch (t: Throwable) {
                 Log.error("an error occurred processing job ${job.id}", t)
-                job.backgroundOperation.result = GoogleStatus
-                    .newBuilder()
-                    .setCode(Status.Code.INTERNAL.value())
-                    .setMessage("an unknown internal error has occurred")
-                    .build()
+                job.backgroundOperation.result = ConsoleApiError(
+                    ErrorReason.ERROR_REASON_INTERNAL,
+                    "an unknown internal error has occurred",
+                )
+                    .toStatus()
                     .toByteArray()
             }
         }
@@ -169,11 +169,11 @@ class AppDraftListingIconUploadedProcessor(
             .firstOrNull()
             ?: run {
                 Log.error("failed to initialize PNG reader")
-                job.backgroundOperation.result = GoogleStatus
-                    .newBuilder()
-                    .setCode(Status.Code.INTERNAL.value())
-                    .setMessage("failed to initialize PNG reader")
-                    .build()
+                job.backgroundOperation.result = ConsoleApiError(
+                    ErrorReason.ERROR_REASON_INTERNAL,
+                    "failed to initialize PNG reader",
+                )
+                    .toStatus()
                     .toByteArray()
                 return
             }
@@ -196,11 +196,11 @@ class AppDraftListingIconUploadedProcessor(
                 }
             } catch (e: IIOException) {
                 Log.warn("failed to parse file as image", e)
-                job.backgroundOperation.result = GoogleStatus
-                    .newBuilder()
-                    .setCode(Status.Code.INVALID_ARGUMENT.value())
-                    .setMessage("file is not a valid PNG")
-                    .build()
+                job.backgroundOperation.result = ConsoleApiError(
+                    ErrorReason.ERROR_REASON_INVALID_IMAGE,
+                    "file is not a valid PNG",
+                )
+                    .toStatus()
                     .toByteArray()
                 return
             }
@@ -208,11 +208,11 @@ class AppDraftListingIconUploadedProcessor(
 
         // Validate the image
         if (image.width != REQUIRED_IMAGE_WIDTH || image.height != REQUIRED_IMAGE_HEIGHT) {
-            job.backgroundOperation.result = GoogleStatus
-                .newBuilder()
-                .setCode(Status.Code.INVALID_ARGUMENT.value())
-                .setMessage("uploaded PNG is not ${REQUIRED_IMAGE_WIDTH}x$REQUIRED_IMAGE_HEIGHT pixels")
-                .build()
+            job.backgroundOperation.result = ConsoleApiError(
+                ErrorReason.ERROR_REASON_INCORRECT_IMAGE_DIMENSIONS,
+                "uploaded PNG is not ${REQUIRED_IMAGE_WIDTH}x$REQUIRED_IMAGE_HEIGHT pixels",
+            )
+                .toStatus()
                 .toByteArray()
             return
         }

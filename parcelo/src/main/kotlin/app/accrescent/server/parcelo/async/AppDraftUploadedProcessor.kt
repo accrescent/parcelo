@@ -4,8 +4,10 @@
 
 package app.accrescent.server.parcelo.async
 
+import app.accrescent.console.v1alpha1.ErrorReason
 import app.accrescent.console.v1alpha1.UploadAppDraftResult
 import app.accrescent.quarkus.gcp.pubsub.PubSubHelper
+import app.accrescent.server.parcelo.api.error.ConsoleApiError
 import app.accrescent.server.parcelo.config.ParceloConfig
 import app.accrescent.server.parcelo.data.AppDraftUploadProcessingJob
 import app.accrescent.server.parcelo.data.AppPackage
@@ -20,7 +22,6 @@ import com.google.cloud.pubsub.v1.SubscriberInterface
 import com.google.cloud.storage.BlobId
 import com.google.cloud.storage.Storage
 import com.google.pubsub.v1.PubsubMessage
-import io.grpc.Status
 import io.quarkus.logging.Log
 import io.quarkus.narayana.jta.QuarkusTransaction
 import io.quarkus.runtime.ShutdownEvent
@@ -32,7 +33,6 @@ import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 import java.util.UUID
 import kotlin.io.path.Path
-import com.google.rpc.Status as GoogleStatus
 
 @ApplicationScoped
 class AppDraftUploadedProcessor @Inject constructor(
@@ -146,11 +146,11 @@ class AppDraftUploadedProcessor @Inject constructor(
                 processEvent(ObjectUploadEvent(bucketId, objectId, eventTime), job)
             } catch (t: Throwable) {
                 Log.error("an error occurred processing job ${job.id}", t)
-                job.backgroundOperation.result = GoogleStatus
-                    .newBuilder()
-                    .setCode(Status.Code.INTERNAL.value())
-                    .setMessage("an unknown internal error has occurred")
-                    .build()
+                job.backgroundOperation.result = ConsoleApiError(
+                    ErrorReason.ERROR_REASON_INTERNAL,
+                    "an unknown internal error has occurred",
+                )
+                    .toStatus()
                     .toByteArray()
             }
         }
@@ -174,7 +174,7 @@ class AppDraftUploadedProcessor @Inject constructor(
                 ApkSet.parse(tempFile.path, Path(config.fileProcessingDirectory()))
             }
             .getOrElse {
-                job.backgroundOperation.result = it.toStatus().toByteArray()
+                job.backgroundOperation.result = it.toConsoleApiError().toStatus().toByteArray()
                 return
             }
 
