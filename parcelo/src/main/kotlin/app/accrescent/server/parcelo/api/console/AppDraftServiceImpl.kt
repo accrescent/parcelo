@@ -727,20 +727,20 @@ class AppDraftServiceImpl @Inject constructor(
         val appDraft = AppDraft
             .findById(request.appDraftId)
             ?: throw appDraftNotFoundException(request.appDraftId)
-        if (AppDraftListing.exists(request.appDraftId, request.language)) {
-            throw ConsoleApiError(
+        when {
+            AppDraftListing.exists(request.appDraftId, request.language) -> throw ConsoleApiError(
                 ErrorReason.ERROR_REASON_ALREADY_EXISTS,
                 "an app listing for app draft \"${request.appDraftId}\" with language " +
                         "\"${request.language}\" already exists"
             )
                 .toStatusRuntimeException()
-        }
-        if (appDraft.submitted) {
-            throw ConsoleApiError(
+
+            appDraft.submitted -> throw ConsoleApiError(
                 ErrorReason.ERROR_REASON_RESOURCE_IMMUTABLE,
                 "submitted drafts cannot be modified",
             )
                 .toStatusRuntimeException()
+
         }
 
         AppDraftListing(

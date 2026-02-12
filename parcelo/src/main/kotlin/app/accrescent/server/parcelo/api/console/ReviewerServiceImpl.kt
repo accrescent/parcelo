@@ -64,11 +64,9 @@ class ReviewerServiceImpl @Inject constructor(
             }
         }
 
-        if (!User.existsById(request.userId)) {
-            throw userNotFoundException(request.userId)
-        }
-        if (Reviewer.existsByUserId(request.userId)) {
-            throw ConsoleApiError(
+        when {
+            !User.existsById(request.userId) -> throw userNotFoundException(request.userId)
+            Reviewer.existsByUserId(request.userId) -> throw ConsoleApiError(
                 ErrorReason.ERROR_REASON_ALREADY_EXISTS,
                 "specified user is already a reviewer",
             )

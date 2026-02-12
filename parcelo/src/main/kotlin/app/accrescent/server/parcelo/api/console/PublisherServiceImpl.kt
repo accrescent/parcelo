@@ -64,11 +64,9 @@ class PublisherServiceImpl @Inject constructor(
             }
         }
 
-        if (!User.existsById(request.userId)) {
-            throw userNotFoundException(request.userId)
-        }
-        if (Publisher.existsByUserId(request.userId)) {
-            throw ConsoleApiError(
+        when {
+            !User.existsById(request.userId) -> throw userNotFoundException(request.userId)
+            Publisher.existsByUserId(request.userId) -> throw ConsoleApiError(
                 ErrorReason.ERROR_REASON_ALREADY_EXISTS,
                 "specified user is already a publisher",
             )
