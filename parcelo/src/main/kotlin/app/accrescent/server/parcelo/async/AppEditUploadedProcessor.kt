@@ -12,7 +12,6 @@ import app.accrescent.server.parcelo.data.AppPackage
 import app.accrescent.server.parcelo.data.AppPackagePermission
 import app.accrescent.server.parcelo.data.OrphanedBlob
 import app.accrescent.server.parcelo.parsers.ApkSet
-import app.accrescent.server.parcelo.parsers.ApkSetParseError
 import app.accrescent.server.parcelo.util.TempFile
 import arrow.core.getOrElse
 import com.google.cloud.pubsub.v1.AckReplyConsumer
@@ -175,39 +174,7 @@ class AppEditUploadedProcessor @Inject constructor(
                 ApkSet.parse(tempFile.path, Path(config.fileProcessingDirectory()))
             }
             .getOrElse {
-                val code = when (it) {
-                    ApkSetParseError.InvalidFormat,
-                    is ApkSetParseError.RequirementError -> Status.Code.INVALID_ARGUMENT
-
-                    ApkSetParseError.IoError -> Status.Code.INTERNAL
-                }
-                val message = when (it) {
-                    ApkSetParseError.InvalidFormat -> "the upload is not a valid APK set"
-                    ApkSetParseError.IoError -> "unknown I/O error parsing APK set"
-                    ApkSetParseError.RequirementError.Debuggable -> "the app is debuggable"
-                    ApkSetParseError.RequirementError.LowTargetSdk ->
-                        "the app's target SDK is lower than the required minimum"
-
-                    ApkSetParseError.RequirementError.Missing64BitCode ->
-                        "the app has 32-bit code but is missing corresponding 64-bit code"
-
-                    ApkSetParseError.RequirementError.NoModernSignature ->
-                        "the app has not been signed with a modern signature format"
-
-                    ApkSetParseError.RequirementError.SignedWithDebugCert ->
-                        "the app has been signed with a debug certificate"
-
-                    ApkSetParseError.RequirementError.SignedWithMultipleCerts ->
-                        "the app has been signed with multiple certificates"
-
-                    ApkSetParseError.RequirementError.TestOnly -> "the app is marked test-only"
-                }
-                job.backgroundOperation.result = GoogleStatus
-                    .newBuilder()
-                    .setCode(code.value())
-                    .setMessage(message)
-                    .build()
-                    .toByteArray()
+                job.backgroundOperation.result = it.toStatus().toByteArray()
                 return
             }
 
