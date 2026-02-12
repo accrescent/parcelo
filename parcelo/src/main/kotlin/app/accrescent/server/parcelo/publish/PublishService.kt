@@ -55,7 +55,7 @@ class PublishService @Inject constructor(
 
                         val requestArgs = UploadObjectArgs
                             .builder()
-                            .bucket(config.buckets().publishedArtifact())
+                            .bucket(bucketId)
                             .`object`(objectId)
                             .filename(tempApk.path.toString())
                             .build()
