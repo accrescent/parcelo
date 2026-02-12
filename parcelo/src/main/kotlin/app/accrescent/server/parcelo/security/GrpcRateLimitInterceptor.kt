@@ -34,6 +34,7 @@ private const val BUCKET_TABLE_NAME = "rate_limit_buckets"
 private const val REMOVE_EXPIRED_BUCKET_BATCH_SIZE = 1000
 private const val REMOVE_EXPIRED_BUCKET_JOB_PERIOD = "P1D"
 private const val REMOVED_EXPIRED_BUCKET_CONTINUE_THRESHOLD = 50
+private const val UPLOAD_APIS_BUCKET_SUFFIX = "upload_apis"
 
 @ApplicationScoped
 class GrpcRateLimitInterceptor(
@@ -109,10 +110,10 @@ private class GrpcRateLimitInterceptorImpl(
         val methodId = call.methodDescriptor.fullMethodName
         if (UPLOAD_APIS_METHODS.contains(methodId)) {
             val rateLimitConfig = config.rateLimits().uploadApis()
-            val bucketKey = "${principal.bucketKey()}|$methodId"
-            val methodBucket = getBucket(rateLimitConfig, bucketKey)
+            val bucketKey = "${principal.bucketKey()}|$UPLOAD_APIS_BUCKET_SUFFIX"
+            val uploadApisBucket = getBucket(rateLimitConfig, bucketKey)
 
-            if (!methodBucket.tryConsume(1)) {
+            if (!uploadApisBucket.tryConsume(1)) {
                 // Return the previously consumed token to the user bucket since this request is
                 // rejected
                 userBucket.addTokens(1)
