@@ -4,8 +4,6 @@
 
 package app.accrescent.server.parcelo.security
 
-import app.accrescent.console.v1alpha1.AppDraftServiceGrpc
-import app.accrescent.console.v1alpha1.AppEditServiceGrpc
 import app.accrescent.console.v1alpha1.ErrorReason
 import app.accrescent.server.parcelo.api.error.ConsoleApiError
 import app.accrescent.server.parcelo.config.ParceloConfig
@@ -52,13 +50,7 @@ private class GrpcRateLimitInterceptorImpl(
 ) : ServerInterceptor {
     private companion object {
         private val BUCKET_KEEP_AFTER_REFILL_DURATION = Duration.ofSeconds(30)
-
-        private val UPLOAD_APIS_METHODS = setOf(
-            AppDraftServiceGrpc.getCreateAppDraftUploadOperationMethod().fullMethodName,
-            AppDraftServiceGrpc.getCreateAppDraftListingIconUploadOperationMethod().fullMethodName,
-            AppEditServiceGrpc.getCreateAppEditUploadOperationMethod().fullMethodName,
-            AppEditServiceGrpc.getCreateAppEditListingIconUploadOperationMethod().fullMethodName,
-        )
+        private val UPLOAD_APIS_PATTERN = Regex(""".*/Create.*UploadOperation""")
 
         private val rateLimitError = ConsoleApiError(
             ErrorReason.ERROR_REASON_RATE_LIMIT_EXCEEDED,
@@ -117,7 +109,7 @@ private class GrpcRateLimitInterceptorImpl(
 
         // Apply API-specific rate limits
         val methodId = call.methodDescriptor.fullMethodName
-        if (UPLOAD_APIS_METHODS.contains(methodId)) {
+        if (UPLOAD_APIS_PATTERN.matches(methodId)) {
             val rateLimitConfig = config.rateLimits().uploadApis()
             val bucketKey = "${principal.bucketKey()}|$UPLOAD_APIS_BUCKET_SUFFIX"
             val uploadApisBucket = getBucket(rateLimitConfig, bucketKey)
