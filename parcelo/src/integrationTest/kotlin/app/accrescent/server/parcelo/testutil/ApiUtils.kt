@@ -191,18 +191,6 @@ object ApiUtils {
             .then()
             .statusCode(200)
 
-        // Wait for the icon to be processed
-        val getIconUploadOpRequest = GetOperationRequest
-            .newBuilder()
-            .setName(iconUploadResponse.processingOperation.name)
-            .build()
-        var iconUploadOp = Operation.getDefaultInstance()
-        await().until {
-            iconUploadOp = operationsService.getOperation(getIconUploadOpRequest)
-            iconUploadOp.done
-        }
-        assertTrue(iconUploadOp.hasResponse())
-
         // Upload the APK set
         val uploadDraftRequest = createAppDraftUploadOperationRequest { this.appDraftId = appDraftId }
         val apkSetUploadUrl = appDraftService
@@ -215,6 +203,18 @@ object ApiUtils {
             .put(apkSetUploadUrl)
             .then()
             .statusCode(200)
+
+        // Wait for the icon to be processed
+        val getIconUploadOpRequest = GetOperationRequest
+            .newBuilder()
+            .setName(iconUploadResponse.processingOperation.name)
+            .build()
+        var iconUploadOp = Operation.getDefaultInstance()
+        await().until {
+            iconUploadOp = operationsService.getOperation(getIconUploadOpRequest)
+            iconUploadOp.done
+        }
+        assertTrue(iconUploadOp.hasResponse())
 
         // Wait for the package to be processed
         val getAppDraftRequest = getAppDraftRequest { this.appDraftId = appDraftId }
