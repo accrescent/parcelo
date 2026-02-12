@@ -48,7 +48,6 @@ import java.time.Duration
 
 private const val APP_ACTIVE_EDIT_LIMIT = 3
 private const val ORGANIZATION_ACTIVE_APP_DRAFT_LIMIT = 3
-private const val ORGANIZATION_PUBLISHED_APP_LIMIT = 1
 
 private const val ANCIENT_DEVICE_DEVICE_ATTRIBUTES_PATH = "ancient-device-device-attributes.txtpb"
 private const val PIXEL_9_EMULATOR_DEVICE_ATTRIBUTES_PATH = "pixel-9-emulator-device-attributes.txtpb"
