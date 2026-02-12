@@ -17,6 +17,7 @@ import app.accrescent.console.v1alpha1.DeleteAppDraftListingRequest
 import app.accrescent.console.v1alpha1.DeleteAppDraftListingResponse
 import app.accrescent.console.v1alpha1.DeleteAppDraftRequest
 import app.accrescent.console.v1alpha1.DeleteAppDraftResponse
+import app.accrescent.console.v1alpha1.ErrorReason
 import app.accrescent.console.v1alpha1.GetAppDraftDownloadInfoRequest
 import app.accrescent.console.v1alpha1.GetAppDraftDownloadInfoResponse
 import app.accrescent.console.v1alpha1.GetAppDraftListingIconDownloadInfoRequest
@@ -48,6 +49,7 @@ import app.accrescent.console.v1alpha1.submitAppDraftResponse
 import app.accrescent.console.v1alpha1.updateAppDraftResponse
 import app.accrescent.parcelo.impl.v1.ListAppDraftsPageToken
 import app.accrescent.parcelo.impl.v1.listAppDraftsPageToken
+import app.accrescent.server.parcelo.api.error.ConsoleApiError
 import app.accrescent.server.parcelo.config.ParceloConfig
 import app.accrescent.server.parcelo.data.App
 import app.accrescent.server.parcelo.data.AppDraft
@@ -136,13 +138,12 @@ class AppDraftServiceImpl @Inject constructor(
             throw if (!orgExists || !canViewOrgExistence) {
                 organizationNotFoundException(request.organizationId)
             } else {
-                Status
-                    .PERMISSION_DENIED
-                    .withDescription(
-                        "insufficient permission to create app drafts in organization " +
-                                "\"${request.organizationId}\""
-                    )
-                    .asRuntimeException()
+                ConsoleApiError(
+                    ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
+                    "insufficient permission to create app drafts in organization " +
+                            "\"${request.organizationId}\"",
+                )
+                    .toStatusRuntimeException()
             }
         }
 
@@ -152,12 +153,11 @@ class AppDraftServiceImpl @Inject constructor(
         val orgActiveAppDraftLimit = organization.activeAppDraftLimit
         val orgActiveAppDraftCount = AppDraft.countActiveInOrganization(request.organizationId)
         if (orgActiveAppDraftCount >= orgActiveAppDraftLimit) {
-            throw Status
-                .RESOURCE_EXHAUSTED
-                .withDescription(
-                    "organization limit of $orgActiveAppDraftLimit active app drafts already reached"
-                )
-                .asRuntimeException()
+            throw ConsoleApiError(
+                ErrorReason.ERROR_REASON_RESOURCE_LIMIT_EXCEEDED,
+                "organization limit of $orgActiveAppDraftLimit active app drafts already reached",
+            )
+                .toStatusRuntimeException()
         }
 
         val appDraft = AppDraft(
@@ -213,10 +213,11 @@ class AppDraftServiceImpl @Inject constructor(
             throw if (!exists || !canViewExistence) {
                 appDraftNotFoundException(request.appDraftId)
             } else {
-                Status
-                    .PERMISSION_DENIED
-                    .withDescription("insufficient permission to view app draft")
-                    .asRuntimeException()
+                ConsoleApiError(
+                    ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
+                    "insufficient permission to view app draft",
+                )
+                    .toStatusRuntimeException()
             }
         }
 
@@ -357,10 +358,11 @@ class AppDraftServiceImpl @Inject constructor(
             throw if (!exists || !canViewExistence) {
                 appDraftNotFoundException(request.appDraftId)
             } else {
-                Status
-                    .PERMISSION_DENIED
-                    .withDescription("insufficient permission to replace package")
-                    .asRuntimeException()
+                ConsoleApiError(
+                    ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
+                    "insufficient permission to replace package",
+                )
+                    .toStatusRuntimeException()
             }
         }
 
@@ -368,10 +370,11 @@ class AppDraftServiceImpl @Inject constructor(
             .findById(request.appDraftId)
             ?: throw appDraftNotFoundException(request.appDraftId)
         if (appDraft.submitted) {
-            throw Status
-                .FAILED_PRECONDITION
-                .withDescription("submitted drafts cannot be modified")
-                .asRuntimeException()
+            throw ConsoleApiError(
+                ErrorReason.ERROR_REASON_RESOURCE_IMMUTABLE,
+                "submitted drafts cannot be modified",
+            )
+                .toStatusRuntimeException()
         }
 
         val blobInfo = BlobInfo
@@ -434,20 +437,24 @@ class AppDraftServiceImpl @Inject constructor(
             throw if (!exists || !canViewExistence) {
                 appDraftNotFoundException(request.appDraftId)
             } else {
-                Status
-                    .PERMISSION_DENIED
-                    .withDescription("insufficient permission to download app draft")
-                    .asRuntimeException()
+                ConsoleApiError(
+                    ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
+                    "insufficient permission to download app draft",
+                )
+                    .toStatusRuntimeException()
             }
         }
 
         val appDraft = AppDraft
             .findById(request.appDraftId)
             ?: throw appDraftNotFoundException(request.appDraftId)
-        val appPackage = appDraft.appPackage ?: throw Status
-            .NOT_FOUND
-            .withDescription("app draft \"${request.appDraftId}\" has no package")
-            .asRuntimeException()
+        val appPackage = appDraft
+            .appPackage
+            ?: throw ConsoleApiError(
+                ErrorReason.ERROR_REASON_RESOURCE_NOT_FOUND,
+                "app draft \"${request.appDraftId}\" has no package",
+            )
+                .toStatusRuntimeException()
 
         val apkSetBlob = BlobInfo.newBuilder(appPackage.bucketId, appPackage.objectId).build()
         val downloadUrl = storage.signUrl(
@@ -484,10 +491,11 @@ class AppDraftServiceImpl @Inject constructor(
             throw if (!exists || !canViewExistence) {
                 appDraftNotFoundException(request.appDraftId)
             } else {
-                Status
-                    .PERMISSION_DENIED
-                    .withDescription("insufficient permission to update app draft")
-                    .asRuntimeException()
+                ConsoleApiError(
+                    ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
+                    "insufficient permission to update app draft",
+                )
+                    .toStatusRuntimeException()
             }
         }
 
@@ -495,10 +503,11 @@ class AppDraftServiceImpl @Inject constructor(
             .findById(request.appDraftId)
             ?: throw appDraftNotFoundException(request.appDraftId)
         if (appDraft.submitted) {
-            throw Status
-                .FAILED_PRECONDITION
-                .withDescription("submitted app drafts cannot be modified")
-                .asRuntimeException()
+            throw ConsoleApiError(
+                ErrorReason.ERROR_REASON_RESOURCE_IMMUTABLE,
+                "submitted app drafts cannot be modified",
+            )
+                .toStatusRuntimeException()
         }
 
         // Update the app draft based on the update mask
@@ -529,66 +538,71 @@ class AppDraftServiceImpl @Inject constructor(
             throw if (!exists || !canViewExistence) {
                 appDraftNotFoundException(request.appDraftId)
             } else {
-                Status
-                    .PERMISSION_DENIED
-                    .withDescription("insufficient permission to submit app draft")
-                    .asRuntimeException()
+                ConsoleApiError(
+                    ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
+                    "insufficient permission to submit app draft",
+                )
+                    .toStatusRuntimeException()
             }
         }
 
         val appDraft = AppDraft
             .findById(request.appDraftId)
             ?: throw appDraftNotFoundException(request.appDraftId)
-        val appPackage = appDraft.appPackage ?: throw Status
-            .FAILED_PRECONDITION
-            .withDescription("draft must have a package uploaded before it can be submitted")
-            .asRuntimeException()
+        val appPackage = appDraft
+            .appPackage
+            ?: throw ConsoleApiError(
+                ErrorReason.ERROR_REASON_RESOURCE_INCOMPLETE,
+                "draft must have a package uploaded before it can be submitted",
+            )
+                .toStatusRuntimeException()
         val defaultListingLanguage = appDraft.defaultListingLanguage
         val orgPublishedAppLimit = appDraft.organization.publishedAppLimit
         val orgPublishedAppCount = App.countInOrganization(appDraft.organizationId)
         when {
-            defaultListingLanguage == null -> throw Status
-                .FAILED_PRECONDITION
-                .withDescription(
-                    "draft must have a default listing language set before it can be submitted"
-                )
-                .asRuntimeException()
+            defaultListingLanguage == null -> throw ConsoleApiError(
+                ErrorReason.ERROR_REASON_RESOURCE_INCOMPLETE,
+                "draft must have a default listing language set before it can be submitted",
+            )
+                .toStatusRuntimeException()
 
-            !appDraft.hasListingForLanguage(defaultListingLanguage) -> throw Status
-                .FAILED_PRECONDITION
-                .withDescription("draft must have a listing for the default listing language")
-                .asRuntimeException()
+            !appDraft.hasListingForLanguage(defaultListingLanguage) -> throw ConsoleApiError(
+                ErrorReason.ERROR_REASON_RESOURCE_INCOMPLETE,
+                "draft must have a listing for the default listing language",
+            )
+                .toStatusRuntimeException()
 
-            !appDraft.allListingsHaveIcon() -> throw Status
-                .FAILED_PRECONDITION
-                .withDescription("all draft listings must have an icon")
-                .asRuntimeException()
+            !appDraft.allListingsHaveIcon() -> throw ConsoleApiError(
+                ErrorReason.ERROR_REASON_RESOURCE_INCOMPLETE,
+                "all draft listings must have an icon",
+            )
+                .toStatusRuntimeException()
 
-            appDraft.submitted -> throw Status
-                .FAILED_PRECONDITION
-                .withDescription("draft already submitted")
-                .asRuntimeException()
+            appDraft.submitted -> throw ConsoleApiError(
+                ErrorReason.ERROR_REASON_ALREADY_SUBMITTED,
+                "draft already submitted",
+            )
+                .toStatusRuntimeException()
 
-            AppDraft.submittedDraftExistsWithAppId(appPackage.appId) -> throw Status
-                .ALREADY_EXISTS
-                .withDescription(
-                    "a draft has already been submitted for app ID \"${appPackage.appId}\""
-                )
-                .asRuntimeException()
+            AppDraft.submittedDraftExistsWithAppId(appPackage.appId) -> throw ConsoleApiError(
+                ErrorReason.ERROR_REASON_RESOURCE_CONFLICT,
+                "a draft has already been submitted for app ID \"${appPackage.appId}\"",
+            )
+                .toStatusRuntimeException()
 
-            orgPublishedAppCount >= orgPublishedAppLimit -> throw Status
-                .RESOURCE_EXHAUSTED
-                .withDescription(
-                    "organization limit of $orgPublishedAppLimit published apps already reached"
-                )
-                .asRuntimeException()
+            orgPublishedAppCount >= orgPublishedAppLimit -> throw ConsoleApiError(
+                ErrorReason.ERROR_REASON_RESOURCE_LIMIT_EXCEEDED,
+                "organization limit of $orgPublishedAppLimit published apps already reached",
+            )
+                .toStatusRuntimeException()
         }
 
         // Assign a reviewer
-        val reviewer = Reviewer.findRandom() ?: throw Status
-            .FAILED_PRECONDITION
-            .withDescription("no reviewers available to assign")
-            .asRuntimeException()
+        val reviewer = Reviewer.findRandom() ?: throw ConsoleApiError(
+            ErrorReason.ERROR_REASON_ASSIGNEE_UNAVAILABLE,
+            "no reviewers available to assign",
+        )
+            .toStatusRuntimeException()
         val existingAcl = AppDraftAcl.findByAppDraftIdAndUserId(request.appDraftId, reviewer.userId)
         if (existingAcl == null) {
             AppDraftAcl(
@@ -643,10 +657,11 @@ class AppDraftServiceImpl @Inject constructor(
             throw if (!exists || !canViewExistence) {
                 appDraftNotFoundException(request.appDraftId)
             } else {
-                Status
-                    .PERMISSION_DENIED
-                    .withDescription("insufficient permission to delete app draft")
-                    .asRuntimeException()
+                ConsoleApiError(
+                    ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
+                    "insufficient permission to delete app draft",
+                )
+                    .toStatusRuntimeException()
             }
         }
 
@@ -654,10 +669,11 @@ class AppDraftServiceImpl @Inject constructor(
             .findById(request.appDraftId)
             ?: throw appDraftNotFoundException(request.appDraftId)
         if (appDraft.submitted) {
-            throw Status
-                .FAILED_PRECONDITION
-                .withDescription("submitted drafts cannot be deleted")
-                .asRuntimeException()
+            throw ConsoleApiError(
+                ErrorReason.ERROR_REASON_RESOURCE_IMMUTABLE,
+                "submitted drafts cannot be deleted",
+            )
+                .toStatusRuntimeException()
         }
 
         val appPackage = appDraft.appPackage
@@ -700,10 +716,11 @@ class AppDraftServiceImpl @Inject constructor(
             throw if (!exists || !canViewExistence) {
                 appDraftNotFoundException(request.appDraftId)
             } else {
-                Status
-                    .PERMISSION_DENIED
-                    .withDescription("insufficient permission to create app draft listing")
-                    .asRuntimeException()
+                ConsoleApiError(
+                    ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
+                    "insufficient permission to create app draft listing",
+                )
+                    .toStatusRuntimeException()
             }
         }
 
@@ -711,19 +728,19 @@ class AppDraftServiceImpl @Inject constructor(
             .findById(request.appDraftId)
             ?: throw appDraftNotFoundException(request.appDraftId)
         if (AppDraftListing.exists(request.appDraftId, request.language)) {
-            throw Status
-                .ALREADY_EXISTS
-                .withDescription(
-                    "an app listing for app draft \"${request.appDraftId}\" with language " +
-                            "\"${request.language}\" already exists"
-                )
-                .asRuntimeException()
+            throw ConsoleApiError(
+                ErrorReason.ERROR_REASON_ALREADY_EXISTS,
+                "an app listing for app draft \"${request.appDraftId}\" with language " +
+                        "\"${request.language}\" already exists"
+            )
+                .toStatusRuntimeException()
         }
         if (appDraft.submitted) {
-            throw Status
-                .FAILED_PRECONDITION
-                .withDescription("submitted drafts cannot be modified")
-                .asRuntimeException()
+            throw ConsoleApiError(
+                ErrorReason.ERROR_REASON_RESOURCE_IMMUTABLE,
+                "submitted drafts cannot be modified",
+            )
+                .toStatusRuntimeException()
         }
 
         AppDraftListing(
@@ -762,10 +779,11 @@ class AppDraftServiceImpl @Inject constructor(
             throw when {
                 !draftExists || !canViewExistence -> appDraftNotFoundException(request.appDraftId)
                 !listingExists -> appDraftListingNotFoundException(request.language)
-                else -> throw Status
-                    .PERMISSION_DENIED
-                    .withDescription("insufficient permission to replace app listing icon")
-                    .asRuntimeException()
+                else -> throw ConsoleApiError(
+                    ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
+                    "insufficient permission to replace app listing icon",
+                )
+                    .toStatusRuntimeException()
             }
         }
 
@@ -773,10 +791,11 @@ class AppDraftServiceImpl @Inject constructor(
             .findById(request.appDraftId)
             ?: throw appDraftNotFoundException(request.appDraftId)
         if (appDraft.submitted) {
-            throw Status
-                .FAILED_PRECONDITION
-                .withDescription("submitted drafts cannot be modified")
-                .asRuntimeException()
+            throw ConsoleApiError(
+                ErrorReason.ERROR_REASON_RESOURCE_IMMUTABLE,
+                "submitted drafts cannot be modified",
+            )
+                .toStatusRuntimeException()
         }
         val appDraftListing = AppDraftListing
             .findByAppDraftIdAndLanguage(request.appDraftId, request.language)
@@ -842,10 +861,11 @@ class AppDraftServiceImpl @Inject constructor(
             throw if (!exists || !canViewExistence) {
                 appDraftNotFoundException(request.appDraftId)
             } else {
-                Status
-                    .PERMISSION_DENIED
-                    .withDescription("insufficient permission to download app draft listing icon")
-                    .asRuntimeException()
+                ConsoleApiError(
+                    ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
+                    "insufficient permission to download app draft listing icon",
+                )
+                    .toStatusRuntimeException()
             }
         }
 
@@ -892,10 +912,11 @@ class AppDraftServiceImpl @Inject constructor(
             throw when {
                 !draftExists || !canViewExistence -> appDraftNotFoundException(request.appDraftId)
                 !listingExists -> appDraftListingNotFoundException(request.language)
-                else -> throw Status
-                    .PERMISSION_DENIED
-                    .withDescription("insufficient permission to delete app draft listing")
-                    .asRuntimeException()
+                else -> throw ConsoleApiError(
+                    ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
+                    "insufficient permission to delete app draft listing",
+                )
+                    .toStatusRuntimeException()
             }
         }
 
@@ -903,10 +924,11 @@ class AppDraftServiceImpl @Inject constructor(
             .findById(request.appDraftId)
             ?: throw appDraftNotFoundException(request.appDraftId)
         if (appDraft.submitted) {
-            throw Status
-                .FAILED_PRECONDITION
-                .withDescription("submitted drafts cannot be modified")
-                .asRuntimeException()
+            throw ConsoleApiError(
+                ErrorReason.ERROR_REASON_RESOURCE_IMMUTABLE,
+                "submitted drafts cannot be modified",
+            )
+                .toStatusRuntimeException()
         }
         val appDraftListing = AppDraftListing
             .findByAppDraftIdAndLanguage(request.appDraftId, request.language)
@@ -949,10 +971,11 @@ class AppDraftServiceImpl @Inject constructor(
             throw if (!exists || !canViewExistence) {
                 appDraftNotFoundException(request.appDraftId)
             } else {
-                Status
-                    .PERMISSION_DENIED
-                    .withDescription("insufficient permission to publish app draft")
-                    .asRuntimeException()
+                ConsoleApiError(
+                    ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
+                    "insufficient permission to publish app draft",
+                )
+                    .toStatusRuntimeException()
             }
         }
 
@@ -964,15 +987,17 @@ class AppDraftServiceImpl @Inject constructor(
             .withDescription("app draft has no package")
             .asRuntimeException()
         when {
-            appDraft.published -> throw Status
-                .ALREADY_EXISTS
-                .withDescription("the app draft has already been published")
-                .asRuntimeException()
+            appDraft.published -> throw ConsoleApiError(
+                ErrorReason.ERROR_REASON_ALREADY_PUBLISHED,
+                "the app draft has already been published",
+            )
+                .toStatusRuntimeException()
 
-            appDraft.publishing -> throw Status
-                .ALREADY_EXISTS
-                .withDescription("the app draft is already publishing")
-                .asRuntimeException()
+            appDraft.publishing -> throw ConsoleApiError(
+                ErrorReason.ERROR_REASON_RESOURCE_PUBLISHING,
+                "the app draft is already publishing",
+            )
+                .toStatusRuntimeException()
 
             appDraft.defaultListingLanguage == null -> throw Status
                 .INTERNAL
@@ -984,10 +1009,11 @@ class AppDraftServiceImpl @Inject constructor(
                 .withDescription("one or more app listings have no icon")
                 .asRuntimeException()
 
-            App.existsById(appPackage.appId) -> throw Status
-                .ALREADY_EXISTS
-                .withDescription("an app with ID \"${appPackage.appId}\" has already been published")
-                .asRuntimeException()
+            App.existsById(appPackage.appId) -> throw ConsoleApiError(
+                ErrorReason.ERROR_REASON_RESOURCE_CONFLICT,
+                "an app with ID \"${appPackage.appId}\" has already been published",
+            )
+                .toStatusRuntimeException()
         }
 
         // Publish draft
@@ -1021,29 +1047,34 @@ class AppDraftServiceImpl @Inject constructor(
     }
 
     private companion object {
-        private val invalidPageTokenError = Status
-            .INVALID_ARGUMENT
-            .withDescription("provided page token is invalid")
-            .asRuntimeException()
+        private val invalidPageTokenError = ConsoleApiError(
+            ErrorReason.ERROR_REASON_INVALID_REQUEST,
+            "provided page token is invalid",
+        )
+            .toStatusRuntimeException()
 
-        private fun appDraftListingNotFoundException(language: String) = Status
-            .NOT_FOUND
-            .withDescription("listing with language \"$language\" not found")
-            .asRuntimeException()
+        private fun appDraftListingNotFoundException(language: String) = ConsoleApiError(
+            ErrorReason.ERROR_REASON_RESOURCE_NOT_FOUND,
+            "listing with language \"$language\" not found',"
+        )
+            .toStatusRuntimeException()
 
-        private fun appDraftListingIconNotFoundException(language: String) = Status
-            .NOT_FOUND
-            .withDescription("listing with language \"$language\" has no icon")
-            .asRuntimeException()
+        private fun appDraftListingIconNotFoundException(language: String) = ConsoleApiError(
+            ErrorReason.ERROR_REASON_RESOURCE_NOT_FOUND,
+            "listing with language \"$language\" has no icon",
+        )
+            .toStatusRuntimeException()
 
-        private fun appDraftNotFoundException(appDraftId: String) = Status
-            .NOT_FOUND
-            .withDescription("app draft \"$appDraftId\" not found")
-            .asRuntimeException()
+        private fun appDraftNotFoundException(appDraftId: String) = ConsoleApiError(
+            ErrorReason.ERROR_REASON_RESOURCE_NOT_FOUND,
+            "app draft \"$appDraftId\" not found",
+        )
+            .toStatusRuntimeException()
 
-        private fun organizationNotFoundException(organizationId: String) = Status
-            .NOT_FOUND
-            .withDescription("organization \"$organizationId\" not found")
-            .asRuntimeException()
+        private fun organizationNotFoundException(organizationId: String) = ConsoleApiError(
+            ErrorReason.ERROR_REASON_RESOURCE_NOT_FOUND,
+            "organization \"$organizationId\" not found",
+        )
+            .toStatusRuntimeException()
     }
 }

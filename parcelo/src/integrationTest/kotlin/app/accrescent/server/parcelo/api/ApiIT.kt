@@ -10,6 +10,7 @@ import app.accrescent.appstore.v1.getAppListingRequest
 import app.accrescent.appstore.v1.getAppPackageInfoRequest
 import app.accrescent.appstore.v1.getAppUpdateInfoRequest
 import app.accrescent.appstore.v1.listAppListingsRequest
+import app.accrescent.console.v1alpha1.ErrorReason
 import app.accrescent.console.v1alpha1.createAppDraftRequest
 import app.accrescent.console.v1alpha1.createAppEditRequest
 import app.accrescent.console.v1alpha1.createAppEditUploadOperationRequest
@@ -25,12 +26,14 @@ import app.accrescent.console.v1alpha1.submitAppEditRequest
 import app.accrescent.console.v1alpha1.updateAppEditRequest
 import app.accrescent.console.v1alpha1.updateAppRequest
 import app.accrescent.server.parcelo.testutil.ApiUtils
+import app.accrescent.server.parcelo.testutil.errorInfo
 import com.google.longrunning.GetOperationRequest
 import com.google.longrunning.Operation
 import com.google.protobuf.TextFormat
 import com.google.protobuf.fieldMask
 import io.grpc.Status
 import io.grpc.StatusException
+import io.grpc.protobuf.StatusProto
 import io.quarkus.test.junit.QuarkusIntegrationTest
 import io.restassured.RestAssured.given
 import org.awaitility.Awaitility.await
@@ -248,8 +251,12 @@ class ApiIT {
 
         // Creating app drafts beyond ORGANIZATION_ACTIVE_APP_DRAFT_LIMIT should fail because of
         // exceeding the organization quota
-        val exception = assertThrows<StatusException> { appDraftService.createAppDraft(request) }
-        assertEquals(Status.Code.RESOURCE_EXHAUSTED, exception.status.code)
+        val status = assertThrows<StatusException> { appDraftService.createAppDraft(request) }
+            .let { StatusProto.fromThrowable(it)!! }
+        assertEquals(
+            ErrorReason.ERROR_REASON_RESOURCE_LIMIT_EXCEEDED.toString(),
+            status.errorInfo()!!.reason,
+        )
     }
 
     @Test
@@ -270,10 +277,14 @@ class ApiIT {
         val appService = ApiUtils.getDevAppServiceStub(user1Token)
 
         val request = getAppRequest { appId = "com.example.valid" }
-        val exception = assertThrows<StatusException> { appService.getApp(request) }
+        val status = assertThrows<StatusException> { appService.getApp(request) }
+            .let { StatusProto.fromThrowable(it)!! }
 
         // Assert that the developer can't access the app
-        assertEquals(Status.Code.NOT_FOUND, exception.status.code)
+        assertEquals(
+            ErrorReason.ERROR_REASON_RESOURCE_NOT_FOUND.toString(),
+            status.errorInfo()!!.reason,
+        )
     }
 
     @Test
@@ -305,15 +316,15 @@ class ApiIT {
         // issue
         ApiUtils.publishApp("user3", "reviewer1", "publisher1", "valid2")
 
-        val exception = assertThrows<StatusException> {
+        val status = assertThrows<StatusException> {
             ApiUtils.publishApp("user3", "reviewer1", "publisher1", "valid3")
         }
+            .let { StatusProto.fromThrowable(it)!! }
 
         // Assert that the organization quota is enforced
-        assertEquals(Status.Code.RESOURCE_EXHAUSTED, exception.status.code)
         assertEquals(
-            "organization limit of $ORGANIZATION_PUBLISHED_APP_LIMIT published apps already reached",
-            exception.status.description,
+            ErrorReason.ERROR_REASON_RESOURCE_LIMIT_EXCEEDED.toString(),
+            status.errorInfo()!!.reason,
         )
     }
 
@@ -349,8 +360,12 @@ class ApiIT {
 
         // Creating app drafts beyond APP_ACTIVE_EDIT_LIMIT should fail because of exceeding the
         // organization quota
-        val exception = assertThrows<StatusException> { appEditService.createAppEdit(request) }
-        assertEquals(Status.Code.RESOURCE_EXHAUSTED, exception.status.code)
+        val status = assertThrows<StatusException> { appEditService.createAppEdit(request) }
+            .let { StatusProto.fromThrowable(it)!! }
+        assertEquals(
+            ErrorReason.ERROR_REASON_RESOURCE_LIMIT_EXCEEDED.toString(),
+            status.errorInfo()!!.reason,
+        )
     }
 
     @Test
@@ -386,13 +401,13 @@ class ApiIT {
             defaultListingLanguage = "de-DE"
             updateMask = fieldMask { paths.add("default_listing_language") }
         }
-        val exception = assertThrows<StatusException> { appEditService.updateAppEdit(updateRequest) }
+        val status = assertThrows<StatusException> { appEditService.updateAppEdit(updateRequest) }
+            .let { StatusProto.fromThrowable(it)!! }
 
         // Assert that the update failed
-        assertEquals(Status.Code.FAILED_PRECONDITION, exception.status.code)
         assertEquals(
-            "no listing exists for default listing language \"de-DE\"",
-            exception.status.description,
+            ErrorReason.ERROR_REASON_CONSTRAINT_VIOLATION.toString(),
+            status.errorInfo()!!.reason,
         )
     }
 

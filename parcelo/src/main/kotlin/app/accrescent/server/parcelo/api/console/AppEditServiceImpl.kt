@@ -17,6 +17,7 @@ import app.accrescent.console.v1alpha1.DeleteAppEditListingRequest
 import app.accrescent.console.v1alpha1.DeleteAppEditListingResponse
 import app.accrescent.console.v1alpha1.DeleteAppEditRequest
 import app.accrescent.console.v1alpha1.DeleteAppEditResponse
+import app.accrescent.console.v1alpha1.ErrorReason
 import app.accrescent.console.v1alpha1.GetAppEditDownloadInfoRequest
 import app.accrescent.console.v1alpha1.GetAppEditDownloadInfoResponse
 import app.accrescent.console.v1alpha1.GetAppEditRequest
@@ -41,6 +42,7 @@ import app.accrescent.console.v1alpha1.submitAppEditResponse
 import app.accrescent.console.v1alpha1.updateAppEditResponse
 import app.accrescent.parcelo.impl.v1.ListAppEditsPageToken
 import app.accrescent.parcelo.impl.v1.listAppEditsPageToken
+import app.accrescent.server.parcelo.api.error.ConsoleApiError
 import app.accrescent.server.parcelo.config.ParceloConfig
 import app.accrescent.server.parcelo.data.App
 import app.accrescent.server.parcelo.data.AppEdit
@@ -159,12 +161,11 @@ class AppEditServiceImpl @Inject constructor(
             throw if (!canViewAppExistence || !appExists) {
                 appNotFoundException(request.appId)
             } else {
-                Status
-                    .PERMISSION_DENIED
-                    .withDescription(
-                        "insufficient permission to create edits for app \"${request.appId}\""
-                    )
-                    .asRuntimeException()
+                ConsoleApiError(
+                    ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
+                    "insufficient permission to create edits for app \"${request.appId}\"",
+                )
+                    .toStatusRuntimeException()
             }
         }
         val app = App.findById(request.appId) ?: throw appNotFoundException(request.appId)
@@ -172,10 +173,11 @@ class AppEditServiceImpl @Inject constructor(
         val appActiveEditLimit = app.activeEditLimit
         val appActiveEditCount = AppEdit.countActiveForApp(app.id)
         if (appActiveEditCount >= appActiveEditLimit) {
-            throw Status
-                .RESOURCE_EXHAUSTED
-                .withDescription("app limit of $appActiveEditLimit active edits already reached")
-                .asRuntimeException()
+            throw ConsoleApiError(
+                ErrorReason.ERROR_REASON_RESOURCE_LIMIT_EXCEEDED,
+                "app limit of $appActiveEditLimit active edits already reached",
+            )
+                .toStatusRuntimeException()
         }
 
         val appEdit = AppEdit(
@@ -228,10 +230,11 @@ class AppEditServiceImpl @Inject constructor(
             throw if (!exists || !canViewExistence) {
                 appEditNotFoundException(request.appEditId)
             } else {
-                Status
-                    .PERMISSION_DENIED
-                    .withDescription("insufficient permission to view app edit")
-                    .asRuntimeException()
+                ConsoleApiError(
+                    ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
+                    "insufficient permission to view app edit",
+                )
+                    .toStatusRuntimeException()
             }
         }
 
@@ -368,10 +371,11 @@ class AppEditServiceImpl @Inject constructor(
             throw if (!exists || !canViewExistence) {
                 appEditNotFoundException(request.appEditId)
             } else {
-                Status
-                    .PERMISSION_DENIED
-                    .withDescription("insufficient permission to replace package")
-                    .asRuntimeException()
+                ConsoleApiError(
+                    ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
+                    "insufficient permission to replace package",
+                )
+                    .toStatusRuntimeException()
             }
         }
 
@@ -379,10 +383,11 @@ class AppEditServiceImpl @Inject constructor(
             .findById(request.appEditId)
             ?: throw appEditNotFoundException(request.appEditId)
         if (appEdit.submitted) {
-            throw Status
-                .FAILED_PRECONDITION
-                .withDescription("submitted edits cannot be modified")
-                .asRuntimeException()
+            throw ConsoleApiError(
+                ErrorReason.ERROR_REASON_RESOURCE_IMMUTABLE,
+                "submitted edits cannot be modified",
+            )
+                .toStatusRuntimeException()
         }
 
         val blobInfo = BlobInfo
@@ -445,10 +450,11 @@ class AppEditServiceImpl @Inject constructor(
             throw if (!exists || !canViewExistence) {
                 appEditNotFoundException(request.appEditId)
             } else {
-                Status
-                    .PERMISSION_DENIED
-                    .withDescription("insufficient permission to download app edit")
-                    .asRuntimeException()
+                ConsoleApiError(
+                    ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
+                    "insufficient permission to download app edit",
+                )
+                    .toStatusRuntimeException()
             }
         }
 
@@ -492,10 +498,11 @@ class AppEditServiceImpl @Inject constructor(
             throw if (!exists || !canViewExistence) {
                 appEditNotFoundException(request.appEditId)
             } else {
-                Status
-                    .PERMISSION_DENIED
-                    .withDescription("insufficient permission to update app edit")
-                    .asRuntimeException()
+                ConsoleApiError(
+                    ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
+                    "insufficient permission to update app edit",
+                )
+                    .toStatusRuntimeException()
             }
         }
 
@@ -510,13 +517,12 @@ class AppEditServiceImpl @Inject constructor(
             if (appEdit.hasListingForLanguage(request.defaultListingLanguage)) {
                 appEdit.defaultListingLanguage = request.defaultListingLanguage
             } else {
-                throw Status
-                    .FAILED_PRECONDITION
-                    .withDescription(
-                        "no listing exists for default listing language " +
-                                "\"${request.defaultListingLanguage}\""
-                    )
-                    .asRuntimeException()
+                throw ConsoleApiError(
+                    ErrorReason.ERROR_REASON_CONSTRAINT_VIOLATION,
+                    "no listing exists for default listing language " +
+                            "\"${request.defaultListingLanguage}\"",
+                )
+                    .toStatusRuntimeException()
             }
         }
 
@@ -544,10 +550,11 @@ class AppEditServiceImpl @Inject constructor(
             throw if (!exists || !canViewExistence) {
                 appEditNotFoundException(request.appEditId)
             } else {
-                Status
-                    .PERMISSION_DENIED
-                    .withDescription("insufficient permission to submit app edit")
-                    .asRuntimeException()
+                ConsoleApiError(
+                    ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
+                    "insufficient permission to submit app edit",
+                )
+                    .toStatusRuntimeException()
             }
         }
 
@@ -557,35 +564,41 @@ class AppEditServiceImpl @Inject constructor(
 
         // Check preconditions
         when {
-            appEdit.published -> throw Status
-                .ALREADY_EXISTS
-                .withDescription("the app edit has already been published")
-                .asRuntimeException()
+            appEdit.published -> throw ConsoleApiError(
+                ErrorReason.ERROR_REASON_ALREADY_PUBLISHED,
+                "the app edit has already been published",
+            )
+                .toStatusRuntimeException()
 
-            appEdit.publishing -> throw Status
-                .ALREADY_EXISTS
-                .withDescription("the app edit is already publishing")
-                .asRuntimeException()
+            appEdit.publishing -> throw ConsoleApiError(
+                ErrorReason.ERROR_REASON_RESOURCE_PUBLISHING,
+                "the app edit is already publishing",
+            )
+                .toStatusRuntimeException()
 
-            appEdit.submitted -> throw Status
-                .FAILED_PRECONDITION
-                .withDescription("app edit already submitted")
-                .asRuntimeException()
+            appEdit.submitted -> throw ConsoleApiError(
+                ErrorReason.ERROR_REASON_ALREADY_SUBMITTED,
+                "app edit already submitted",
+            )
+                .toStatusRuntimeException()
 
-            appEdit.expectedAppEntityTag != appEdit.app.entityTag -> throw Status
-                .FAILED_PRECONDITION
-                .withDescription("app edit has been invalidated by another submission")
-                .asRuntimeException()
+            appEdit.expectedAppEntityTag != appEdit.app.entityTag -> throw ConsoleApiError(
+                ErrorReason.ERROR_REASON_RESOURCE_INVALIDATED,
+                "app edit has been invalidated by another submission",
+            )
+                .toStatusRuntimeException()
 
-            !appEdit.allListingsHaveIcon() -> throw Status
-                .FAILED_PRECONDITION
-                .withDescription("all edit listings must have an icon")
-                .asRuntimeException()
+            !appEdit.allListingsHaveIcon() -> throw ConsoleApiError(
+                ErrorReason.ERROR_REASON_RESOURCE_INCOMPLETE,
+                "all edit listings must have an icon",
+            )
+                .toStatusRuntimeException()
 
-            AppEdit.activeAndSubmittedEditExistsForAppId(appEdit.appId) -> throw Status
-                .FAILED_PRECONDITION
-                .withDescription("an active edit is already submitted for this app")
-                .asRuntimeException()
+            AppEdit.activeAndSubmittedEditExistsForAppId(appEdit.appId) -> throw ConsoleApiError(
+                ErrorReason.ERROR_REASON_RESOURCE_CONFLICT,
+                "an active edit is already submitted for this app",
+            )
+                .toStatusRuntimeException()
         }
 
         // Determine whether any permission changes require review
@@ -626,10 +639,11 @@ class AppEditServiceImpl @Inject constructor(
                 || descriptionChangesRequiringReview.isNotEmpty()
         val response = if (requiresReview) {
             // Assign a reviewer
-            val reviewer = Reviewer.findRandom() ?: throw Status
-                .FAILED_PRECONDITION
-                .withDescription("no reviewers available to assign")
-                .asRuntimeException()
+            val reviewer = Reviewer.findRandom() ?: throw ConsoleApiError(
+                ErrorReason.ERROR_REASON_ASSIGNEE_UNAVAILABLE,
+                "no reviewers available to assign",
+            )
+                .toStatusRuntimeException()
             val existingAcl = AppEditAcl.findByAppEditIdAndUserId(request.appEditId, reviewer.userId)
             if (existingAcl == null) {
                 AppEditAcl(
@@ -707,10 +721,11 @@ class AppEditServiceImpl @Inject constructor(
             throw if (!exists || !canViewExistence) {
                 appEditNotFoundException(request.appEditId)
             } else {
-                Status
-                    .PERMISSION_DENIED
-                    .withDescription("insufficient permission to delete app edit")
-                    .asRuntimeException()
+                ConsoleApiError(
+                    ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
+                    "insufficient permission to delete app edit",
+                )
+                    .toStatusRuntimeException()
             }
         }
 
@@ -719,10 +734,11 @@ class AppEditServiceImpl @Inject constructor(
             .findById(request.appEditId)
             ?: throw appEditNotFoundException(request.appEditId)
         if (appEdit.submitted) {
-            throw Status
-                .FAILED_PRECONDITION
-                .withDescription("submitted app edits cannot be deleted")
-                .asRuntimeException()
+            throw ConsoleApiError(
+                ErrorReason.ERROR_REASON_RESOURCE_IMMUTABLE,
+                "submitted app edits cannot be deleted",
+            )
+                .toStatusRuntimeException()
         }
 
         // Delete the associated package if it's different from that of the published app
@@ -762,10 +778,11 @@ class AppEditServiceImpl @Inject constructor(
             throw if (!exists || !canViewExistence) {
                 appEditNotFoundException(request.appEditId)
             } else {
-                Status
-                    .PERMISSION_DENIED
-                    .withDescription("insufficient permission to create app edit listing")
-                    .asRuntimeException()
+                ConsoleApiError(
+                    ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
+                    "insufficient permission to create app edit listing",
+                )
+                    .toStatusRuntimeException()
             }
         }
 
@@ -773,15 +790,17 @@ class AppEditServiceImpl @Inject constructor(
             .findById(request.appEditId)
             ?: throw appEditNotFoundException(request.appEditId)
         when {
-            AppEditListing.exists(request.appEditId, request.language) -> throw Status
-                .ALREADY_EXISTS
-                .withDescription("an app listing with that language already exists")
-                .asRuntimeException()
+            AppEditListing.exists(request.appEditId, request.language) -> throw ConsoleApiError(
+                ErrorReason.ERROR_REASON_ALREADY_EXISTS,
+                "an app listing with that language already exists",
+            )
+                .toStatusRuntimeException()
 
-            appEdit.submitted -> throw Status
-                .FAILED_PRECONDITION
-                .withDescription("submitted edits cannot be modified")
-                .asRuntimeException()
+            appEdit.submitted -> throw ConsoleApiError(
+                ErrorReason.ERROR_REASON_RESOURCE_IMMUTABLE,
+                "submitted edits cannot be modified",
+            )
+                .toStatusRuntimeException()
         }
 
         AppEditListing(
@@ -825,10 +844,11 @@ class AppEditServiceImpl @Inject constructor(
             throw if (!exists || !canViewExistence) {
                 appEditNotFoundException(request.appEditId)
             } else {
-                Status
-                    .PERMISSION_DENIED
-                    .withDescription("insufficient permission to delete app edit listing")
-                    .asRuntimeException()
+                ConsoleApiError(
+                    ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
+                    "insufficient permission to delete app edit listing",
+                )
+                    .toStatusRuntimeException()
             }
         }
 
@@ -836,15 +856,17 @@ class AppEditServiceImpl @Inject constructor(
             .findById(request.appEditId)
             ?: throw appEditNotFoundException(request.appEditId)
         when {
-            appEdit.submitted -> throw Status
-                .FAILED_PRECONDITION
-                .withDescription("submitted edits cannot be modified")
-                .asRuntimeException()
+            appEdit.submitted -> throw ConsoleApiError(
+                ErrorReason.ERROR_REASON_RESOURCE_IMMUTABLE,
+                "submitted edits cannot be modified",
+            )
+                .toStatusRuntimeException()
 
-            request.language == appEdit.defaultListingLanguage -> throw Status
-                .FAILED_PRECONDITION
-                .withDescription("cannot delete listing for the default listing language")
-                .asRuntimeException()
+            request.language == appEdit.defaultListingLanguage -> throw ConsoleApiError(
+                ErrorReason.ERROR_REASON_CONSTRAINT_VIOLATION,
+                "cannot delete listing for the default listing language",
+            )
+                .toStatusRuntimeException()
         }
         val appEditListing = AppEditListing
             .findByAppEditIdAndLanguage(request.appEditId, request.language)
@@ -868,24 +890,28 @@ class AppEditServiceImpl @Inject constructor(
     }
 
     private companion object {
-        private val invalidPageTokenError = Status
-            .INVALID_ARGUMENT
-            .withDescription("provided page token is invalid")
-            .asRuntimeException()
+        private val invalidPageTokenError = ConsoleApiError(
+            ErrorReason.ERROR_REASON_INVALID_REQUEST,
+            "provided page token is invalid",
+        )
+            .toStatusRuntimeException()
 
-        private fun appNotFoundException(appId: String) = Status
-            .NOT_FOUND
-            .withDescription("app with ID \"$appId\" not found")
-            .asRuntimeException()
+        private fun appNotFoundException(appId: String) = ConsoleApiError(
+            ErrorReason.ERROR_REASON_RESOURCE_NOT_FOUND,
+            "app with ID \"$appId\" not found",
+        )
+            .toStatusRuntimeException()
 
-        private fun appEditNotFoundException(appEditId: String) = Status
-            .NOT_FOUND
-            .withDescription("app edit with ID \"$appEditId\" not found")
-            .asRuntimeException()
+        private fun appEditNotFoundException(appEditId: String) = ConsoleApiError(
+            ErrorReason.ERROR_REASON_RESOURCE_NOT_FOUND,
+            "app edit with ID \"$appEditId\" not found",
+        )
+            .toStatusRuntimeException()
 
-        private fun appEditListingNotFoundException(language: String) = Status
-            .NOT_FOUND
-            .withDescription("listing with language \"$language\" not found")
-            .asRuntimeException()
+        private fun appEditListingNotFoundException(language: String) = ConsoleApiError(
+            ErrorReason.ERROR_REASON_RESOURCE_NOT_FOUND,
+            "listing with language \"$language\" not found",
+        )
+            .toStatusRuntimeException()
     }
 }

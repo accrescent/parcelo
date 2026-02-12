@@ -6,8 +6,10 @@ package app.accrescent.server.parcelo.api.console
 
 import app.accrescent.console.v1alpha1.CreateAppDraftReviewRequest
 import app.accrescent.console.v1alpha1.CreateAppDraftReviewResponse
+import app.accrescent.console.v1alpha1.ErrorReason
 import app.accrescent.console.v1alpha1.ReviewService
 import app.accrescent.console.v1alpha1.createAppDraftReviewResponse
+import app.accrescent.server.parcelo.api.error.ConsoleApiError
 import app.accrescent.server.parcelo.data.AppDraft
 import app.accrescent.server.parcelo.data.AppDraftAcl
 import app.accrescent.server.parcelo.data.Publisher
@@ -21,7 +23,6 @@ import app.accrescent.server.parcelo.security.ObjectType
 import app.accrescent.server.parcelo.security.Permission
 import app.accrescent.server.parcelo.security.PermissionService
 import app.accrescent.server.parcelo.validation.GrpcRequestValidationInterceptor
-import io.grpc.Status
 import io.quarkus.grpc.GrpcService
 import io.quarkus.grpc.RegisterInterceptor
 import io.quarkus.mailer.MailTemplate
@@ -64,10 +65,11 @@ class ReviewServiceImpl @Inject constructor(
             throw if (!exists || !canViewExistence) {
                 appDraftNotFoundException(request.appDraftId)
             } else {
-                throw Status
-                    .PERMISSION_DENIED
-                    .withDescription("insufficient permission to review app draft")
-                    .asRuntimeException()
+                throw ConsoleApiError(
+                    ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
+                    "insufficient permission to review app draft",
+                )
+                    .toStatusRuntimeException()
             }
         }
 
@@ -75,10 +77,11 @@ class ReviewServiceImpl @Inject constructor(
             .findById(request.appDraftId)
             ?: throw appDraftNotFoundException(request.appDraftId)
         if (appDraft.reviewId != null) {
-            throw Status
-                .ALREADY_EXISTS
-                .withDescription("app draft has already been reviewed")
-                .asRuntimeException()
+            throw ConsoleApiError(
+                ErrorReason.ERROR_REASON_ALREADY_EXISTS,
+                "app draft has already been reviewed",
+            )
+                .toStatusRuntimeException()
         }
 
         // Save the review.
@@ -95,10 +98,11 @@ class ReviewServiceImpl @Inject constructor(
         appDraft.reviewId = review.id
 
         // Assign a publisher
-        val publisher = Publisher.findRandom() ?: throw Status
-            .FAILED_PRECONDITION
-            .withDescription("no publishers available to assign")
-            .asRuntimeException()
+        val publisher = Publisher.findRandom() ?: throw ConsoleApiError(
+            ErrorReason.ERROR_REASON_ASSIGNEE_UNAVAILABLE,
+            "no publishers available to assign",
+        )
+            .toStatusRuntimeException()
         val existingAcl = AppDraftAcl.findByAppDraftIdAndUserId(request.appDraftId, publisher.userId)
         if (existingAcl == null) {
             AppDraftAcl(
@@ -133,9 +137,10 @@ class ReviewServiceImpl @Inject constructor(
     }
 
     private companion object {
-        private fun appDraftNotFoundException(appDraftId: String) = Status
-            .NOT_FOUND
-            .withDescription("app draft \"$appDraftId\" not found")
-            .asRuntimeException()
+        private fun appDraftNotFoundException(appDraftId: String) = ConsoleApiError(
+            ErrorReason.ERROR_REASON_RESOURCE_NOT_FOUND,
+            "app draft \"$appDraftId\" not found",
+        )
+            .toStatusRuntimeException()
     }
 }

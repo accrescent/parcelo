@@ -4,6 +4,7 @@
 
 package app.accrescent.server.parcelo.api.console
 
+import app.accrescent.console.v1alpha1.ErrorReason
 import app.accrescent.console.v1alpha1.ListOrganizationsRequest
 import app.accrescent.console.v1alpha1.ListOrganizationsResponse
 import app.accrescent.console.v1alpha1.OrganizationService
@@ -11,13 +12,13 @@ import app.accrescent.console.v1alpha1.listOrganizationsResponse
 import app.accrescent.console.v1alpha1.organization
 import app.accrescent.parcelo.impl.v1.ListOrganizationsPageToken
 import app.accrescent.parcelo.impl.v1.listOrganizationsPageToken
+import app.accrescent.server.parcelo.api.error.ConsoleApiError
 import app.accrescent.server.parcelo.data.Organization
 import app.accrescent.server.parcelo.security.AuthnContextKey
 import app.accrescent.server.parcelo.security.GrpcAuthenticationInterceptor
 import app.accrescent.server.parcelo.security.GrpcRateLimitInterceptor
 import app.accrescent.server.parcelo.validation.GrpcRequestValidationInterceptor
 import com.google.protobuf.InvalidProtocolBufferException
-import io.grpc.Status
 import io.quarkus.grpc.GrpcService
 import io.quarkus.grpc.RegisterInterceptor
 import io.smallrye.mutiny.Uni
@@ -88,9 +89,10 @@ class OrganizationServiceImpl : OrganizationService {
     }
 
     private companion object {
-        private val invalidPageTokenError = Status
-            .INVALID_ARGUMENT
-            .withDescription("provided page token is invalid")
-            .asRuntimeException()
+        private val invalidPageTokenError = ConsoleApiError(
+            ErrorReason.ERROR_REASON_INVALID_REQUEST,
+            "provided page token is invalid",
+        )
+            .toStatusRuntimeException()
     }
 }

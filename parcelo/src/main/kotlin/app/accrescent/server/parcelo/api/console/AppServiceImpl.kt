@@ -5,6 +5,7 @@
 package app.accrescent.server.parcelo.api.console
 
 import app.accrescent.console.v1alpha1.AppService
+import app.accrescent.console.v1alpha1.ErrorReason
 import app.accrescent.console.v1alpha1.GetAppRequest
 import app.accrescent.console.v1alpha1.GetAppResponse
 import app.accrescent.console.v1alpha1.ListAppsRequest
@@ -17,6 +18,7 @@ import app.accrescent.console.v1alpha1.listAppsResponse
 import app.accrescent.console.v1alpha1.updateAppResponse
 import app.accrescent.parcelo.impl.v1.ListAppsPageToken
 import app.accrescent.parcelo.impl.v1.listAppsPageToken
+import app.accrescent.server.parcelo.api.error.ConsoleApiError
 import app.accrescent.server.parcelo.data.App
 import app.accrescent.server.parcelo.security.AuthnContextKey
 import app.accrescent.server.parcelo.security.GrpcAuthenticationInterceptor
@@ -27,7 +29,6 @@ import app.accrescent.server.parcelo.security.Permission
 import app.accrescent.server.parcelo.security.PermissionService
 import app.accrescent.server.parcelo.validation.GrpcRequestValidationInterceptor
 import com.google.protobuf.InvalidProtocolBufferException
-import io.grpc.Status
 import io.quarkus.grpc.GrpcService
 import io.quarkus.grpc.RegisterInterceptor
 import io.smallrye.mutiny.Uni
@@ -65,10 +66,11 @@ class AppServiceImpl @Inject constructor(
             throw if (!exists || !canViewExistence) {
                 appNotFoundException(request.appId)
             } else {
-                Status
-                    .PERMISSION_DENIED
-                    .withDescription("insufficient permission to view app")
-                    .asRuntimeException()
+                ConsoleApiError(
+                    ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
+                    "insufficient permission to view app",
+                )
+                    .toStatusRuntimeException()
             }
         }
 
@@ -155,10 +157,11 @@ class AppServiceImpl @Inject constructor(
             throw if (!exists || !canViewExistence) {
                 appNotFoundException(request.appId)
             } else {
-                Status
-                    .PERMISSION_DENIED
-                    .withDescription("insufficient permission to modify app")
-                    .asRuntimeException()
+                ConsoleApiError(
+                    ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
+                    "insufficient permission to modify app",
+                )
+                    .toStatusRuntimeException()
             }
         }
 
@@ -172,14 +175,16 @@ class AppServiceImpl @Inject constructor(
     }
 
     private companion object {
-        private val invalidPageTokenError = Status
-            .INVALID_ARGUMENT
-            .withDescription("provided page token is invalid")
-            .asRuntimeException()
+        private val invalidPageTokenError = ConsoleApiError(
+            ErrorReason.ERROR_REASON_INVALID_REQUEST,
+            "provided page token is invalid",
+        )
+            .toStatusRuntimeException()
 
-        private fun appNotFoundException(appId: String) = Status
-            .NOT_FOUND
-            .withDescription("app with ID \"$appId\" not found")
-            .asRuntimeException()
+        private fun appNotFoundException(appId: String) = ConsoleApiError(
+            ErrorReason.ERROR_REASON_RESOURCE_NOT_FOUND,
+            "app with ID \"$appId\" not found",
+        )
+            .toStatusRuntimeException()
     }
 }

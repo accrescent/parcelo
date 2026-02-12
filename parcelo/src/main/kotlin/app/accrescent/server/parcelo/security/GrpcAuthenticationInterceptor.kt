@@ -4,6 +4,8 @@
 
 package app.accrescent.server.parcelo.security
 
+import app.accrescent.console.v1alpha1.ErrorReason
+import app.accrescent.server.parcelo.api.error.ConsoleApiError
 import app.accrescent.server.parcelo.data.User
 import io.grpc.Context
 import io.grpc.Contexts
@@ -11,7 +13,6 @@ import io.grpc.Metadata
 import io.grpc.ServerCall
 import io.grpc.ServerCallHandler
 import io.grpc.ServerInterceptor
-import io.grpc.Status
 import io.quarkus.oidc.IdToken
 import io.vertx.core.Vertx
 import io.vertx.grpc.BlockingServerInterceptor
@@ -45,15 +46,29 @@ private class GrpcAuthenticationInterceptorImpl(
         next: ServerCallHandler<ReqT, RespT>,
     ): ServerCall.Listener<ReqT> {
         if (idToken.rawToken == null) {
-            call.close(Status.UNAUTHENTICATED, Metadata())
+            call.close(noCredentialsError.status, noCredentialsError.trailers ?: Metadata())
             return object : ServerCall.Listener<ReqT>() {}
         }
         val userId = User.findIdByOidcId(idToken.issuer, idToken.subject)?.id ?: run {
-            call.close(Status.UNAUTHENTICATED, Metadata())
+            call.close(notRegisteredError.status, notRegisteredError.trailers ?: Metadata())
             return object : ServerCall.Listener<ReqT>() {}
         }
         val context = Context.current().withValue(AuthnContextKey.USER_ID, userId)
 
         return Contexts.interceptCall(context, call, headers, next)
+    }
+
+    private companion object {
+        private val noCredentialsError = ConsoleApiError(
+            ErrorReason.ERROR_REASON_NO_CREDENTIALS,
+            "no authentication credentials provided",
+        )
+            .toStatusRuntimeException()
+
+        private val notRegisteredError = ConsoleApiError(
+            ErrorReason.ERROR_REASON_NOT_REGISTERED,
+            "the authenticated user is not registered",
+        )
+            .toStatusRuntimeException()
     }
 }

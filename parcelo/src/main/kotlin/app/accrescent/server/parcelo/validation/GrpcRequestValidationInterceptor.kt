@@ -23,6 +23,7 @@ import app.accrescent.console.v1alpha1.DeleteAppDraftListingRequest
 import app.accrescent.console.v1alpha1.DeleteAppDraftRequest
 import app.accrescent.console.v1alpha1.DeleteAppEditListingRequest
 import app.accrescent.console.v1alpha1.DeleteAppEditRequest
+import app.accrescent.console.v1alpha1.ErrorReason
 import app.accrescent.console.v1alpha1.GetAppDraftDownloadInfoRequest
 import app.accrescent.console.v1alpha1.GetAppDraftListingIconDownloadInfoRequest
 import app.accrescent.console.v1alpha1.GetAppDraftRequest
@@ -40,6 +41,7 @@ import app.accrescent.console.v1alpha1.SubmitAppEditRequest
 import app.accrescent.console.v1alpha1.UpdateAppDraftRequest
 import app.accrescent.console.v1alpha1.UpdateAppEditRequest
 import app.accrescent.console.v1alpha1.UpdateAppRequest
+import app.accrescent.server.parcelo.api.error.ConsoleApiError
 import build.buf.protovalidate.Validator
 import build.buf.protovalidate.ValidatorFactory
 import build.buf.protovalidate.exceptions.ValidationException
@@ -49,7 +51,6 @@ import io.grpc.Metadata
 import io.grpc.ServerCall
 import io.grpc.ServerCallHandler
 import io.grpc.ServerInterceptor
-import io.grpc.Status
 import jakarta.enterprise.context.ApplicationScoped
 
 @ApplicationScoped
@@ -123,16 +124,21 @@ private class GrpcRequestValidationServerCallListener<ReqT : Any>(
         val validationResult = try {
             validator.validate(message)
         } catch (e: ValidationException) {
-            throw Status.INTERNAL.withDescription(e.message).asRuntimeException()
+            throw ConsoleApiError(
+                ErrorReason.ERROR_REASON_INVALID_REQUEST,
+                e.message.toString(),
+            )
+                .toStatusRuntimeException()
         }
 
         if (validationResult.isSuccess) {
             super.onMessage(message)
         } else {
-            throw Status
-                .INVALID_ARGUMENT
-                .withDescription(validationResult.toString())
-                .asRuntimeException()
+            throw ConsoleApiError(
+                ErrorReason.ERROR_REASON_INVALID_REQUEST,
+                validationResult.toString(),
+            )
+                .toStatusRuntimeException()
         }
     }
 }

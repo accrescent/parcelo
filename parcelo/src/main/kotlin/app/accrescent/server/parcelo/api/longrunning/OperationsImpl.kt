@@ -4,11 +4,13 @@
 
 package app.accrescent.server.parcelo.api.longrunning
 
+import app.accrescent.console.v1alpha1.ErrorReason
 import app.accrescent.console.v1alpha1.PublishAppDraftResult
 import app.accrescent.console.v1alpha1.PublishAppEditResult
 import app.accrescent.console.v1alpha1.UploadAppDraftListingIconResult
 import app.accrescent.console.v1alpha1.UploadAppDraftResult
 import app.accrescent.console.v1alpha1.UploadAppEditResult
+import app.accrescent.server.parcelo.api.error.ConsoleApiError
 import app.accrescent.server.parcelo.data.AppDraft
 import app.accrescent.server.parcelo.data.BackgroundOperation
 import app.accrescent.server.parcelo.data.BackgroundOperationType
@@ -26,7 +28,6 @@ import com.google.longrunning.GetOperationRequest
 import com.google.longrunning.Operation
 import com.google.longrunning.OperationsGrpc
 import com.google.protobuf.Any
-import io.grpc.Status
 import io.grpc.stub.StreamObserver
 import io.quarkus.grpc.GrpcService
 import io.quarkus.grpc.RegisterInterceptor
@@ -94,10 +95,11 @@ class OperationsImpl @Inject constructor(
             val error = if (!exists || !canViewExistence) {
                 operationNotFoundException(request.name)
             } else {
-                Status
-                    .PERMISSION_DENIED
-                    .withDescription("insufficient permission to view operation")
-                    .asRuntimeException()
+                ConsoleApiError(
+                    ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
+                    "insufficient permission to view operation",
+                )
+                    .toStatusRuntimeException()
             }
             responseObserver.onError(error)
             return
@@ -138,9 +140,10 @@ class OperationsImpl @Inject constructor(
     }
 
     private companion object {
-        private fun operationNotFoundException(name: String) = Status
-            .NOT_FOUND
-            .withDescription("operation \"$name\" not found")
-            .asRuntimeException()
+        private fun operationNotFoundException(name: String) = ConsoleApiError(
+            ErrorReason.ERROR_REASON_RESOURCE_NOT_FOUND,
+            "operation \"$name\" not found",
+        )
+            .toStatusRuntimeException()
     }
 }

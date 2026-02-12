@@ -6,8 +6,10 @@ package app.accrescent.server.parcelo.api.console
 
 import app.accrescent.console.v1alpha1.CreatePublisherRequest
 import app.accrescent.console.v1alpha1.CreatePublisherResponse
+import app.accrescent.console.v1alpha1.ErrorReason
 import app.accrescent.console.v1alpha1.PublisherService
 import app.accrescent.console.v1alpha1.createPublisherResponse
+import app.accrescent.server.parcelo.api.error.ConsoleApiError
 import app.accrescent.server.parcelo.config.ParceloConfig
 import app.accrescent.server.parcelo.data.Publisher
 import app.accrescent.server.parcelo.data.User
@@ -19,7 +21,6 @@ import app.accrescent.server.parcelo.security.ObjectType
 import app.accrescent.server.parcelo.security.Permission
 import app.accrescent.server.parcelo.security.PermissionService
 import app.accrescent.server.parcelo.validation.GrpcRequestValidationInterceptor
-import io.grpc.Status
 import io.quarkus.grpc.GrpcService
 import io.quarkus.grpc.RegisterInterceptor
 import io.smallrye.mutiny.Uni
@@ -55,24 +56,23 @@ class PublisherServiceImpl @Inject constructor(
             throw if (!userExists || !canViewUserExistence) {
                 userNotFoundException(request.userId)
             } else {
-                throw Status
-                    .PERMISSION_DENIED
-                    .withDescription("insufficient permission to create reviewer")
-                    .asRuntimeException()
+                throw ConsoleApiError(
+                    ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
+                    "insufficient permission to create publisher",
+                )
+                    .toStatusRuntimeException()
             }
         }
 
         if (!User.existsById(request.userId)) {
-            throw Status
-                .NOT_FOUND
-                .withDescription("user with ID \"${request.userId}\" not found")
-                .asRuntimeException()
+            throw userNotFoundException(request.userId)
         }
         if (Publisher.existsByUserId(request.userId)) {
-            throw Status
-                .ALREADY_EXISTS
-                .withDescription("specified user is already a publisher")
-                .asRuntimeException()
+            throw ConsoleApiError(
+                ErrorReason.ERROR_REASON_ALREADY_EXISTS,
+                "specified user is already a publisher",
+            )
+                .toStatusRuntimeException()
         }
 
         // Because this API is restricted to administrators, we don't need to verify ownership of
@@ -83,9 +83,10 @@ class PublisherServiceImpl @Inject constructor(
     }
 
     private companion object {
-        private fun userNotFoundException(userId: String) = Status
-            .NOT_FOUND
-            .withDescription("user with ID \"$userId\" not found")
-            .asRuntimeException()
+        private fun userNotFoundException(userId: String) = ConsoleApiError(
+            ErrorReason.ERROR_REASON_RESOURCE_NOT_FOUND,
+            "user with ID \"$userId\" not found",
+        )
+            .toStatusRuntimeException()
     }
 }
