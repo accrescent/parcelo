@@ -5,6 +5,7 @@
 package app.accrescent.server.parcelo.config
 
 import io.smallrye.config.ConfigMapping
+import io.smallrye.config.WithDefault
 import io.smallrye.config.WithName
 import jakarta.validation.constraints.NotEmpty
 import java.time.Duration
@@ -16,7 +17,7 @@ interface ParceloConfig {
     fun artifactsBaseUrl(): String
     fun fileProcessingDirectory(): String
     fun objectStorageNotifications(): ObjectStorageNotifications
-    fun rateLimits(): RateLimits
+    fun rateLimiting(): RateLimiting
 
     interface Admin {
         fun oidcProvider(): OidcProvider
@@ -30,6 +31,10 @@ interface ParceloConfig {
         fun editUpload(): String
         fun listingImage(): String
         fun publishedArtifact(): String
+    }
+
+    enum class IpSource {
+        CONNECTION,
     }
 
     interface ObjectStorageNotification {
@@ -62,9 +67,15 @@ interface ParceloConfig {
         fun limits(): Map<String, RateLimit>
     }
 
-    interface RateLimits {
+    interface RateLimitBuckets {
         fun authenticated(): RateLimitBucket
         fun unauthenticated(): RateLimitBucket
         fun uploadApis(): RateLimitBucket
+    }
+
+    interface RateLimiting {
+        @WithDefault("connection")
+        fun ipSource(): IpSource
+        fun buckets(): RateLimitBuckets
     }
 }

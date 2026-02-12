@@ -87,23 +87,30 @@ private class GrpcRateLimitInterceptorImpl(
         val userId = AuthnContextKey.USER_ID.get()
 
         val principal = if (userId == null) {
-            val clientAddress = call.attributes.get(Grpc.TRANSPORT_ATTR_REMOTE_ADDR) ?: run {
-                call.close(noAddressError.status, noAddressError.trailers ?: Metadata())
-                return object : ServerCall.Listener<ReqT>() {}
-            }
-            if (clientAddress !is InetSocketAddress) {
-                call.close(addressNotIpError.status, addressNotIpError.trailers ?: Metadata())
-                return object : ServerCall.Listener<ReqT>() {}
-            }
+            when (config.rateLimiting().ipSource()) {
+                ParceloConfig.IpSource.CONNECTION -> {
+                    val clientAddress = call.attributes.get(Grpc.TRANSPORT_ATTR_REMOTE_ADDR) ?: run {
+                        call.close(noAddressError.status, noAddressError.trailers ?: Metadata())
+                        return object : ServerCall.Listener<ReqT>() {}
+                    }
+                    if (clientAddress !is InetSocketAddress) {
+                        call.close(
+                            addressNotIpError.status,
+                            addressNotIpError.trailers ?: Metadata(),
+                        )
+                        return object : ServerCall.Listener<ReqT>() {}
+                    }
 
-            IpAddress(clientAddress)
+                    IpAddress(clientAddress)
+                }
+            }
         } else {
             User(userId)
         }
 
         val rateLimitConfig = when (principal) {
-            is IpAddress -> config.rateLimits().unauthenticated()
-            is User -> config.rateLimits().authenticated()
+            is IpAddress -> config.rateLimiting().buckets().unauthenticated()
+            is User -> config.rateLimiting().buckets().authenticated()
         }
         val userBucket = getBucket(rateLimitConfig, principal.bucketKey())
 
@@ -116,7 +123,7 @@ private class GrpcRateLimitInterceptorImpl(
         // Apply API-specific rate limits
         val methodId = call.methodDescriptor.fullMethodName
         if (UPLOAD_APIS_PATTERN.matches(methodId)) {
-            val rateLimitConfig = config.rateLimits().uploadApis()
+            val rateLimitConfig = config.rateLimiting().buckets().uploadApis()
             val bucketKey = "${principal.bucketKey()}|$UPLOAD_APIS_BUCKET_SUFFIX"
             val uploadApisBucket = getBucket(rateLimitConfig, bucketKey)
 
