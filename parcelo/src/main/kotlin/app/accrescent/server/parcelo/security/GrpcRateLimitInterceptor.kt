@@ -6,6 +6,8 @@ package app.accrescent.server.parcelo.security
 
 import app.accrescent.console.v1alpha1.AppDraftServiceGrpc
 import app.accrescent.console.v1alpha1.AppEditServiceGrpc
+import app.accrescent.console.v1alpha1.ErrorReason
+import app.accrescent.server.parcelo.api.error.ConsoleApiError
 import app.accrescent.server.parcelo.config.ParceloConfig
 import app.accrescent.server.parcelo.security.Principal.IpAddress
 import app.accrescent.server.parcelo.security.Principal.User
@@ -57,7 +59,14 @@ private class GrpcRateLimitInterceptorImpl(
             AppEditServiceGrpc.getCreateAppEditUploadOperationMethod().fullMethodName,
             AppEditServiceGrpc.getCreateAppEditListingIconUploadOperationMethod().fullMethodName,
         )
+
+        private val rateLimitError = ConsoleApiError(
+            ErrorReason.ERROR_REASON_RATE_LIMIT_EXCEEDED,
+            "rate limit exceeded",
+        )
+            .toStatusRuntimeException()
     }
+
 
     private val proxyManager = Bucket4jPostgreSQL
         .selectForUpdateBasedBuilder(dataSource)
@@ -102,7 +111,7 @@ private class GrpcRateLimitInterceptorImpl(
 
         // Apply per-user rate limit
         if (!userBucket.tryConsume(1)) {
-            call.close(Status.RESOURCE_EXHAUSTED.withDescription("rate limit exceeded"), Metadata())
+            call.close(rateLimitError.status, rateLimitError.trailers ?: Metadata())
             object : ServerCall.Listener<ReqT>() {}
         }
 
@@ -118,10 +127,7 @@ private class GrpcRateLimitInterceptorImpl(
                 // rejected
                 userBucket.addTokens(1)
 
-                call.close(
-                    Status.RESOURCE_EXHAUSTED.withDescription("rate limit exceeded"),
-                    Metadata(),
-                )
+                call.close(rateLimitError.status, rateLimitError.trailers ?: Metadata())
                 object : ServerCall.Listener<ReqT>() {}
             }
         }
