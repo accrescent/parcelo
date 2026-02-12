@@ -80,7 +80,6 @@ import com.google.cloud.storage.Storage
 import com.google.longrunning.Operation
 import com.google.protobuf.InvalidProtocolBufferException
 import com.google.protobuf.timestamp
-import io.grpc.Status
 import io.quarkus.grpc.GrpcService
 import io.quarkus.grpc.RegisterInterceptor
 import io.quarkus.mailer.MailTemplate
@@ -982,10 +981,11 @@ class AppDraftServiceImpl @Inject constructor(
         val appDraft = AppDraft
             .findById(request.appDraftId)
             ?: throw appDraftNotFoundException(request.appDraftId)
-        val appPackage = appDraft.appPackage ?: throw Status
-            .INTERNAL
-            .withDescription("app draft has no package")
-            .asRuntimeException()
+        val appPackage = appDraft.appPackage ?: throw ConsoleApiError(
+            ErrorReason.ERROR_REASON_INTERNAL,
+            "app draft has no package",
+        )
+            .toStatusRuntimeException()
         when {
             appDraft.published -> throw ConsoleApiError(
                 ErrorReason.ERROR_REASON_ALREADY_PUBLISHED,
@@ -999,15 +999,17 @@ class AppDraftServiceImpl @Inject constructor(
             )
                 .toStatusRuntimeException()
 
-            appDraft.defaultListingLanguage == null -> throw Status
-                .INTERNAL
-                .withDescription("app draft has no default listing language")
-                .asRuntimeException()
+            appDraft.defaultListingLanguage == null -> throw ConsoleApiError(
+                ErrorReason.ERROR_REASON_INTERNAL,
+                "app draft has no default listing language",
+            )
+                .toStatusRuntimeException()
 
-            appDraft.listings.any { it.icon == null } -> throw Status
-                .DATA_LOSS
-                .withDescription("one or more app listings have no icon")
-                .asRuntimeException()
+            appDraft.listings.any { it.icon == null } -> throw ConsoleApiError(
+                ErrorReason.ERROR_REASON_INTERNAL,
+                "one or more app listings have no icon",
+            )
+                .toStatusRuntimeException()
 
             App.existsById(appPackage.appId) -> throw ConsoleApiError(
                 ErrorReason.ERROR_REASON_RESOURCE_CONFLICT,

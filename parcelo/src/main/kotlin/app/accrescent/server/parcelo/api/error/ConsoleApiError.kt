@@ -44,6 +44,8 @@ data class ConsoleApiError(
 
             ErrorReason.ERROR_REASON_NO_CREDENTIALS,
             ErrorReason.ERROR_REASON_NOT_REGISTERED -> Status.Code.UNAUTHENTICATED
+
+            ErrorReason.ERROR_REASON_INTERNAL -> Status.Code.INTERNAL
         }
 
         val errorInfo = ErrorInfo

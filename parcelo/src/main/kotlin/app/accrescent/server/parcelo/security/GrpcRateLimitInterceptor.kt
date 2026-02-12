@@ -21,7 +21,6 @@ import io.grpc.Metadata
 import io.grpc.ServerCall
 import io.grpc.ServerCallHandler
 import io.grpc.ServerInterceptor
-import io.grpc.Status
 import io.quarkus.logging.Log
 import io.quarkus.scheduler.Scheduled
 import io.vertx.core.Vertx
@@ -57,6 +56,16 @@ private class GrpcRateLimitInterceptorImpl(
             "rate limit exceeded",
         )
             .toStatusRuntimeException()
+        private val noAddressError = ConsoleApiError(
+            ErrorReason.ERROR_REASON_INTERNAL,
+            "no remote address found",
+        )
+            .toStatusRuntimeException()
+        private val addressNotIpError = ConsoleApiError(
+            ErrorReason.ERROR_REASON_INTERNAL,
+            "client address is not an IP address",
+        )
+            .toStatusRuntimeException()
     }
 
 
@@ -79,14 +88,11 @@ private class GrpcRateLimitInterceptorImpl(
 
         val principal = if (userId == null) {
             val clientAddress = call.attributes.get(Grpc.TRANSPORT_ATTR_REMOTE_ADDR) ?: run {
-                call.close(Status.INTERNAL.withDescription("no remote address found"), Metadata())
+                call.close(noAddressError.status, noAddressError.trailers ?: Metadata())
                 return object : ServerCall.Listener<ReqT>() {}
             }
             if (clientAddress !is InetSocketAddress) {
-                call.close(
-                    Status.INTERNAL.withDescription("client address is not an IP address"),
-                    Metadata(),
-                )
+                call.close(addressNotIpError.status, addressNotIpError.trailers ?: Metadata())
                 return object : ServerCall.Listener<ReqT>() {}
             }
 
