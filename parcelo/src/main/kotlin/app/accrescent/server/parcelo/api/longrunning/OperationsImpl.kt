@@ -31,11 +31,9 @@ import com.google.protobuf.Any
 import io.grpc.stub.StreamObserver
 import io.quarkus.grpc.GrpcService
 import io.quarkus.grpc.RegisterInterceptor
-import jakarta.enterprise.inject.Instance
 import jakarta.inject.Inject
 import jakarta.transaction.Transactional
 import org.eclipse.microprofile.context.ManagedExecutor
-import org.quartz.Scheduler
 import com.google.rpc.Status as GoogleStatus
 
 @GrpcService
@@ -44,7 +42,6 @@ import com.google.rpc.Status as GoogleStatus
 class OperationsImpl @Inject constructor(
     private val executor: ManagedExecutor,
     private val permissionService: PermissionService,
-    private val scheduler: Instance<Scheduler>,
 ) : OperationsGrpc.OperationsImplBase() {
     override fun getOperation(
         request: GetOperationRequest,
