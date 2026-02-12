@@ -12,20 +12,14 @@ import java.time.Duration
 @ConfigMapping(prefix = "parcelo")
 interface ParceloConfig {
     fun admin(): Admin
-
     fun buckets(): Buckets
-
     fun artifactsBaseUrl(): String
-
     fun fileProcessingDirectory(): String
-
     fun objectStorageNotifications(): ObjectStorageNotifications
-
     fun rateLimits(): RateLimits
 
     interface Admin {
         fun oidcProvider(): OidcProvider
-
         fun oidcSubject(): String
     }
 
@@ -70,9 +64,7 @@ interface ParceloConfig {
 
     interface RateLimits {
         fun authenticated(): RateLimitBucket
-
         fun unauthenticated(): RateLimitBucket
-
         fun uploadApis(): RateLimitBucket
     }
 }
