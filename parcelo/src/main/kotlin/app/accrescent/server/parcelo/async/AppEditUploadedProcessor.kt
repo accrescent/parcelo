@@ -226,7 +226,7 @@ class AppEditUploadedProcessor @Inject constructor(
         // Object Lifecycle Management.
         val copyRequest = Storage.CopyRequest.of(
             BlobId.of(event.bucketId, event.objectId),
-            BlobId.of(config.appPackageBucket(), UUID.randomUUID().toString()),
+            BlobId.of(config.buckets().appPackage(), UUID.randomUUID().toString()),
         )
         val newBlob = storage.copy(copyRequest).result
 

@@ -227,7 +227,7 @@ class AppDraftListingIconUploadedProcessor(
         // Object Lifecycle Management.
         val copyRequest = Storage.CopyRequest.of(
             BlobId.of(event.bucketId, event.objectId),
-            BlobId.of(config.listingImageBucket(), UUID.randomUUID().toString()),
+            BlobId.of(config.buckets().listingImage(), UUID.randomUUID().toString()),
         )
         val newBlob = storage.copy(copyRequest).result
 

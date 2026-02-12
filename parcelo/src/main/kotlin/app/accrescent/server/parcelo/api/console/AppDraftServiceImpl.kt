@@ -377,7 +377,7 @@ class AppDraftServiceImpl @Inject constructor(
         }
 
         val blobInfo = BlobInfo
-            .newBuilder(config.appUploadBucket(), UUID.randomUUID().toString()).build()
+            .newBuilder(config.buckets().appUpload(), UUID.randomUUID().toString()).build()
         val uploadUrl = storage.signUrl(
             blobInfo,
             UPLOAD_URL_EXPIRATION_SECONDS,
@@ -801,7 +801,8 @@ class AppDraftServiceImpl @Inject constructor(
             ?: throw appDraftListingNotFoundException(request.language)
 
         val blobInfo = BlobInfo
-            .newBuilder(config.draftListingIconUploadBucket(), UUID.randomUUID().toString()).build()
+            .newBuilder(config.buckets().draftListingIconUpload(), UUID.randomUUID().toString())
+            .build()
         val uploadUrl = storage.signUrl(
             blobInfo,
             UPLOAD_URL_EXPIRATION_SECONDS,

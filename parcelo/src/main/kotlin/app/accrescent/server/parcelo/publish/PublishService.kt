@@ -44,7 +44,7 @@ class PublishService @Inject constructor(
                     ?: throw Exception("app package missing APK entry")
                 zipFile.getInputStream(entry).use { apkInputStream ->
                     TempFile(Path(config.fileProcessingDirectory())).use { tempApk ->
-                        val bucketId = config.publishedArtifactBucket()
+                        val bucketId = config.buckets().publishedArtifact()
                         val objectId = apkPathToObjectId(apkPath, appId, versionCode)
                         val size = tempApk.path.outputStream().use { apkInputStream.copyTo(it) }
                         pathsToPublishedApks[apkPath] = PublishedApk(
@@ -55,7 +55,7 @@ class PublishService @Inject constructor(
 
                         val requestArgs = UploadObjectArgs
                             .builder()
-                            .bucket(config.publishedArtifactBucket())
+                            .bucket(config.buckets().publishedArtifact())
                             .`object`(objectId)
                             .filename(tempApk.path.toString())
                             .build()
@@ -69,7 +69,7 @@ class PublishService @Inject constructor(
     }
 
     fun publishIcon(appId: String, listingLanguage: String, iconPath: Path): PublishedIcon {
-        val bucketId = config.publishedArtifactBucket()
+        val bucketId = config.buckets().publishedArtifact()
         val contentHash = sha256HashFile(iconPath)
         val objectId = "apps/$appId/listings/$listingLanguage/$ICON_PREFIX$contentHash.png"
 

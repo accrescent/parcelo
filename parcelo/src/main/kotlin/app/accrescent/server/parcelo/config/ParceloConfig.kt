@@ -13,23 +13,13 @@ import java.time.Duration
 interface ParceloConfig {
     fun admin(): Admin
 
-    fun appPackageBucket(): String
-
-    fun appUploadBucket(): String
+    fun buckets(): Buckets
 
     fun artifactsBaseUrl(): String
 
-    fun draftListingIconUploadBucket(): String
-
-    fun editUploadBucket(): String
-
     fun fileProcessingDirectory(): String
 
-    fun listingImageBucket(): String
-
     fun objectStorageNotifications(): ObjectStorageNotifications
-
-    fun publishedArtifactBucket(): String
 
     fun rateLimits(): RateLimits
 
@@ -37,6 +27,15 @@ interface ParceloConfig {
         fun oidcProvider(): OidcProvider
 
         fun oidcSubject(): String
+    }
+
+    interface Buckets {
+        fun appPackage(): String
+        fun appUpload(): String
+        fun draftListingIconUpload(): String
+        fun editUpload(): String
+        fun listingImage(): String
+        fun publishedArtifact(): String
     }
 
     interface ObjectStorageNotification {

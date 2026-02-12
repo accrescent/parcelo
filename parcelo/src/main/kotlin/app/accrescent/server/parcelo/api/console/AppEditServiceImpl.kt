@@ -391,7 +391,7 @@ class AppEditServiceImpl @Inject constructor(
         }
 
         val blobInfo = BlobInfo
-            .newBuilder(config.editUploadBucket(), UUID.randomUUID().toString()).build()
+            .newBuilder(config.buckets().editUpload(), UUID.randomUUID().toString()).build()
         val uploadUrl = storage.signUrl(
             blobInfo,
             UPLOAD_URL_EXPIRATION_SECONDS,
