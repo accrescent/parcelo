@@ -159,6 +159,16 @@ class AppEditUploadedProcessor @Inject constructor(
     }
 
     private fun processEvent(event: ObjectUploadEvent, job: AppEditUploadProcessingJob) {
+        if (job.appEdit.submitted) {
+            job.backgroundOperation.result = ConsoleApiError(
+                ErrorReason.ERROR_REASON_RESOURCE_IMMUTABLE,
+                "submitted app edits cannot be modified",
+            )
+                .toStatus()
+                .toByteArray()
+            return
+        }
+
         // Parse an APK set from the uploaded file
         val apkSet = TempFile(Path(config.fileProcessingDirectory()))
             .use { tempFile ->

@@ -162,6 +162,16 @@ class AppDraftListingIconUploadedProcessor(
     }
 
     private fun processEvent(event: ObjectUploadEvent, job: AppDraftListingIconUploadJob) {
+        if (job.appDraftListing.appDraft.submitted) {
+            job.backgroundOperation.result = ConsoleApiError(
+                ErrorReason.ERROR_REASON_RESOURCE_IMMUTABLE,
+                "submitted app drafts cannot be modified",
+            )
+                .toStatus()
+                .toByteArray()
+            return
+        }
+
         // Parse an image from the uploaded file
         val pngReader = ImageIO
             .getImageReadersByFormatName(PNG_FORMAT_NAME)

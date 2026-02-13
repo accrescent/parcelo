@@ -159,6 +159,16 @@ class AppDraftUploadedProcessor @Inject constructor(
     }
 
     private fun processEvent(event: ObjectUploadEvent, job: AppDraftUploadProcessingJob) {
+        if (job.appDraft.submitted) {
+            job.backgroundOperation.result = ConsoleApiError(
+                ErrorReason.ERROR_REASON_RESOURCE_IMMUTABLE,
+                "submitted app drafts cannot be modified",
+            )
+                .toStatus()
+                .toByteArray()
+            return
+        }
+
         // Parse an APK set from the uploaded file
         val apkSet = TempFile(Path(config.fileProcessingDirectory()))
             .use { tempFile ->
