@@ -35,6 +35,7 @@ interface ParceloConfig {
 
     enum class IpSource {
         CONNECTION,
+        CLOUDFLARE,
     }
 
     interface ObjectStorageNotification {

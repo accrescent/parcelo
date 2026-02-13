@@ -26,6 +26,7 @@ import io.quarkus.scheduler.Scheduled
 import io.vertx.core.Vertx
 import io.vertx.grpc.BlockingServerInterceptor
 import jakarta.enterprise.context.ApplicationScoped
+import java.net.InetAddress
 import java.net.InetSocketAddress
 import java.time.Duration
 
@@ -49,6 +50,8 @@ private class GrpcRateLimitInterceptorImpl(
 ) : ServerInterceptor {
     private companion object {
         private val BUCKET_KEEP_AFTER_REFILL_DURATION = Duration.ofSeconds(30)
+        private val CLOUDFLARE_CONNECTING_IP_KEY =
+            Metadata.Key.of("cf-connecting-ip", Metadata.ASCII_STRING_MARSHALLER)
         private val UPLOAD_APIS_PATTERN = Regex(""".*/Create.*UploadOperation""")
 
         private val rateLimitError = ConsoleApiError(
@@ -67,7 +70,6 @@ private class GrpcRateLimitInterceptorImpl(
         )
             .toStatusRuntimeException()
     }
-
 
     private val proxyManager = Bucket4jPostgreSQL
         .selectForUpdateBasedBuilder(dataSource)
@@ -101,7 +103,17 @@ private class GrpcRateLimitInterceptorImpl(
                         return object : ServerCall.Listener<ReqT>() {}
                     }
 
-                    IpAddress(clientAddress)
+                    IpAddress(clientAddress.address)
+                }
+
+                ParceloConfig.IpSource.CLOUDFLARE -> {
+                    val connectingIp = headers.get(CLOUDFLARE_CONNECTING_IP_KEY) ?: run {
+                        call.close(noAddressError.status, noAddressError.trailers ?: Metadata())
+                        return object : ServerCall.Listener<ReqT>() {}
+                    }
+                    val address = InetAddress.getByName(connectingIp)
+
+                    IpAddress(address)
                 }
             }
         } else {
@@ -168,11 +180,11 @@ private class GrpcRateLimitInterceptorImpl(
 
 private sealed class Principal {
     data class User(val userId: String) : Principal()
-    data class IpAddress(val address: InetSocketAddress) : Principal()
+    data class IpAddress(val address: InetAddress) : Principal()
 
     fun bucketKey(): String {
         return when (this) {
-            is IpAddress -> "ip|${address.hostString}"
+            is IpAddress -> "ip|${address.hostAddress}"
             is User -> "user|$userId"
         }
     }
