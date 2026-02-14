@@ -75,7 +75,6 @@ import app.accrescent.server.parcelo.security.Permission
 import app.accrescent.server.parcelo.security.PermissionService
 import app.accrescent.server.parcelo.validation.GrpcRequestValidationInterceptor
 import com.google.cloud.storage.BlobInfo
-import com.google.cloud.storage.HttpMethod
 import com.google.cloud.storage.Storage
 import com.google.longrunning.Operation
 import com.google.protobuf.InvalidProtocolBufferException
@@ -93,11 +92,7 @@ import org.quartz.Scheduler
 import org.quartz.TriggerBuilder
 import java.time.OffsetDateTime
 import java.util.UUID
-import java.util.concurrent.TimeUnit
 import kotlin.io.encoding.Base64
-
-// 1 MiB
-private const val MAX_ICON_SIZE_BYTES = 1048576
 
 private const val DEFAULT_PAGE_SIZE = 50u
 private const val MAX_PAGE_SIZE = 50u
@@ -378,16 +373,7 @@ class AppDraftServiceImpl @Inject constructor(
 
         val blobInfo = BlobInfo
             .newBuilder(config.buckets().appUpload(), UUID.randomUUID().toString()).build()
-        val uploadUrl = storage.signUrl(
-            blobInfo,
-            UPLOAD_URL_EXPIRATION_SECONDS,
-            TimeUnit.SECONDS,
-            Storage.SignUrlOption.withV4Signature(),
-            Storage.SignUrlOption.httpMethod(HttpMethod.PUT),
-            Storage.SignUrlOption.withExtHeaders(
-                mapOf("X-Goog-Content-Length-Range" to "0,$MAX_APK_SET_SIZE_BYTES")
-            ),
-        )
+        val uploadUrl = storage.signUploadUrl(blobInfo, UploadType.APK_SET)
 
         val backgroundOperation = BackgroundOperation(
             id = Identifier.generateNew(IdType.OPERATION),
@@ -456,12 +442,7 @@ class AppDraftServiceImpl @Inject constructor(
                 .toStatusRuntimeException()
 
         val apkSetBlob = BlobInfo.newBuilder(appPackage.bucketId, appPackage.objectId).build()
-        val downloadUrl = storage.signUrl(
-            apkSetBlob,
-            DOWNLOAD_URL_EXPIRATION_SECONDS,
-            TimeUnit.SECONDS,
-            Storage.SignUrlOption.withV4Signature(),
-        )
+        val downloadUrl = storage.signDownloadUrl(apkSetBlob)
 
         val response = getAppDraftDownloadInfoResponse {
             apkSetUrl = downloadUrl.toString()
@@ -803,16 +784,7 @@ class AppDraftServiceImpl @Inject constructor(
         val blobInfo = BlobInfo
             .newBuilder(config.buckets().draftListingIconUpload(), UUID.randomUUID().toString())
             .build()
-        val uploadUrl = storage.signUrl(
-            blobInfo,
-            UPLOAD_URL_EXPIRATION_SECONDS,
-            TimeUnit.SECONDS,
-            Storage.SignUrlOption.withV4Signature(),
-            Storage.SignUrlOption.httpMethod(HttpMethod.PUT),
-            Storage.SignUrlOption.withExtHeaders(
-                mapOf("X-Goog-Content-Length-Range" to "0,$MAX_ICON_SIZE_BYTES")
-            ),
-        )
+        val uploadUrl = storage.signUploadUrl(blobInfo, UploadType.ICON)
 
         val backgroundOperation = BackgroundOperation(
             id = Identifier.generateNew(IdType.OPERATION),
@@ -875,12 +847,7 @@ class AppDraftServiceImpl @Inject constructor(
         val icon = appDraftListing.icon ?: throw appDraftListingIconNotFoundException(request.language)
 
         val iconBlob = BlobInfo.newBuilder(icon.bucketId, icon.objectId).build()
-        val downloadUrl = storage.signUrl(
-            iconBlob,
-            DOWNLOAD_URL_EXPIRATION_SECONDS,
-            TimeUnit.SECONDS,
-            Storage.SignUrlOption.withV4Signature(),
-        )
+        val downloadUrl = storage.signDownloadUrl(iconBlob)
 
         val response = getAppDraftListingIconDownloadInfoResponse {
             iconUrl = downloadUrl.toString()
