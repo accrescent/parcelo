@@ -132,7 +132,7 @@ private class GrpcRateLimitInterceptorImpl(
         // Apply per-user rate limit
         if (!userBucket.tryConsume(1)) {
             call.close(rateLimitError.status, rateLimitError.trailers ?: Metadata())
-            object : ServerCall.Listener<ReqT>() {}
+            return object : ServerCall.Listener<ReqT>() {}
         }
 
         // Apply API-specific rate limits
@@ -148,7 +148,7 @@ private class GrpcRateLimitInterceptorImpl(
                 userBucket.addTokens(1)
 
                 call.close(rateLimitError.status, rateLimitError.trailers ?: Metadata())
-                object : ServerCall.Listener<ReqT>() {}
+                return object : ServerCall.Listener<ReqT>() {}
             }
         }
 
