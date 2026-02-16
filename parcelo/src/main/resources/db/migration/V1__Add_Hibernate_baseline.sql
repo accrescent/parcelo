@@ -202,6 +202,15 @@ CREATE TABLE images (
     UNIQUE (bucket_id, object_id)
 );
 
+CREATE TABLE ip_address_salts (
+    id boolean NOT NULL,
+    created_at timestamp(6) with time zone NOT NULL,
+    expires_at timestamp(6) with time zone NOT NULL,
+    current_salt bytea NOT NULL,
+    PRIMARY KEY (id),
+    CHECK (id = true)
+);
+
 CREATE TABLE organization_acls (
     can_create_app_drafts boolean NOT NULL,
     can_edit_apps boolean NOT NULL,

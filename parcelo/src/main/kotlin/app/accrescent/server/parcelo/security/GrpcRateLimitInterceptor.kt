@@ -9,6 +9,7 @@ import app.accrescent.server.parcelo.api.error.ConsoleApiError
 import app.accrescent.server.parcelo.config.ParceloConfig
 import app.accrescent.server.parcelo.security.Principal.IpAddress
 import app.accrescent.server.parcelo.security.Principal.User
+import app.accrescent.server.parcelo.util.sha256Hash
 import io.agroal.api.AgroalDataSource
 import io.github.bucket4j.BucketConfiguration
 import io.github.bucket4j.TokensInheritanceStrategy
@@ -40,13 +41,15 @@ private const val UPLOAD_APIS_BUCKET_SUFFIX = "upload_apis"
 class GrpcRateLimitInterceptor(
     private val config: ParceloConfig,
     private val dataSource: AgroalDataSource,
+    private val saltService: IpAddressSaltService,
     private val vertx: Vertx,
 ) : ServerInterceptor by BlockingServerInterceptor
-    .wrap(vertx, GrpcRateLimitInterceptorImpl(config, dataSource))
+    .wrap(vertx, GrpcRateLimitInterceptorImpl(config, dataSource, saltService))
 
 private class GrpcRateLimitInterceptorImpl(
     private val config: ParceloConfig,
     dataSource: AgroalDataSource,
+    private val saltService: IpAddressSaltService,
 ) : ServerInterceptor {
     private companion object {
         private val BUCKET_KEEP_AFTER_REFILL_DURATION = Duration.ofSeconds(30)
@@ -124,7 +127,7 @@ private class GrpcRateLimitInterceptorImpl(
             is IpAddress -> config.rateLimiting().buckets().unauthenticated()
             is User -> config.rateLimiting().buckets().authenticated()
         }
-        val userBucket = getBucket(rateLimitConfig, principal.bucketKey())
+        val userBucket = getBucket(rateLimitConfig, getBucketKey(principal))
 
         // Apply per-user rate limit
         if (!userBucket.tryConsume(1)) {
@@ -136,7 +139,7 @@ private class GrpcRateLimitInterceptorImpl(
         val methodId = call.methodDescriptor.fullMethodName
         if (UPLOAD_APIS_PATTERN.matches(methodId)) {
             val rateLimitConfig = config.rateLimiting().buckets().uploadApis()
-            val bucketKey = "${principal.bucketKey()}|$UPLOAD_APIS_BUCKET_SUFFIX"
+            val bucketKey = "${getBucketKey(principal)}|$UPLOAD_APIS_BUCKET_SUFFIX"
             val uploadApisBucket = getBucket(rateLimitConfig, bucketKey)
 
             if (!uploadApisBucket.tryConsume(1)) {
@@ -176,18 +179,25 @@ private class GrpcRateLimitInterceptorImpl(
             )
             .build(key) { config.toBucketConfiguration() }
     }
+
+    private fun getBucketKey(principal: Principal): String {
+        return when (principal) {
+            is IpAddress -> {
+                val addressBytes = principal.address.address
+                val salt = saltService.getCurrentSalt()
+                val hash = sha256Hash(addressBytes + salt)
+
+                "ip|$hash"
+            }
+
+            is User -> "user|${principal.userId}"
+        }
+    }
 }
 
 private sealed class Principal {
     data class User(val userId: String) : Principal()
     data class IpAddress(val address: InetAddress) : Principal()
-
-    fun bucketKey(): String {
-        return when (this) {
-            is IpAddress -> "ip|${address.hostAddress}"
-            is User -> "user|$userId"
-        }
-    }
 }
 
 private fun ParceloConfig.RateLimitBucket.toBucketConfiguration(): BucketConfiguration {
