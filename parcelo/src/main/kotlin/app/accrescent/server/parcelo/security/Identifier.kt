@@ -10,8 +10,10 @@ import java.security.SecureRandom
 private const val RAND_BYTE_COUNT = 16
 
 object Identifier {
+    private val secureRandom = SecureRandom()
+
     fun generateNew(type: IdType): String {
-        val randomBytes = ByteArray(RAND_BYTE_COUNT).also { SecureRandom().nextBytes(it) }
+        val randomBytes = ByteArray(RAND_BYTE_COUNT).also { secureRandom.nextBytes(it) }
         val encodedBytes = Base62.encode(randomBytes)
         val prefix = when (type) {
             IdType.APP_DRAFT -> "ad"
