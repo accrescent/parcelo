@@ -6,6 +6,8 @@ CREATE SEQUENCE app_draft_upload_processing_jobs_seq START WITH 1 INCREMENT BY 5
 
 CREATE SEQUENCE app_edit_acls_seq START WITH 1 INCREMENT BY 50;
 
+CREATE SEQUENCE app_edit_listing_icon_upload_jobs_seq START WITH 1 INCREMENT BY 50;
+
 CREATE SEQUENCE app_edit_upload_processing_jobs_seq START WITH 1 INCREMENT BY 50;
 
 CREATE SEQUENCE app_package_permissions_seq START WITH 1 INCREMENT BY 50;
@@ -99,6 +101,16 @@ CREATE TABLE app_edit_acls (
     UNIQUE (app_edit_id, user_id)
 );
 
+CREATE TABLE app_edit_listing_icon_upload_jobs (
+    id bigint NOT NULL,
+    app_edit_listing_id uuid NOT NULL,
+    background_operation_id text NOT NULL,
+    bucket_id text NOT NULL,
+    object_id text NOT NULL,
+    PRIMARY KEY (id),
+    UNIQUE (bucket_id, object_id)
+);
+
 CREATE TABLE app_edit_listings (
     icon_image_id uuid,
     id uuid NOT NULL,
@@ -187,7 +199,7 @@ CREATE TABLE background_operations (
     created_at timestamp(6) with time zone NOT NULL,
     id text NOT NULL,
     parent_id text NOT NULL,
-    type text NOT NULL CHECK ((type in ('PUBLISH_APP_DRAFT','PUBLISH_APP_EDIT','UPLOAD_APP_DRAFT','UPLOAD_APP_DRAFT_LISTING_ICON','UPLOAD_APP_EDIT'))),
+    type text NOT NULL CHECK ((type in ('PUBLISH_APP_DRAFT','PUBLISH_APP_EDIT','UPLOAD_APP_DRAFT','UPLOAD_APP_DRAFT_LISTING_ICON','UPLOAD_APP_EDIT','UPLOAD_APP_EDIT_LISTING_ICON'))),
     result bytea,
     PRIMARY KEY (id),
     CHECK (result IS NOT NULL OR succeeded = false)
@@ -355,6 +367,17 @@ ALTER TABLE IF EXISTS app_drafts
     ADD CONSTRAINT FK70o7youassq7f5ek48br8nb3x
     FOREIGN KEY (review_id)
     REFERENCES reviews;
+
+ALTER TABLE IF EXISTS app_edit_listing_icon_upload_jobs
+    ADD CONSTRAINT FKi2vd4l6ra8i12byx6p9pk6s47
+    FOREIGN KEY (app_edit_listing_id)
+    REFERENCES app_edit_listings
+    ON DELETE CASCADE;
+
+ALTER TABLE IF EXISTS app_edit_listing_icon_upload_jobs
+    ADD CONSTRAINT FKntqcvk4fhk2v48k6yyk1bdijw
+    FOREIGN KEY (background_operation_id)
+    REFERENCES background_operations;
 
 ALTER TABLE IF EXISTS app_edit_listings
     ADD CONSTRAINT FK8fmdmeiilyxcwql50l0c2b00m

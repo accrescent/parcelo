@@ -12,6 +12,8 @@ import app.accrescent.appstore.v1.getAppUpdateInfoRequest
 import app.accrescent.appstore.v1.listAppListingsRequest
 import app.accrescent.console.v1alpha1.ErrorReason
 import app.accrescent.console.v1alpha1.createAppDraftRequest
+import app.accrescent.console.v1alpha1.createAppEditListingIconUploadOperationRequest
+import app.accrescent.console.v1alpha1.createAppEditListingRequest
 import app.accrescent.console.v1alpha1.createAppEditRequest
 import app.accrescent.console.v1alpha1.createAppEditUploadOperationRequest
 import app.accrescent.console.v1alpha1.createPublisherRequest
@@ -26,6 +28,7 @@ import app.accrescent.console.v1alpha1.submitAppEditRequest
 import app.accrescent.console.v1alpha1.updateAppEditRequest
 import app.accrescent.console.v1alpha1.updateAppRequest
 import app.accrescent.server.parcelo.testutil.ApiUtils
+import app.accrescent.server.parcelo.testutil.ENCODED_PNG
 import app.accrescent.server.parcelo.testutil.errorInfo
 import com.google.longrunning.GetOperationRequest
 import com.google.longrunning.Operation
@@ -45,6 +48,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.io.File
 import java.time.Duration
+import kotlin.io.encoding.Base64
 
 private const val APP_ACTIVE_EDIT_LIMIT = 3
 private const val ORGANIZATION_ACTIVE_APP_DRAFT_LIMIT = 3
@@ -438,7 +442,7 @@ class ApiIT {
     }
 
     @Test
-    fun developerSubmitsAppEditWithValidPackageChange() {
+    fun developerSubmitsAppEditWithValidPackageChangeAndListingAddition() {
         val credentials = ApiUtils.getCredentials("user8")
         val appEditService = ApiUtils.getAppEditServiceStub(credentials)
         val operationsService = ApiUtils.getOperationsServiceStub(credentials)
@@ -457,7 +461,28 @@ class ApiIT {
             .then()
             .statusCode(200)
 
-        // Wait for the upload to be processed successfully
+        // Create the app listing
+        val createListingRequest = createAppEditListingRequest {
+            this.appEditId = appEditId
+            language = "de-DE"
+            name = "Beispiel für eine gültige App"
+            shortDescription = "Ein Beispiel für eine gültige App"
+        }
+        appEditService.createAppEditListing(createListingRequest)
+        val uploadIconRequest = createAppEditListingIconUploadOperationRequest {
+            this.appEditId = appEditId
+            language = "de-DE"
+        }
+        val uploadIconResponse = appEditService
+            .createAppEditListingIconUploadOperation(uploadIconRequest)
+        given()
+            .header("Host", "storage.googleapis.com")
+            .body(Base64.decode(ENCODED_PNG))
+            .put(uploadIconResponse.uploadUrl)
+            .then()
+            .statusCode(200)
+
+        // Wait for the APK set upload to be processed successfully
         val getUploadOpRequest = GetOperationRequest
             .newBuilder()
             .setName(uploadInfoResponse.processingOperation.name)
@@ -469,24 +494,24 @@ class ApiIT {
         }
         assertTrue(uploadOp.hasResponse())
 
+        // Wait for the listing icon upload to be processed successfully
+        val getIconUploadOpRequest = GetOperationRequest
+            .newBuilder()
+            .setName(uploadIconResponse.processingOperation.name)
+            .build()
+        var iconUploadOp = Operation.getDefaultInstance()
+        await().until {
+            iconUploadOp = operationsService.getOperation(getIconUploadOpRequest)
+            iconUploadOp.done
+        }
+        assertTrue(iconUploadOp.hasResponse())
+
         // Submit the app edit
         val submitRequest = submitAppEditRequest { this.appEditId = appEditId }
         val submitResponse = appEditService.submitAppEdit(submitRequest)
 
-        // Wait for the submission to be processed successfully
-        assertTrue(submitResponse.hasOperation())
-        val getSubmitOpRequest = GetOperationRequest
-            .newBuilder()
-            .setName(submitResponse.operation.name)
-            .build()
-        var submitOp = Operation.getDefaultInstance()
-        await()
-            .atMost(Duration.ofSeconds(PUBLISH_TIMEOUT_SECONDS))
-            .until {
-                submitOp = operationsService.getOperation(getSubmitOpRequest)
-                submitOp.done
-            }
-        assertTrue(submitOp.hasResponse())
+        // Verify the submission required review
+        assertFalse(submitResponse.hasOperation())
     }
 
     @Test

@@ -30,6 +30,7 @@ import app.accrescent.console.v1alpha1.UpdateAppEditRequest
 import app.accrescent.console.v1alpha1.UpdateAppEditResponse
 import app.accrescent.console.v1alpha1.appEdit
 import app.accrescent.console.v1alpha1.appPackage
+import app.accrescent.console.v1alpha1.createAppEditListingIconUploadOperationResponse
 import app.accrescent.console.v1alpha1.createAppEditListingResponse
 import app.accrescent.console.v1alpha1.createAppEditResponse
 import app.accrescent.console.v1alpha1.createAppEditUploadOperationResponse
@@ -48,6 +49,7 @@ import app.accrescent.server.parcelo.data.App
 import app.accrescent.server.parcelo.data.AppEdit
 import app.accrescent.server.parcelo.data.AppEditAcl
 import app.accrescent.server.parcelo.data.AppEditListing
+import app.accrescent.server.parcelo.data.AppEditListingIconUploadJob
 import app.accrescent.server.parcelo.data.AppEditUploadProcessingJob
 import app.accrescent.server.parcelo.data.BackgroundOperation
 import app.accrescent.server.parcelo.data.BackgroundOperationType
@@ -70,7 +72,6 @@ import com.google.cloud.storage.Storage
 import com.google.longrunning.Operation
 import com.google.protobuf.InvalidProtocolBufferException
 import com.google.protobuf.timestamp
-import io.grpc.Status
 import io.quarkus.grpc.GrpcService
 import io.quarkus.grpc.RegisterInterceptor
 import io.quarkus.mailer.MailTemplate
@@ -800,10 +801,79 @@ class AppEditServiceImpl @Inject constructor(
         return Uni.createFrom().item { createAppEditListingResponse {} }
     }
 
+    @Transactional
     override fun createAppEditListingIconUploadOperation(
         request: CreateAppEditListingIconUploadOperationRequest,
     ): Uni<CreateAppEditListingIconUploadOperationResponse> {
-        throw Status.UNIMPLEMENTED.asRuntimeException()
+        val userId = AuthnContextKey.USER_ID.get()
+
+        val canReplaceIcon = permissionService.hasPermission(
+            ObjectReference(ObjectType.APP_EDIT, request.appEditId),
+            Permission.REPLACE_LISTING_ICON,
+            ObjectReference(ObjectType.USER, userId),
+        )
+        if (!canReplaceIcon) {
+            val editExists = AppEdit.existsById(request.appEditId)
+            val listingExists = AppEditListing.exists(request.appEditId, request.language)
+            val canViewExistence = permissionService.hasPermission(
+                ObjectReference(ObjectType.APP_EDIT, request.appEditId),
+                Permission.VIEW_EXISTENCE,
+                ObjectReference(ObjectType.USER, userId),
+            )
+
+            throw when {
+                !editExists || !canViewExistence -> appEditNotFoundException(request.appEditId)
+                !listingExists -> appEditListingNotFoundException(request.language)
+                else -> throw ConsoleApiError(
+                    ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
+                    "insufficient permission to replace app listing icon",
+                )
+                    .toStatusRuntimeException()
+            }
+        }
+
+        val appEdit = AppEdit
+            .findById(request.appEditId)
+            ?: throw appEditNotFoundException(request.appEditId)
+        if (appEdit.submitted) {
+            throw ConsoleApiError(
+                ErrorReason.ERROR_REASON_RESOURCE_IMMUTABLE,
+                "submitted edits cannot be modified",
+            )
+                .toStatusRuntimeException()
+        }
+        val appEditListing = AppEditListing
+            .findByAppEditIdAndLanguage(request.appEditId, request.language)
+            ?: throw appEditNotFoundException(request.language)
+
+        val blobInfo = BlobInfo
+            .newBuilder(config.buckets().editListingIconUpload(), UUID.randomUUID().toString())
+            .build()
+        val uploadUrl = storage.signUploadUrl(blobInfo, UploadType.ICON)
+
+        val backgroundOperation = BackgroundOperation(
+            id = Identifier.generateNew(IdType.OPERATION),
+            type = BackgroundOperationType.UPLOAD_APP_EDIT_LISTING_ICON,
+            parentId = request.appEditId,
+            createdAt = OffsetDateTime.now(),
+            result = null,
+            succeeded = false,
+        )
+            .also { it.persist() }
+        AppEditListingIconUploadJob(
+            appEditListingId = appEditListing.id,
+            bucketId = blobInfo.bucket,
+            objectId = blobInfo.name,
+            backgroundOperationId = backgroundOperation.id,
+        )
+            .persist()
+
+        val response = createAppEditListingIconUploadOperationResponse {
+            this.uploadUrl = uploadUrl.toString()
+            processingOperation = Operation.newBuilder().setName(backgroundOperation.id).build()
+        }
+
+        return Uni.createFrom().item { response }
     }
 
     @Transactional

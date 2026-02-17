@@ -21,6 +21,7 @@ enum class BackgroundOperationType {
     UPLOAD_APP_DRAFT,
     UPLOAD_APP_DRAFT_LISTING_ICON,
     UPLOAD_APP_EDIT,
+    UPLOAD_APP_EDIT_LISTING_ICON,
 }
 
 @Entity
