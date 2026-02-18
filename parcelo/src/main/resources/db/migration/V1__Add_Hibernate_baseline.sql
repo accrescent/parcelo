@@ -300,6 +300,7 @@ CREATE TABLE reviews (
 );
 
 CREATE TABLE users (
+    email text NOT NULL,
     id text NOT NULL,
     oidc_issuer text NOT NULL,
     oidc_provider text NOT NULL CHECK ((oidc_provider in ('LOCAL','UNKNOWN'))),

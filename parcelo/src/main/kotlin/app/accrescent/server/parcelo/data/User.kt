@@ -56,6 +56,9 @@ class User(
 
     @Column(columnDefinition = "text", name = "oidc_subject", nullable = false)
     var oidcSubject: String,
+
+    @Column(columnDefinition = "text", nullable = false)
+    var email: String,
 ) : PanacheEntityBase {
     companion object : PanacheCompanionBase<User, String> {
         fun existsById(id: String): Boolean {

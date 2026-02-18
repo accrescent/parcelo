@@ -6,72 +6,96 @@
             "username": "admin1",
             "id": "c54374b4-b1f6-4d4b-8cb9-d6cfea172a58",
             "enabled": true,
+            "email": "admin1@example.com",
+            "emailVerified": true,
             "credentials": [{"type": "password", "value": "password"}]
         },
         {
             "username": "reviewer1",
             "id": "14666df2-6e19-4747-9fb2-720c9c03d8e6",
             "enabled": true,
+            "email": "reviewer1@example.com",
+            "emailVerified": true,
             "credentials": [{"type": "password", "value": "password"}]
         },
         {
             "username": "publisher1",
             "id": "6a53a8b8-c24d-447c-a607-7dfb6688d8ed",
             "enabled": true,
+            "email": "publisher1@example.com",
+            "emailVerified": true,
             "credentials": [{"type": "password", "value": "password"}]
         },
         {
             "username": "user1",
             "id": "ed3f288f-a5a6-446e-8dd3-5c61f3505fdd",
             "enabled": true,
+            "email": "user1@example.com",
+            "emailVerified": true,
             "credentials": [{"type": "password", "value": "password"}]
         },
         {
             "username": "user2",
             "id": "f2d3c4fe-658c-4f09-ab0b-5a1ef84a56f2",
             "enabled": true,
+            "email": "user2@example.com",
+            "emailVerified": true,
             "credentials": [{"type": "password", "value": "password"}]
         },
         {
             "username": "user3",
             "id": "107d5a18-8ab7-4546-817b-11de2463aac9",
             "enabled": true,
+            "email": "user3@example.com",
+            "emailVerified": true,
             "credentials": [{"type": "password", "value": "password"}]
         },
         {
             "username": "user4",
             "id": "2ed0eff8-a82a-43f7-900d-adf5b7520358",
             "enabled": true,
+            "email": "user4@example.com",
+            "emailVerified": true,
             "credentials": [{"type": "password", "value": "password"}]
         },
         {
             "username": "user5",
             "id": "8210769c-67e6-4ea5-aa1e-6b1646de5d7b",
             "enabled": true,
+            "email": "user5@example.com",
+            "emailVerified": true,
             "credentials": [{"type": "password", "value": "password"}]
         },
         {
             "username": "user6",
             "id": "e1994f63-bc8a-44e4-b348-0a63f2a4e332",
             "enabled": true,
+            "email": "user6@example.com",
+            "emailVerified": true,
             "credentials": [{"type": "password", "value": "password"}]
         },
         {
             "username": "user7",
             "id": "a3ccb509-bfdf-40b2-b969-ab72e88f0829",
             "enabled": true,
+            "email": "user7@example.com",
+            "emailVerified": true,
             "credentials": [{"type": "password", "value": "password"}]
         },
         {
             "username": "user8",
             "id": "8a802ec4-00f4-40e6-b4a8-38ebdd503197",
             "enabled": true,
+            "email": "user8@example.com",
+            "emailVerified": true,
             "credentials": [{"type": "password", "value": "password"}]
         },
         {
             "username": "user9",
             "id": "5f692862-cbcf-45b1-9458-53525d3d7b50",
             "enabled": true,
+            "email": "user9@example.com",
+            "emailVerified": true,
             "credentials": [{"type": "password", "value": "password"}]
         }
     ],

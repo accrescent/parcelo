@@ -16,6 +16,8 @@ import jakarta.transaction.Transactional
 import jakarta.ws.rs.GET
 import jakarta.ws.rs.PUT
 import jakarta.ws.rs.Path
+import jakarta.ws.rs.core.Response
+import org.eclipse.microprofile.jwt.Claims
 import org.eclipse.microprofile.jwt.JsonWebToken
 
 @Authenticated
@@ -28,7 +30,14 @@ class AccountResource(@IdToken val idToken: JsonWebToken) {
     @PUT
     @Path("/register")
     @Transactional
-    fun register() {
+    fun register(): Response {
+        // Require the identity provider to provide a verified email
+        val email: String? = idToken.getClaim(Claims.email)
+        val emailVerified: Boolean? = idToken.getClaim(Claims.email_verified)
+        if (email == null || emailVerified != true) {
+            return Response.status(Response.Status.FORBIDDEN).build()
+        }
+
         if (!User.existsByOidcId(idToken.issuer, idToken.subject)) {
             val org = Organization(id = Identifier.generateNew(IdType.ORGANIZATION))
                 .also { it.persist() }
@@ -37,6 +46,7 @@ class AccountResource(@IdToken val idToken: JsonWebToken) {
                 oidcProvider = OidcProvider.fromIssuer(idToken.issuer),
                 oidcIssuer = idToken.issuer,
                 oidcSubject = idToken.subject,
+                email = email,
             )
                 .also { it.persist() }
             OrganizationAcl(
@@ -49,5 +59,7 @@ class AccountResource(@IdToken val idToken: JsonWebToken) {
             )
                 .persist()
         }
+
+        return Response.ok().build()
     }
 }
