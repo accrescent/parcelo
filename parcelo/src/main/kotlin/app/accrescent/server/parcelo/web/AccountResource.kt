@@ -47,6 +47,8 @@ class AccountResource(@IdToken val idToken: JsonWebToken) {
                 oidcIssuer = idToken.issuer,
                 oidcSubject = idToken.subject,
                 email = email,
+                reviewer = false,
+                publisher = false,
             )
                 .also { it.persist() }
             OrganizationAcl(

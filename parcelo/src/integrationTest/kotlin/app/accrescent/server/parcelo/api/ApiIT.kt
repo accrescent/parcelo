@@ -11,13 +11,12 @@ import app.accrescent.appstore.v1.getAppPackageInfoRequest
 import app.accrescent.appstore.v1.getAppUpdateInfoRequest
 import app.accrescent.appstore.v1.listAppListingsRequest
 import app.accrescent.console.v1alpha1.ErrorReason
+import app.accrescent.console.v1alpha1.UserRole
 import app.accrescent.console.v1alpha1.createAppDraftRequest
 import app.accrescent.console.v1alpha1.createAppEditListingIconUploadOperationRequest
 import app.accrescent.console.v1alpha1.createAppEditListingRequest
 import app.accrescent.console.v1alpha1.createAppEditRequest
 import app.accrescent.console.v1alpha1.createAppEditUploadOperationRequest
-import app.accrescent.console.v1alpha1.createPublisherRequest
-import app.accrescent.console.v1alpha1.createReviewerRequest
 import app.accrescent.console.v1alpha1.getAppEditRequest
 import app.accrescent.console.v1alpha1.getAppRequest
 import app.accrescent.console.v1alpha1.getSelfRequest
@@ -27,6 +26,7 @@ import app.accrescent.console.v1alpha1.listOrganizationsRequest
 import app.accrescent.console.v1alpha1.submitAppEditRequest
 import app.accrescent.console.v1alpha1.updateAppEditRequest
 import app.accrescent.console.v1alpha1.updateAppRequest
+import app.accrescent.console.v1alpha1.updateUserRequest
 import app.accrescent.server.parcelo.testutil.ApiUtils
 import app.accrescent.server.parcelo.testutil.ENCODED_PNG
 import app.accrescent.server.parcelo.testutil.errorInfo
@@ -88,28 +88,29 @@ class ApiIT {
         fun setup() {
             // Create the reviewer and publisher we use in this class
             val adminToken = ApiUtils.getCredentials("admin1")
+            val userService = ApiUtils.getUserServiceStub(adminToken)
 
             val reviewerUserId = ApiUtils
                 .getUserServiceStub(ApiUtils.getCredentials("reviewer1"))
                 .getSelf(getSelfRequest {})
-                .userId
-            ApiUtils
-                .getReviewerServiceStub(adminToken)
-                .createReviewer(createReviewerRequest {
-                    userId = reviewerUserId
-                    email = "reviewer1@example.com"
-                })
+                .user
+                .id
+            userService.updateUser(updateUserRequest {
+                userId = reviewerUserId
+                roles.add(UserRole.USER_ROLE_REVIEWER)
+                updateMask = fieldMask { paths.add("roles") }
+            })
 
             val publisherUserId = ApiUtils
                 .getUserServiceStub(ApiUtils.getCredentials("publisher1"))
                 .getSelf(getSelfRequest {})
-                .userId
-            ApiUtils
-                .getPublisherServiceStub(adminToken)
-                .createPublisher(createPublisherRequest {
-                    userId = publisherUserId
-                    email = "publisher1@example.com"
-                })
+                .user
+                .id
+            userService.updateUser(updateUserRequest {
+                userId = publisherUserId
+                roles.add(UserRole.USER_ROLE_PUBLISHER)
+                updateMask = fieldMask { paths.add("roles") }
+            })
 
             // Publish the valid example app
             ApiUtils.publishApp("user2", "reviewer1", "publisher1", "valid")

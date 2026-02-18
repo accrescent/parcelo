@@ -54,7 +54,7 @@ import app.accrescent.server.parcelo.data.AppEditUploadProcessingJob
 import app.accrescent.server.parcelo.data.BackgroundOperation
 import app.accrescent.server.parcelo.data.BackgroundOperationType
 import app.accrescent.server.parcelo.data.OrphanedBlob
-import app.accrescent.server.parcelo.data.Reviewer
+import app.accrescent.server.parcelo.data.User
 import app.accrescent.server.parcelo.jobs.JobDataKey
 import app.accrescent.server.parcelo.jobs.PublishAppEditJob
 import app.accrescent.server.parcelo.security.AuthnContextKey
@@ -624,16 +624,16 @@ class AppEditServiceImpl @Inject constructor(
                 || descriptionChangesRequiringReview.isNotEmpty()
         val response = if (requiresReview) {
             // Assign a reviewer
-            val reviewer = Reviewer.findRandom() ?: throw ConsoleApiError(
+            val reviewer = User.findRandomReviewer() ?: throw ConsoleApiError(
                 ErrorReason.ERROR_REASON_ASSIGNEE_UNAVAILABLE,
                 "no reviewers available to assign",
             )
                 .toStatusRuntimeException()
-            val existingAcl = AppEditAcl.findByAppEditIdAndUserId(request.appEditId, reviewer.userId)
+            val existingAcl = AppEditAcl.findByAppEditIdAndUserId(request.appEditId, reviewer.id)
             if (existingAcl == null) {
                 AppEditAcl(
                     appEditId = request.appEditId,
-                    userId = reviewer.userId,
+                    userId = reviewer.id,
                     canReview = true,
                 )
                     .persist()

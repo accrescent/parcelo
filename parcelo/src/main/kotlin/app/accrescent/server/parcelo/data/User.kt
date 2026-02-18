@@ -59,6 +59,12 @@ class User(
 
     @Column(columnDefinition = "text", nullable = false)
     var email: String,
+
+    @Column(nullable = false)
+    var reviewer: Boolean,
+
+    @Column(nullable = false)
+    var publisher: Boolean,
 ) : PanacheEntityBase {
     companion object : PanacheCompanionBase<User, String> {
         fun existsById(id: String): Boolean {
@@ -73,6 +79,14 @@ class User(
             return find("WHERE oidcIssuer = ?1 AND oidcSubject = ?2", issuer, subject)
                 .project(UserId::class.java)
                 .firstResult()
+        }
+
+        fun findRandomReviewer(): User? {
+            return find("WHERE reviewer = true ORDER BY random() LIMIT 1").firstResult()
+        }
+
+        fun findRandomPublisher(): User? {
+            return find("WHERE publisher = true ORDER BY random() LIMIT 1").firstResult()
         }
     }
 }

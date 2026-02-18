@@ -7,9 +7,7 @@ package app.accrescent.server.parcelo.testutil
 import app.accrescent.console.v1alpha1.AppDraftServiceGrpc
 import app.accrescent.console.v1alpha1.AppEditServiceGrpc
 import app.accrescent.console.v1alpha1.OrganizationServiceGrpc
-import app.accrescent.console.v1alpha1.PublisherServiceGrpc
 import app.accrescent.console.v1alpha1.ReviewServiceGrpc
-import app.accrescent.console.v1alpha1.ReviewerServiceGrpc
 import app.accrescent.console.v1alpha1.UserServiceGrpc
 import app.accrescent.console.v1alpha1.createAppDraftListingIconUploadOperationRequest
 import app.accrescent.console.v1alpha1.createAppDraftListingRequest
@@ -90,20 +88,10 @@ object ApiUtils {
     ): OperationsGrpc.OperationsBlockingV2Stub =
         OperationsGrpc.newBlockingV2Stub(channel).withCallCredentials(credentials)
 
-    fun getPublisherServiceStub(
-        credentials: CallCredentials,
-    ): PublisherServiceGrpc.PublisherServiceBlockingV2Stub =
-        PublisherServiceGrpc.newBlockingV2Stub(channel).withCallCredentials(credentials)
-
     fun getReviewServiceStub(
         credentials: CallCredentials,
     ): ReviewServiceGrpc.ReviewServiceBlockingV2Stub =
         ReviewServiceGrpc.newBlockingV2Stub(channel).withCallCredentials(credentials)
-
-    fun getReviewerServiceStub(
-        credentials: CallCredentials
-    ): ReviewerServiceGrpc.ReviewerServiceBlockingV2Stub =
-        ReviewerServiceGrpc.newBlockingV2Stub(channel).withCallCredentials(credentials)
 
     fun getStoreAppServiceStub(): StoreAppServiceGrpc.AppServiceBlockingV2Stub =
         StoreAppServiceGrpc.newBlockingV2Stub(channel)

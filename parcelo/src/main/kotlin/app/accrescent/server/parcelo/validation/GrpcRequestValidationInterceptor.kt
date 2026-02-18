@@ -17,9 +17,8 @@ import app.accrescent.console.v1alpha1.CreateAppDraftUploadOperationRequest
 import app.accrescent.console.v1alpha1.CreateAppEditListingIconUploadOperationRequest
 import app.accrescent.console.v1alpha1.CreateAppEditListingRequest
 import app.accrescent.console.v1alpha1.CreateAppEditRequest
+import app.accrescent.console.v1alpha1.CreateAppEditReviewRequest
 import app.accrescent.console.v1alpha1.CreateAppEditUploadOperationRequest
-import app.accrescent.console.v1alpha1.CreatePublisherRequest
-import app.accrescent.console.v1alpha1.CreateReviewerRequest
 import app.accrescent.console.v1alpha1.DeleteAppDraftListingRequest
 import app.accrescent.console.v1alpha1.DeleteAppDraftRequest
 import app.accrescent.console.v1alpha1.DeleteAppEditListingRequest
@@ -42,6 +41,7 @@ import app.accrescent.console.v1alpha1.SubmitAppEditRequest
 import app.accrescent.console.v1alpha1.UpdateAppDraftRequest
 import app.accrescent.console.v1alpha1.UpdateAppEditRequest
 import app.accrescent.console.v1alpha1.UpdateAppRequest
+import app.accrescent.console.v1alpha1.UpdateUserRequest
 import app.accrescent.server.parcelo.api.error.ConsoleApiError
 import build.buf.protovalidate.Validator
 import build.buf.protovalidate.ValidatorFactory
@@ -68,9 +68,8 @@ class GrpcRequestValidationInterceptor : ServerInterceptor {
                 CreateAppEditListingIconUploadOperationRequest.getDescriptor(),
                 CreateAppEditListingRequest.getDescriptor(),
                 CreateAppEditRequest.getDescriptor(),
+                CreateAppEditReviewRequest.getDescriptor(),
                 CreateAppEditUploadOperationRequest.getDescriptor(),
-                CreatePublisherRequest.getDescriptor(),
-                CreateReviewerRequest.getDescriptor(),
                 DeleteAppDraftListingRequest.getDescriptor(),
                 DeleteAppDraftRequest.getDescriptor(),
                 DeleteAppEditListingRequest.getDescriptor(),
@@ -97,6 +96,7 @@ class GrpcRequestValidationInterceptor : ServerInterceptor {
                 UpdateAppDraftRequest.getDescriptor(),
                 UpdateAppEditRequest.getDescriptor(),
                 UpdateAppRequest.getDescriptor(),
+                UpdateUserRequest.getDescriptor(),
             ),
             true,
         )

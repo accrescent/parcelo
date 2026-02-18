@@ -61,7 +61,7 @@ import app.accrescent.server.parcelo.data.BackgroundOperation
 import app.accrescent.server.parcelo.data.BackgroundOperationType
 import app.accrescent.server.parcelo.data.Organization
 import app.accrescent.server.parcelo.data.OrphanedBlob
-import app.accrescent.server.parcelo.data.Reviewer
+import app.accrescent.server.parcelo.data.User
 import app.accrescent.server.parcelo.jobs.JobDataKey
 import app.accrescent.server.parcelo.jobs.PublishAppDraftJob
 import app.accrescent.server.parcelo.security.AuthnContextKey
@@ -578,16 +578,16 @@ class AppDraftServiceImpl @Inject constructor(
         }
 
         // Assign a reviewer
-        val reviewer = Reviewer.findRandom() ?: throw ConsoleApiError(
+        val reviewer = User.findRandomReviewer() ?: throw ConsoleApiError(
             ErrorReason.ERROR_REASON_ASSIGNEE_UNAVAILABLE,
             "no reviewers available to assign",
         )
             .toStatusRuntimeException()
-        val existingAcl = AppDraftAcl.findByAppDraftIdAndUserId(request.appDraftId, reviewer.userId)
+        val existingAcl = AppDraftAcl.findByAppDraftIdAndUserId(request.appDraftId, reviewer.id)
         if (existingAcl == null) {
             AppDraftAcl(
                 appDraftId = request.appDraftId,
-                userId = reviewer.userId,
+                userId = reviewer.id,
                 canDelete = false,
                 canPublish = false,
                 canReplacePackage = false,

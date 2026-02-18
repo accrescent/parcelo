@@ -6,18 +6,28 @@ package app.accrescent.server.parcelo.api.console
 
 import app.accrescent.console.v1alpha1.CreateAppDraftReviewRequest
 import app.accrescent.console.v1alpha1.CreateAppDraftReviewResponse
+import app.accrescent.console.v1alpha1.CreateAppEditReviewRequest
+import app.accrescent.console.v1alpha1.CreateAppEditReviewResponse
 import app.accrescent.console.v1alpha1.ErrorReason
 import app.accrescent.console.v1alpha1.ReviewService
 import app.accrescent.console.v1alpha1.createAppDraftReviewResponse
+import app.accrescent.console.v1alpha1.createAppEditReviewResponse
 import app.accrescent.server.parcelo.api.error.ConsoleApiError
 import app.accrescent.server.parcelo.data.AppDraft
 import app.accrescent.server.parcelo.data.AppDraftAcl
-import app.accrescent.server.parcelo.data.Publisher
+import app.accrescent.server.parcelo.data.AppEdit
+import app.accrescent.server.parcelo.data.BackgroundOperation
+import app.accrescent.server.parcelo.data.BackgroundOperationType
 import app.accrescent.server.parcelo.data.RejectionReason
 import app.accrescent.server.parcelo.data.Review
+import app.accrescent.server.parcelo.data.User
+import app.accrescent.server.parcelo.jobs.JobDataKey
+import app.accrescent.server.parcelo.jobs.PublishAppEditJob
 import app.accrescent.server.parcelo.security.AuthnContextKey
 import app.accrescent.server.parcelo.security.GrpcAuthenticationInterceptor
 import app.accrescent.server.parcelo.security.GrpcRateLimitInterceptor
+import app.accrescent.server.parcelo.security.IdType
+import app.accrescent.server.parcelo.security.Identifier
 import app.accrescent.server.parcelo.security.ObjectReference
 import app.accrescent.server.parcelo.security.ObjectType
 import app.accrescent.server.parcelo.security.Permission
@@ -27,8 +37,14 @@ import io.quarkus.grpc.GrpcService
 import io.quarkus.grpc.RegisterInterceptor
 import io.quarkus.mailer.MailTemplate
 import io.smallrye.mutiny.Uni
+import jakarta.enterprise.inject.Instance
 import jakarta.inject.Inject
 import jakarta.transaction.Transactional
+import org.quartz.JobBuilder
+import org.quartz.JobKey
+import org.quartz.Scheduler
+import org.quartz.TriggerBuilder
+import java.time.OffsetDateTime
 import java.util.UUID
 
 @GrpcService
@@ -37,6 +53,7 @@ import java.util.UUID
 @RegisterInterceptor(GrpcRateLimitInterceptor::class)
 class ReviewServiceImpl @Inject constructor(
     private val permissionService: PermissionService,
+    private val scheduler: Instance<Scheduler>,
 ) : ReviewService {
     @JvmRecord
     data class AppDraftAssignedToYouForPublishingEmail(
@@ -98,16 +115,16 @@ class ReviewServiceImpl @Inject constructor(
         appDraft.reviewId = review.id
 
         // Assign a publisher
-        val publisher = Publisher.findRandom() ?: throw ConsoleApiError(
+        val publisher = User.findRandomPublisher() ?: throw ConsoleApiError(
             ErrorReason.ERROR_REASON_ASSIGNEE_UNAVAILABLE,
             "no publishers available to assign",
         )
             .toStatusRuntimeException()
-        val existingAcl = AppDraftAcl.findByAppDraftIdAndUserId(request.appDraftId, publisher.userId)
+        val existingAcl = AppDraftAcl.findByAppDraftIdAndUserId(request.appDraftId, publisher.id)
         if (existingAcl == null) {
             AppDraftAcl(
                 appDraftId = request.appDraftId,
-                userId = publisher.userId,
+                userId = publisher.id,
                 canDelete = false,
                 canPublish = true,
                 canReplacePackage = false,
@@ -136,10 +153,97 @@ class ReviewServiceImpl @Inject constructor(
         return Uni.createFrom().item { createAppDraftReviewResponse {} }
     }
 
+    @Transactional
+    override fun createAppEditReview(
+        request: CreateAppEditReviewRequest,
+    ): Uni<CreateAppEditReviewResponse> {
+        val userId = AuthnContextKey.USER_ID.get()
+
+        val canReview = permissionService.hasPermission(
+            ObjectReference(ObjectType.APP_EDIT, request.appEditId),
+            Permission.REVIEW,
+            ObjectReference(ObjectType.USER, userId),
+        )
+        if (!canReview) {
+            val exists = AppEdit.existsById(request.appEditId)
+            val canViewExistence = permissionService.hasPermission(
+                ObjectReference(ObjectType.APP_EDIT, request.appEditId),
+                Permission.VIEW_EXISTENCE,
+                ObjectReference(ObjectType.USER, userId),
+            )
+
+            throw if (!exists || !canViewExistence) {
+                appEditNotFoundException(request.appEditId)
+            } else {
+                ConsoleApiError(
+                    ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
+                    "insufficient permission to review app edit",
+                )
+                    .toStatusRuntimeException()
+            }
+        }
+
+        val appEdit = AppEdit
+            .findById(request.appEditId)
+            ?: throw appEditNotFoundException(request.appEditId)
+        if (appEdit.reviewId != null) {
+            throw ConsoleApiError(
+                ErrorReason.ERROR_REASON_ALREADY_EXISTS,
+                "app edit has already been reviewed",
+            )
+                .toStatusRuntimeException()
+        }
+
+        // Save the review.
+        //
+        // We don't need to check if the app edit is submitted first since 1) the server won't give
+        // someone review access to the edit if it hasn't been submitted and 2) database constraints
+        // ensure a non-submitted edit can't be reviewed even if there's a bug that makes (1) false.
+        val review = Review(id = UUID.randomUUID(), approved = request.approved)
+            .also { it.persist() }
+        for (rejectionReason in request.rejectionReasonsList) {
+            RejectionReason(reviewId = review.id, reason = rejectionReason.reason).persist()
+        }
+        appEdit.reviewId = review.id
+
+        // Publish the edit immediately if the review is an approval
+        if (request.approved) {
+            val job = JobBuilder
+                .newJob(PublishAppEditJob::class.java)
+                .withIdentity(JobKey.jobKey(Identifier.generateNew(IdType.OPERATION)))
+                .withDescription("Publish app edit \"${request.appEditId}\"")
+                .usingJobData(JobDataKey.APP_EDIT_ID, request.appEditId)
+                .requestRecovery()
+                .storeDurably()
+                .build()
+            val trigger = TriggerBuilder.newTrigger().startNow().build()
+            scheduler.get().scheduleJob(job, trigger)
+
+            BackgroundOperation(
+                id = job.key.name,
+                type = BackgroundOperationType.PUBLISH_APP_EDIT,
+                parentId = appEdit.id,
+                createdAt = OffsetDateTime.now(),
+                result = null,
+                succeeded = false,
+            )
+                .persist()
+            appEdit.publishing = true
+        }
+
+        return Uni.createFrom().item { createAppEditReviewResponse {} }
+    }
+
     private companion object {
         private fun appDraftNotFoundException(appDraftId: String) = ConsoleApiError(
             ErrorReason.ERROR_REASON_RESOURCE_NOT_FOUND,
             "app draft \"$appDraftId\" not found",
+        )
+            .toStatusRuntimeException()
+
+        private fun appEditNotFoundException(appEditId: String) = ConsoleApiError(
+            ErrorReason.ERROR_REASON_RESOURCE_NOT_FOUND,
+            "app edit with ID \"$appEditId\" not found",
         )
             .toStatusRuntimeException()
     }

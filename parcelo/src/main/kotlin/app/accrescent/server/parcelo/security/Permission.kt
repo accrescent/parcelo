@@ -8,8 +8,6 @@ enum class Permission {
     CREATE_APP_DRAFT,
     CREATE_APP_EDIT,
     CREATE_LISTING,
-    CREATE_PUBLISHER,
-    CREATE_REVIEWER,
     DELETE,
     DELETE_LISTING,
     DOWNLOAD,
@@ -20,6 +18,7 @@ enum class Permission {
     REVIEW,
     SUBMIT,
     UPDATE,
+    UPDATE_ROLES,
     VIEW,
     VIEW_EXISTENCE,
 }

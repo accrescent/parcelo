@@ -9,6 +9,5 @@ enum class ObjectType {
     APP_DRAFT,
     APP_EDIT,
     ORGANIZATION,
-    PLATFORM,
     USER,
 }

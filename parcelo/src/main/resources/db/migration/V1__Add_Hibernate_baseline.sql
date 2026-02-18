@@ -20,11 +20,7 @@ CREATE SEQUENCE published_apks_seq START WITH 1 INCREMENT BY 50;
 
 CREATE SEQUENCE published_images_seq START WITH 1 INCREMENT BY 50;
 
-CREATE SEQUENCE publishers_seq START WITH 1 INCREMENT BY 50;
-
 CREATE SEQUENCE rejection_reasons_seq START WITH 1 INCREMENT BY 50;
-
-CREATE SEQUENCE reviewers_seq START WITH 1 INCREMENT BY 50;
 
 CREATE TABLE app_draft_acls (
     can_delete boolean NOT NULL,
@@ -272,24 +268,10 @@ CREATE TABLE published_images (
     UNIQUE (bucket_id, object_id)
 );
 
-CREATE TABLE publishers (
-    id bigint NOT NULL,
-    email text NOT NULL,
-    user_id text NOT NULL UNIQUE,
-    PRIMARY KEY (id)
-);
-
 CREATE TABLE rejection_reasons (
     id bigint NOT NULL,
     review_id uuid NOT NULL,
     reason text NOT NULL,
-    PRIMARY KEY (id)
-);
-
-CREATE TABLE reviewers (
-    id bigint NOT NULL,
-    email text NOT NULL,
-    user_id text NOT NULL UNIQUE,
     PRIMARY KEY (id)
 );
 
@@ -300,6 +282,8 @@ CREATE TABLE reviews (
 );
 
 CREATE TABLE users (
+    publisher boolean NOT NULL,
+    reviewer boolean NOT NULL,
     email text NOT NULL,
     id text NOT NULL,
     oidc_issuer text NOT NULL,
@@ -462,19 +446,7 @@ ALTER TABLE IF EXISTS published_images
     FOREIGN KEY (image_id)
     REFERENCES images;
 
-ALTER TABLE IF EXISTS publishers
-    ADD CONSTRAINT FK84mh2dxvfhtrap7uwjxehewg9
-    FOREIGN KEY (user_id)
-    REFERENCES users
-    ON DELETE CASCADE;
-
 ALTER TABLE IF EXISTS rejection_reasons
     ADD CONSTRAINT FKjm7eo74tuqoyxhy4a88obfwxj
     FOREIGN KEY (review_id)
     REFERENCES reviews;
-
-ALTER TABLE IF EXISTS reviewers
-    ADD CONSTRAINT FK497vjqxraplr54hsti8w24dh9
-    FOREIGN KEY (user_id)
-    REFERENCES users
-    ON DELETE CASCADE;

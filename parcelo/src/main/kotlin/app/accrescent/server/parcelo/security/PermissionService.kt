@@ -121,10 +121,9 @@ class PermissionService @Inject constructor(private val config: ParceloConfig) {
                 else -> false
             }
 
-            ObjectType.PLATFORM -> when (permission) {
-                // Intentionally ignore resource.id since there is only one platform
-                Permission.CREATE_PUBLISHER,
-                Permission.CREATE_REVIEWER -> {
+            ObjectType.USER -> when (permission) {
+                Permission.UPDATE,
+                Permission.UPDATE_ROLES -> {
                     val user = User.findById(subject.id) ?: return false
 
                     user.oidcProvider == OidcProvider.fromConfig(config.admin().oidcProvider())
@@ -133,8 +132,6 @@ class PermissionService @Inject constructor(private val config: ParceloConfig) {
 
                 else -> false
             }
-
-            else -> false
         }
     }
 }
