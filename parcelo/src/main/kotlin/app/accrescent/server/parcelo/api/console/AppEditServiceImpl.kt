@@ -47,9 +47,9 @@ import app.accrescent.server.parcelo.api.error.ConsoleApiError
 import app.accrescent.server.parcelo.config.ParceloConfig
 import app.accrescent.server.parcelo.data.App
 import app.accrescent.server.parcelo.data.AppEdit
-import app.accrescent.server.parcelo.data.AppEditAcl
 import app.accrescent.server.parcelo.data.AppEditListing
 import app.accrescent.server.parcelo.data.AppEditListingIconUploadJob
+import app.accrescent.server.parcelo.data.AppEditRelationshipSet
 import app.accrescent.server.parcelo.data.AppEditUploadProcessingJob
 import app.accrescent.server.parcelo.data.BackgroundOperation
 import app.accrescent.server.parcelo.data.BackgroundOperationType
@@ -629,16 +629,17 @@ class AppEditServiceImpl @Inject constructor(
                 "no reviewers available to assign",
             )
                 .toStatusRuntimeException()
-            val existingAcl = AppEditAcl.findByAppEditIdAndUserId(request.appEditId, reviewer.id)
-            if (existingAcl == null) {
-                AppEditAcl(
+            val existingRelationshipSet = AppEditRelationshipSet
+                .findByAppEditIdAndUserId(request.appEditId, reviewer.id)
+            if (existingRelationshipSet == null) {
+                AppEditRelationshipSet(
                     appEditId = request.appEditId,
                     userId = reviewer.id,
-                    canReview = true,
+                    reviewer = true,
                 )
                     .persist()
             } else {
-                existingAcl.canReview = true
+                existingRelationshipSet.reviewer = true
             }
 
             // Notify the reviewer that they are assigned to this edit before the transaction is

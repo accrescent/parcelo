@@ -5,10 +5,10 @@
 package app.accrescent.server.parcelo.security
 
 import app.accrescent.server.parcelo.config.ParceloConfig
-import app.accrescent.server.parcelo.data.AppDraftAcl
-import app.accrescent.server.parcelo.data.AppEditAcl
+import app.accrescent.server.parcelo.data.AppDraftRelationshipSet
+import app.accrescent.server.parcelo.data.AppEditRelationshipSet
 import app.accrescent.server.parcelo.data.OidcProvider
-import app.accrescent.server.parcelo.data.OrganizationAcl
+import app.accrescent.server.parcelo.data.OrganizationRelationshipSet
 import app.accrescent.server.parcelo.data.User
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.inject.Inject
@@ -27,69 +27,50 @@ class PermissionService @Inject constructor(private val config: ParceloConfig) {
         return when (resource.type) {
             ObjectType.APP -> when (permission) {
                 Permission.CREATE_APP_EDIT,
-                Permission.UPDATE -> OrganizationAcl
+                Permission.UPDATE,
+                Permission.VIEW,
+                Permission.VIEW_EXISTENCE,
+                    -> OrganizationRelationshipSet
                     .findByAppIdAndUserId(resource.id, subject.id)
-                    ?.canEditApps == true
-
-                Permission.VIEW -> OrganizationAcl
-                    .findByAppIdAndUserId(resource.id, subject.id)
-                    ?.canViewApps == true
-
-                Permission.VIEW_EXISTENCE -> OrganizationAcl
-                    .findByAppIdAndUserId(resource.id, subject.id)
-                    ?.canViewApps == true
+                    ?.owner == true
 
                 else -> false
             }
 
             ObjectType.APP_DRAFT -> when (permission) {
-                Permission.CREATE_LISTING -> AppDraftAcl
-                    .findByAppDraftIdAndUserId(resource.id, subject.id)
-                    ?.canUpdate == true
+                Permission.CREATE_LISTING,
+                Permission.DELETE,
+                Permission.REPLACE_LISTING_ICON,
+                Permission.REPLACE_PACKAGE,
+                Permission.SUBMIT,
+                Permission.UPDATE,
+                Permission.VIEW,
+                Permission.VIEW_EXISTENCE -> {
+                    val isOrgOwner = OrganizationRelationshipSet
+                        .findByAppDraftIdAndUserId(resource.id, subject.id)
+                        ?.owner == true
+                    val (isReviewer, isPublisher) = AppDraftRelationshipSet
+                        .findByAppDraftIdAndUserId(resource.id, subject.id)
+                        .let { Pair(it?.reviewer == true, it?.publisher == true) }
 
-                Permission.DELETE -> AppDraftAcl
-                    .findByAppDraftIdAndUserId(resource.id, subject.id)
-                    ?.canDelete == true
+                    isOrgOwner || isReviewer || isPublisher
+                }
 
-                Permission.PUBLISH -> AppDraftAcl
+                Permission.PUBLISH -> AppDraftRelationshipSet
                     .findByAppDraftIdAndUserId(resource.id, subject.id)
-                    ?.canPublish == true
+                    ?.publisher == true
 
-                Permission.REPLACE_LISTING_ICON -> AppDraftAcl
+                Permission.REVIEW -> AppDraftRelationshipSet
                     .findByAppDraftIdAndUserId(resource.id, subject.id)
-                    ?.canUpdate == true
-
-                Permission.REPLACE_PACKAGE -> AppDraftAcl
-                    .findByAppDraftIdAndUserId(resource.id, subject.id)
-                    ?.canReplacePackage == true
-
-                Permission.REVIEW -> AppDraftAcl
-                    .findByAppDraftIdAndUserId(resource.id, subject.id)
-                    ?.canReview == true
-
-                Permission.SUBMIT -> AppDraftAcl
-                    .findByAppDraftIdAndUserId(resource.id, subject.id)
-                    ?.canSubmit == true
-
-                Permission.UPDATE -> AppDraftAcl
-                    .findByAppDraftIdAndUserId(resource.id, subject.id)
-                    ?.canUpdate == true
-
-                Permission.VIEW -> AppDraftAcl
-                    .findByAppDraftIdAndUserId(resource.id, subject.id)
-                    ?.canView == true
-
-                Permission.VIEW_EXISTENCE -> AppDraftAcl
-                    .findByAppDraftIdAndUserId(resource.id, subject.id)
-                    ?.canViewExistence == true
+                    ?.reviewer == true
 
                 else -> false
             }
 
             ObjectType.APP_EDIT -> when (permission) {
-                Permission.REVIEW -> AppEditAcl
+                Permission.REVIEW -> AppEditRelationshipSet
                     .findByAppEditIdAndUserId(resource.id, subject.id)
-                    ?.canReview == true
+                    ?.reviewer == true
 
                 Permission.CREATE_LISTING,
                 Permission.REPLACE_LISTING_ICON,
@@ -97,26 +78,26 @@ class PermissionService @Inject constructor(private val config: ParceloConfig) {
                 Permission.SUBMIT,
                 Permission.UPDATE,
                 Permission.VIEW,
-                Permission.VIEW_EXISTENCE,
-                    -> OrganizationAcl
-                    .findByAppEditIdAndUserId(resource.id, subject.id)
-                    ?.canEditApps == true
+                Permission.VIEW_EXISTENCE -> {
+                    val isOrgOwner = OrganizationRelationshipSet
+                        .findByAppEditIdAndUserId(resource.id, subject.id)
+                        ?.owner == true
+                    val (isReviewer, isPublisher) = AppDraftRelationshipSet
+                        .findByAppDraftIdAndUserId(resource.id, subject.id)
+                        .let { Pair(it?.reviewer == true, it?.publisher == true) }
+
+                    isOrgOwner || isReviewer || isPublisher
+                }
 
                 else -> false
             }
 
             ObjectType.ORGANIZATION -> when (permission) {
-                Permission.CREATE_APP_DRAFT -> OrganizationAcl
+                Permission.CREATE_APP_DRAFT,
+                Permission.VIEW,
+                Permission.VIEW_EXISTENCE -> OrganizationRelationshipSet
                     .findByOrganizationIdAndUserId(resource.id, subject.id)
-                    ?.canCreateAppDrafts == true
-
-                Permission.VIEW -> OrganizationAcl
-                    .findByOrganizationIdAndUserId(resource.id, subject.id)
-                    ?.canViewOrganization == true
-
-                Permission.VIEW_EXISTENCE -> OrganizationAcl
-                    .findByOrganizationIdAndUserId(resource.id, subject.id)
-                    ?.canViewOrganization == true
+                    ?.owner == true
 
                 else -> false
             }

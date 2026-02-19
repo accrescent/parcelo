@@ -40,11 +40,11 @@ class Organization(
             return if (lastOrganizationId == null) {
                 find(
                     "FROM Organization organizations " +
-                            "JOIN OrganizationAcl organization_acls " +
-                            "ON organization_acls.organizationId = organizations.id " +
-                            "AND organization_acls.userId = ?1 " +
-                            "WHERE organization_acls.userId = ?1 " +
-                            "AND organization_acls.canViewOrganization = true " +
+                            "JOIN OrganizationRelationshipSet organization_relationship_sets " +
+                            "ON organization_relationship_sets.organizationId = organizations.id " +
+                            "AND organization_relationship_sets.userId = ?1 " +
+                            "WHERE organization_relationship_sets.userId = ?1 " +
+                            "AND organization_relationship_sets.owner = true " +
                             "ORDER BY organizations.id ASC LIMIT ?2",
                     userId,
                     pageSize.toLong(),
@@ -52,11 +52,11 @@ class Organization(
             } else {
                 find(
                     "FROM Organization organizations " +
-                            "JOIN OrganizationAcl organization_acls " +
-                            "ON organization_acls.organizationId = organizations.id " +
-                            "AND organization_acls.userId = ?1 " +
-                            "WHERE organization_acls.userId = ?1 " +
-                            "AND organization_acls.canViewOrganization = true " +
+                            "JOIN OrganizationRelationshipSet organization_relationship_sets " +
+                            "ON organization_relationship_sets.organizationId = organizations.id " +
+                            "AND organization_relationship_sets.userId = ?1 " +
+                            "WHERE organization_relationship_sets.userId = ?1 " +
+                            "AND organization_relationship_sets.owner = true " +
                             "AND organizations.id > ?2 " +
                             "ORDER BY organizations.id ASC LIMIT ?3",
                     userId,

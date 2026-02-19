@@ -13,21 +13,21 @@ import jakarta.persistence.UniqueConstraint
 
 @Entity
 @Table(
-    name = "app_edit_acls",
+    name = "app_edit_relationship_sets",
     uniqueConstraints = [UniqueConstraint(columnNames = ["app_edit_id", "user_id"])],
 )
-class AppEditAcl(
+class AppEditRelationshipSet(
     @Column(columnDefinition = "text", name = "app_edit_id", nullable = false)
     var appEditId: String,
 
     @Column(columnDefinition = "text", name = "user_id", nullable = false)
     var userId: String,
 
-    @Column(name = "can_review", nullable = false)
-    var canReview: Boolean,
+    @Column(nullable = false)
+    var reviewer: Boolean,
 ) : PanacheEntity() {
-    companion object : PanacheCompanion<AppEditAcl> {
-        fun findByAppEditIdAndUserId(appEditId: String, userId: String): AppEditAcl? {
+    companion object : PanacheCompanion<AppEditRelationshipSet> {
+        fun findByAppEditIdAndUserId(appEditId: String, userId: String): AppEditRelationshipSet? {
             return find("WHERE appEditId = ?1 AND userId = ?2", appEditId, userId).firstResult()
         }
     }

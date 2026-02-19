@@ -18,39 +18,21 @@ import org.hibernate.annotations.OnDeleteAction
 
 @Entity
 @Table(
-    name = "app_draft_acls",
+    name = "app_draft_relationship_sets",
     uniqueConstraints = [UniqueConstraint(columnNames = ["app_draft_id", "user_id"])],
 )
-class AppDraftAcl(
+class AppDraftRelationshipSet(
     @Column(columnDefinition = "text", name = "app_draft_id", nullable = false)
     var appDraftId: String,
 
     @Column(columnDefinition = "text", name = "user_id", nullable = false)
     var userId: String,
 
-    @Column(name = "can_delete", nullable = false)
-    var canDelete: Boolean,
+    @Column(nullable = false)
+    var reviewer: Boolean,
 
-    @Column(name = "can_publish", nullable = false)
-    var canPublish: Boolean,
-
-    @Column(name = "can_replace_package", nullable = false)
-    var canReplacePackage: Boolean,
-
-    @Column(name = "can_review", nullable = false)
-    var canReview: Boolean,
-
-    @Column(name = "can_submit", nullable = false)
-    var canSubmit: Boolean,
-
-    @Column(name = "can_update", nullable = false)
-    var canUpdate: Boolean,
-
-    @Column(name = "can_view", nullable = false)
-    var canView: Boolean,
-
-    @Column(name = "can_view_existence", nullable = false)
-    var canViewExistence: Boolean,
+    @Column(nullable = false)
+    var publisher: Boolean,
 ) : PanacheEntity() {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "app_draft_id", insertable = false, updatable = false)
@@ -62,8 +44,8 @@ class AppDraftAcl(
     @OnDelete(action = OnDeleteAction.CASCADE)
     private lateinit var user: User
 
-    companion object : PanacheCompanion<AppDraftAcl> {
-        fun findByAppDraftIdAndUserId(appDraftId: String, userId: String): AppDraftAcl? {
+    companion object : PanacheCompanion<AppDraftRelationshipSet> {
+        fun findByAppDraftIdAndUserId(appDraftId: String, userId: String): AppDraftRelationshipSet? {
             return find("WHERE appDraftId = ?1 AND userId = ?2", appDraftId, userId).firstResult()
         }
     }

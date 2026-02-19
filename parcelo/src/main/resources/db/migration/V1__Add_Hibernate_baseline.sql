@@ -1,18 +1,18 @@
-CREATE SEQUENCE app_draft_acls_seq START WITH 1 INCREMENT BY 50;
-
 CREATE SEQUENCE app_draft_listing_icon_upload_jobs_seq START WITH 1 INCREMENT BY 50;
+
+CREATE SEQUENCE app_draft_relationship_sets_seq START WITH 1 INCREMENT BY 50;
 
 CREATE SEQUENCE app_draft_upload_processing_jobs_seq START WITH 1 INCREMENT BY 50;
 
-CREATE SEQUENCE app_edit_acls_seq START WITH 1 INCREMENT BY 50;
-
 CREATE SEQUENCE app_edit_listing_icon_upload_jobs_seq START WITH 1 INCREMENT BY 50;
+
+CREATE SEQUENCE app_edit_relationship_sets_seq START WITH 1 INCREMENT BY 50;
 
 CREATE SEQUENCE app_edit_upload_processing_jobs_seq START WITH 1 INCREMENT BY 50;
 
 CREATE SEQUENCE app_package_permissions_seq START WITH 1 INCREMENT BY 50;
 
-CREATE SEQUENCE organization_acls_seq START WITH 1 INCREMENT BY 50;
+CREATE SEQUENCE organization_relationship_sets_seq START WITH 1 INCREMENT BY 50;
 
 CREATE SEQUENCE orphaned_blobs_seq START WITH 1 INCREMENT BY 50;
 
@@ -21,22 +21,6 @@ CREATE SEQUENCE published_apks_seq START WITH 1 INCREMENT BY 50;
 CREATE SEQUENCE published_images_seq START WITH 1 INCREMENT BY 50;
 
 CREATE SEQUENCE rejection_reasons_seq START WITH 1 INCREMENT BY 50;
-
-CREATE TABLE app_draft_acls (
-    can_delete boolean NOT NULL,
-    can_publish boolean NOT NULL,
-    can_replace_package boolean NOT NULL,
-    can_review boolean NOT NULL,
-    can_submit boolean NOT NULL,
-    can_update boolean NOT NULL,
-    can_view boolean NOT NULL,
-    can_view_existence boolean NOT NULL,
-    id bigint NOT NULL,
-    app_draft_id text NOT NULL,
-    user_id text NOT NULL,
-    PRIMARY KEY (id),
-    UNIQUE (app_draft_id, user_id)
-);
 
 CREATE TABLE app_draft_listing_icon_upload_jobs (
     id bigint NOT NULL,
@@ -57,6 +41,16 @@ CREATE TABLE app_draft_listings (
     short_description text NOT NULL,
     PRIMARY KEY (id),
     UNIQUE (app_draft_id, language)
+);
+
+CREATE TABLE app_draft_relationship_sets (
+    publisher boolean NOT NULL,
+    reviewer boolean NOT NULL,
+    id bigint NOT NULL,
+    app_draft_id text NOT NULL,
+    user_id text NOT NULL,
+    PRIMARY KEY (id),
+    UNIQUE (app_draft_id, user_id)
 );
 
 CREATE TABLE app_draft_upload_processing_jobs (
@@ -88,15 +82,6 @@ CREATE TABLE app_drafts (
     CHECK (publishing = false OR published_at IS NULL)
 );
 
-CREATE TABLE app_edit_acls (
-    can_review boolean NOT NULL,
-    id bigint NOT NULL,
-    app_edit_id text NOT NULL,
-    user_id text NOT NULL,
-    PRIMARY KEY (id),
-    UNIQUE (app_edit_id, user_id)
-);
-
 CREATE TABLE app_edit_listing_icon_upload_jobs (
     id bigint NOT NULL,
     app_edit_listing_id uuid NOT NULL,
@@ -116,6 +101,15 @@ CREATE TABLE app_edit_listings (
     short_description text NOT NULL,
     PRIMARY KEY (id),
     UNIQUE (app_edit_id, language)
+);
+
+CREATE TABLE app_edit_relationship_sets (
+    reviewer boolean NOT NULL,
+    id bigint NOT NULL,
+    app_edit_id text NOT NULL,
+    user_id text NOT NULL,
+    PRIMARY KEY (id),
+    UNIQUE (app_edit_id, user_id)
 );
 
 CREATE TABLE app_edit_upload_processing_jobs (
@@ -219,11 +213,8 @@ CREATE TABLE ip_address_salts (
     CHECK (id = true)
 );
 
-CREATE TABLE organization_acls (
-    can_create_app_drafts boolean NOT NULL,
-    can_edit_apps boolean NOT NULL,
-    can_view_apps boolean NOT NULL,
-    can_view_organization boolean NOT NULL,
+CREATE TABLE organization_relationship_sets (
+    owner boolean NOT NULL,
     id bigint NOT NULL,
     organization_id text NOT NULL,
     user_id text NOT NULL,
@@ -293,18 +284,6 @@ CREATE TABLE users (
     UNIQUE (oidc_issuer, oidc_subject)
 );
 
-ALTER TABLE IF EXISTS app_draft_acls
-    ADD CONSTRAINT FK3fwbegdr7onxcbw6psvtfec1i
-    FOREIGN KEY (app_draft_id)
-    REFERENCES app_drafts
-    ON DELETE CASCADE;
-
-ALTER TABLE IF EXISTS app_draft_acls
-    ADD CONSTRAINT FKnjtsi54lkhqtgv7x2hrijtcg5
-    FOREIGN KEY (user_id)
-    REFERENCES users
-    ON DELETE CASCADE;
-
 ALTER TABLE IF EXISTS app_draft_listing_icon_upload_jobs
     ADD CONSTRAINT FKltf865psu66a39pff7h13nxwk
     FOREIGN KEY (app_draft_listing_id)
@@ -326,6 +305,18 @@ ALTER TABLE IF EXISTS app_draft_listings
     ADD CONSTRAINT FKdh4u9ypft1e56qcbxgohge32f
     FOREIGN KEY (icon_image_id)
     REFERENCES images;
+
+ALTER TABLE IF EXISTS app_draft_relationship_sets
+    ADD CONSTRAINT FKbafpp6nsyubbx40gcanabtp2e
+    FOREIGN KEY (app_draft_id)
+    REFERENCES app_drafts
+    ON DELETE CASCADE;
+
+ALTER TABLE IF EXISTS app_draft_relationship_sets
+    ADD CONSTRAINT FK4inugu6fa7jl4ucatc4vu3sjw
+    FOREIGN KEY (user_id)
+    REFERENCES users
+    ON DELETE CASCADE;
 
 ALTER TABLE IF EXISTS app_draft_upload_processing_jobs
     ADD CONSTRAINT FK94goh12bgsr2wh6d9k9tj43k9
@@ -426,13 +417,13 @@ ALTER TABLE IF EXISTS apps
     FOREIGN KEY (organization_id)
     REFERENCES organizations;
 
-ALTER TABLE IF EXISTS organization_acls
-    ADD CONSTRAINT FK4leq9e6whp3gkko786aj4qcjx
+ALTER TABLE IF EXISTS organization_relationship_sets
+    ADD CONSTRAINT FKthklgtrbqbihr6qvaltmw1d6
     FOREIGN KEY (organization_id)
     REFERENCES organizations;
 
-ALTER TABLE IF EXISTS organization_acls
-    ADD CONSTRAINT FKapi10negj9lqjyeju4ufygpkb
+ALTER TABLE IF EXISTS organization_relationship_sets
+    ADD CONSTRAINT FK5452brit4662mxa8xe0a9579g
     FOREIGN KEY (user_id)
     REFERENCES users;
 

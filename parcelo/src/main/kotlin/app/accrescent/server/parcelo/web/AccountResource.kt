@@ -6,7 +6,7 @@ package app.accrescent.server.parcelo.web
 
 import app.accrescent.server.parcelo.data.OidcProvider
 import app.accrescent.server.parcelo.data.Organization
-import app.accrescent.server.parcelo.data.OrganizationAcl
+import app.accrescent.server.parcelo.data.OrganizationRelationshipSet
 import app.accrescent.server.parcelo.data.User
 import app.accrescent.server.parcelo.security.IdType
 import app.accrescent.server.parcelo.security.Identifier
@@ -51,13 +51,10 @@ class AccountResource(@IdToken val idToken: JsonWebToken) {
                 publisher = false,
             )
                 .also { it.persist() }
-            OrganizationAcl(
+            OrganizationRelationshipSet(
                 organizationId = org.id,
                 userId = user.id,
-                canCreateAppDrafts = true,
-                canEditApps = true,
-                canViewApps = true,
-                canViewOrganization = true,
+                owner = true,
             )
                 .persist()
         }

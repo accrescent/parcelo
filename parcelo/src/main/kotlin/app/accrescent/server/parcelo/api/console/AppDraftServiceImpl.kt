@@ -53,9 +53,9 @@ import app.accrescent.server.parcelo.api.error.ConsoleApiError
 import app.accrescent.server.parcelo.config.ParceloConfig
 import app.accrescent.server.parcelo.data.App
 import app.accrescent.server.parcelo.data.AppDraft
-import app.accrescent.server.parcelo.data.AppDraftAcl
 import app.accrescent.server.parcelo.data.AppDraftListing
 import app.accrescent.server.parcelo.data.AppDraftListingIconUploadJob
+import app.accrescent.server.parcelo.data.AppDraftRelationshipSet
 import app.accrescent.server.parcelo.data.AppDraftUploadProcessingJob
 import app.accrescent.server.parcelo.data.BackgroundOperation
 import app.accrescent.server.parcelo.data.BackgroundOperationType
@@ -166,19 +166,6 @@ class AppDraftServiceImpl @Inject constructor(
             publishedAt = null,
         )
             .also { it.persist() }
-        AppDraftAcl(
-            appDraftId = appDraft.id,
-            userId = userId,
-            canDelete = true,
-            canPublish = false,
-            canReplacePackage = true,
-            canReview = false,
-            canSubmit = true,
-            canUpdate = true,
-            canView = true,
-            canViewExistence = true,
-        )
-            .persist()
 
         val response = createAppDraftResponse {
             appDraftId = appDraft.id
@@ -583,24 +570,18 @@ class AppDraftServiceImpl @Inject constructor(
             "no reviewers available to assign",
         )
             .toStatusRuntimeException()
-        val existingAcl = AppDraftAcl.findByAppDraftIdAndUserId(request.appDraftId, reviewer.id)
-        if (existingAcl == null) {
-            AppDraftAcl(
+        val existingRelationshipSet = AppDraftRelationshipSet
+            .findByAppDraftIdAndUserId(request.appDraftId, reviewer.id)
+        if (existingRelationshipSet == null) {
+            AppDraftRelationshipSet(
                 appDraftId = request.appDraftId,
                 userId = reviewer.id,
-                canDelete = false,
-                canPublish = false,
-                canReplacePackage = false,
-                canReview = true,
-                canSubmit = false,
-                canUpdate = false,
-                canView = false,
-                canViewExistence = true,
+                reviewer = true,
+                publisher = false,
             )
                 .persist()
         } else {
-            existingAcl.canReview = true
-            existingAcl.canViewExistence = true
+            existingRelationshipSet.reviewer = true
         }
         appDraft.submittedAt = OffsetDateTime.now()
 

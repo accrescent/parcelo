@@ -136,11 +136,11 @@ class AppDraft(
             return if (afterAppDraftId == null) {
                 find(
                     "FROM AppDraft app_drafts " +
-                            "JOIN AppDraftAcl app_draft_acls " +
-                            "ON app_draft_acls.appDraftId = app_drafts.id " +
-                            "AND app_draft_acls.userId = ?1 " +
-                            "WHERE app_draft_acls.userId = ?1 " +
-                            "AND app_draft_acls.canView = true " +
+                            "JOIN OrganizationRelationshipSet organization_relationship_sets " +
+                            "ON organization_relationship_sets.organizationId = app_drafts.organizationId " +
+                            "AND organization_relationship_sets.userId = ?1 " +
+                            "WHERE organization_relationship_sets.userId = ?1 " +
+                            "AND organization_relationship_sets.owner = true " +
                             "ORDER BY app_drafts.id ASC LIMIT ?2",
                     userId,
                     pageSize.toLong(),
@@ -148,11 +148,11 @@ class AppDraft(
             } else {
                 find(
                     "FROM AppDraft app_drafts " +
-                            "JOIN AppDraftAcl app_draft_acls " +
-                            "ON app_draft_acls.appDraftId = app_drafts.id " +
-                            "AND app_draft_acls.userId = ?1 " +
-                            "WHERE app_draft_acls.userId = ?1 " +
-                            "AND app_draft_acls.canView = true " +
+                            "JOIN OrganizationRelationshipSet organization_relationship_sets " +
+                            "ON organization_relationship_sets.organizationId = app_drafts.organizationId " +
+                            "AND organization_relationship_sets.userId = ?1 " +
+                            "WHERE organization_relationship_sets.userId = ?1 " +
+                            "AND organization_relationship_sets.owner = true " +
                             "AND app_drafts.id > ?2 " +
                             "ORDER BY app_drafts.id ASC LIMIT ?3",
                     userId,

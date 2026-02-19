@@ -14,7 +14,7 @@ import app.accrescent.console.v1alpha1.createAppDraftReviewResponse
 import app.accrescent.console.v1alpha1.createAppEditReviewResponse
 import app.accrescent.server.parcelo.api.error.ConsoleApiError
 import app.accrescent.server.parcelo.data.AppDraft
-import app.accrescent.server.parcelo.data.AppDraftAcl
+import app.accrescent.server.parcelo.data.AppDraftRelationshipSet
 import app.accrescent.server.parcelo.data.AppEdit
 import app.accrescent.server.parcelo.data.BackgroundOperation
 import app.accrescent.server.parcelo.data.BackgroundOperationType
@@ -120,24 +120,18 @@ class ReviewServiceImpl @Inject constructor(
             "no publishers available to assign",
         )
             .toStatusRuntimeException()
-        val existingAcl = AppDraftAcl.findByAppDraftIdAndUserId(request.appDraftId, publisher.id)
-        if (existingAcl == null) {
-            AppDraftAcl(
+        val existingRelationshipSet = AppDraftRelationshipSet
+            .findByAppDraftIdAndUserId(request.appDraftId, publisher.id)
+        if (existingRelationshipSet == null) {
+            AppDraftRelationshipSet(
                 appDraftId = request.appDraftId,
                 userId = publisher.id,
-                canDelete = false,
-                canPublish = true,
-                canReplacePackage = false,
-                canReview = false,
-                canSubmit = false,
-                canUpdate = false,
-                canView = false,
-                canViewExistence = true,
+                reviewer = false,
+                publisher = true,
             )
                 .persist()
         } else {
-            existingAcl.canPublish = true
-            existingAcl.canViewExistence = true
+            existingRelationshipSet.publisher = true
         }
 
         // Notify the publisher that they are assigned to this draft before the transaction is

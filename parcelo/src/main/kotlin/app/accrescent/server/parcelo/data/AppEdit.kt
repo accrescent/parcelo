@@ -150,11 +150,11 @@ class AppEdit(
                     "FROM AppEdit app_edits " +
                             "JOIN App apps " +
                             "ON apps.id = app_edits.appId " +
-                            "JOIN OrganizationAcl organization_acls " +
-                            "ON organization_acls.organizationId = apps.organizationId " +
+                            "JOIN OrganizationRelationshipSet organization_relationship_sets " +
+                            "ON organization_relationship_sets.organizationId = apps.organizationId " +
                             "WHERE app_edits.appId = ?1 " +
-                            "AND organization_acls.userId = ?2 " +
-                            "AND organization_acls.canViewApps = true " +
+                            "AND organization_relationship_sets.userId = ?2 " +
+                            "AND organization_relationship_sets.owner = true " +
                             "ORDER by app_edits.id ASC limit ?3",
                     appId,
                     userId,
@@ -165,11 +165,11 @@ class AppEdit(
                     "FROM AppEdit app_edits " +
                             "JOIN App apps " +
                             "ON apps.id = app_edits.appId " +
-                            "JOIN OrganizationAcl organization_acls " +
-                            "ON organization_acls.organizationId = apps.organizationId " +
+                            "JOIN OrganizationRelationshipSet organization_relationship_sets " +
+                            "ON organization_relationship_sets.organizationId = apps.organizationId " +
                             "WHERE app_edits.appId = ?1 " +
-                            "AND organization_acls.userId = ?2 " +
-                            "AND organization_acls.canViewApps = true " +
+                            "AND organization_relationship_sets.userId = ?2 " +
+                            "AND organization_relationship_sets.owner = true " +
                             "AND app_edits.id > ?3 " +
                             "ORDER by app_edits.id ASC limit ?4",
                     appId,

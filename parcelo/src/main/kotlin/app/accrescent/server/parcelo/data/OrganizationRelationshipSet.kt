@@ -16,27 +16,18 @@ import jakarta.persistence.UniqueConstraint
 
 @Entity
 @Table(
-    name = "organization_acls",
+    name = "organization_relationship_sets",
     uniqueConstraints = [UniqueConstraint(columnNames = ["organization_id", "user_id"])],
 )
-class OrganizationAcl(
+class OrganizationRelationshipSet(
     @Column(columnDefinition = "text", name = "organization_id", nullable = false)
     var organizationId: String,
 
     @Column(columnDefinition = "text", name = "user_id", nullable = false)
     var userId: String,
 
-    @Column(name = "can_create_app_drafts", nullable = false)
-    var canCreateAppDrafts: Boolean,
-
-    @Column(name = "can_edit_apps", nullable = false)
-    var canEditApps: Boolean,
-
-    @Column(name = "can_view_apps", nullable = false)
-    var canViewApps: Boolean,
-
-    @Column(name = "can_view_organization", nullable = false)
-    var canViewOrganization: Boolean,
+    @Column(nullable = false)
+    var owner: Boolean,
 ) : PanacheEntity() {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(insertable = false, updatable = false)
@@ -46,36 +37,55 @@ class OrganizationAcl(
     @JoinColumn(insertable = false, updatable = false)
     private lateinit var user: User
 
-    companion object : PanacheCompanion<OrganizationAcl> {
-        fun findByAppIdAndUserId(appId: String, userId: String): OrganizationAcl? {
+    companion object : PanacheCompanion<OrganizationRelationshipSet> {
+        fun findByAppIdAndUserId(appId: String, userId: String): OrganizationRelationshipSet? {
             return find(
-                "FROM OrganizationAcl organization_acls " +
+                "FROM OrganizationRelationshipSet organization_relationship_sets " +
                         "JOIN App apps " +
-                        "ON apps.organizationId = organization_acls.organizationId " +
+                        "ON apps.organizationId = organization_relationship_sets.organizationId " +
                         "WHERE apps.id = ?1 " +
-                        "AND organization_acls.userId = ?2",
+                        "AND organization_relationship_sets.userId = ?2",
                 appId,
                 userId,
             )
                 .firstResult()
         }
 
-        fun findByAppEditIdAndUserId(appEditId: String, userId: String): OrganizationAcl? {
+        fun findByAppDraftIdAndUserId(
+            appDraftId: String,
+            userId: String,
+        ): OrganizationRelationshipSet? {
             return find(
-                "FROM OrganizationAcl organization_acls " +
+                "FROM OrganizationRelationshipSet organization_relationship_sets " +
+                        "JOIN AppDraft app_drafts " +
+                        "ON app_drafts.organizationId = organization_relationship_sets.organizationId " +
+                        "WHERE app_drafts.id = ?1 " +
+                        "AND organization_relationship_sets.userId = ?2",
+                appDraftId,
+                userId,
+            )
+                .firstResult()
+        }
+
+        fun findByAppEditIdAndUserId(appEditId: String, userId: String): OrganizationRelationshipSet? {
+            return find(
+                "FROM OrganizationRelationshipSet organization_relationship_sets " +
                         "JOIN App apps " +
-                        "ON apps.organizationId = organization_acls.organizationId " +
+                        "ON apps.organizationId = organization_relationship_sets.organizationId " +
                         "JOIN AppEdit app_edits " +
                         "ON app_edits.appId = apps.id " +
                         "WHERE app_edits.id = ?1 " +
-                        "AND organization_acls.userId = ?2",
+                        "AND organization_relationship_sets.userId = ?2",
                 appEditId,
                 userId,
             )
                 .firstResult()
         }
 
-        fun findByOrganizationIdAndUserId(organizationId: String, userId: String): OrganizationAcl? {
+        fun findByOrganizationIdAndUserId(
+            organizationId: String,
+            userId: String,
+        ): OrganizationRelationshipSet? {
             return find("WHERE organizationId = ?1 AND userId = ?2", organizationId, userId)
                 .firstResult()
         }
