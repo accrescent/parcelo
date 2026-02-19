@@ -40,11 +40,27 @@ class PermissionService @Inject constructor(private val config: ParceloConfig) {
             ObjectType.APP_DRAFT -> when (permission) {
                 Permission.CREATE_LISTING,
                 Permission.DELETE,
+                Permission.DELETE_LISTING,
+                Permission.DOWNLOAD,
+                Permission.DOWNLOAD_LISTING_ICONS,
                 Permission.REPLACE_LISTING_ICON,
                 Permission.REPLACE_PACKAGE,
                 Permission.SUBMIT,
                 Permission.UPDATE,
-                Permission.VIEW,
+                Permission.VIEW -> {
+                    OrganizationRelationshipSet
+                        .findByAppDraftIdAndUserId(resource.id, subject.id)
+                        ?.owner == true
+                }
+
+                Permission.PUBLISH -> AppDraftRelationshipSet
+                    .findByAppDraftIdAndUserId(resource.id, subject.id)
+                    ?.publisher == true
+
+                Permission.REVIEW -> AppDraftRelationshipSet
+                    .findByAppDraftIdAndUserId(resource.id, subject.id)
+                    ?.reviewer == true
+
                 Permission.VIEW_EXISTENCE -> {
                     val isOrgOwner = OrganizationRelationshipSet
                         .findByAppDraftIdAndUserId(resource.id, subject.id)
@@ -56,37 +72,36 @@ class PermissionService @Inject constructor(private val config: ParceloConfig) {
                     isOrgOwner || isReviewer || isPublisher
                 }
 
-                Permission.PUBLISH -> AppDraftRelationshipSet
-                    .findByAppDraftIdAndUserId(resource.id, subject.id)
-                    ?.publisher == true
-
-                Permission.REVIEW -> AppDraftRelationshipSet
-                    .findByAppDraftIdAndUserId(resource.id, subject.id)
-                    ?.reviewer == true
-
                 else -> false
             }
 
             ObjectType.APP_EDIT -> when (permission) {
-                Permission.REVIEW -> AppEditRelationshipSet
-                    .findByAppEditIdAndUserId(resource.id, subject.id)
-                    ?.reviewer == true
-
                 Permission.CREATE_LISTING,
+                Permission.DELETE,
+                Permission.DELETE_LISTING,
+                Permission.DOWNLOAD,
+                Permission.DOWNLOAD_LISTING_ICONS,
                 Permission.REPLACE_LISTING_ICON,
                 Permission.REPLACE_PACKAGE,
                 Permission.SUBMIT,
                 Permission.UPDATE,
-                Permission.VIEW,
+                Permission.VIEW -> OrganizationRelationshipSet
+                    .findByAppEditIdAndUserId(resource.id, subject.id)
+                    ?.owner == true
+
+                Permission.REVIEW -> AppEditRelationshipSet
+                    .findByAppEditIdAndUserId(resource.id, subject.id)
+                    ?.reviewer == true
+
                 Permission.VIEW_EXISTENCE -> {
                     val isOrgOwner = OrganizationRelationshipSet
                         .findByAppEditIdAndUserId(resource.id, subject.id)
                         ?.owner == true
-                    val (isReviewer, isPublisher) = AppDraftRelationshipSet
-                        .findByAppDraftIdAndUserId(resource.id, subject.id)
-                        .let { Pair(it?.reviewer == true, it?.publisher == true) }
+                    val isReviewer = AppEditRelationshipSet
+                        .findByAppEditIdAndUserId(resource.id, subject.id)
+                        ?.reviewer == true
 
-                    isOrgOwner || isReviewer || isPublisher
+                    isOrgOwner || isReviewer
                 }
 
                 else -> false
