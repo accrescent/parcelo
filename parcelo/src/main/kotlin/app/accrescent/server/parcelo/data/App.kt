@@ -93,7 +93,6 @@ class App(
                     "FROM App apps " +
                             "JOIN OrganizationRelationshipSet organization_relationship_sets " +
                             "ON organization_relationship_sets.organizationId = apps.organizationId " +
-                            "AND organization_relationship_sets.userId = ?1 " +
                             "WHERE organization_relationship_sets.userId = ?1 " +
                             "AND organization_relationship_sets.owner = true " +
                             "ORDER BY apps.id ASC LIMIT ?2",
@@ -105,7 +104,6 @@ class App(
                     "FROM App apps " +
                             "JOIN OrganizationRelationshipSet organization_relationship_sets " +
                             "ON organization_relationship_sets.organizationId = apps.organizationId " +
-                            "AND organization_relationship_sets.userId = ?1 " +
                             "WHERE organization_relationship_sets.userId = ?1 " +
                             "AND organization_relationship_sets.owner = true " +
                             "AND apps.id > ?2 " +

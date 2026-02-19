@@ -42,7 +42,6 @@ class Organization(
                     "FROM Organization organizations " +
                             "JOIN OrganizationRelationshipSet organization_relationship_sets " +
                             "ON organization_relationship_sets.organizationId = organizations.id " +
-                            "AND organization_relationship_sets.userId = ?1 " +
                             "WHERE organization_relationship_sets.userId = ?1 " +
                             "AND organization_relationship_sets.owner = true " +
                             "ORDER BY organizations.id ASC LIMIT ?2",
@@ -54,7 +53,6 @@ class Organization(
                     "FROM Organization organizations " +
                             "JOIN OrganizationRelationshipSet organization_relationship_sets " +
                             "ON organization_relationship_sets.organizationId = organizations.id " +
-                            "AND organization_relationship_sets.userId = ?1 " +
                             "WHERE organization_relationship_sets.userId = ?1 " +
                             "AND organization_relationship_sets.owner = true " +
                             "AND organizations.id > ?2 " +
