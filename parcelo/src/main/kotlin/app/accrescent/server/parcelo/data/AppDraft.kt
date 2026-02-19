@@ -128,19 +128,6 @@ class AppDraft(
             return count("WHERE id = ?1", id) > 0
         }
 
-        fun findByProcessingJobBucketIdAndObjectId(bucketId: String, objectId: String): AppDraft? {
-            return find(
-                "FROM AppDraft app_drafts " +
-                        "JOIN AppDraftUploadProcessingJob package_upload_processing_jobs " +
-                        "ON package_upload_processing_jobs.appDraftId = app_drafts.id " +
-                        "WHERE package_upload_processing_jobs.bucketId = ?1 " +
-                        "AND package_upload_processing_jobs.objectId = ?2",
-                bucketId,
-                objectId,
-            )
-                .firstResult()
-        }
-
         fun findForUserByQuery(
             userId: String,
             pageSize: UInt,
