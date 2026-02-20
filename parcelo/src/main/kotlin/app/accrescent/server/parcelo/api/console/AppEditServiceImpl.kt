@@ -60,11 +60,9 @@ import app.accrescent.server.parcelo.jobs.PublishAppEditJob
 import app.accrescent.server.parcelo.security.AuthnContextKey
 import app.accrescent.server.parcelo.security.GrpcAuthenticationInterceptor
 import app.accrescent.server.parcelo.security.GrpcRateLimitInterceptor
+import app.accrescent.server.parcelo.security.HasPermissionRequest
 import app.accrescent.server.parcelo.security.IdType
 import app.accrescent.server.parcelo.security.Identifier
-import app.accrescent.server.parcelo.security.ObjectReference
-import app.accrescent.server.parcelo.security.ObjectType
-import app.accrescent.server.parcelo.security.Permission
 import app.accrescent.server.parcelo.security.PermissionService
 import app.accrescent.server.parcelo.validation.GrpcRequestValidationInterceptor
 import com.google.cloud.storage.BlobInfo
@@ -144,18 +142,12 @@ class AppEditServiceImpl @Inject constructor(
     override fun createAppEdit(request: CreateAppEditRequest): Uni<CreateAppEditResponse> {
         val userId = AuthnContextKey.USER_ID.get()
 
-        val canCreateAppEdit = permissionService.hasPermission(
-            ObjectReference(ObjectType.APP, request.appId),
-            Permission.CREATE_APP_EDIT,
-            ObjectReference(ObjectType.USER, userId),
-        )
+        val canCreateAppEdit = permissionService
+            .hasPermission(HasPermissionRequest.CreateAppEdit(request.appId, userId))
         if (!canCreateAppEdit) {
             val appExists = App.existsById(request.appId)
-            val canViewAppExistence = permissionService.hasPermission(
-                ObjectReference(ObjectType.APP, request.appId),
-                Permission.VIEW_EXISTENCE,
-                ObjectReference(ObjectType.USER, userId),
-            )
+            val canViewAppExistence = permissionService
+                .hasPermission(HasPermissionRequest.ViewAppExistence(request.appId, userId))
 
             throw if (!canViewAppExistence || !appExists) {
                 appNotFoundException(request.appId)
@@ -213,18 +205,12 @@ class AppEditServiceImpl @Inject constructor(
     override fun getAppEdit(request: GetAppEditRequest): Uni<GetAppEditResponse> {
         val userId = AuthnContextKey.USER_ID.get()
 
-        val canView = permissionService.hasPermission(
-            ObjectReference(ObjectType.APP_EDIT, request.appEditId),
-            Permission.VIEW,
-            ObjectReference(ObjectType.USER, userId),
-        )
+        val canView = permissionService
+            .hasPermission(HasPermissionRequest.ViewAppEdit(request.appEditId, userId))
         if (!canView) {
             val exists = AppEdit.existsById(request.appEditId)
-            val canViewExistence = permissionService.hasPermission(
-                ObjectReference(ObjectType.APP_EDIT, request.appEditId),
-                Permission.VIEW_EXISTENCE,
-                ObjectReference(ObjectType.USER, userId),
-            )
+            val canViewExistence = permissionService
+                .hasPermission(HasPermissionRequest.ViewAppEditExistence(request.appEditId, userId))
 
             throw if (!exists || !canViewExistence) {
                 appEditNotFoundException(request.appEditId)
@@ -354,18 +340,12 @@ class AppEditServiceImpl @Inject constructor(
     ): Uni<CreateAppEditUploadOperationResponse> {
         val userId = AuthnContextKey.USER_ID.get()
 
-        val canReplacePackage = permissionService.hasPermission(
-            ObjectReference(ObjectType.APP_EDIT, request.appEditId),
-            Permission.REPLACE_PACKAGE,
-            ObjectReference(ObjectType.USER, userId),
-        )
+        val canReplacePackage = permissionService
+            .hasPermission(HasPermissionRequest.ReplaceAppEditPackage(request.appEditId, userId))
         if (!canReplacePackage) {
             val exists = AppEdit.existsById(request.appEditId)
-            val canViewExistence = permissionService.hasPermission(
-                ObjectReference(ObjectType.APP_EDIT, request.appEditId),
-                Permission.VIEW_EXISTENCE,
-                ObjectReference(ObjectType.USER, userId),
-            )
+            val canViewExistence = permissionService
+                .hasPermission(HasPermissionRequest.ViewAppEditExistence(request.appEditId, userId))
 
             throw if (!exists || !canViewExistence) {
                 appEditNotFoundException(request.appEditId)
@@ -424,18 +404,12 @@ class AppEditServiceImpl @Inject constructor(
     ): Uni<GetAppEditDownloadInfoResponse> {
         val userId = AuthnContextKey.USER_ID.get()
 
-        val canDownload = permissionService.hasPermission(
-            ObjectReference(ObjectType.APP_EDIT, request.appEditId),
-            Permission.DOWNLOAD,
-            ObjectReference(ObjectType.USER, userId),
-        )
+        val canDownload = permissionService
+            .hasPermission(HasPermissionRequest.DownloadAppEdit(request.appEditId, userId))
         if (!canDownload) {
             val exists = AppEdit.existsById(request.appEditId)
-            val canViewExistence = permissionService.hasPermission(
-                ObjectReference(ObjectType.APP_EDIT, request.appEditId),
-                Permission.VIEW_EXISTENCE,
-                ObjectReference(ObjectType.USER, userId)
-            )
+            val canViewExistence = permissionService
+                .hasPermission(HasPermissionRequest.ViewAppEditExistence(request.appEditId, userId))
 
             throw if (!exists || !canViewExistence) {
                 appEditNotFoundException(request.appEditId)
@@ -467,18 +441,12 @@ class AppEditServiceImpl @Inject constructor(
     override fun updateAppEdit(request: UpdateAppEditRequest): Uni<UpdateAppEditResponse> {
         val userId = AuthnContextKey.USER_ID.get()
 
-        val canUpdate = permissionService.hasPermission(
-            ObjectReference(ObjectType.APP_EDIT, request.appEditId),
-            Permission.UPDATE,
-            ObjectReference(ObjectType.USER, userId),
-        )
+        val canUpdate = permissionService
+            .hasPermission(HasPermissionRequest.UpdateAppEdit(request.appEditId, userId))
         if (!canUpdate) {
             val exists = AppEdit.existsById(request.appEditId)
-            val canViewExistence = permissionService.hasPermission(
-                ObjectReference(ObjectType.APP_EDIT, request.appEditId),
-                Permission.VIEW_EXISTENCE,
-                ObjectReference(ObjectType.USER, userId),
-            )
+            val canViewExistence = permissionService
+                .hasPermission(HasPermissionRequest.ViewAppEditExistence(request.appEditId, userId))
 
             throw if (!exists || !canViewExistence) {
                 appEditNotFoundException(request.appEditId)
@@ -519,18 +487,12 @@ class AppEditServiceImpl @Inject constructor(
         val userId = AuthnContextKey.USER_ID.get()
 
         // Check permissions
-        val canSubmit = permissionService.hasPermission(
-            ObjectReference(ObjectType.APP_EDIT, request.appEditId),
-            Permission.SUBMIT,
-            ObjectReference(ObjectType.USER, userId),
-        )
+        val canSubmit = permissionService
+            .hasPermission(HasPermissionRequest.SubmitAppEdit(request.appEditId, userId))
         if (!canSubmit) {
             val exists = AppEdit.existsById(request.appEditId)
-            val canViewExistence = permissionService.hasPermission(
-                ObjectReference(ObjectType.APP_EDIT, request.appEditId),
-                Permission.VIEW_EXISTENCE,
-                ObjectReference(ObjectType.USER, userId),
-            )
+            val canViewExistence = permissionService
+                .hasPermission(HasPermissionRequest.ViewAppEditExistence(request.appEditId, userId))
 
             throw if (!exists || !canViewExistence) {
                 appEditNotFoundException(request.appEditId)
@@ -691,18 +653,12 @@ class AppEditServiceImpl @Inject constructor(
         val userId = AuthnContextKey.USER_ID.get()
 
         // Check permissions
-        val canDelete = permissionService.hasPermission(
-            ObjectReference(ObjectType.APP_EDIT, request.appEditId),
-            Permission.DELETE,
-            ObjectReference(ObjectType.USER, userId),
-        )
+        val canDelete = permissionService
+            .hasPermission(HasPermissionRequest.DeleteAppEdit(request.appEditId, userId))
         if (!canDelete) {
             val exists = AppEdit.existsById(request.appEditId)
-            val canViewExistence = permissionService.hasPermission(
-                ObjectReference(ObjectType.APP_EDIT, request.appEditId),
-                Permission.VIEW_EXISTENCE,
-                ObjectReference(ObjectType.USER, userId),
-            )
+            val canViewExistence = permissionService
+                .hasPermission(HasPermissionRequest.ViewAppEditExistence(request.appEditId, userId))
 
             throw if (!exists || !canViewExistence) {
                 appEditNotFoundException(request.appEditId)
@@ -748,18 +704,12 @@ class AppEditServiceImpl @Inject constructor(
     ): Uni<CreateAppEditListingResponse> {
         val userId = AuthnContextKey.USER_ID.get()
 
-        val canCreateListing = permissionService.hasPermission(
-            ObjectReference(ObjectType.APP_EDIT, request.appEditId),
-            Permission.CREATE_LISTING,
-            ObjectReference(ObjectType.USER, userId),
-        )
+        val canCreateListing = permissionService
+            .hasPermission(HasPermissionRequest.CreateAppEditListing(request.appEditId, userId))
         if (!canCreateListing) {
             val exists = AppEdit.existsById(request.appEditId)
-            val canViewExistence = permissionService.hasPermission(
-                ObjectReference(ObjectType.APP_EDIT, request.appEditId),
-                Permission.VIEW_EXISTENCE,
-                ObjectReference(ObjectType.USER, userId),
-            )
+            val canViewExistence = permissionService
+                .hasPermission(HasPermissionRequest.ViewAppEditExistence(request.appEditId, userId))
 
             throw if (!exists || !canViewExistence) {
                 appEditNotFoundException(request.appEditId)
@@ -808,19 +758,13 @@ class AppEditServiceImpl @Inject constructor(
     ): Uni<CreateAppEditListingIconUploadOperationResponse> {
         val userId = AuthnContextKey.USER_ID.get()
 
-        val canReplaceIcon = permissionService.hasPermission(
-            ObjectReference(ObjectType.APP_EDIT, request.appEditId),
-            Permission.REPLACE_LISTING_ICON,
-            ObjectReference(ObjectType.USER, userId),
-        )
+        val canReplaceIcon = permissionService
+            .hasPermission(HasPermissionRequest.ReplaceAppEditListingIcon(request.appEditId, userId))
         if (!canReplaceIcon) {
             val editExists = AppEdit.existsById(request.appEditId)
             val listingExists = AppEditListing.exists(request.appEditId, request.language)
-            val canViewExistence = permissionService.hasPermission(
-                ObjectReference(ObjectType.APP_EDIT, request.appEditId),
-                Permission.VIEW_EXISTENCE,
-                ObjectReference(ObjectType.USER, userId),
-            )
+            val canViewExistence = permissionService
+                .hasPermission(HasPermissionRequest.ViewAppEditExistence(request.appEditId, userId))
 
             throw when {
                 !editExists || !canViewExistence -> appEditNotFoundException(request.appEditId)
@@ -883,18 +827,12 @@ class AppEditServiceImpl @Inject constructor(
     ): Uni<DeleteAppEditListingResponse> {
         val userId = AuthnContextKey.USER_ID.get()
 
-        val canDelete = permissionService.hasPermission(
-            ObjectReference(ObjectType.APP_EDIT, request.appEditId),
-            Permission.DELETE_LISTING,
-            ObjectReference(ObjectType.USER, userId)
-        )
+        val canDelete = permissionService
+            .hasPermission(HasPermissionRequest.DeleteAppEditListing(request.appEditId, userId))
         if (!canDelete) {
             val exists = AppEdit.existsById(request.appEditId)
-            val canViewExistence = permissionService.hasPermission(
-                ObjectReference(ObjectType.APP_EDIT, request.appEditId),
-                Permission.VIEW_EXISTENCE,
-                ObjectReference(ObjectType.USER, userId),
-            )
+            val canViewExistence = permissionService
+                .hasPermission(HasPermissionRequest.ViewAppEditExistence(request.appEditId, userId))
 
             throw if (!exists || !canViewExistence) {
                 appEditNotFoundException(request.appEditId)

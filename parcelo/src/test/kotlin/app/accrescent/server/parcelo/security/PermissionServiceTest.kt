@@ -45,11 +45,7 @@ class PermissionServiceTest {
     fun hasPermissionReturnsTrueWhenRequired(params: HasPermissionReturnsTrueWhenRequiredParams) {
         params.setUpData()
 
-        val result = permissionService.hasPermission(
-            resource = params.resource,
-            permission = params.permission,
-            subject = ObjectReference(ObjectType.USER, params.userId),
-        )
+        val result = permissionService.hasPermission(params.request)
 
         assertTrue(result)
     }
@@ -61,229 +57,185 @@ class PermissionServiceTest {
             return listOf(
                 // App permissions
                 HasPermissionReturnsTrueWhenRequiredParams(
-                    resource = ObjectReference(ObjectType.APP, TEST_APP_ID),
-                    permission = Permission.CREATE_APP_EDIT,
-                    userId = TEST_USER_ID,
+                    request = HasPermissionRequest.CreateAppEdit(TEST_APP_ID, TEST_USER_ID),
                     setUpData = { setUpAppData() },
                 ),
                 HasPermissionReturnsTrueWhenRequiredParams(
-                    resource = ObjectReference(ObjectType.APP, TEST_APP_ID),
-                    permission = Permission.UPDATE,
-                    userId = TEST_USER_ID,
+                    request = HasPermissionRequest.UpdateApp(TEST_APP_ID, TEST_USER_ID),
                     setUpData = { setUpAppData() },
                 ),
                 HasPermissionReturnsTrueWhenRequiredParams(
-                    resource = ObjectReference(ObjectType.APP, TEST_APP_ID),
-                    permission = Permission.VIEW,
-                    userId = TEST_USER_ID,
+                    request = HasPermissionRequest.ViewApp(TEST_APP_ID, TEST_USER_ID),
                     setUpData = { setUpAppData() },
                 ),
                 HasPermissionReturnsTrueWhenRequiredParams(
-                    resource = ObjectReference(ObjectType.APP, TEST_APP_ID),
-                    permission = Permission.VIEW_EXISTENCE,
-                    userId = TEST_USER_ID,
+                    request = HasPermissionRequest.ViewAppExistence(TEST_APP_ID, TEST_USER_ID),
                     setUpData = { setUpAppData() },
                 ),
                 // App draft permissions
                 HasPermissionReturnsTrueWhenRequiredParams(
-                    resource = ObjectReference(ObjectType.APP_DRAFT, TEST_APP_DRAFT_ID),
-                    permission = Permission.CREATE_LISTING,
-                    userId = TEST_USER_ID,
+                    request = HasPermissionRequest
+                        .CreateAppDraftListing(TEST_APP_DRAFT_ID, TEST_USER_ID),
                     setUpData = { setUpAppDraftData() },
                 ),
                 HasPermissionReturnsTrueWhenRequiredParams(
-                    resource = ObjectReference(ObjectType.APP_DRAFT, TEST_APP_DRAFT_ID),
-                    permission = Permission.DELETE,
-                    userId = TEST_USER_ID,
+                    request = HasPermissionRequest.DeleteAppDraft(TEST_APP_DRAFT_ID, TEST_USER_ID),
                     setUpData = { setUpAppDraftData() },
                 ),
                 HasPermissionReturnsTrueWhenRequiredParams(
-                    resource = ObjectReference(ObjectType.APP_DRAFT, TEST_APP_DRAFT_ID),
-                    permission = Permission.DELETE_LISTING,
-                    userId = TEST_USER_ID,
+                    request = HasPermissionRequest
+                        .DeleteAppDraftListing(TEST_APP_DRAFT_ID, TEST_USER_ID),
                     setUpData = { setUpAppDraftData() },
                 ),
                 HasPermissionReturnsTrueWhenRequiredParams(
-                    resource = ObjectReference(ObjectType.APP_DRAFT, TEST_APP_DRAFT_ID),
-                    permission = Permission.DOWNLOAD,
-                    userId = TEST_USER_ID,
+                    request = HasPermissionRequest.DownloadAppDraft(TEST_APP_DRAFT_ID, TEST_USER_ID),
                     setUpData = { setUpAppDraftData() },
                 ),
                 HasPermissionReturnsTrueWhenRequiredParams(
-                    resource = ObjectReference(ObjectType.APP_DRAFT, TEST_APP_DRAFT_ID),
-                    permission = Permission.DOWNLOAD_LISTING_ICONS,
-                    userId = TEST_USER_ID,
+                    request = HasPermissionRequest
+                        .DownloadAppDraftListingIcons(TEST_APP_DRAFT_ID, TEST_USER_ID),
                     setUpData = { setUpAppDraftData() },
                 ),
                 HasPermissionReturnsTrueWhenRequiredParams(
-                    resource = ObjectReference(ObjectType.APP_DRAFT, TEST_APP_DRAFT_ID),
-                    permission = Permission.PUBLISH,
-                    userId = TEST_PUBLISHER_USER_ID,
+                    request = HasPermissionRequest
+                        .PublishAppDraft(TEST_APP_DRAFT_ID, TEST_PUBLISHER_USER_ID),
                     setUpData = { setUpAppDraftPublisherData() },
                 ),
                 HasPermissionReturnsTrueWhenRequiredParams(
-                    resource = ObjectReference(ObjectType.APP_DRAFT, TEST_APP_DRAFT_ID),
-                    permission = Permission.REPLACE_LISTING_ICON,
-                    userId = TEST_USER_ID,
+                    request = HasPermissionRequest
+                        .ReplaceAppDraftListingIcon(TEST_APP_DRAFT_ID, TEST_USER_ID),
                     setUpData = { setUpAppDraftData() },
                 ),
                 HasPermissionReturnsTrueWhenRequiredParams(
-                    resource = ObjectReference(ObjectType.APP_DRAFT, TEST_APP_DRAFT_ID),
-                    permission = Permission.REPLACE_PACKAGE,
-                    userId = TEST_USER_ID,
+                    request = HasPermissionRequest
+                        .ReplaceAppDraftPackage(TEST_APP_DRAFT_ID, TEST_USER_ID),
                     setUpData = { setUpAppDraftData() },
                 ),
                 HasPermissionReturnsTrueWhenRequiredParams(
-                    resource = ObjectReference(ObjectType.APP_DRAFT, TEST_APP_DRAFT_ID),
-                    permission = Permission.REVIEW,
-                    userId = TEST_REVIEWER_USER_ID,
+                    request = HasPermissionRequest
+                        .ReviewAppDraft(TEST_APP_DRAFT_ID, TEST_REVIEWER_USER_ID),
                     setUpData = { setUpAppDraftReviewerData() },
                 ),
                 HasPermissionReturnsTrueWhenRequiredParams(
-                    resource = ObjectReference(ObjectType.APP_DRAFT, TEST_APP_DRAFT_ID),
-                    permission = Permission.SUBMIT,
-                    userId = TEST_USER_ID,
+                    request = HasPermissionRequest.SubmitAppDraft(TEST_APP_DRAFT_ID, TEST_USER_ID),
                     setUpData = { setUpAppDraftData() },
                 ),
                 HasPermissionReturnsTrueWhenRequiredParams(
-                    resource = ObjectReference(ObjectType.APP_DRAFT, TEST_APP_DRAFT_ID),
-                    permission = Permission.UPDATE,
-                    userId = TEST_USER_ID,
+                    request = HasPermissionRequest.UpdateAppDraft(TEST_APP_DRAFT_ID, TEST_USER_ID),
                     setUpData = { setUpAppDraftData() },
                 ),
                 HasPermissionReturnsTrueWhenRequiredParams(
-                    resource = ObjectReference(ObjectType.APP_DRAFT, TEST_APP_DRAFT_ID),
-                    permission = Permission.VIEW,
-                    userId = TEST_USER_ID,
+                    request = HasPermissionRequest.ViewAppDraft(TEST_APP_DRAFT_ID, TEST_USER_ID),
                     setUpData = { setUpAppDraftData() },
                 ),
                 HasPermissionReturnsTrueWhenRequiredParams(
-                    resource = ObjectReference(ObjectType.APP_DRAFT, TEST_APP_DRAFT_ID),
-                    permission = Permission.VIEW_EXISTENCE,
-                    userId = TEST_USER_ID,
+                    request = HasPermissionRequest
+                        .ViewAppDraftExistence(TEST_APP_DRAFT_ID, TEST_USER_ID),
                     setUpData = { setUpAppDraftData() },
                 ),
                 HasPermissionReturnsTrueWhenRequiredParams(
-                    resource = ObjectReference(ObjectType.APP_DRAFT, TEST_APP_DRAFT_ID),
-                    permission = Permission.VIEW_EXISTENCE,
-                    userId = TEST_PUBLISHER_USER_ID,
+                    request = HasPermissionRequest
+                        .ViewAppDraftExistence(TEST_APP_DRAFT_ID, TEST_PUBLISHER_USER_ID),
                     setUpData = { setUpAppDraftPublisherData() },
                 ),
                 HasPermissionReturnsTrueWhenRequiredParams(
-                    resource = ObjectReference(ObjectType.APP_DRAFT, TEST_APP_DRAFT_ID),
-                    permission = Permission.VIEW_EXISTENCE,
-                    userId = TEST_REVIEWER_USER_ID,
+                    request = HasPermissionRequest
+                        .ViewAppDraftExistence(TEST_APP_DRAFT_ID, TEST_REVIEWER_USER_ID),
                     setUpData = { setUpAppDraftReviewerData() },
                 ),
                 // App edit permissions
                 HasPermissionReturnsTrueWhenRequiredParams(
-                    resource = ObjectReference(ObjectType.APP_EDIT, TEST_APP_EDIT_ID),
-                    permission = Permission.CREATE_LISTING,
-                    userId = TEST_USER_ID,
+                    request = HasPermissionRequest
+                        .CreateAppEditListing(TEST_APP_EDIT_ID, TEST_USER_ID),
                     setUpData = { setUpAppEditData() },
                 ),
                 HasPermissionReturnsTrueWhenRequiredParams(
-                    resource = ObjectReference(ObjectType.APP_EDIT, TEST_APP_EDIT_ID),
-                    permission = Permission.DELETE,
-                    userId = TEST_USER_ID,
+                    request = HasPermissionRequest.DeleteAppEdit(TEST_APP_EDIT_ID, TEST_USER_ID),
                     setUpData = { setUpAppEditData() },
                 ),
                 HasPermissionReturnsTrueWhenRequiredParams(
-                    resource = ObjectReference(ObjectType.APP_EDIT, TEST_APP_EDIT_ID),
-                    permission = Permission.DELETE_LISTING,
-                    userId = TEST_USER_ID,
+                    request = HasPermissionRequest
+                        .DeleteAppEditListing(TEST_APP_EDIT_ID, TEST_USER_ID),
                     setUpData = { setUpAppEditData() },
                 ),
                 HasPermissionReturnsTrueWhenRequiredParams(
-                    resource = ObjectReference(ObjectType.APP_EDIT, TEST_APP_EDIT_ID),
-                    permission = Permission.DOWNLOAD,
-                    userId = TEST_USER_ID,
+                    request = HasPermissionRequest.DownloadAppEdit(TEST_APP_EDIT_ID, TEST_USER_ID),
                     setUpData = { setUpAppEditData() },
                 ),
                 HasPermissionReturnsTrueWhenRequiredParams(
-                    resource = ObjectReference(ObjectType.APP_EDIT, TEST_APP_EDIT_ID),
-                    permission = Permission.DOWNLOAD_LISTING_ICONS,
-                    userId = TEST_USER_ID,
+                    request = HasPermissionRequest
+                        .DownloadAppEditListingIcons(TEST_APP_EDIT_ID, TEST_USER_ID),
                     setUpData = { setUpAppEditData() },
                 ),
                 HasPermissionReturnsTrueWhenRequiredParams(
-                    resource = ObjectReference(ObjectType.APP_EDIT, TEST_APP_EDIT_ID),
-                    permission = Permission.REPLACE_LISTING_ICON,
-                    userId = TEST_USER_ID,
+                    request = HasPermissionRequest
+                        .ReplaceAppEditListingIcon(TEST_APP_EDIT_ID, TEST_USER_ID),
                     setUpData = { setUpAppEditData() },
                 ),
                 HasPermissionReturnsTrueWhenRequiredParams(
-                    resource = ObjectReference(ObjectType.APP_EDIT, TEST_APP_EDIT_ID),
-                    permission = Permission.REPLACE_PACKAGE,
-                    userId = TEST_USER_ID,
+                    request = HasPermissionRequest
+                        .ReplaceAppEditPackage(TEST_APP_EDIT_ID, TEST_USER_ID),
                     setUpData = { setUpAppEditData() },
                 ),
                 HasPermissionReturnsTrueWhenRequiredParams(
-                    resource = ObjectReference(ObjectType.APP_EDIT, TEST_APP_EDIT_ID),
-                    permission = Permission.REVIEW,
-                    userId = TEST_REVIEWER_USER_ID,
+                    request = HasPermissionRequest
+                        .ReviewAppEdit(TEST_APP_EDIT_ID, TEST_REVIEWER_USER_ID),
                     setUpData = { setUpAppEditReviewerData() },
                 ),
                 HasPermissionReturnsTrueWhenRequiredParams(
-                    resource = ObjectReference(ObjectType.APP_EDIT, TEST_APP_EDIT_ID),
-                    permission = Permission.SUBMIT,
-                    userId = TEST_USER_ID,
+                    request = HasPermissionRequest.SubmitAppEdit(TEST_APP_EDIT_ID, TEST_USER_ID),
                     setUpData = { setUpAppEditData() },
                 ),
                 HasPermissionReturnsTrueWhenRequiredParams(
-                    resource = ObjectReference(ObjectType.APP_EDIT, TEST_APP_EDIT_ID),
-                    permission = Permission.UPDATE,
-                    userId = TEST_USER_ID,
+                    request = HasPermissionRequest.UpdateAppEdit(TEST_APP_EDIT_ID, TEST_USER_ID),
                     setUpData = { setUpAppEditData() },
                 ),
                 HasPermissionReturnsTrueWhenRequiredParams(
-                    resource = ObjectReference(ObjectType.APP_EDIT, TEST_APP_EDIT_ID),
-                    permission = Permission.VIEW,
-                    userId = TEST_USER_ID,
+                    request = HasPermissionRequest.ViewAppEdit(TEST_APP_EDIT_ID, TEST_USER_ID),
                     setUpData = { setUpAppEditData() },
                 ),
                 HasPermissionReturnsTrueWhenRequiredParams(
-                    resource = ObjectReference(ObjectType.APP_EDIT, TEST_APP_EDIT_ID),
-                    permission = Permission.VIEW_EXISTENCE,
-                    userId = TEST_USER_ID,
+                    request = HasPermissionRequest
+                        .ViewAppEditExistence(TEST_APP_EDIT_ID, TEST_USER_ID),
                     setUpData = { setUpAppEditData() },
                 ),
                 HasPermissionReturnsTrueWhenRequiredParams(
-                    resource = ObjectReference(ObjectType.APP_EDIT, TEST_APP_EDIT_ID),
-                    permission = Permission.VIEW_EXISTENCE,
-                    userId = TEST_REVIEWER_USER_ID,
+                    request = HasPermissionRequest
+                        .ViewAppEditExistence(TEST_APP_EDIT_ID, TEST_REVIEWER_USER_ID),
                     setUpData = { setUpAppEditReviewerData() },
                 ),
                 // Organization permissions
                 HasPermissionReturnsTrueWhenRequiredParams(
-                    resource = ObjectReference(ObjectType.ORGANIZATION, TEST_ORGANIZATION_ID),
-                    permission = Permission.CREATE_APP_DRAFT,
-                    userId = TEST_USER_ID,
+                    request = HasPermissionRequest
+                        .CreateAppDraft(TEST_ORGANIZATION_ID, TEST_USER_ID),
                     setUpData = { setUpOrganizationData() },
                 ),
                 HasPermissionReturnsTrueWhenRequiredParams(
-                    resource = ObjectReference(ObjectType.ORGANIZATION, TEST_ORGANIZATION_ID),
-                    permission = Permission.VIEW,
-                    userId = TEST_USER_ID,
+                    request = HasPermissionRequest
+                        .ViewOrganization(TEST_ORGANIZATION_ID, TEST_USER_ID),
                     setUpData = { setUpOrganizationData() },
                 ),
                 HasPermissionReturnsTrueWhenRequiredParams(
-                    resource = ObjectReference(ObjectType.ORGANIZATION, TEST_ORGANIZATION_ID),
-                    permission = Permission.VIEW_EXISTENCE,
-                    userId = TEST_USER_ID,
+                    request = HasPermissionRequest
+                        .ViewOrganizationExistence(TEST_ORGANIZATION_ID, TEST_USER_ID),
                     setUpData = { setUpOrganizationData() },
                 ),
                 // User permissions
                 HasPermissionReturnsTrueWhenRequiredParams(
-                    resource = ObjectReference(ObjectType.USER, TEST_USER_ID),
-                    permission = Permission.UPDATE,
-                    userId = TEST_ADMIN_USER_ID,
+                    request = HasPermissionRequest.UpdateUser(TEST_USER_ID, TEST_ADMIN_USER_ID),
                     setUpData = { setUpUserAdminData() },
                 ),
                 HasPermissionReturnsTrueWhenRequiredParams(
-                    resource = ObjectReference(ObjectType.USER, TEST_USER_ID),
-                    permission = Permission.UPDATE_ROLES,
-                    userId = TEST_ADMIN_USER_ID,
+                    request = HasPermissionRequest.UpdateUserRoles(TEST_USER_ID, TEST_ADMIN_USER_ID),
+                    setUpData = { setUpUserAdminData() },
+                ),
+                HasPermissionReturnsTrueWhenRequiredParams(
+                    request = HasPermissionRequest.ViewUserExistence(TEST_USER_ID, TEST_USER_ID),
+                    setUpData = { setUpUserData() },
+                ),
+                HasPermissionReturnsTrueWhenRequiredParams(
+                    request = HasPermissionRequest
+                        .ViewUserExistence(TEST_USER_ID, TEST_ADMIN_USER_ID),
                     setUpData = { setUpUserAdminData() },
                 ),
             )
@@ -370,7 +322,12 @@ class PermissionServiceTest {
             createOrgWithOwner()
         }
 
+        private fun setUpUserData() {
+            createOrgWithOwner()
+        }
+
         private fun setUpUserAdminData() {
+            setUpUserData()
             User(
                 id = TEST_ADMIN_USER_ID,
                 oidcProvider = OidcProvider.LOCAL,
@@ -462,8 +419,6 @@ class PermissionServiceTest {
 }
 
 data class HasPermissionReturnsTrueWhenRequiredParams(
-    val resource: ObjectReference,
-    val permission: Permission,
-    val userId: String,
+    val request: HasPermissionRequest,
     val setUpData: () -> Unit,
 )

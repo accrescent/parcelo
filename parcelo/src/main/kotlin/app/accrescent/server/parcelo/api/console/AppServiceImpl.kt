@@ -23,9 +23,7 @@ import app.accrescent.server.parcelo.data.App
 import app.accrescent.server.parcelo.security.AuthnContextKey
 import app.accrescent.server.parcelo.security.GrpcAuthenticationInterceptor
 import app.accrescent.server.parcelo.security.GrpcRateLimitInterceptor
-import app.accrescent.server.parcelo.security.ObjectReference
-import app.accrescent.server.parcelo.security.ObjectType
-import app.accrescent.server.parcelo.security.Permission
+import app.accrescent.server.parcelo.security.HasPermissionRequest
 import app.accrescent.server.parcelo.security.PermissionService
 import app.accrescent.server.parcelo.validation.GrpcRequestValidationInterceptor
 import com.google.protobuf.InvalidProtocolBufferException
@@ -50,18 +48,12 @@ class AppServiceImpl @Inject constructor(
     override fun getApp(request: GetAppRequest): Uni<GetAppResponse> {
         val userId = AuthnContextKey.USER_ID.get()
 
-        val canView = permissionService.hasPermission(
-            ObjectReference(ObjectType.APP, request.appId),
-            Permission.VIEW,
-            ObjectReference(ObjectType.USER, userId),
-        )
+        val canView = permissionService
+            .hasPermission(HasPermissionRequest.ViewApp(request.appId, userId))
         if (!canView) {
             val exists = App.existsById(request.appId)
-            val canViewExistence = permissionService.hasPermission(
-                ObjectReference(ObjectType.APP, request.appId),
-                Permission.VIEW_EXISTENCE,
-                ObjectReference(ObjectType.USER, userId),
-            )
+            val canViewExistence = permissionService
+                .hasPermission(HasPermissionRequest.ViewAppExistence(request.appId, userId))
 
             throw if (!exists || !canViewExistence) {
                 appNotFoundException(request.appId)
@@ -141,18 +133,12 @@ class AppServiceImpl @Inject constructor(
     override fun updateApp(request: UpdateAppRequest): Uni<UpdateAppResponse> {
         val userId = AuthnContextKey.USER_ID.get()
 
-        val canUpdate = permissionService.hasPermission(
-            ObjectReference(ObjectType.APP, request.appId),
-            Permission.UPDATE,
-            ObjectReference(ObjectType.USER, userId),
-        )
+        val canUpdate = permissionService
+            .hasPermission(HasPermissionRequest.UpdateApp(request.appId, userId))
         if (!canUpdate) {
             val exists = App.existsById(request.appId)
-            val canViewExistence = permissionService.hasPermission(
-                ObjectReference(ObjectType.APP, request.appId),
-                Permission.VIEW_EXISTENCE,
-                ObjectReference(ObjectType.USER, userId),
-            )
+            val canViewExistence = permissionService
+                .hasPermission(HasPermissionRequest.ViewAppExistence(request.appId, userId))
 
             throw if (!exists || !canViewExistence) {
                 appNotFoundException(request.appId)

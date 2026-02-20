@@ -11,14 +11,13 @@ import app.accrescent.console.v1alpha1.UploadAppDraftResult
 import app.accrescent.console.v1alpha1.UploadAppEditListingIconResult
 import app.accrescent.console.v1alpha1.UploadAppEditResult
 import app.accrescent.server.parcelo.data.AppDraft
+import app.accrescent.server.parcelo.data.AppEdit
 import app.accrescent.server.parcelo.data.BackgroundOperation
 import app.accrescent.server.parcelo.data.BackgroundOperationType
 import app.accrescent.server.parcelo.security.AuthnContextKey
 import app.accrescent.server.parcelo.security.GrpcAuthenticationInterceptor
 import app.accrescent.server.parcelo.security.GrpcRateLimitInterceptor
-import app.accrescent.server.parcelo.security.ObjectReference
-import app.accrescent.server.parcelo.security.ObjectType
-import app.accrescent.server.parcelo.security.Permission
+import app.accrescent.server.parcelo.security.HasPermissionRequest
 import app.accrescent.server.parcelo.security.PermissionService
 import arrow.core.Either
 import arrow.core.left
@@ -35,6 +34,8 @@ import jakarta.inject.Inject
 import jakarta.transaction.Transactional
 import org.eclipse.microprofile.context.ManagedExecutor
 import com.google.rpc.Status as GoogleStatus
+
+private enum class ParentType { APP_DRAFT, APP_EDIT }
 
 @GrpcService
 @RegisterInterceptor(GrpcAuthenticationInterceptor::class)
@@ -63,31 +64,34 @@ class OperationsImpl @Inject constructor(
             return
         }
 
-        val resource = when (metadata.type) {
+        val parentType = when (metadata.type) {
             BackgroundOperationType.PUBLISH_APP_DRAFT,
             BackgroundOperationType.UPLOAD_APP_DRAFT,
-            BackgroundOperationType.UPLOAD_APP_DRAFT_LISTING_ICON ->
-                ObjectReference(ObjectType.APP_DRAFT, metadata.parentId)
+            BackgroundOperationType.UPLOAD_APP_DRAFT_LISTING_ICON -> ParentType.APP_DRAFT
 
             BackgroundOperationType.PUBLISH_APP_EDIT,
             BackgroundOperationType.UPLOAD_APP_EDIT,
-            BackgroundOperationType.UPLOAD_APP_EDIT_LISTING_ICON ->
-                ObjectReference(ObjectType.APP_EDIT, metadata.parentId)
+            BackgroundOperationType.UPLOAD_APP_EDIT_LISTING_ICON -> ParentType.APP_EDIT
         }
         val canView = permissionService.hasPermission(
-            resource,
-            Permission.VIEW,
-            ObjectReference(ObjectType.USER, userId),
+            when (parentType) {
+                ParentType.APP_DRAFT -> HasPermissionRequest.ViewAppDraft(metadata.parentId, userId)
+                ParentType.APP_EDIT -> HasPermissionRequest.ViewAppEdit(metadata.parentId, userId)
+            },
         )
         if (!canView) {
-            val exists = when (resource.type) {
-                ObjectType.APP_DRAFT -> AppDraft.existsById(resource.id)
-                else -> false
+            val exists = when (parentType) {
+                ParentType.APP_DRAFT -> AppDraft.existsById(metadata.parentId)
+                ParentType.APP_EDIT -> AppEdit.existsById(metadata.parentId)
             }
             val canViewExistence = permissionService.hasPermission(
-                resource,
-                Permission.VIEW_EXISTENCE,
-                ObjectReference(ObjectType.USER, userId),
+                when (parentType) {
+                    ParentType.APP_DRAFT ->
+                        HasPermissionRequest.ViewAppDraftExistence(metadata.parentId, userId)
+
+                    ParentType.APP_EDIT ->
+                        HasPermissionRequest.ViewAppEditExistence(metadata.parentId, userId)
+                },
             )
 
             val error = if (!exists || !canViewExistence) {

@@ -26,11 +26,9 @@ import app.accrescent.server.parcelo.jobs.PublishAppEditJob
 import app.accrescent.server.parcelo.security.AuthnContextKey
 import app.accrescent.server.parcelo.security.GrpcAuthenticationInterceptor
 import app.accrescent.server.parcelo.security.GrpcRateLimitInterceptor
+import app.accrescent.server.parcelo.security.HasPermissionRequest
 import app.accrescent.server.parcelo.security.IdType
 import app.accrescent.server.parcelo.security.Identifier
-import app.accrescent.server.parcelo.security.ObjectReference
-import app.accrescent.server.parcelo.security.ObjectType
-import app.accrescent.server.parcelo.security.Permission
 import app.accrescent.server.parcelo.security.PermissionService
 import app.accrescent.server.parcelo.validation.GrpcRequestValidationInterceptor
 import io.quarkus.grpc.GrpcService
@@ -66,17 +64,12 @@ class ReviewServiceImpl @Inject constructor(
     ): Uni<CreateAppDraftReviewResponse> {
         val userId = AuthnContextKey.USER_ID.get()
 
-        val canReview = permissionService.hasPermission(
-            ObjectReference(ObjectType.APP_DRAFT, request.appDraftId),
-            Permission.REVIEW,
-            ObjectReference(ObjectType.USER, userId),
-        )
+        val canReview = permissionService
+            .hasPermission(HasPermissionRequest.ReviewAppDraft(request.appDraftId, userId))
         if (!canReview) {
             val exists = AppDraft.existsById(request.appDraftId)
             val canViewExistence = permissionService.hasPermission(
-                ObjectReference(ObjectType.APP, request.appDraftId),
-                Permission.VIEW_EXISTENCE,
-                ObjectReference(ObjectType.USER, userId),
+                HasPermissionRequest.ViewAppDraftExistence(request.appDraftId, userId),
             )
 
             throw if (!exists || !canViewExistence) {
@@ -153,18 +146,12 @@ class ReviewServiceImpl @Inject constructor(
     ): Uni<CreateAppEditReviewResponse> {
         val userId = AuthnContextKey.USER_ID.get()
 
-        val canReview = permissionService.hasPermission(
-            ObjectReference(ObjectType.APP_EDIT, request.appEditId),
-            Permission.REVIEW,
-            ObjectReference(ObjectType.USER, userId),
-        )
+        val canReview = permissionService
+            .hasPermission(HasPermissionRequest.ReviewAppEdit(request.appEditId, userId))
         if (!canReview) {
             val exists = AppEdit.existsById(request.appEditId)
-            val canViewExistence = permissionService.hasPermission(
-                ObjectReference(ObjectType.APP_EDIT, request.appEditId),
-                Permission.VIEW_EXISTENCE,
-                ObjectReference(ObjectType.USER, userId),
-            )
+            val canViewExistence = permissionService
+                .hasPermission(HasPermissionRequest.ViewAppEditExistence(request.appEditId, userId))
 
             throw if (!exists || !canViewExistence) {
                 appEditNotFoundException(request.appEditId)

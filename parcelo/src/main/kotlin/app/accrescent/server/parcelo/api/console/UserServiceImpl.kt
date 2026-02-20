@@ -19,9 +19,7 @@ import app.accrescent.server.parcelo.data.User
 import app.accrescent.server.parcelo.security.AuthnContextKey
 import app.accrescent.server.parcelo.security.GrpcAuthenticationInterceptor
 import app.accrescent.server.parcelo.security.GrpcRateLimitInterceptor
-import app.accrescent.server.parcelo.security.ObjectReference
-import app.accrescent.server.parcelo.security.ObjectType
-import app.accrescent.server.parcelo.security.Permission
+import app.accrescent.server.parcelo.security.HasPermissionRequest
 import app.accrescent.server.parcelo.security.PermissionService
 import app.accrescent.server.parcelo.validation.GrpcRequestValidationInterceptor
 import io.quarkus.grpc.GrpcService
@@ -64,18 +62,12 @@ class UserServiceImpl @Inject constructor(
     override fun updateUser(request: UpdateUserRequest): Uni<UpdateUserResponse> {
         val userId = AuthnContextKey.USER_ID.get()
 
-        val canUpdateUser = permissionService.hasPermission(
-            ObjectReference(ObjectType.USER, request.userId),
-            Permission.UPDATE,
-            ObjectReference(ObjectType.USER, userId),
-        )
+        val canUpdateUser = permissionService
+            .hasPermission(HasPermissionRequest.UpdateUser(request.userId, userId))
         if (!canUpdateUser) {
             val exists = User.existsById(request.userId)
-            val canViewExistence = permissionService.hasPermission(
-                ObjectReference(ObjectType.USER, request.userId),
-                Permission.VIEW_EXISTENCE,
-                ObjectReference(ObjectType.USER, userId),
-            )
+            val canViewExistence = permissionService
+                .hasPermission(HasPermissionRequest.ViewUserExistence(request.userId, userId))
 
             throw if (!exists || !canViewExistence) {
                 userNotFoundException(request.userId)
@@ -90,11 +82,8 @@ class UserServiceImpl @Inject constructor(
 
         val user = User.findById(request.userId) ?: throw userNotFoundException(request.userId)
         if (request.updateMask.pathsList.contains("roles")) {
-            val canUpdateRoles = permissionService.hasPermission(
-                ObjectReference(ObjectType.USER, request.userId),
-                Permission.UPDATE_ROLES,
-                ObjectReference(ObjectType.USER, userId),
-            )
+            val canUpdateRoles = permissionService
+                .hasPermission(HasPermissionRequest.UpdateUserRoles(request.userId, userId))
             if (!canUpdateRoles) {
                 throw ConsoleApiError(
                     ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,

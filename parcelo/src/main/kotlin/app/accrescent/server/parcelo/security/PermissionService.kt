@@ -17,117 +17,100 @@ import jakarta.transaction.Transactional
 @ApplicationScoped
 class PermissionService @Inject constructor(private val config: ParceloConfig) {
     @Transactional(Transactional.TxType.MANDATORY)
-    fun hasPermission(
-        resource: ObjectReference,
-        permission: Permission,
-        subject: ObjectReference,
-    ): Boolean {
-        if (subject.type != ObjectType.USER) return false
+    fun hasPermission(request: HasPermissionRequest): Boolean {
+        return when (request) {
+            is HasPermissionRequest.CreateAppEdit,
+            is HasPermissionRequest.UpdateApp,
+            is HasPermissionRequest.ViewApp,
+            is HasPermissionRequest.ViewAppExistence -> OrganizationRelationshipSet
+                .findByAppIdAndUserId(request.resourceId, request.subjectId)
+                ?.owner == true
 
-        return when (resource.type) {
-            ObjectType.APP -> when (permission) {
-                Permission.CREATE_APP_EDIT,
-                Permission.UPDATE,
-                Permission.VIEW,
-                Permission.VIEW_EXISTENCE,
-                    -> OrganizationRelationshipSet
-                    .findByAppIdAndUserId(resource.id, subject.id)
+            is HasPermissionRequest.CreateAppDraftListing,
+            is HasPermissionRequest.DeleteAppDraft,
+            is HasPermissionRequest.DeleteAppDraftListing,
+            is HasPermissionRequest.DownloadAppDraft,
+            is HasPermissionRequest.DownloadAppDraftListingIcons,
+            is HasPermissionRequest.ReplaceAppDraftListingIcon,
+            is HasPermissionRequest.ReplaceAppDraftPackage,
+            is HasPermissionRequest.SubmitAppDraft,
+            is HasPermissionRequest.UpdateAppDraft,
+            is HasPermissionRequest.ViewAppDraft -> OrganizationRelationshipSet
+                .findByAppDraftIdAndUserId(request.resourceId, request.subjectId)
+                ?.owner == true
+
+            is HasPermissionRequest.PublishAppDraft -> AppDraftRelationshipSet
+                .findByAppDraftIdAndUserId(request.resourceId, request.subjectId)
+                ?.publisher == true
+
+            is HasPermissionRequest.ReviewAppDraft -> AppDraftRelationshipSet
+                .findByAppDraftIdAndUserId(request.resourceId, request.subjectId)
+                ?.reviewer == true
+
+            is HasPermissionRequest.ViewAppDraftExistence -> {
+                val isOrgOwner = OrganizationRelationshipSet
+                    .findByAppDraftIdAndUserId(request.resourceId, request.subjectId)
                     ?.owner == true
+                val (isReviewer, isPublisher) = AppDraftRelationshipSet
+                    .findByAppDraftIdAndUserId(request.resourceId, request.subjectId)
+                    .let { Pair(it?.reviewer == true, it?.publisher == true) }
 
-                else -> false
+                isOrgOwner || isReviewer || isPublisher
             }
 
-            ObjectType.APP_DRAFT -> when (permission) {
-                Permission.CREATE_LISTING,
-                Permission.DELETE,
-                Permission.DELETE_LISTING,
-                Permission.DOWNLOAD,
-                Permission.DOWNLOAD_LISTING_ICONS,
-                Permission.REPLACE_LISTING_ICON,
-                Permission.REPLACE_PACKAGE,
-                Permission.SUBMIT,
-                Permission.UPDATE,
-                Permission.VIEW -> {
-                    OrganizationRelationshipSet
-                        .findByAppDraftIdAndUserId(resource.id, subject.id)
-                        ?.owner == true
-                }
+            is HasPermissionRequest.CreateAppEditListing,
+            is HasPermissionRequest.DeleteAppEdit,
+            is HasPermissionRequest.DeleteAppEditListing,
+            is HasPermissionRequest.DownloadAppEdit,
+            is HasPermissionRequest.DownloadAppEditListingIcons,
+            is HasPermissionRequest.ReplaceAppEditListingIcon,
+            is HasPermissionRequest.ReplaceAppEditPackage,
+            is HasPermissionRequest.SubmitAppEdit,
+            is HasPermissionRequest.UpdateAppEdit,
+            is HasPermissionRequest.ViewAppEdit -> OrganizationRelationshipSet
+                .findByAppEditIdAndUserId(request.resourceId, request.subjectId)
+                ?.owner == true
 
-                Permission.PUBLISH -> AppDraftRelationshipSet
-                    .findByAppDraftIdAndUserId(resource.id, subject.id)
-                    ?.publisher == true
+            is HasPermissionRequest.ReviewAppEdit -> AppEditRelationshipSet
+                .findByAppEditIdAndUserId(request.resourceId, request.subjectId)
+                ?.reviewer == true
 
-                Permission.REVIEW -> AppDraftRelationshipSet
-                    .findByAppDraftIdAndUserId(resource.id, subject.id)
+            is HasPermissionRequest.ViewAppEditExistence -> {
+                val isOrgOwner = OrganizationRelationshipSet
+                    .findByAppEditIdAndUserId(request.resourceId, request.subjectId)
+                    ?.owner == true
+                val isReviewer = AppEditRelationshipSet
+                    .findByAppEditIdAndUserId(request.resourceId, request.subjectId)
                     ?.reviewer == true
 
-                Permission.VIEW_EXISTENCE -> {
-                    val isOrgOwner = OrganizationRelationshipSet
-                        .findByAppDraftIdAndUserId(resource.id, subject.id)
-                        ?.owner == true
-                    val (isReviewer, isPublisher) = AppDraftRelationshipSet
-                        .findByAppDraftIdAndUserId(resource.id, subject.id)
-                        .let { Pair(it?.reviewer == true, it?.publisher == true) }
-
-                    isOrgOwner || isReviewer || isPublisher
-                }
-
-                else -> false
+                isOrgOwner || isReviewer
             }
 
-            ObjectType.APP_EDIT -> when (permission) {
-                Permission.CREATE_LISTING,
-                Permission.DELETE,
-                Permission.DELETE_LISTING,
-                Permission.DOWNLOAD,
-                Permission.DOWNLOAD_LISTING_ICONS,
-                Permission.REPLACE_LISTING_ICON,
-                Permission.REPLACE_PACKAGE,
-                Permission.SUBMIT,
-                Permission.UPDATE,
-                Permission.VIEW -> OrganizationRelationshipSet
-                    .findByAppEditIdAndUserId(resource.id, subject.id)
-                    ?.owner == true
+            is HasPermissionRequest.CreateAppDraft,
+            is HasPermissionRequest.ViewOrganization,
+            is HasPermissionRequest.ViewOrganizationExistence -> OrganizationRelationshipSet
+                .findByOrganizationIdAndUserId(request.resourceId, request.subjectId)
+                ?.owner == true
 
-                Permission.REVIEW -> AppEditRelationshipSet
-                    .findByAppEditIdAndUserId(resource.id, subject.id)
-                    ?.reviewer == true
+            is HasPermissionRequest.UpdateUser,
+            is HasPermissionRequest.UpdateUserRoles -> User
+                .findById(request.subjectId)
+                ?.let { isAdmin(it) } == true
 
-                Permission.VIEW_EXISTENCE -> {
-                    val isOrgOwner = OrganizationRelationshipSet
-                        .findByAppEditIdAndUserId(resource.id, subject.id)
-                        ?.owner == true
-                    val isReviewer = AppEditRelationshipSet
-                        .findByAppEditIdAndUserId(resource.id, subject.id)
-                        ?.reviewer == true
-
-                    isOrgOwner || isReviewer
-                }
-
-                else -> false
-            }
-
-            ObjectType.ORGANIZATION -> when (permission) {
-                Permission.CREATE_APP_DRAFT,
-                Permission.VIEW,
-                Permission.VIEW_EXISTENCE -> OrganizationRelationshipSet
-                    .findByOrganizationIdAndUserId(resource.id, subject.id)
-                    ?.owner == true
-
-                else -> false
-            }
-
-            ObjectType.USER -> when (permission) {
-                Permission.UPDATE,
-                Permission.UPDATE_ROLES -> {
-                    val user = User.findById(subject.id) ?: return false
-
-                    user.oidcProvider == OidcProvider.fromConfig(config.admin().oidcProvider())
-                            && user.oidcSubject == config.admin().oidcSubject()
-                }
-
-                else -> false
+            is HasPermissionRequest.ViewUserExistence -> if (request.resourceId == request.subjectId) {
+                // A user should always be able to view the existence of themselves
+                true
+            } else {
+                // Admins can view the existence of any user
+                User
+                    .findById(request.subjectId)
+                    ?.let { isAdmin(it) } == true
             }
         }
+    }
+
+    private fun isAdmin(user: User): Boolean {
+        return user.oidcProvider == OidcProvider.fromConfig(config.admin().oidcProvider())
+                && user.oidcSubject == config.admin().oidcSubject()
     }
 }

@@ -67,11 +67,9 @@ import app.accrescent.server.parcelo.jobs.PublishAppDraftJob
 import app.accrescent.server.parcelo.security.AuthnContextKey
 import app.accrescent.server.parcelo.security.GrpcAuthenticationInterceptor
 import app.accrescent.server.parcelo.security.GrpcRateLimitInterceptor
+import app.accrescent.server.parcelo.security.HasPermissionRequest
 import app.accrescent.server.parcelo.security.IdType
 import app.accrescent.server.parcelo.security.Identifier
-import app.accrescent.server.parcelo.security.ObjectReference
-import app.accrescent.server.parcelo.security.ObjectType
-import app.accrescent.server.parcelo.security.Permission
 import app.accrescent.server.parcelo.security.PermissionService
 import app.accrescent.server.parcelo.validation.GrpcRequestValidationInterceptor
 import com.google.cloud.storage.BlobInfo
@@ -116,17 +114,12 @@ class AppDraftServiceImpl @Inject constructor(
     override fun createAppDraft(request: CreateAppDraftRequest): Uni<CreateAppDraftResponse> {
         val userId = AuthnContextKey.USER_ID.get()
 
-        val canCreateAppDraft = permissionService.hasPermission(
-            ObjectReference(ObjectType.ORGANIZATION, request.organizationId),
-            Permission.CREATE_APP_DRAFT,
-            ObjectReference(ObjectType.USER, userId),
-        )
+        val canCreateAppDraft = permissionService
+            .hasPermission(HasPermissionRequest.CreateAppDraft(request.organizationId, userId))
         if (!canCreateAppDraft) {
             val orgExists = Organization.existsById(request.organizationId)
             val canViewOrgExistence = permissionService.hasPermission(
-                ObjectReference(ObjectType.ORGANIZATION, request.organizationId),
-                Permission.VIEW_EXISTENCE,
-                ObjectReference(ObjectType.USER, userId),
+                HasPermissionRequest.ViewOrganizationExistence(request.organizationId, userId),
             )
 
             throw if (!orgExists || !canViewOrgExistence) {
@@ -178,17 +171,12 @@ class AppDraftServiceImpl @Inject constructor(
     override fun getAppDraft(request: GetAppDraftRequest): Uni<GetAppDraftResponse> {
         val userId = AuthnContextKey.USER_ID.get()
 
-        val canView = permissionService.hasPermission(
-            ObjectReference(ObjectType.APP_DRAFT, request.appDraftId),
-            Permission.VIEW,
-            ObjectReference(ObjectType.USER, userId),
-        )
+        val canView = permissionService
+            .hasPermission(HasPermissionRequest.ViewAppDraft(request.appDraftId, userId))
         if (!canView) {
             val exists = AppDraft.existsById(request.appDraftId)
             val canViewExistence = permissionService.hasPermission(
-                ObjectReference(ObjectType.APP_DRAFT, request.appDraftId),
-                Permission.VIEW_EXISTENCE,
-                ObjectReference(ObjectType.USER, userId),
+                HasPermissionRequest.ViewAppDraftExistence(request.appDraftId, userId),
             )
 
             throw if (!exists || !canViewExistence) {
@@ -323,17 +311,12 @@ class AppDraftServiceImpl @Inject constructor(
     ): Uni<CreateAppDraftUploadOperationResponse> {
         val userId = AuthnContextKey.USER_ID.get()
 
-        val canReplacePackage = permissionService.hasPermission(
-            ObjectReference(ObjectType.APP_DRAFT, request.appDraftId),
-            Permission.REPLACE_PACKAGE,
-            ObjectReference(ObjectType.USER, userId),
-        )
+        val canReplacePackage = permissionService
+            .hasPermission(HasPermissionRequest.ReplaceAppDraftPackage(request.appDraftId, userId))
         if (!canReplacePackage) {
             val exists = AppDraft.existsById(request.appDraftId)
             val canViewExistence = permissionService.hasPermission(
-                ObjectReference(ObjectType.APP_DRAFT, request.appDraftId),
-                Permission.VIEW_EXISTENCE,
-                ObjectReference(ObjectType.USER, userId),
+                HasPermissionRequest.ViewAppDraftExistence(request.appDraftId, userId),
             )
 
             throw if (!exists || !canViewExistence) {
@@ -393,17 +376,12 @@ class AppDraftServiceImpl @Inject constructor(
     ): Uni<GetAppDraftDownloadInfoResponse> {
         val userId = AuthnContextKey.USER_ID.get()
 
-        val canDownload = permissionService.hasPermission(
-            ObjectReference(ObjectType.APP_DRAFT, request.appDraftId),
-            Permission.DOWNLOAD,
-            ObjectReference(ObjectType.USER, userId),
-        )
+        val canDownload = permissionService
+            .hasPermission(HasPermissionRequest.DownloadAppDraft(request.appDraftId, userId))
         if (!canDownload) {
             val exists = AppDraft.existsById(request.appDraftId)
             val canViewExistence = permissionService.hasPermission(
-                ObjectReference(ObjectType.APP_DRAFT, request.appDraftId),
-                Permission.VIEW_EXISTENCE,
-                ObjectReference(ObjectType.USER, userId),
+                HasPermissionRequest.ViewAppDraftExistence(request.appDraftId, userId),
             )
 
             throw if (!exists || !canViewExistence) {
@@ -442,17 +420,12 @@ class AppDraftServiceImpl @Inject constructor(
     override fun updateAppDraft(request: UpdateAppDraftRequest): Uni<UpdateAppDraftResponse> {
         val userId = AuthnContextKey.USER_ID.get()
 
-        val canUpdate = permissionService.hasPermission(
-            ObjectReference(ObjectType.APP_DRAFT, request.appDraftId),
-            Permission.UPDATE,
-            ObjectReference(ObjectType.USER, userId),
-        )
+        val canUpdate = permissionService
+            .hasPermission(HasPermissionRequest.UpdateAppDraft(request.appDraftId, userId))
         if (!canUpdate) {
             val exists = AppDraft.existsById(request.appDraftId)
             val canViewExistence = permissionService.hasPermission(
-                ObjectReference(ObjectType.APP_DRAFT, request.appDraftId),
-                Permission.VIEW_EXISTENCE,
-                ObjectReference(ObjectType.USER, userId),
+                HasPermissionRequest.ViewAppDraftExistence(request.appDraftId, userId),
             )
 
             throw if (!exists || !canViewExistence) {
@@ -489,17 +462,12 @@ class AppDraftServiceImpl @Inject constructor(
     override fun submitAppDraft(request: SubmitAppDraftRequest): Uni<SubmitAppDraftResponse> {
         val userId = AuthnContextKey.USER_ID.get()
 
-        val canSubmit = permissionService.hasPermission(
-            ObjectReference(ObjectType.APP_DRAFT, request.appDraftId),
-            Permission.SUBMIT,
-            ObjectReference(ObjectType.USER, userId),
-        )
+        val canSubmit = permissionService
+            .hasPermission(HasPermissionRequest.SubmitAppDraft(request.appDraftId, userId))
         if (!canSubmit) {
             val exists = AppDraft.existsById(request.appDraftId)
             val canViewExistence = permissionService.hasPermission(
-                ObjectReference(ObjectType.APP_DRAFT, request.appDraftId),
-                Permission.VIEW_EXISTENCE,
-                ObjectReference(ObjectType.USER, userId),
+                HasPermissionRequest.ViewAppDraftExistence(request.appDraftId, userId),
             )
 
             throw if (!exists || !canViewExistence) {
@@ -602,17 +570,12 @@ class AppDraftServiceImpl @Inject constructor(
     override fun deleteAppDraft(request: DeleteAppDraftRequest): Uni<DeleteAppDraftResponse> {
         val userId = AuthnContextKey.USER_ID.get()
 
-        val canDelete = permissionService.hasPermission(
-            ObjectReference(ObjectType.APP_DRAFT, request.appDraftId),
-            Permission.DELETE,
-            ObjectReference(ObjectType.USER, userId),
-        )
+        val canDelete = permissionService
+            .hasPermission(HasPermissionRequest.DeleteAppDraft(request.appDraftId, userId))
         if (!canDelete) {
             val exists = AppDraft.existsById(request.appDraftId)
             val canViewExistence = permissionService.hasPermission(
-                ObjectReference(ObjectType.APP_DRAFT, request.appDraftId),
-                Permission.VIEW_EXISTENCE,
-                ObjectReference(ObjectType.USER, userId),
+                HasPermissionRequest.ViewAppDraftExistence(request.appDraftId, userId),
             )
 
             throw if (!exists || !canViewExistence) {
@@ -661,17 +624,12 @@ class AppDraftServiceImpl @Inject constructor(
     ): Uni<CreateAppDraftListingResponse> {
         val userId = AuthnContextKey.USER_ID.get()
 
-        val canCreateListing = permissionService.hasPermission(
-            ObjectReference(ObjectType.APP_DRAFT, request.appDraftId),
-            Permission.CREATE_LISTING,
-            ObjectReference(ObjectType.USER, userId),
-        )
+        val canCreateListing = permissionService
+            .hasPermission(HasPermissionRequest.CreateAppDraftListing(request.appDraftId, userId))
         if (!canCreateListing) {
             val exists = AppDraft.existsById(request.appDraftId)
             val canViewExistence = permissionService.hasPermission(
-                ObjectReference(ObjectType.APP_DRAFT, request.appDraftId),
-                Permission.VIEW_EXISTENCE,
-                ObjectReference(ObjectType.USER, userId),
+                HasPermissionRequest.ViewAppDraftExistence(request.appDraftId, userId),
             )
 
             throw if (!exists || !canViewExistence) {
@@ -723,18 +681,13 @@ class AppDraftServiceImpl @Inject constructor(
     ): Uni<CreateAppDraftListingIconUploadOperationResponse> {
         val userId = AuthnContextKey.USER_ID.get()
 
-        val canReplaceIcon = permissionService.hasPermission(
-            ObjectReference(ObjectType.APP_DRAFT, request.appDraftId),
-            Permission.REPLACE_LISTING_ICON,
-            ObjectReference(ObjectType.USER, userId),
-        )
+        val canReplaceIcon = permissionService
+            .hasPermission(HasPermissionRequest.ReplaceAppDraftListingIcon(request.appDraftId, userId))
         if (!canReplaceIcon) {
             val draftExists = AppDraft.existsById(request.appDraftId)
             val listingExists = AppDraftListing.exists(request.appDraftId, request.language)
             val canViewExistence = permissionService.hasPermission(
-                ObjectReference(ObjectType.APP_DRAFT, request.appDraftId),
-                Permission.VIEW_EXISTENCE,
-                ObjectReference(ObjectType.USER, userId),
+                HasPermissionRequest.ViewAppDraftExistence(request.appDraftId, userId),
             )
 
             throw when {
@@ -799,16 +752,12 @@ class AppDraftServiceImpl @Inject constructor(
         val userId = AuthnContextKey.USER_ID.get()
 
         val canDownload = permissionService.hasPermission(
-            ObjectReference(ObjectType.APP_DRAFT, request.appDraftId),
-            Permission.DOWNLOAD_LISTING_ICONS,
-            ObjectReference(ObjectType.USER, userId),
+            HasPermissionRequest.DownloadAppDraftListingIcons(request.appDraftId, userId),
         )
         if (!canDownload) {
             val exists = AppDraft.existsById(request.appDraftId)
             val canViewExistence = permissionService.hasPermission(
-                ObjectReference(ObjectType.APP_DRAFT, request.appDraftId),
-                Permission.VIEW_EXISTENCE,
-                ObjectReference(ObjectType.USER, userId),
+                HasPermissionRequest.ViewAppDraftExistence(request.appDraftId, userId),
             )
 
             throw if (!exists || !canViewExistence) {
@@ -843,18 +792,13 @@ class AppDraftServiceImpl @Inject constructor(
     ): Uni<DeleteAppDraftListingResponse> {
         val userId = AuthnContextKey.USER_ID.get()
 
-        val canDelete = permissionService.hasPermission(
-            ObjectReference(ObjectType.APP_DRAFT, request.appDraftId),
-            Permission.DELETE_LISTING,
-            ObjectReference(ObjectType.USER, userId),
-        )
+        val canDelete = permissionService
+            .hasPermission(HasPermissionRequest.DeleteAppDraftListing(request.appDraftId, userId))
         if (!canDelete) {
             val draftExists = AppDraft.existsById(request.appDraftId)
             val listingExists = AppDraftListing.exists(request.appDraftId, request.language)
             val canViewExistence = permissionService.hasPermission(
-                ObjectReference(ObjectType.APP_DRAFT, request.appDraftId),
-                Permission.VIEW_EXISTENCE,
-                ObjectReference(ObjectType.USER, userId),
+                HasPermissionRequest.ViewAppDraftExistence(request.appDraftId, userId),
             )
 
             throw when {
@@ -903,17 +847,12 @@ class AppDraftServiceImpl @Inject constructor(
     override fun publishAppDraft(request: PublishAppDraftRequest): Uni<PublishAppDraftResponse> {
         val userId = AuthnContextKey.USER_ID.get()
 
-        val canPublish = permissionService.hasPermission(
-            ObjectReference(ObjectType.APP_DRAFT, request.appDraftId),
-            Permission.PUBLISH,
-            ObjectReference(ObjectType.USER, userId),
-        )
+        val canPublish = permissionService
+            .hasPermission(HasPermissionRequest.PublishAppDraft(request.appDraftId, userId))
         if (!canPublish) {
             val exists = AppDraft.existsById(request.appDraftId)
             val canViewExistence = permissionService.hasPermission(
-                ObjectReference(ObjectType.APP_DRAFT, request.appDraftId),
-                Permission.VIEW_EXISTENCE,
-                ObjectReference(ObjectType.USER, userId),
+                HasPermissionRequest.ViewAppDraftExistence(request.appDraftId, userId),
             )
 
             throw if (!exists || !canViewExistence) {
