@@ -127,7 +127,7 @@ private class GrpcRequestValidationServerCallListener<ReqT : Any>(
             validator.validate(message)
         } catch (e: ValidationException) {
             throw ConsoleApiError(
-                ErrorReason.ERROR_REASON_INVALID_REQUEST,
+                ErrorReason.ERROR_REASON_INTERNAL,
                 e.message.toString(),
             )
                 .toStatusRuntimeException()
