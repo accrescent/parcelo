@@ -19,9 +19,9 @@ import app.accrescent.server.parcelo.data.User
 import app.accrescent.server.parcelo.security.AuthnContextKey
 import app.accrescent.server.parcelo.security.GrpcAuthenticationInterceptor
 import app.accrescent.server.parcelo.security.GrpcRateLimitInterceptor
+import app.accrescent.server.parcelo.security.GrpcRequestValidationInterceptor
 import app.accrescent.server.parcelo.security.HasPermissionRequest
 import app.accrescent.server.parcelo.security.PermissionService
-import app.accrescent.server.parcelo.validation.GrpcRequestValidationInterceptor
 import io.quarkus.grpc.GrpcService
 import io.quarkus.grpc.RegisterInterceptor
 import io.smallrye.mutiny.Uni

@@ -39,7 +39,7 @@ import app.accrescent.server.parcelo.data.ListingId
 import app.accrescent.server.parcelo.data.PublishedApk
 import app.accrescent.server.parcelo.data.PublishedImage
 import app.accrescent.server.parcelo.security.GrpcRateLimitInterceptor
-import app.accrescent.server.parcelo.validation.GrpcRequestValidationInterceptor
+import app.accrescent.server.parcelo.security.GrpcRequestValidationInterceptor
 import com.android.bundle.Commands
 import com.android.tools.build.bundletool.device.ApkMatcher
 import com.android.tools.build.bundletool.model.exceptions.IncompatibleDeviceException

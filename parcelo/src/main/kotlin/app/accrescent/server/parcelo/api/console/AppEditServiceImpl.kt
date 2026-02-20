@@ -60,11 +60,11 @@ import app.accrescent.server.parcelo.jobs.PublishAppEditJob
 import app.accrescent.server.parcelo.security.AuthnContextKey
 import app.accrescent.server.parcelo.security.GrpcAuthenticationInterceptor
 import app.accrescent.server.parcelo.security.GrpcRateLimitInterceptor
+import app.accrescent.server.parcelo.security.GrpcRequestValidationInterceptor
 import app.accrescent.server.parcelo.security.HasPermissionRequest
 import app.accrescent.server.parcelo.security.IdType
 import app.accrescent.server.parcelo.security.Identifier
 import app.accrescent.server.parcelo.security.PermissionService
-import app.accrescent.server.parcelo.validation.GrpcRequestValidationInterceptor
 import com.google.cloud.storage.BlobInfo
 import com.google.cloud.storage.Storage
 import com.google.longrunning.Operation

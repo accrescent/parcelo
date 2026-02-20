@@ -17,7 +17,7 @@ import app.accrescent.server.parcelo.data.Organization
 import app.accrescent.server.parcelo.security.AuthnContextKey
 import app.accrescent.server.parcelo.security.GrpcAuthenticationInterceptor
 import app.accrescent.server.parcelo.security.GrpcRateLimitInterceptor
-import app.accrescent.server.parcelo.validation.GrpcRequestValidationInterceptor
+import app.accrescent.server.parcelo.security.GrpcRequestValidationInterceptor
 import com.google.protobuf.InvalidProtocolBufferException
 import io.quarkus.grpc.GrpcService
 import io.quarkus.grpc.RegisterInterceptor
