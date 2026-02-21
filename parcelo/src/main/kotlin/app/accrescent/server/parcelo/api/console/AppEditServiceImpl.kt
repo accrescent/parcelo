@@ -57,6 +57,7 @@ import app.accrescent.server.parcelo.data.OrphanedBlob
 import app.accrescent.server.parcelo.data.User
 import app.accrescent.server.parcelo.jobs.JobDataKey
 import app.accrescent.server.parcelo.jobs.PublishAppEditJob
+import app.accrescent.server.parcelo.review.ReviewService
 import app.accrescent.server.parcelo.security.AuthnContextKey
 import app.accrescent.server.parcelo.security.GrpcAuthenticationInterceptor
 import app.accrescent.server.parcelo.security.GrpcRateLimitInterceptor
@@ -85,41 +86,6 @@ import java.time.OffsetDateTime
 import java.util.UUID
 import kotlin.io.encoding.Base64
 
-private const val ANDROID_PERMISSION_PREFIX = "android.permission."
-private val PERMISSIONS_ALLOWED_WITHOUT_REVIEW = setOf(
-    // Basic network functionality is not considered review-worthy for our purposes.
-    "android.permission.ACCESS_NETWORK_STATE",
-    // Not security sensitive since it applied to only the currently focused application.
-    "android.permission.CAPTURE_KEYBOARD",
-    // Foreground services are not inherently security-sensitive, though they do have an effect on
-    // battery life.
-    "android.permission.FOREGROUND_SERVICE",
-    "android.permission.FOREGROUND_SERVICE_CAMERA",
-    "android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE",
-    "android.permission.FOREGROUND_SERVICE_DATA_SYNC",
-    "android.permission.FOREGROUND_SERVICE_HEALTH",
-    "android.permission.FOREGROUND_SERVICE_LOCATION",
-    "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
-    "android.permission.FOREGROUND_SERVICE_MEDIA_PROCESSING",
-    "android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION",
-    "android.permission.FOREGROUND_SERVICE_MICROPHONE",
-    "android.permission.FOREGROUND_SERVICE_PHONE_CALL",
-    "android.permission.FOREGROUND_SERVICE_REMOTE_MESSAGING",
-    // Basic network functionality is not considered review-worthy for our purposes.
-    "android.permission.INTERNET",
-    // According to Android documentation, "holding this permission does not have any security
-    // implications".
-    //
-    // https://developer.android.com/reference/android/Manifest.permission#RECEIVE_BOOT_COMPLETED
-    "android.permission.RECEIVE_BOOT_COMPLETED",
-    // Android doesn't expose biometric authentication data directly to applications.
-    "android.permission.USE_BIOMETRIC",
-    // Deprecated practical equivalent to a subset of USE_BIOMETRIC.
-    "android.permission.USE_FINGERPRINT",
-    // Haptics aren't worth reviewing for our purposes.
-    "android.permission.VIBRATE",
-)
-
 private const val DEFAULT_PAGE_SIZE = 50u
 private const val MAX_PAGE_SIZE = 50u
 
@@ -130,6 +96,7 @@ private const val MAX_PAGE_SIZE = 50u
 class AppEditServiceImpl @Inject constructor(
     private val config: ParceloConfig,
     private val permissionService: PermissionService,
+    private val reviewService: ReviewService,
     private val scheduler: Instance<Scheduler>,
     private val storage: Storage,
 ) : AppEditService {
@@ -548,43 +515,7 @@ class AppEditServiceImpl @Inject constructor(
                 .toStatusRuntimeException()
         }
 
-        // Determine whether any permission changes require review
-        val appPermissions = appEdit.app.appPackage.permissions.associateBy { it.name }
-        val editPermissions = appEdit.appPackage.permissions
-        val permissionChangesRequiringReview = editPermissions
-            .filter { permission ->
-                val isAndroidPermission = permission.name.startsWith(ANDROID_PERMISSION_PREFIX)
-                val isAllowedWithoutReview = PERMISSIONS_ALLOWED_WITHOUT_REVIEW
-                    .contains(permission.name)
-                val oldPermission = appPermissions[permission.name]
-                val isMorePermissive = oldPermission == null || run {
-                    val oldMaxSdkVersion = oldPermission.maxSdkVersion
-                    val maxSdkVersion = permission.maxSdkVersion
-
-                    oldMaxSdkVersion != null
-                            && (maxSdkVersion == null || maxSdkVersion > oldMaxSdkVersion)
-                }
-
-                isAndroidPermission && isMorePermissive && !isAllowedWithoutReview
-            }
-
-        // Determine whether any listing changes require review
-        val appListings = appEdit.app.listings.associateBy { it.id.language }
-        val editListings = appEdit.listings
-        val descriptionChangesRequiringReview = editListings
-            .filter { listing ->
-                val oldListing = appListings[listing.language]
-                val isNewOrModified = oldListing == null
-                        || oldListing.name != listing.name
-                        || oldListing.shortDescription != listing.shortDescription
-                        || oldListing.iconImageId != listing.iconImageId
-
-                isNewOrModified
-            }
-
-        val requiresReview = permissionChangesRequiringReview.isNotEmpty()
-                || descriptionChangesRequiringReview.isNotEmpty()
-        val response = if (requiresReview) {
+        val response = if (reviewService.appEditRequiresReview(appEdit)) {
             // Assign a reviewer
             val reviewer = User.findRandomReviewer() ?: throw ConsoleApiError(
                 ErrorReason.ERROR_REASON_ASSIGNEE_UNAVAILABLE,
