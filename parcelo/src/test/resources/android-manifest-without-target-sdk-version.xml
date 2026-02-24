@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+SPDX-FileCopyrightText: © 2026 Logan Magee
+
+SPDX-License-Identifier: AGPL-3.0-only
+-->
+
+<manifest
+        android:versionCode="1"
+        package="com.example.app"
+        xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-sdk android:minSdkVersion="33"/>
+    <application/>
+</manifest>
