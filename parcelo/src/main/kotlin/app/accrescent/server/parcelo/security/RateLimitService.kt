@@ -44,7 +44,7 @@ class RateLimitService(
         .table(BUCKET_TABLE_NAME)
         .build()
 
-    fun tryRequest(principal: Principal, apiCategory: ApiCategory? = null): Boolean {
+    fun tryRequest(principal: Principal, apiCategory: ApiCategory? = null): RateLimitResult {
         val rateLimitConfig = when (principal) {
             is Principal.IpAddress -> config.rateLimiting().buckets().unauthenticated()
             is Principal.User -> config.rateLimiting().buckets().authenticated()
@@ -52,8 +52,11 @@ class RateLimitService(
         val principalBucket = getBucket(rateLimitConfig, getBucketKey(principal))
 
         // Apply per-principal rate limit
-        if (!principalBucket.tryConsume(1)) {
-            return false
+        val consumeResult = principalBucket.tryConsumeAndReturnRemaining(1)
+        if (!consumeResult.isConsumed) {
+            val delay = Duration.ofNanos(consumeResult.nanosToWaitForRefill)
+
+            return RateLimitResult.LimitExceeded(delay)
         }
 
         // Apply API-specific rate limits
@@ -64,16 +67,19 @@ class RateLimitService(
             val bucketKey = "${getBucketKey(principal)}|$UPLOAD_APIS_BUCKET_SUFFIX"
             val apiBucket = getBucket(apiRateLimitConfig, bucketKey)
 
-            if (!apiBucket.tryConsume(1)) {
+            val consumeResult = apiBucket.tryConsumeAndReturnRemaining(1)
+            if (!consumeResult.isConsumed) {
                 // Return the previously consumed token to the principal bucket since this request
                 // is rejected
                 principalBucket.addTokens(1)
 
-                return false
+                val delay = Duration.ofNanos(consumeResult.nanosToWaitForRefill)
+
+                return RateLimitResult.LimitExceeded(delay)
             }
         }
 
-        return true
+        return RateLimitResult.Allowed
     }
 
     @Scheduled(every = REMOVE_EXPIRED_BUCKET_JOB_PERIOD)

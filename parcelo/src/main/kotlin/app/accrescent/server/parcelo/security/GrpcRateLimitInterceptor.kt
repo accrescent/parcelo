@@ -98,11 +98,12 @@ private class GrpcRateLimitInterceptorImpl(
             null
         }
 
-        if (!rateLimitService.tryRequest(principal, apiCategory)) {
-            call.close(rateLimitError.status, rateLimitError.trailers ?: Metadata())
-            return object : ServerCall.Listener<ReqT>() {}
+        return when (rateLimitService.tryRequest(principal, apiCategory)) {
+            RateLimitResult.Allowed -> next.startCall(call, headers)
+            is RateLimitResult.LimitExceeded -> {
+                call.close(rateLimitError.status, rateLimitError.trailers ?: Metadata())
+                object : ServerCall.Listener<ReqT>() {}
+            }
         }
-
-        return next.startCall(call, headers)
     }
 }
