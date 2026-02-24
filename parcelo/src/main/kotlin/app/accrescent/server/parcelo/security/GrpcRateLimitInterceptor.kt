@@ -7,6 +7,8 @@ package app.accrescent.server.parcelo.security
 import app.accrescent.console.v1alpha1.ErrorReason
 import app.accrescent.server.parcelo.api.error.ConsoleApiError
 import app.accrescent.server.parcelo.config.ParceloConfig
+import com.google.protobuf.duration
+import com.google.rpc.RetryInfo
 import io.grpc.Grpc
 import io.grpc.Metadata
 import io.grpc.ServerCall
@@ -17,6 +19,7 @@ import io.vertx.grpc.BlockingServerInterceptor
 import jakarta.enterprise.context.ApplicationScoped
 import java.net.InetAddress
 import java.net.InetSocketAddress
+import com.google.protobuf.Any as AnyProto
 
 @ApplicationScoped
 class GrpcRateLimitInterceptor(
@@ -35,11 +38,6 @@ private class GrpcRateLimitInterceptorImpl(
             Metadata.Key.of("cf-connecting-ip", Metadata.ASCII_STRING_MARSHALLER)
         private val UPLOAD_APIS_PATTERN = Regex(""".*/Create.*UploadOperation""")
 
-        private val rateLimitError = ConsoleApiError(
-            ErrorReason.ERROR_REASON_RATE_LIMIT_EXCEEDED,
-            "rate limit exceeded",
-        )
-            .toStatusRuntimeException()
         private val noAddressError = ConsoleApiError(
             ErrorReason.ERROR_REASON_INTERNAL,
             "no remote address found",
@@ -98,10 +96,21 @@ private class GrpcRateLimitInterceptorImpl(
             null
         }
 
-        return when (rateLimitService.tryRequest(principal, apiCategory)) {
+        return when (val result = rateLimitService.tryRequest(principal, apiCategory)) {
             RateLimitResult.Allowed -> next.startCall(call, headers)
             is RateLimitResult.LimitExceeded -> {
-                call.close(rateLimitError.status, rateLimitError.trailers ?: Metadata())
+                val delay = duration {
+                    seconds = result.retryDelay.seconds
+                    nanos = result.retryDelay.nano
+                }
+                val error = ConsoleApiError(
+                    ErrorReason.ERROR_REASON_RATE_LIMIT_EXCEEDED,
+                    "rate limit exceeded",
+                    listOf(AnyProto.pack(RetryInfo.newBuilder().setRetryDelay(delay).build())),
+                )
+                    .toStatusRuntimeException()
+
+                call.close(error.status, error.trailers ?: Metadata())
                 object : ServerCall.Listener<ReqT>() {}
             }
         }

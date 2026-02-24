@@ -17,6 +17,7 @@ private const val DOMAIN = "console-api.accrescent.app"
 data class ConsoleApiError(
     private val reason: ErrorReason,
     private val message: String,
+    private val additionalDetails: List<Any> = emptyList(),
 ) {
     fun toStatus(): GoogleStatus {
         val code = when (reason) {
@@ -73,6 +74,7 @@ data class ConsoleApiError(
             .setCode(code.value())
             .setMessage(message)
             .addDetails(Any.pack(errorInfo))
+            .addAllDetails(additionalDetails)
             .build()
 
         return status
