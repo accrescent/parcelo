@@ -70,7 +70,8 @@ class Apk private constructor(
             val textManifest = BinaryXmlParser.decodeXml(binaryManifest).decodeToString()
             val manifest = AndroidManifest
                 .parse(textManifest)
-                ?: raise(ApkSetParseError.InvalidFormat)
+                .mapLeft { ApkSetParseError.InvalidFormat }
+                .bind()
             when {
                 // Check compliance with testOnly requirement
                 //

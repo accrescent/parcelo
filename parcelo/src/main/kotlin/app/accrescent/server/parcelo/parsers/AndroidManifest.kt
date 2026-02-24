@@ -4,6 +4,8 @@
 
 package app.accrescent.server.parcelo.parsers
 
+import arrow.core.Either
+import arrow.core.raise.either
 import io.quarkus.runtime.annotations.RegisterForReflection
 import jakarta.xml.bind.JAXBContext
 import jakarta.xml.bind.UnmarshalException
@@ -65,14 +67,24 @@ data class AndroidManifest(
         @XmlElement(name = "uses-permission")
         var usesPermissions: List<RawUsesPermission>? = null,
     ) {
-        fun toAndroidManifest(): AndroidManifest? {
-            return AndroidManifest(
-                `package` = `package`
-                    ?.takeIf { it.length <= APP_ID_MAX_LENGTH && appIdRegex.matches(it) }
-                    ?: return null,
-                versionCode = versionCode
-                    ?.takeIf { it >= VERSION_CODE_MIN_VALUE }
-                    ?: return null,
+        fun toAndroidManifest(): Either<AndroidManifestParseError, AndroidManifest> = either {
+            val appId = `package`
+            when {
+                appId == null -> raise(AndroidManifestParseError.MissingAppId)
+                appId.length > APP_ID_MAX_LENGTH ->
+                    raise(AndroidManifestParseError.AppIdTooLong(APP_ID_MAX_LENGTH, appId.length))
+
+                !appIdRegex.matches(appId) -> raise(AndroidManifestParseError.InvalidAppIdFormat)
+            }
+
+            val version = versionCode ?: raise(AndroidManifestParseError.MissingVersionCode)
+            if (version < VERSION_CODE_MIN_VALUE) {
+                raise(AndroidManifestParseError.VersionCodeTooSmall(VERSION_CODE_MIN_VALUE, version))
+            }
+
+            AndroidManifest(
+                `package` = appId,
+                versionCode = version,
                 versionName = versionName,
                 split = split,
                 application = application
@@ -82,7 +94,7 @@ data class AndroidManifest(
                             testOnly = it.testOnly ?: APPLICATION_TEST_ONLY_DEFAULT,
                         )
                     }
-                    ?: return null,
+                    ?: raise(AndroidManifestParseError.ApplicationNotDefined),
                 usesSdk = usesSdk
                     ?.let {
                         val minSdkVersion = it.minSdkVersion ?: MIN_SDK_VERSION_DEFAULT
@@ -96,7 +108,7 @@ data class AndroidManifest(
                 usesPermissions = usesPermissions
                     ?.map {
                         UsesPermission(
-                            name = it.name ?: return null,
+                            name = it.name ?: raise(AndroidManifestParseError.PermissionNameNotDefined),
                             maxSdkVersion = it.maxSdkVersion,
                         )
                     }
@@ -135,19 +147,19 @@ data class AndroidManifest(
     companion object {
         private val appIdRegex = Regex("""^([a-zA-Z][a-zA-Z0-9_]*\.)+[a-zA-Z][a-zA-Z0-9_]*$""")
 
-        fun parse(xml: String): AndroidManifest? {
+        fun parse(xml: String): Either<AndroidManifestParseError, AndroidManifest> = either {
             val manifest = try {
                 StringReader(xml).use {
                     JAXBContext
                         .newInstance(RawManifest::class.java)
                         .createUnmarshaller()
-                        .unmarshal(it) as? RawManifest
+                        .unmarshal(it) as RawManifest
                 }
             } catch (_: UnmarshalException) {
-                return null
+                raise(AndroidManifestParseError.MalformedManifest)
             }
 
-            return manifest?.toAndroidManifest()
+            manifest.toAndroidManifest().bind()
         }
     }
 }
