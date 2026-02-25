@@ -4,8 +4,8 @@
 
 package app.accrescent.server.parcelo.security
 
-import app.accrescent.console.v1alpha1.ErrorReason
-import app.accrescent.server.parcelo.api.error.ConsoleApiError
+import app.accrescent.server.parcelo.api.error.CommonApiError
+import app.accrescent.server.parcelo.api.error.CommonErrorReason
 import app.accrescent.server.parcelo.data.User
 import io.grpc.Context
 import io.grpc.Contexts
@@ -59,14 +59,14 @@ private class GrpcAuthenticationInterceptorImpl(
     }
 
     private companion object {
-        private val noCredentialsError = ConsoleApiError(
-            ErrorReason.ERROR_REASON_NO_CREDENTIALS,
+        private val noCredentialsError = CommonApiError(
+            CommonErrorReason.NO_CREDENTIALS,
             "no authentication credentials provided",
         )
             .toStatusRuntimeException()
 
-        private val notRegisteredError = ConsoleApiError(
-            ErrorReason.ERROR_REASON_NOT_REGISTERED,
+        private val notRegisteredError = CommonApiError(
+            CommonErrorReason.NOT_REGISTERED,
             "the authenticated user is not registered",
         )
             .toStatusRuntimeException()

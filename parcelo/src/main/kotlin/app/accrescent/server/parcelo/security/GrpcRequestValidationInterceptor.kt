@@ -23,7 +23,6 @@ import app.accrescent.console.v1alpha1.DeleteAppDraftListingRequest
 import app.accrescent.console.v1alpha1.DeleteAppDraftRequest
 import app.accrescent.console.v1alpha1.DeleteAppEditListingRequest
 import app.accrescent.console.v1alpha1.DeleteAppEditRequest
-import app.accrescent.console.v1alpha1.ErrorReason
 import app.accrescent.console.v1alpha1.GetAppDraftDownloadInfoRequest
 import app.accrescent.console.v1alpha1.GetAppDraftListingIconDownloadInfoRequest
 import app.accrescent.console.v1alpha1.GetAppDraftRequest
@@ -42,7 +41,8 @@ import app.accrescent.console.v1alpha1.UpdateAppDraftRequest
 import app.accrescent.console.v1alpha1.UpdateAppEditRequest
 import app.accrescent.console.v1alpha1.UpdateAppRequest
 import app.accrescent.console.v1alpha1.UpdateUserRequest
-import app.accrescent.server.parcelo.api.error.ConsoleApiError
+import app.accrescent.server.parcelo.api.error.CommonApiError
+import app.accrescent.server.parcelo.api.error.CommonErrorReason
 import build.buf.protovalidate.Validator
 import build.buf.protovalidate.ValidatorFactory
 import build.buf.protovalidate.exceptions.ValidationException
@@ -126,8 +126,8 @@ private class GrpcRequestValidationServerCallListener<ReqT : Any>(
         val validationResult = try {
             validator.validate(message)
         } catch (e: ValidationException) {
-            throw ConsoleApiError(
-                ErrorReason.ERROR_REASON_INTERNAL,
+            throw CommonApiError(
+                CommonErrorReason.INTERNAL,
                 e.message.toString(),
             )
                 .toStatusRuntimeException()
@@ -136,8 +136,8 @@ private class GrpcRequestValidationServerCallListener<ReqT : Any>(
         if (validationResult.isSuccess) {
             super.onMessage(message)
         } else {
-            throw ConsoleApiError(
-                ErrorReason.ERROR_REASON_INVALID_REQUEST,
+            throw CommonApiError(
+                CommonErrorReason.INVALID_REQUEST,
                 validationResult.toString(),
             )
                 .toStatusRuntimeException()

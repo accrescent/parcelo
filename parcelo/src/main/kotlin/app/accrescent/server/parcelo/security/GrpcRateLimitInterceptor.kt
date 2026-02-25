@@ -4,8 +4,8 @@
 
 package app.accrescent.server.parcelo.security
 
-import app.accrescent.console.v1alpha1.ErrorReason
-import app.accrescent.server.parcelo.api.error.ConsoleApiError
+import app.accrescent.server.parcelo.api.error.CommonApiError
+import app.accrescent.server.parcelo.api.error.CommonErrorReason
 import app.accrescent.server.parcelo.config.ParceloConfig
 import com.google.protobuf.duration
 import com.google.rpc.RetryInfo
@@ -38,13 +38,13 @@ private class GrpcRateLimitInterceptorImpl(
             Metadata.Key.of("cf-connecting-ip", Metadata.ASCII_STRING_MARSHALLER)
         private val UPLOAD_APIS_PATTERN = Regex(""".*/Create.*UploadOperation""")
 
-        private val noAddressError = ConsoleApiError(
-            ErrorReason.ERROR_REASON_INTERNAL,
+        private val noAddressError = CommonApiError(
+            CommonErrorReason.INTERNAL,
             "no remote address found",
         )
             .toStatusRuntimeException()
-        private val addressNotIpError = ConsoleApiError(
-            ErrorReason.ERROR_REASON_INTERNAL,
+        private val addressNotIpError = CommonApiError(
+            CommonErrorReason.INTERNAL,
             "client address is not an IP address",
         )
             .toStatusRuntimeException()
@@ -103,8 +103,8 @@ private class GrpcRateLimitInterceptorImpl(
                     seconds = result.retryDelay.seconds
                     nanos = result.retryDelay.nano
                 }
-                val error = ConsoleApiError(
-                    ErrorReason.ERROR_REASON_RATE_LIMIT_EXCEEDED,
+                val error = CommonApiError(
+                    CommonErrorReason.RATE_LIMIT_EXCEEDED,
                     "rate limit exceeded",
                     listOf(AnyProto.pack(RetryInfo.newBuilder().setRetryDelay(delay).build())),
                 )
