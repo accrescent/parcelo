@@ -261,6 +261,7 @@ class PermissionServiceTest {
                 email = "example@example.com",
                 reviewer = false,
                 publisher = true,
+                registeredAt = OffsetDateTime.parse("2000-01-01T00:00:00Z"),
             )
                 .persist()
             AppDraftRelationshipSet(
@@ -282,6 +283,7 @@ class PermissionServiceTest {
                 email = "example@example.com",
                 reviewer = true,
                 publisher = false,
+                registeredAt = OffsetDateTime.parse("2000-01-01T00:00:00Z"),
             )
                 .persist()
             AppDraftRelationshipSet(
@@ -308,6 +310,7 @@ class PermissionServiceTest {
                 email = "example@example.com",
                 reviewer = true,
                 publisher = false,
+                registeredAt = OffsetDateTime.parse("2000-01-01T00:00:00Z"),
             )
                 .persist()
             AppEditRelationshipSet(
@@ -336,6 +339,7 @@ class PermissionServiceTest {
                 email = "example@example.com",
                 reviewer = false,
                 publisher = false,
+                registeredAt = OffsetDateTime.parse("2000-01-01T00:00:00Z"),
             )
                 .persist()
         }
@@ -406,6 +410,7 @@ class PermissionServiceTest {
                 email = "example@example.com",
                 reviewer = false,
                 publisher = false,
+                registeredAt = OffsetDateTime.parse("2000-01-01T00:00:00Z"),
             )
                 .persist()
             OrganizationRelationshipSet(

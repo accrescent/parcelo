@@ -16,6 +16,7 @@ import jakarta.persistence.Id
 import jakarta.persistence.Table
 import jakarta.persistence.UniqueConstraint
 import java.net.URI
+import java.time.OffsetDateTime
 
 enum class OidcProvider {
     LOCAL,
@@ -65,6 +66,9 @@ class User(
 
     @Column(nullable = false)
     var publisher: Boolean,
+
+    @Column(name = "registered_at", nullable = false)
+    var registeredAt: OffsetDateTime,
 ) : PanacheEntityBase {
     companion object : PanacheCompanionBase<User, String> {
         fun existsById(id: String): Boolean {
@@ -87,6 +91,10 @@ class User(
 
         fun findRandomPublisher(): User? {
             return find("WHERE publisher = true ORDER BY random() LIMIT 1").firstResult()
+        }
+
+        fun countRegisteredSince(timestamp: OffsetDateTime): Long {
+            return count("WHERE registeredAt >= ?1", timestamp)
         }
     }
 }

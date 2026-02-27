@@ -275,6 +275,7 @@ CREATE TABLE reviews (
 CREATE TABLE users (
     publisher boolean NOT NULL,
     reviewer boolean NOT NULL,
+    registered_at timestamp(6) with time zone NOT NULL,
     email text NOT NULL,
     id text NOT NULL,
     oidc_issuer text NOT NULL,

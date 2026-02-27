@@ -10,6 +10,7 @@ import app.accrescent.server.parcelo.data.OrganizationRelationshipSet
 import app.accrescent.server.parcelo.data.User
 import app.accrescent.server.parcelo.security.IdType
 import app.accrescent.server.parcelo.security.Identifier
+import app.accrescent.server.parcelo.security.UserRegistrationService
 import io.quarkus.oidc.IdToken
 import io.quarkus.security.Authenticated
 import jakarta.transaction.Transactional
@@ -19,10 +20,14 @@ import jakarta.ws.rs.Path
 import jakarta.ws.rs.core.Response
 import org.eclipse.microprofile.jwt.Claims
 import org.eclipse.microprofile.jwt.JsonWebToken
+import java.time.OffsetDateTime
 
 @Authenticated
 @Path("/web/account")
-class AccountResource(@IdToken val idToken: JsonWebToken) {
+class AccountResource(
+    @IdToken val idToken: JsonWebToken,
+    private val userRegistrationService: UserRegistrationService,
+) {
     @GET
     @Path("/login")
     fun login() = Unit
@@ -39,6 +44,10 @@ class AccountResource(@IdToken val idToken: JsonWebToken) {
         }
 
         if (!User.existsByOidcId(idToken.issuer, idToken.subject)) {
+            if (!userRegistrationService.registrationsAvailable()) {
+                return Response.status(Response.Status.FORBIDDEN).build()
+            }
+
             val org = Organization(id = Identifier.generateNew(IdType.ORGANIZATION))
                 .also { it.persist() }
             val user = User(
@@ -49,6 +58,7 @@ class AccountResource(@IdToken val idToken: JsonWebToken) {
                 email = email,
                 reviewer = false,
                 publisher = false,
+                registeredAt = OffsetDateTime.now(),
             )
                 .also { it.persist() }
             OrganizationRelationshipSet(

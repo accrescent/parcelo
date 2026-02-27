@@ -9,6 +9,7 @@ import io.smallrye.config.WithDefault
 import io.smallrye.config.WithName
 import jakarta.validation.constraints.NotEmpty
 import java.time.Duration
+import java.util.Optional
 
 @ConfigMapping(prefix = "parcelo")
 interface ParceloConfig {
@@ -18,6 +19,7 @@ interface ParceloConfig {
     fun fileProcessingDirectory(): String
     fun objectStorageNotifications(): ObjectStorageNotifications
     fun rateLimiting(): RateLimiting
+    fun userRegistration(): Optional<UserRegistration>
 
     interface Admin {
         fun oidcProvider(): OidcProvider
@@ -32,6 +34,15 @@ interface ParceloConfig {
         fun editListingIconUpload(): String
         fun listingImage(): String
         fun publishedArtifact(): String
+    }
+
+    interface UserRegistration {
+        fun limit(): Limit
+
+        interface Limit {
+            fun period(): Duration
+            fun registrations(): Long
+        }
     }
 
     enum class IpSource {
