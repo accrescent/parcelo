@@ -6,7 +6,7 @@
 apkanalyzer = "31.13.0"
 apksig = "8.13.0"
 bundletool = "1.18.2"
-dokka = "2.0.0"
+dokka = "2.1.0"
 exposed = "0.61.0"
 flyway = "11.15.0"
 github = "1.330"
