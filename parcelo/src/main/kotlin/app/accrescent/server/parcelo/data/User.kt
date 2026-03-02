@@ -96,6 +96,48 @@ class User(
         fun countRegisteredSince(timestamp: OffsetDateTime): Long {
             return count("WHERE registeredAt >= ?1", timestamp)
         }
+
+        fun findOwnersByOrganizationId(organizationId: String): List<User> {
+            return find(
+                "FROM User users " +
+                        "JOIN OrganizationRelationshipSet organization_relationship_sets " +
+                        "ON organization_relationship_sets.userId = users.id " +
+                        "WHERE organization_relationship_sets.organizationId = ?1 " +
+                        "AND organization_relationship_sets.owner = true",
+                organizationId,
+            )
+                .list()
+        }
+
+        fun findOwnersByAppDraftId(appDraftId: String): List<User> {
+            return find(
+                "FROM User users " +
+                        "JOIN OrganizationRelationshipSet organization_relationship_sets " +
+                        "ON organization_relationship_sets.userId = users.id " +
+                        "JOIN AppDraft app_drafts " +
+                        "ON app_drafts.organizationId = organization_relationship_sets.organizationId " +
+                        "WHERE app_drafts.id = ?1 " +
+                        "AND organization_relationship_sets.owner = true",
+                appDraftId,
+            )
+                .list()
+        }
+
+        fun findOwnersByAppEditId(appEditId: String): List<User> {
+            return find(
+                "FROM User users " +
+                        "JOIN OrganizationRelationshipSet organization_relationship_sets " +
+                        "ON organization_relationship_sets.userId = users.id " +
+                        "JOIN App apps " +
+                        "ON apps.organizationId = organization_relationship_sets.organizationId " +
+                        "JOIN AppEdit app_edits " +
+                        "ON app_edits.appId = apps.id " +
+                        "WHERE app_edits.id = ?1 " +
+                        "AND organization_relationship_sets.owner = true",
+                appEditId,
+            )
+                .list()
+        }
     }
 }
 

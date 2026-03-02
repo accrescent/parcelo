@@ -58,6 +58,18 @@ class ReviewServiceImpl @Inject constructor(
         val appDraftId: String,
     ) : MailTemplate.MailTemplateInstance
 
+    @JvmRecord
+    data class AppDraftReviewedEmail(
+        val appDraftId: String,
+        val approved: Boolean,
+    ) : MailTemplate.MailTemplateInstance
+
+    @JvmRecord
+    data class AppEditReviewedEmail(
+        val appEditId: String,
+        val approved: Boolean,
+    ) : MailTemplate.MailTemplateInstance
+
     @Transactional
     override fun createAppDraftReview(
         request: CreateAppDraftReviewRequest,
@@ -137,6 +149,14 @@ class ReviewServiceImpl @Inject constructor(
             .subject("A new app draft has been assigned to you")
             .sendAndAwait()
 
+        // Notify the org owners of the review result
+        for (owner in User.findOwnersByAppDraftId(request.appDraftId)) {
+            AppDraftReviewedEmail(appDraft.id, review.approved)
+                .to(owner.email)
+                .subject("Your app draft has been ${if (review.approved) "approved" else "rejected"}")
+                .sendAndAwait()
+        }
+
         return Uni.createFrom().item { createAppDraftReviewResponse {} }
     }
 
@@ -186,6 +206,14 @@ class ReviewServiceImpl @Inject constructor(
             RejectionReason(reviewId = review.id, reason = rejectionReason.reason).persist()
         }
         appEdit.reviewId = review.id
+
+        // Notify the org owners of the review result
+        for (owner in User.findOwnersByAppEditId(request.appEditId)) {
+            AppEditReviewedEmail(appEdit.id, review.approved)
+                .to(owner.email)
+                .subject("Your app edit has been ${if (review.approved) "approved" else "rejected"}")
+                .sendAndAwait()
+        }
 
         // Publish the edit immediately if the review is an approval
         if (request.approved) {

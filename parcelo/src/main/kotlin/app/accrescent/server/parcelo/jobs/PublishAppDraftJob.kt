@@ -17,6 +17,7 @@ import app.accrescent.server.parcelo.data.Image
 import app.accrescent.server.parcelo.data.ListingId
 import app.accrescent.server.parcelo.data.PublishedApk
 import app.accrescent.server.parcelo.data.PublishedImage
+import app.accrescent.server.parcelo.data.User
 import app.accrescent.server.parcelo.publish.PublishService
 import app.accrescent.server.parcelo.publish.PublishedIcon
 import app.accrescent.server.parcelo.util.TempFile
@@ -25,6 +26,7 @@ import com.android.bundle.Commands
 import com.google.cloud.storage.BlobId
 import com.google.cloud.storage.Storage
 import io.quarkus.logging.Log
+import io.quarkus.mailer.MailTemplate
 import jakarta.inject.Inject
 import jakarta.transaction.Transactional
 import org.quartz.DisallowConcurrentExecution
@@ -39,6 +41,11 @@ class PublishAppDraftJob @Inject constructor(
     private val publishService: PublishService,
     private val storage: Storage,
 ) : Job {
+    @JvmRecord
+    data class AppDraftPublishedEmail(
+        val appDraftId: String,
+    ) : MailTemplate.MailTemplateInstance
+
     @Transactional
     override fun execute(context: JobExecutionContext) {
         val jobId = context.jobDetail.key.name
@@ -184,5 +191,13 @@ class PublishAppDraftJob @Inject constructor(
         }
         appDraft.publishing = false
         appDraft.publishedAt = OffsetDateTime.now()
+
+        // Notify org owners that their app has been published for the first time
+        for (owner in User.findOwnersByOrganizationId(appDraft.organizationId)) {
+            AppDraftPublishedEmail(appDraft.id)
+                .to(owner.email)
+                .subject("Your app draft has been published")
+                .sendAndAwait()
+        }
     }
 }
