@@ -13,6 +13,7 @@ buf = "0.10.3"
 bundletool = "1.18.2"
 console-api = "6f77908e977b4223a8b44c34df1ba35a"
 google-cloud-libraries-bom = "26.71.0"
+google-cloud-sql-postgres-socket-factory = "1.28.1"
 htmlunit = "4.20.0"
 kotlin = "2.3.0"
 log4j1 = "1.2.17"
@@ -30,6 +31,7 @@ bundletool = { module = "com.android.tools.build:bundletool", version.ref = "bun
 flyway-database-postgresql = { module = "org.flywaydb:flyway-database-postgresql" }
 google-cloud-libraries-bom = { module = "com.google.cloud:libraries-bom", version.ref = "google-cloud-libraries-bom" }
 google-cloud-pubsub = { module = "com.google.cloud:google-cloud-pubsub" }
+google-cloud-sql-postgres-socket-factory = { module = "com.google.cloud.sql:postgres-socket-factory", version.ref = "google-cloud-sql-postgres-socket-factory" }
 google-cloud-storage = { module = "com.google.cloud:google-cloud-storage" }
 grpc-google-common-protos = { module = "com.google.api.grpc:grpc-google-common-protos" }
 htmlunit = { module = "org.htmlunit:htmlunit", version.ref = "htmlunit" }

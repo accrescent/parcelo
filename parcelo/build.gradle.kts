@@ -31,6 +31,7 @@ dependencies {
         exclude("com.google.protobuf", "protobuf-java")
     }
     implementation(project(":quarkus-google-cloud-pubsub"))
+    implementation(project(":quarkus-google-cloud-sql-postgres-socket-factory"))
     implementation(project(":quarkus-google-cloud-storage"))
     implementation(project(":quarkus-minio"))
     implementation(project(":quarkus-protovalidate"))
