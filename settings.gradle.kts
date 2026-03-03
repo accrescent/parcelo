@@ -16,6 +16,8 @@ include(
     "quarkus-minio",
     "quarkus-minio-deployment",
     "quarkus-minio-devservices",
+    "quarkus-protovalidate",
+    "quarkus-protovalidate-deployment",
     "testdata:android-app-valid",
     "testdata:android-app-valid2",
     "testdata:android-app-valid3",
