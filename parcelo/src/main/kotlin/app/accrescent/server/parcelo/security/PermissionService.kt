@@ -71,8 +71,6 @@ class PermissionService @Inject constructor(private val config: ParceloConfig) {
             is HasPermissionRequest.CreateAppEditListing,
             is HasPermissionRequest.DeleteAppEdit,
             is HasPermissionRequest.DeleteAppEditListing,
-            is HasPermissionRequest.DownloadAppEdit,
-            is HasPermissionRequest.DownloadAppEditListingIcons,
             is HasPermissionRequest.ReplaceAppEditListingIcon,
             is HasPermissionRequest.ReplaceAppEditPackage,
             is HasPermissionRequest.SubmitAppEdit,
@@ -85,6 +83,8 @@ class PermissionService @Inject constructor(private val config: ParceloConfig) {
                 .findByAppEditIdAndUserId(request.resourceId, request.subjectId)
                 ?.reviewer == true
 
+            is HasPermissionRequest.DownloadAppEdit,
+            is HasPermissionRequest.DownloadAppEditListingIcons,
             is HasPermissionRequest.ViewAppEditExistence -> {
                 val isOrgOwner = OrganizationRelationshipSet
                     .findByAppEditIdAndUserId(request.resourceId, request.subjectId)

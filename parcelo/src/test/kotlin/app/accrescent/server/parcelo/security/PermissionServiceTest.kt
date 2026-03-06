@@ -174,8 +174,18 @@ class PermissionServiceTest {
                 ),
                 HasPermissionReturnsTrueWhenRequiredParams(
                     request = HasPermissionRequest
+                        .DownloadAppEdit(TEST_APP_EDIT_ID, TEST_REVIEWER_USER_ID),
+                    setUpData = { setUpAppEditReviewerData() },
+                ),
+                HasPermissionReturnsTrueWhenRequiredParams(
+                    request = HasPermissionRequest
                         .DownloadAppEditListingIcons(TEST_APP_EDIT_ID, TEST_USER_ID),
                     setUpData = { setUpAppEditData() },
+                ),
+                HasPermissionReturnsTrueWhenRequiredParams(
+                    request = HasPermissionRequest
+                        .DownloadAppEditListingIcons(TEST_APP_EDIT_ID, TEST_REVIEWER_USER_ID),
+                    setUpData = { setUpAppEditReviewerData() },
                 ),
                 HasPermissionReturnsTrueWhenRequiredParams(
                     request = HasPermissionRequest
