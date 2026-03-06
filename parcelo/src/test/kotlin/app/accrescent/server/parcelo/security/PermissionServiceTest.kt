@@ -93,8 +93,18 @@ class PermissionServiceTest {
                 ),
                 HasPermissionReturnsTrueWhenRequiredParams(
                     request = HasPermissionRequest
+                        .DownloadAppDraft(TEST_APP_DRAFT_ID, TEST_REVIEWER_USER_ID),
+                    setUpData = { setUpAppDraftReviewerData() },
+                ),
+                HasPermissionReturnsTrueWhenRequiredParams(
+                    request = HasPermissionRequest
                         .DownloadAppDraftListingIcons(TEST_APP_DRAFT_ID, TEST_USER_ID),
                     setUpData = { setUpAppDraftData() },
+                ),
+                HasPermissionReturnsTrueWhenRequiredParams(
+                    request = HasPermissionRequest
+                        .DownloadAppDraftListingIcons(TEST_APP_DRAFT_ID, TEST_REVIEWER_USER_ID),
+                    setUpData = { setUpAppDraftReviewerData() },
                 ),
                 HasPermissionReturnsTrueWhenRequiredParams(
                     request = HasPermissionRequest

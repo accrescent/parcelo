@@ -29,8 +29,6 @@ class PermissionService @Inject constructor(private val config: ParceloConfig) {
             is HasPermissionRequest.CreateAppDraftListing,
             is HasPermissionRequest.DeleteAppDraft,
             is HasPermissionRequest.DeleteAppDraftListing,
-            is HasPermissionRequest.DownloadAppDraft,
-            is HasPermissionRequest.DownloadAppDraftListingIcons,
             is HasPermissionRequest.ReplaceAppDraftListingIcon,
             is HasPermissionRequest.ReplaceAppDraftPackage,
             is HasPermissionRequest.SubmitAppDraft,
@@ -38,6 +36,18 @@ class PermissionService @Inject constructor(private val config: ParceloConfig) {
             is HasPermissionRequest.ViewAppDraft -> OrganizationRelationshipSet
                 .findByAppDraftIdAndUserId(request.resourceId, request.subjectId)
                 ?.owner == true
+
+            is HasPermissionRequest.DownloadAppDraft,
+            is HasPermissionRequest.DownloadAppDraftListingIcons -> {
+                val isOrgOwner = OrganizationRelationshipSet
+                    .findByAppDraftIdAndUserId(request.resourceId, request.subjectId)
+                    ?.owner == true
+                val isReviewer = AppDraftRelationshipSet
+                    .findByAppDraftIdAndUserId(request.resourceId, request.subjectId)
+                    ?.reviewer == true
+
+                isOrgOwner || isReviewer
+            }
 
             is HasPermissionRequest.PublishAppDraft -> AppDraftRelationshipSet
                 .findByAppDraftIdAndUserId(request.resourceId, request.subjectId)
