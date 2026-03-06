@@ -14,6 +14,7 @@ import io.grpc.Metadata
 import io.grpc.ServerCall
 import io.grpc.ServerCallHandler
 import io.grpc.ServerInterceptor
+import io.quarkus.logging.Log
 import io.vertx.core.Vertx
 import io.vertx.grpc.BlockingServerInterceptor
 import jakarta.enterprise.context.ApplicationScoped
@@ -96,23 +97,28 @@ private class GrpcRateLimitInterceptorImpl(
             null
         }
 
-        return when (val result = rateLimitService.tryRequest(principal, apiCategory)) {
-            RateLimitResult.Allowed -> next.startCall(call, headers)
-            is RateLimitResult.LimitExceeded -> {
-                val delay = duration {
-                    seconds = result.retryDelay.seconds
-                    nanos = result.retryDelay.nano
-                }
-                val error = CommonApiError(
-                    CommonErrorReason.RATE_LIMIT_EXCEEDED,
-                    "rate limit exceeded",
-                    listOf(AnyProto.pack(RetryInfo.newBuilder().setRetryDelay(delay).build())),
-                )
-                    .toStatusRuntimeException()
+        try {
+            return when (val result = rateLimitService.tryRequest(principal, apiCategory)) {
+                RateLimitResult.Allowed -> next.startCall(call, headers)
+                is RateLimitResult.LimitExceeded -> {
+                    val delay = duration {
+                        seconds = result.retryDelay.seconds
+                        nanos = result.retryDelay.nano
+                    }
+                    val error = CommonApiError(
+                        CommonErrorReason.RATE_LIMIT_EXCEEDED,
+                        "rate limit exceeded",
+                        listOf(AnyProto.pack(RetryInfo.newBuilder().setRetryDelay(delay).build())),
+                    )
+                        .toStatusRuntimeException()
 
-                call.close(error.status, error.trailers ?: Metadata())
-                object : ServerCall.Listener<ReqT>() {}
+                    call.close(error.status, error.trailers ?: Metadata())
+                    object : ServerCall.Listener<ReqT>() {}
+                }
             }
+        } catch (t: Throwable) {
+            Log.error("TODO rate limit error", t)
+            throw t
         }
     }
 }

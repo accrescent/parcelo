@@ -13,6 +13,7 @@ import io.grpc.Metadata
 import io.grpc.ServerCall
 import io.grpc.ServerCallHandler
 import io.grpc.ServerInterceptor
+import io.quarkus.logging.Log
 import io.quarkus.oidc.IdToken
 import io.vertx.core.Vertx
 import io.vertx.grpc.BlockingServerInterceptor
@@ -49,9 +50,14 @@ private class GrpcAuthenticationInterceptorImpl(
             call.close(noCredentialsError.status, noCredentialsError.trailers ?: Metadata())
             return object : ServerCall.Listener<ReqT>() {}
         }
-        val userId = User.findIdByOidcId(idToken.issuer, idToken.subject)?.id ?: run {
-            call.close(notRegisteredError.status, notRegisteredError.trailers ?: Metadata())
-            return object : ServerCall.Listener<ReqT>() {}
+        val userId = try {
+            User.findIdByOidcId(idToken.issuer, idToken.subject)?.id ?: run {
+                call.close(notRegisteredError.status, notRegisteredError.trailers ?: Metadata())
+                return object : ServerCall.Listener<ReqT>() {}
+            }
+        } catch (t: Throwable) {
+            Log.error("TODO User.findIdByOidcId error", t)
+            throw t
         }
         val context = Context.current().withValue(AuthnContextKey.USER_ID, userId)
 
