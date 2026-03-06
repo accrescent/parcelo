@@ -79,6 +79,7 @@ import com.google.protobuf.InvalidProtocolBufferException
 import com.google.protobuf.timestamp
 import io.quarkus.grpc.GrpcService
 import io.quarkus.grpc.RegisterInterceptor
+import io.quarkus.logging.Log
 import io.quarkus.mailer.MailTemplate
 import io.smallrye.mutiny.Uni
 import jakarta.enterprise.inject.Instance
@@ -112,119 +113,131 @@ class AppDraftServiceImpl @Inject constructor(
 
     @Transactional
     override fun createAppDraft(request: CreateAppDraftRequest): Uni<CreateAppDraftResponse> {
-        val userId = AuthnContextKey.USER_ID.get()
+        try {
 
-        val canCreateAppDraft = permissionService
-            .hasPermission(HasPermissionRequest.CreateAppDraft(request.organizationId, userId))
-        if (!canCreateAppDraft) {
-            val orgExists = Organization.existsById(request.organizationId)
-            val canViewOrgExistence = permissionService.hasPermission(
-                HasPermissionRequest.ViewOrganizationExistence(request.organizationId, userId),
-            )
+            val userId = AuthnContextKey.USER_ID.get()
 
-            throw if (!orgExists || !canViewOrgExistence) {
-                organizationNotFoundException(request.organizationId)
-            } else {
-                ConsoleApiError(
-                    ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
-                    "insufficient permission to create app drafts in organization " +
-                            "\"${request.organizationId}\"",
+            val canCreateAppDraft = permissionService
+                .hasPermission(HasPermissionRequest.CreateAppDraft(request.organizationId, userId))
+            if (!canCreateAppDraft) {
+                val orgExists = Organization.existsById(request.organizationId)
+                val canViewOrgExistence = permissionService.hasPermission(
+                    HasPermissionRequest.ViewOrganizationExistence(request.organizationId, userId),
+                )
+
+                throw if (!orgExists || !canViewOrgExistence) {
+                    organizationNotFoundException(request.organizationId)
+                } else {
+                    ConsoleApiError(
+                        ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
+                        "insufficient permission to create app drafts in organization " +
+                                "\"${request.organizationId}\"",
+                    )
+                        .toStatusRuntimeException()
+                }
+            }
+
+            val organization = Organization
+                .findById(request.organizationId)
+                ?: throw organizationNotFoundException(request.organizationId)
+            val orgActiveAppDraftLimit = organization.activeAppDraftLimit
+            val orgActiveAppDraftCount = AppDraft.countActiveInOrganization(request.organizationId)
+            if (orgActiveAppDraftCount >= orgActiveAppDraftLimit) {
+                throw ConsoleApiError(
+                    ErrorReason.ERROR_REASON_RESOURCE_LIMIT_EXCEEDED,
+                    "organization limit of $orgActiveAppDraftLimit active app drafts already reached",
                 )
                     .toStatusRuntimeException()
             }
-        }
 
-        val organization = Organization
-            .findById(request.organizationId)
-            ?: throw organizationNotFoundException(request.organizationId)
-        val orgActiveAppDraftLimit = organization.activeAppDraftLimit
-        val orgActiveAppDraftCount = AppDraft.countActiveInOrganization(request.organizationId)
-        if (orgActiveAppDraftCount >= orgActiveAppDraftLimit) {
-            throw ConsoleApiError(
-                ErrorReason.ERROR_REASON_RESOURCE_LIMIT_EXCEEDED,
-                "organization limit of $orgActiveAppDraftLimit active app drafts already reached",
+            val appDraft = AppDraft(
+                id = Identifier.generateNew(IdType.APP_DRAFT),
+                organizationId = request.organizationId,
+                createdAt = OffsetDateTime.now(),
+                appPackageId = null,
+                defaultListingLanguage = null,
+                submittedAt = null,
+                reviewId = null,
+                publishing = false,
+                publishedAt = null,
             )
-                .toStatusRuntimeException()
+                .also { it.persist() }
+
+            val response = createAppDraftResponse {
+                appDraftId = appDraft.id
+            }
+
+            return Uni.createFrom().item { response }
+        } catch (t: Throwable) {
+            Log.error("TODO: createAppDraft error", t)
+            throw t
         }
-
-        val appDraft = AppDraft(
-            id = Identifier.generateNew(IdType.APP_DRAFT),
-            organizationId = request.organizationId,
-            createdAt = OffsetDateTime.now(),
-            appPackageId = null,
-            defaultListingLanguage = null,
-            submittedAt = null,
-            reviewId = null,
-            publishing = false,
-            publishedAt = null,
-        )
-            .also { it.persist() }
-
-        val response = createAppDraftResponse {
-            appDraftId = appDraft.id
-        }
-
-        return Uni.createFrom().item { response }
     }
 
     @Transactional
     override fun getAppDraft(request: GetAppDraftRequest): Uni<GetAppDraftResponse> {
-        val userId = AuthnContextKey.USER_ID.get()
+        try {
 
-        val canView = permissionService
-            .hasPermission(HasPermissionRequest.ViewAppDraft(request.appDraftId, userId))
-        if (!canView) {
-            val exists = AppDraft.existsById(request.appDraftId)
-            val canViewExistence = permissionService.hasPermission(
-                HasPermissionRequest.ViewAppDraftExistence(request.appDraftId, userId),
-            )
+            val userId = AuthnContextKey.USER_ID.get()
 
-            throw if (!exists || !canViewExistence) {
-                appDraftNotFoundException(request.appDraftId)
-            } else {
-                ConsoleApiError(
-                    ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
-                    "insufficient permission to view app draft",
+            val canView = permissionService
+                .hasPermission(HasPermissionRequest.ViewAppDraft(request.appDraftId, userId))
+            if (!canView) {
+                val exists = AppDraft.existsById(request.appDraftId)
+                val canViewExistence = permissionService.hasPermission(
+                    HasPermissionRequest.ViewAppDraftExistence(request.appDraftId, userId),
                 )
-                    .toStatusRuntimeException()
-            }
-        }
 
-        val appDraft = AppDraft
-            .findById(request.appDraftId)
-            ?: throw appDraftNotFoundException(request.appDraftId)
-        val response = getAppDraftResponse {
-            draft = appDraft {
-                id = appDraft.id
-                createdAt = timestamp {
-                    seconds = appDraft.createdAt.toEpochSecond()
-                    nanos = appDraft.createdAt.nano
-                }
-                appDraft.defaultListingLanguage?.let { defaultListingLanguage = it }
-                appDraft.appPackage?.let { pkg ->
-                    appPackage = appPackage {
-                        appId = pkg.appId
-                        versionCode = pkg.versionCode.toLong()
-                        versionName = pkg.versionName
-                        targetSdk = pkg.targetSdk.toLong()
-                    }
-                }
-                appDraft.submittedAt?.let { submissionTimestamp ->
-                    submittedAt = timestamp {
-                        seconds = submissionTimestamp.toEpochSecond()
-                        nanos = submissionTimestamp.nano
-                    }
-                }
-                appDraft.publishedAt?.let { publicationTimestamp ->
-                    publishedAt = timestamp {
-                        seconds = publicationTimestamp.toEpochSecond()
-                        nanos = publicationTimestamp.nano
-                    }
+                throw if (!exists || !canViewExistence) {
+                    appDraftNotFoundException(request.appDraftId)
+                } else {
+                    ConsoleApiError(
+                        ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
+                        "insufficient permission to view app draft",
+                    )
+                        .toStatusRuntimeException()
                 }
             }
-        }
 
-        return Uni.createFrom().item { response }
+            val appDraft = AppDraft
+                .findById(request.appDraftId)
+                ?: throw appDraftNotFoundException(request.appDraftId)
+            val response = getAppDraftResponse {
+                draft = appDraft {
+                    id = appDraft.id
+                    createdAt = timestamp {
+                        seconds = appDraft.createdAt.toEpochSecond()
+                        nanos = appDraft.createdAt.nano
+                    }
+                    appDraft.defaultListingLanguage?.let { defaultListingLanguage = it }
+                    appDraft.appPackage?.let { pkg ->
+                        appPackage = appPackage {
+                            appId = pkg.appId
+                            versionCode = pkg.versionCode.toLong()
+                            versionName = pkg.versionName
+                            targetSdk = pkg.targetSdk.toLong()
+                        }
+                    }
+                    appDraft.submittedAt?.let { submissionTimestamp ->
+                        submittedAt = timestamp {
+                            seconds = submissionTimestamp.toEpochSecond()
+                            nanos = submissionTimestamp.nano
+                        }
+                    }
+                    appDraft.publishedAt?.let { publicationTimestamp ->
+                        publishedAt = timestamp {
+                            seconds = publicationTimestamp.toEpochSecond()
+                            nanos = publicationTimestamp.nano
+                        }
+                    }
+                }
+            }
+
+            return Uni.createFrom().item { response }
+        } catch (t: Throwable) {
+            Log.error("TODO getAppDraft error", t)
+            throw t
+        }
     }
 
     @Transactional
@@ -309,65 +322,70 @@ class AppDraftServiceImpl @Inject constructor(
     override fun createAppDraftUploadOperation(
         request: CreateAppDraftUploadOperationRequest,
     ): Uni<CreateAppDraftUploadOperationResponse> {
-        val userId = AuthnContextKey.USER_ID.get()
+        try {
+            val userId = AuthnContextKey.USER_ID.get()
 
-        val canReplacePackage = permissionService
-            .hasPermission(HasPermissionRequest.ReplaceAppDraftPackage(request.appDraftId, userId))
-        if (!canReplacePackage) {
-            val exists = AppDraft.existsById(request.appDraftId)
-            val canViewExistence = permissionService.hasPermission(
-                HasPermissionRequest.ViewAppDraftExistence(request.appDraftId, userId),
-            )
+            val canReplacePackage = permissionService
+                .hasPermission(HasPermissionRequest.ReplaceAppDraftPackage(request.appDraftId, userId))
+            if (!canReplacePackage) {
+                val exists = AppDraft.existsById(request.appDraftId)
+                val canViewExistence = permissionService.hasPermission(
+                    HasPermissionRequest.ViewAppDraftExistence(request.appDraftId, userId),
+                )
 
-            throw if (!exists || !canViewExistence) {
-                appDraftNotFoundException(request.appDraftId)
-            } else {
-                ConsoleApiError(
-                    ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
-                    "insufficient permission to replace package",
+                throw if (!exists || !canViewExistence) {
+                    appDraftNotFoundException(request.appDraftId)
+                } else {
+                    ConsoleApiError(
+                        ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
+                        "insufficient permission to replace package",
+                    )
+                        .toStatusRuntimeException()
+                }
+            }
+
+            val appDraft = AppDraft
+                .findById(request.appDraftId)
+                ?: throw appDraftNotFoundException(request.appDraftId)
+            if (appDraft.submitted) {
+                throw ConsoleApiError(
+                    ErrorReason.ERROR_REASON_RESOURCE_IMMUTABLE,
+                    "submitted drafts cannot be modified",
                 )
                     .toStatusRuntimeException()
             }
-        }
 
-        val appDraft = AppDraft
-            .findById(request.appDraftId)
-            ?: throw appDraftNotFoundException(request.appDraftId)
-        if (appDraft.submitted) {
-            throw ConsoleApiError(
-                ErrorReason.ERROR_REASON_RESOURCE_IMMUTABLE,
-                "submitted drafts cannot be modified",
+            val blobInfo = BlobInfo
+                .newBuilder(config.buckets().appUpload(), UUID.randomUUID().toString()).build()
+            val uploadUrl = storage.signUploadUrl(blobInfo, UploadType.APK_SET)
+
+            val backgroundOperation = BackgroundOperation(
+                id = Identifier.generateNew(IdType.OPERATION),
+                type = BackgroundOperationType.UPLOAD_APP_DRAFT,
+                parentId = request.appDraftId,
+                createdAt = OffsetDateTime.now(),
+                result = null,
+                succeeded = false,
             )
-                .toStatusRuntimeException()
+                .also { it.persist() }
+            AppDraftUploadProcessingJob(
+                appDraftId = request.appDraftId,
+                bucketId = blobInfo.bucket,
+                objectId = blobInfo.name,
+                backgroundOperationId = backgroundOperation.id,
+            )
+                .persist()
+
+            val response = createAppDraftUploadOperationResponse {
+                apkSetUploadUrl = uploadUrl.toString()
+                processingOperation = Operation.newBuilder().setName(backgroundOperation.id).build()
+            }
+
+            return Uni.createFrom().item { response }
+        } catch (t: Throwable) {
+            Log.error("TODO: createAppDraftUploadOperation error", t)
+            throw t
         }
-
-        val blobInfo = BlobInfo
-            .newBuilder(config.buckets().appUpload(), UUID.randomUUID().toString()).build()
-        val uploadUrl = storage.signUploadUrl(blobInfo, UploadType.APK_SET)
-
-        val backgroundOperation = BackgroundOperation(
-            id = Identifier.generateNew(IdType.OPERATION),
-            type = BackgroundOperationType.UPLOAD_APP_DRAFT,
-            parentId = request.appDraftId,
-            createdAt = OffsetDateTime.now(),
-            result = null,
-            succeeded = false,
-        )
-            .also { it.persist() }
-        AppDraftUploadProcessingJob(
-            appDraftId = request.appDraftId,
-            bucketId = blobInfo.bucket,
-            objectId = blobInfo.name,
-            backgroundOperationId = backgroundOperation.id,
-        )
-            .persist()
-
-        val response = createAppDraftUploadOperationResponse {
-            apkSetUploadUrl = uploadUrl.toString()
-            processingOperation = Operation.newBuilder().setName(backgroundOperation.id).build()
-        }
-
-        return Uni.createFrom().item { response }
     }
 
     @Transactional
@@ -845,95 +863,100 @@ class AppDraftServiceImpl @Inject constructor(
 
     @Transactional
     override fun publishAppDraft(request: PublishAppDraftRequest): Uni<PublishAppDraftResponse> {
-        val userId = AuthnContextKey.USER_ID.get()
+        try {
+            val userId = AuthnContextKey.USER_ID.get()
 
-        val canPublish = permissionService
-            .hasPermission(HasPermissionRequest.PublishAppDraft(request.appDraftId, userId))
-        if (!canPublish) {
-            val exists = AppDraft.existsById(request.appDraftId)
-            val canViewExistence = permissionService.hasPermission(
-                HasPermissionRequest.ViewAppDraftExistence(request.appDraftId, userId),
+            val canPublish = permissionService
+                .hasPermission(HasPermissionRequest.PublishAppDraft(request.appDraftId, userId))
+            if (!canPublish) {
+                val exists = AppDraft.existsById(request.appDraftId)
+                val canViewExistence = permissionService.hasPermission(
+                    HasPermissionRequest.ViewAppDraftExistence(request.appDraftId, userId),
+                )
+
+                throw if (!exists || !canViewExistence) {
+                    appDraftNotFoundException(request.appDraftId)
+                } else {
+                    ConsoleApiError(
+                        ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
+                        "insufficient permission to publish app draft",
+                    )
+                        .toStatusRuntimeException()
+                }
+            }
+
+            val appDraft = AppDraft
+                .findById(request.appDraftId)
+                ?: throw appDraftNotFoundException(request.appDraftId)
+            val appPackage = appDraft.appPackage ?: throw ConsoleApiError(
+                ErrorReason.ERROR_REASON_INTERNAL,
+                "app draft has no package",
             )
+                .toStatusRuntimeException()
+            when {
+                appDraft.published -> throw ConsoleApiError(
+                    ErrorReason.ERROR_REASON_ALREADY_PUBLISHED,
+                    "the app draft has already been published",
+                )
+                    .toStatusRuntimeException()
 
-            throw if (!exists || !canViewExistence) {
-                appDraftNotFoundException(request.appDraftId)
-            } else {
-                ConsoleApiError(
-                    ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
-                    "insufficient permission to publish app draft",
+                appDraft.publishing -> throw ConsoleApiError(
+                    ErrorReason.ERROR_REASON_RESOURCE_PUBLISHING,
+                    "the app draft is already publishing",
+                )
+                    .toStatusRuntimeException()
+
+                appDraft.defaultListingLanguage == null -> throw ConsoleApiError(
+                    ErrorReason.ERROR_REASON_INTERNAL,
+                    "app draft has no default listing language",
+                )
+                    .toStatusRuntimeException()
+
+                appDraft.listings.any { it.icon == null } -> throw ConsoleApiError(
+                    ErrorReason.ERROR_REASON_INTERNAL,
+                    "one or more app listings have no icon",
+                )
+                    .toStatusRuntimeException()
+
+                App.existsById(appPackage.appId) -> throw ConsoleApiError(
+                    ErrorReason.ERROR_REASON_RESOURCE_CONFLICT,
+                    "an app with ID \"${appPackage.appId}\" has already been published",
                 )
                     .toStatusRuntimeException()
             }
+
+            // Publish draft
+            val job = JobBuilder
+                .newJob(PublishAppDraftJob::class.java)
+                .withIdentity(JobKey.jobKey(Identifier.generateNew(IdType.OPERATION)))
+                .withDescription("Publish app draft ${request.appDraftId}")
+                .usingJobData(JobDataKey.APP_DRAFT_ID, request.appDraftId)
+                .requestRecovery()
+                .storeDurably()
+                .build()
+            val trigger = TriggerBuilder.newTrigger().startNow().build()
+            scheduler.get().scheduleJob(job, trigger)
+
+            val backgroundOperation = BackgroundOperation(
+                id = job.key.name,
+                type = BackgroundOperationType.PUBLISH_APP_DRAFT,
+                parentId = appDraft.id,
+                createdAt = OffsetDateTime.now(),
+                result = null,
+                succeeded = false,
+            )
+                .also { it.persist() }
+            appDraft.publishing = true
+
+            val response = publishAppDraftResponse {
+                operation = Operation.newBuilder().setName(backgroundOperation.id).setDone(false).build()
+            }
+
+            return Uni.createFrom().item { response }
+        } catch (t: Throwable) {
+            Log.error("TODO: publishAppDraft error", t)
+            throw t
         }
-
-        val appDraft = AppDraft
-            .findById(request.appDraftId)
-            ?: throw appDraftNotFoundException(request.appDraftId)
-        val appPackage = appDraft.appPackage ?: throw ConsoleApiError(
-            ErrorReason.ERROR_REASON_INTERNAL,
-            "app draft has no package",
-        )
-            .toStatusRuntimeException()
-        when {
-            appDraft.published -> throw ConsoleApiError(
-                ErrorReason.ERROR_REASON_ALREADY_PUBLISHED,
-                "the app draft has already been published",
-            )
-                .toStatusRuntimeException()
-
-            appDraft.publishing -> throw ConsoleApiError(
-                ErrorReason.ERROR_REASON_RESOURCE_PUBLISHING,
-                "the app draft is already publishing",
-            )
-                .toStatusRuntimeException()
-
-            appDraft.defaultListingLanguage == null -> throw ConsoleApiError(
-                ErrorReason.ERROR_REASON_INTERNAL,
-                "app draft has no default listing language",
-            )
-                .toStatusRuntimeException()
-
-            appDraft.listings.any { it.icon == null } -> throw ConsoleApiError(
-                ErrorReason.ERROR_REASON_INTERNAL,
-                "one or more app listings have no icon",
-            )
-                .toStatusRuntimeException()
-
-            App.existsById(appPackage.appId) -> throw ConsoleApiError(
-                ErrorReason.ERROR_REASON_RESOURCE_CONFLICT,
-                "an app with ID \"${appPackage.appId}\" has already been published",
-            )
-                .toStatusRuntimeException()
-        }
-
-        // Publish draft
-        val job = JobBuilder
-            .newJob(PublishAppDraftJob::class.java)
-            .withIdentity(JobKey.jobKey(Identifier.generateNew(IdType.OPERATION)))
-            .withDescription("Publish app draft ${request.appDraftId}")
-            .usingJobData(JobDataKey.APP_DRAFT_ID, request.appDraftId)
-            .requestRecovery()
-            .storeDurably()
-            .build()
-        val trigger = TriggerBuilder.newTrigger().startNow().build()
-        scheduler.get().scheduleJob(job, trigger)
-
-        val backgroundOperation = BackgroundOperation(
-            id = job.key.name,
-            type = BackgroundOperationType.PUBLISH_APP_DRAFT,
-            parentId = appDraft.id,
-            createdAt = OffsetDateTime.now(),
-            result = null,
-            succeeded = false,
-        )
-            .also { it.persist() }
-        appDraft.publishing = true
-
-        val response = publishAppDraftResponse {
-            operation = Operation.newBuilder().setName(backgroundOperation.id).setDone(false).build()
-        }
-
-        return Uni.createFrom().item { response }
     }
 
     private companion object {
