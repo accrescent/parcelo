@@ -24,6 +24,7 @@ import app.accrescent.server.parcelo.security.HasPermissionRequest
 import app.accrescent.server.parcelo.security.PermissionService
 import io.quarkus.grpc.GrpcService
 import io.quarkus.grpc.RegisterInterceptor
+import io.quarkus.logging.Log
 import io.smallrye.mutiny.Uni
 import jakarta.inject.Inject
 import jakarta.transaction.Transactional
@@ -37,25 +38,30 @@ class UserServiceImpl @Inject constructor(
 ) : UserService {
     @Transactional
     override fun getSelf(request: GetSelfRequest): Uni<GetSelfResponse> {
-        val userId = AuthnContextKey.USER_ID.get()
+        try {
+            val userId = AuthnContextKey.USER_ID.get()
 
-        // This should never throw a not found exception in practice
-        val self = User.findById(userId) ?: throw userNotFoundException(userId)
+            // This should never throw a not found exception in practice
+            val self = User.findById(userId) ?: throw userNotFoundException(userId)
 
-        val response = getSelfResponse {
-            user = user {
-                id = self.id
-                email = self.email
-                if (self.reviewer) {
-                    roles.add(UserRole.USER_ROLE_REVIEWER)
-                }
-                if (self.publisher) {
-                    roles.add(UserRole.USER_ROLE_PUBLISHER)
+            val response = getSelfResponse {
+                user = user {
+                    id = self.id
+                    email = self.email
+                    if (self.reviewer) {
+                        roles.add(UserRole.USER_ROLE_REVIEWER)
+                    }
+                    if (self.publisher) {
+                        roles.add(UserRole.USER_ROLE_PUBLISHER)
+                    }
                 }
             }
-        }
 
-        return Uni.createFrom().item { response }
+            return Uni.createFrom().item { response }
+        } catch (t: Throwable) {
+            Log.error("TODO getSelf error", t)
+            throw t
+        }
     }
 
     @Transactional
