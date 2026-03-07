@@ -5,7 +5,7 @@
 [versions]
 agp = "8.13.2"
 apkanalyzer = "31.13.1"
-apksig = "8.13.1"
+apksig = "8.13.2"
 appstore-api = "v1.0.3"
 arrow = "2.2.0"
 bucket4j = "8.16.0"
