@@ -697,70 +697,76 @@ class AppDraftServiceImpl @Inject constructor(
     override fun createAppDraftListingIconUploadOperation(
         request: CreateAppDraftListingIconUploadOperationRequest,
     ): Uni<CreateAppDraftListingIconUploadOperationResponse> {
-        val userId = AuthnContextKey.USER_ID.get()
+        try {
 
-        val canReplaceIcon = permissionService
-            .hasPermission(HasPermissionRequest.ReplaceAppDraftListingIcon(request.appDraftId, userId))
-        if (!canReplaceIcon) {
-            val draftExists = AppDraft.existsById(request.appDraftId)
-            val listingExists = AppDraftListing.exists(request.appDraftId, request.language)
-            val canViewExistence = permissionService.hasPermission(
-                HasPermissionRequest.ViewAppDraftExistence(request.appDraftId, userId),
-            )
+            val userId = AuthnContextKey.USER_ID.get()
 
-            throw when {
-                !draftExists || !canViewExistence -> appDraftNotFoundException(request.appDraftId)
-                !listingExists -> appDraftListingNotFoundException(request.language)
-                else -> throw ConsoleApiError(
-                    ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
-                    "insufficient permission to replace app listing icon",
+            val canReplaceIcon = permissionService
+                .hasPermission(HasPermissionRequest.ReplaceAppDraftListingIcon(request.appDraftId, userId))
+            if (!canReplaceIcon) {
+                val draftExists = AppDraft.existsById(request.appDraftId)
+                val listingExists = AppDraftListing.exists(request.appDraftId, request.language)
+                val canViewExistence = permissionService.hasPermission(
+                    HasPermissionRequest.ViewAppDraftExistence(request.appDraftId, userId),
+                )
+
+                throw when {
+                    !draftExists || !canViewExistence -> appDraftNotFoundException(request.appDraftId)
+                    !listingExists -> appDraftListingNotFoundException(request.language)
+                    else -> throw ConsoleApiError(
+                        ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
+                        "insufficient permission to replace app listing icon",
+                    )
+                        .toStatusRuntimeException()
+                }
+            }
+
+            val appDraft = AppDraft
+                .findById(request.appDraftId)
+                ?: throw appDraftNotFoundException(request.appDraftId)
+            if (appDraft.submitted) {
+                throw ConsoleApiError(
+                    ErrorReason.ERROR_REASON_RESOURCE_IMMUTABLE,
+                    "submitted drafts cannot be modified",
                 )
                     .toStatusRuntimeException()
             }
-        }
+            val appDraftListing = AppDraftListing
+                .findByAppDraftIdAndLanguage(request.appDraftId, request.language)
+                ?: throw appDraftListingNotFoundException(request.language)
 
-        val appDraft = AppDraft
-            .findById(request.appDraftId)
-            ?: throw appDraftNotFoundException(request.appDraftId)
-        if (appDraft.submitted) {
-            throw ConsoleApiError(
-                ErrorReason.ERROR_REASON_RESOURCE_IMMUTABLE,
-                "submitted drafts cannot be modified",
+            val blobInfo = BlobInfo
+                .newBuilder(config.buckets().draftListingIconUpload(), UUID.randomUUID().toString())
+                .build()
+            val uploadUrl = storage.signUploadUrl(blobInfo, UploadType.ICON)
+
+            val backgroundOperation = BackgroundOperation(
+                id = Identifier.generateNew(IdType.OPERATION),
+                type = BackgroundOperationType.UPLOAD_APP_DRAFT_LISTING_ICON,
+                parentId = request.appDraftId,
+                createdAt = OffsetDateTime.now(),
+                result = null,
+                succeeded = false,
             )
-                .toStatusRuntimeException()
+                .also { it.persist() }
+            AppDraftListingIconUploadJob(
+                appDraftListingId = appDraftListing.id,
+                bucketId = blobInfo.bucket,
+                objectId = blobInfo.name,
+                backgroundOperationId = backgroundOperation.id,
+            )
+                .persist()
+
+            val response = createAppDraftListingIconUploadOperationResponse {
+                this.uploadUrl = uploadUrl.toString()
+                processingOperation = Operation.newBuilder().setName(backgroundOperation.id).build()
+            }
+
+            return Uni.createFrom().item { response }
+        } catch (t: Throwable) {
+            Log.error("TODO createAppDraftListingIconUploadOperation error", t)
+            throw t
         }
-        val appDraftListing = AppDraftListing
-            .findByAppDraftIdAndLanguage(request.appDraftId, request.language)
-            ?: throw appDraftListingNotFoundException(request.language)
-
-        val blobInfo = BlobInfo
-            .newBuilder(config.buckets().draftListingIconUpload(), UUID.randomUUID().toString())
-            .build()
-        val uploadUrl = storage.signUploadUrl(blobInfo, UploadType.ICON)
-
-        val backgroundOperation = BackgroundOperation(
-            id = Identifier.generateNew(IdType.OPERATION),
-            type = BackgroundOperationType.UPLOAD_APP_DRAFT_LISTING_ICON,
-            parentId = request.appDraftId,
-            createdAt = OffsetDateTime.now(),
-            result = null,
-            succeeded = false,
-        )
-            .also { it.persist() }
-        AppDraftListingIconUploadJob(
-            appDraftListingId = appDraftListing.id,
-            bucketId = blobInfo.bucket,
-            objectId = blobInfo.name,
-            backgroundOperationId = backgroundOperation.id,
-        )
-            .persist()
-
-        val response = createAppDraftListingIconUploadOperationResponse {
-            this.uploadUrl = uploadUrl.toString()
-            processingOperation = Operation.newBuilder().setName(backgroundOperation.id).build()
-        }
-
-        return Uni.createFrom().item { response }
     }
 
     @Transactional
