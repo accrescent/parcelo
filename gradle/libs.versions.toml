@@ -3,23 +3,23 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 [versions]
-agp = "8.13.2"
-apkanalyzer = "31.13.1"
-apksig = "8.13.1"
+agp = "9.1.0"
+apkanalyzer = "32.1.0"
+apksig = "9.1.0"
 appstore-api = "v1.0.3"
 arrow = "2.2.2"
-bucket4j = "8.16.0"
+bucket4j = "8.17.0"
 buf = "0.11.0"
-bundletool = "1.18.2"
+bundletool = "1.18.3"
 console-api = "v0.4.0"
 google-cloud-libraries-bom = "26.77.0"
 google-cloud-sql-postgres-socket-factory = "1.28.1"
-htmlunit = "4.20.0"
+htmlunit = "4.21.0"
 kotlin = "2.3.0"
 log4j1 = "1.2.17"
 minio = "8.6.0"
-protovalidate = "1.1.0"
-quarkus = "3.31.1"
+protovalidate = "1.1.1"
+quarkus = "3.32.2"
 
 [libraries]
 apkanalyzer = { module = "com.android.tools.apkparser:apkanalyzer", version.ref = "apkanalyzer" }
@@ -71,7 +71,6 @@ testcontainers-minio = { module = "org.testcontainers:testcontainers-minio" }
 android-application = { id = "com.android.application", version.ref = "agp" }
 buf = { id = "build.buf", version.ref = "buf" }
 kotlin-allopen = { id = "org.jetbrains.kotlin.plugin.allopen", version.ref = "kotlin" }
-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-jpa = { id = "org.jetbrains.kotlin.plugin.jpa", version.ref = "kotlin" }
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-kapt = { id = "org.jetbrains.kotlin.kapt" }
