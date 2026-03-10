@@ -13,7 +13,7 @@ jobs:
   build-jvm:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: graalvm/setup-graalvm@v1
         with:
           distribution: graalvm-community
@@ -24,7 +24,7 @@ jobs:
   build-native:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: graalvm/setup-graalvm@v1
         with:
           distribution: graalvm-community
@@ -35,7 +35,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: graalvm/setup-graalvm@v1
         with:
           distribution: graalvm-community
@@ -51,7 +51,7 @@ jobs:
   int-test-jvm:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: graalvm/setup-graalvm@v1
         with:
           distribution: graalvm-community
@@ -69,7 +69,7 @@ jobs:
   int-test-native:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: graalvm/setup-graalvm@v1
         with:
           distribution: graalvm-community
@@ -87,5 +87,5 @@ jobs:
   reuse:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: fsfe/reuse-action@v6
