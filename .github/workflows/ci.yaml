@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 jobs:
-  ci:
+  build-jvm:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -20,9 +20,56 @@ jobs:
           java-version: 25
       - uses: gradle/actions/setup-gradle@v4
       - run: ./gradlew assemble
+
+  build-native:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: graalvm/setup-graalvm@v1
+        with:
+          distribution: graalvm-community
+          java-version: 25
+      - uses: gradle/actions/setup-gradle@v4
       - run: ./gradlew assemble -Dquarkus.native.enabled=true -Dquarkus.package.jar.enabled=false
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: graalvm/setup-graalvm@v1
+        with:
+          distribution: graalvm-community
+          java-version: 25
+      - uses: gradle/actions/setup-gradle@v4
       - run: ./gradlew test
+
+  int-test-jvm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: graalvm/setup-graalvm@v1
+        with:
+          distribution: graalvm-community
+          java-version: 25
+      - uses: gradle/actions/setup-gradle@v4
       - run: ./gradlew quarkusIntTest
+      - if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: test-output
+          path: |
+            parcelo/build/quarkus.log
+            parcelo/build/reports/tests/
+
+  int-test-native:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: graalvm/setup-graalvm@v1
+        with:
+          distribution: graalvm-community
+          java-version: 25
+      - uses: gradle/actions/setup-gradle@v4
       - run: ./gradlew quarkusIntTest -Dquarkus.native.enabled=true -Dquarkus.package.jar.enabled=false
       - if: always()
         uses: actions/upload-artifact@v6
