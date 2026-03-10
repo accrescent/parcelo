@@ -42,6 +42,11 @@ jobs:
           java-version: 25
       - uses: gradle/actions/setup-gradle@v4
       - run: ./gradlew test
+      - if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: test-output
+          path: parcelo/build/reports/tests/
 
   int-test-jvm:
     runs-on: ubuntu-latest
