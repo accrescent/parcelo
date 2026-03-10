@@ -43,7 +43,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - run: ./gradlew test
       - if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: test-output
           path: parcelo/build/reports/tests/
@@ -59,7 +59,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - run: ./gradlew quarkusIntTest
       - if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: int-test-output-jvm
           path: |
@@ -77,7 +77,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - run: ./gradlew quarkusIntTest -Dquarkus.native.enabled=true -Dquarkus.package.jar.enabled=false
       - if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: int-test-output-native
           path: |
