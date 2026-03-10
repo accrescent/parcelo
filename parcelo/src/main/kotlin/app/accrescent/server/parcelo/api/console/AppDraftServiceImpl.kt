@@ -255,7 +255,12 @@ class AppDraftServiceImpl @Inject constructor(
         }
 
         val appDrafts = AppDraft
-            .findForUserByQuery(userId, pageSize, lastAppDraftId)
+            .findForOrganizationAndUserByQuery(
+                request.organizationId,
+                userId,
+                pageSize,
+                lastAppDraftId,
+            )
             .map { appDraft ->
                 appDraft {
                     id = appDraft.id

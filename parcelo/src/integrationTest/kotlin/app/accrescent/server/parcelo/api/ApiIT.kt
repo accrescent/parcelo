@@ -294,8 +294,15 @@ class ApiIT {
     @Test
     fun developerListsPublishedAppsWithAuthorizationForOne() {
         val appService = ApiUtils.getDevAppServiceStub(user2Token)
+        val organizationService = ApiUtils.getOrganizationServiceStub(user2Token)
+        val organizationId = organizationService
+            .listOrganizations(listOrganizationsRequest {})
+            .organizationsList[0]
+            .id
 
-        val apps = appService.listApps(listAppsRequest {}).appsList
+        val apps = appService
+            .listApps(listAppsRequest { this.organizationId = organizationId })
+            .appsList
 
         // Assert that the expected app is included in the response
         assertEquals(1, apps.size)
@@ -307,8 +314,15 @@ class ApiIT {
     @Test
     fun developerListsPublishedAppsWithNoAuthorization() {
         val appService = ApiUtils.getDevAppServiceStub(user1Token)
+        val organizationService = ApiUtils.getOrganizationServiceStub(user1Token)
+        val organizationId = organizationService
+            .listOrganizations(listOrganizationsRequest {})
+            .organizationsList[0]
+            .id
 
-        val apps = appService.listApps(listAppsRequest {}).appsList
+        val apps = appService
+            .listApps(listAppsRequest { this.organizationId = organizationId })
+            .appsList
 
         // Assert that the developer can't access the app
         assertEquals(0, apps.size)
@@ -345,7 +359,9 @@ class ApiIT {
         val request = createAppDraftRequest { this.organizationId = organizationId }
         appDraftService.createAppDraft(request)
 
-        val appDrafts = appDraftService.listAppDrafts(listAppDraftsRequest {}).appDraftsList
+        val appDrafts = appDraftService
+            .listAppDrafts(listAppDraftsRequest { this.organizationId = organizationId })
+            .appDraftsList
 
         // Assert that only the newly created app draft is returned
         assertEquals(1, appDrafts.size)

@@ -105,7 +105,12 @@ class AppServiceImpl @Inject constructor(
             null
         }
 
-        val apps = App.findForUserByQuery(userId, pageSize, lastAppId).map { app ->
+        val apps = App.findForOrganizationAndUserByQuery(
+            request.organizationId,
+            userId,
+            pageSize,
+            lastAppId,
+        ).map { app ->
             app {
                 id = app.id
                 defaultListingLanguage = app.defaultListingLanguage

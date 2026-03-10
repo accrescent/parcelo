@@ -128,7 +128,8 @@ class AppDraft(
             return count("WHERE id = ?1", id) > 0
         }
 
-        fun findForUserByQuery(
+        fun findForOrganizationAndUserByQuery(
+            organizationId: String,
             userId: String,
             pageSize: UInt,
             afterAppDraftId: String?,
@@ -140,8 +141,10 @@ class AppDraft(
                             "ON organization_relationship_sets.organizationId = app_drafts.organizationId " +
                             "WHERE organization_relationship_sets.userId = ?1 " +
                             "AND organization_relationship_sets.owner = true " +
-                            "ORDER BY app_drafts.id ASC LIMIT ?2",
+                            "AND organization_relationship_sets.organizationId = ?2 " +
+                            "ORDER BY app_drafts.id ASC LIMIT ?3",
                     userId,
+                    organizationId,
                     pageSize.toLong(),
                 )
             } else {
@@ -151,9 +154,11 @@ class AppDraft(
                             "ON organization_relationship_sets.organizationId = app_drafts.organizationId " +
                             "WHERE organization_relationship_sets.userId = ?1 " +
                             "AND organization_relationship_sets.owner = true " +
-                            "AND app_drafts.id > ?2 " +
-                            "ORDER BY app_drafts.id ASC LIMIT ?3",
+                            "AND organization_relationship_sets.organizationId = ?2 " +
+                            "AND app_drafts.id > ?3 " +
+                            "ORDER BY app_drafts.id ASC LIMIT ?4",
                     userId,
+                    organizationId,
                     afterAppDraftId,
                     pageSize.toLong(),
                 )

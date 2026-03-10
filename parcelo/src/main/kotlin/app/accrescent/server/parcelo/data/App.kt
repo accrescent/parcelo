@@ -87,7 +87,12 @@ class App(
                 .list()
         }
 
-        fun findForUserByQuery(userId: String, pageSize: UInt, afterAppId: String?): List<App> {
+        fun findForOrganizationAndUserByQuery(
+            organizationId: String,
+            userId: String,
+            pageSize: UInt,
+            afterAppId: String?,
+        ): List<App> {
             return if (afterAppId == null) {
                 find(
                     "FROM App apps " +
@@ -95,8 +100,10 @@ class App(
                             "ON organization_relationship_sets.organizationId = apps.organizationId " +
                             "WHERE organization_relationship_sets.userId = ?1 " +
                             "AND organization_relationship_sets.owner = true " +
-                            "ORDER BY apps.id ASC LIMIT ?2",
+                            "AND organization_relationship_sets.organizationId = ?2 " +
+                            "ORDER BY apps.id ASC LIMIT ?3",
                     userId,
+                    organizationId,
                     pageSize.toLong(),
                 )
             } else {
@@ -106,9 +113,11 @@ class App(
                             "ON organization_relationship_sets.organizationId = apps.organizationId " +
                             "WHERE organization_relationship_sets.userId = ?1 " +
                             "AND organization_relationship_sets.owner = true " +
-                            "AND apps.id > ?2 " +
-                            "ORDER BY apps.id ASC LIMIT ?3",
+                            "AND organization_relationship_sets.organizationId = ?2 " +
+                            "AND apps.id > ?3 " +
+                            "ORDER BY apps.id ASC LIMIT ?4",
                     userId,
+                    organizationId,
                     afterAppId,
                     pageSize.toLong(),
                 )
