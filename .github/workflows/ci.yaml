@@ -78,3 +78,9 @@ jobs:
           path: |
             parcelo/build/quarkus.log
             parcelo/build/reports/tests/
+
+  reuse:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: fsfe/reuse-action@v6
