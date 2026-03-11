@@ -18,7 +18,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: accrescent/parcelo
           tags: type=semver,pattern={{version}}
