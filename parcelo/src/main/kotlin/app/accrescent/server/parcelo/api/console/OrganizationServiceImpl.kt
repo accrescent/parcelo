@@ -5,23 +5,30 @@
 package app.accrescent.server.parcelo.api.console
 
 import app.accrescent.console.v1alpha1.ErrorReason
+import app.accrescent.console.v1alpha1.GetOrganizationRequest
+import app.accrescent.console.v1alpha1.GetOrganizationResponse
 import app.accrescent.console.v1alpha1.ListOrganizationsRequest
 import app.accrescent.console.v1alpha1.ListOrganizationsResponse
 import app.accrescent.console.v1alpha1.OrganizationService
+import app.accrescent.console.v1alpha1.getOrganizationResponse
 import app.accrescent.console.v1alpha1.listOrganizationsResponse
 import app.accrescent.console.v1alpha1.organization
 import app.accrescent.parcelo.impl.v1.ListOrganizationsPageToken
 import app.accrescent.parcelo.impl.v1.listOrganizationsPageToken
 import app.accrescent.server.parcelo.api.error.ConsoleApiError
+import app.accrescent.server.parcelo.data.App
 import app.accrescent.server.parcelo.data.Organization
 import app.accrescent.server.parcelo.security.AuthnContextKey
 import app.accrescent.server.parcelo.security.GrpcAuthenticationInterceptor
 import app.accrescent.server.parcelo.security.GrpcRateLimitInterceptor
 import app.accrescent.server.parcelo.security.GrpcRequestValidationInterceptor
+import app.accrescent.server.parcelo.security.HasPermissionRequest
+import app.accrescent.server.parcelo.security.PermissionService
 import com.google.protobuf.InvalidProtocolBufferException
 import io.quarkus.grpc.GrpcService
 import io.quarkus.grpc.RegisterInterceptor
 import io.smallrye.mutiny.Uni
+import jakarta.inject.Inject
 import jakarta.transaction.Transactional
 import kotlin.io.encoding.Base64
 
@@ -32,7 +39,46 @@ private const val MAX_PAGE_SIZE = 50u
 @RegisterInterceptor(GrpcAuthenticationInterceptor::class)
 @RegisterInterceptor(GrpcRequestValidationInterceptor::class)
 @RegisterInterceptor(GrpcRateLimitInterceptor::class)
-class OrganizationServiceImpl : OrganizationService {
+class OrganizationServiceImpl @Inject constructor(
+    private val permissionService: PermissionService,
+) : OrganizationService {
+    @Transactional
+    override fun getOrganization(request: GetOrganizationRequest): Uni<GetOrganizationResponse> {
+        val userId = AuthnContextKey.USER_ID.get()
+
+        val canView = permissionService
+            .hasPermission(HasPermissionRequest.ViewOrganization(request.organizationId, userId))
+        if (!canView) {
+            val exists = Organization.existsById(request.organizationId)
+            val canViewExistence = permissionService.hasPermission(
+                HasPermissionRequest.ViewOrganizationExistence(request.organizationId, userId)
+            )
+
+            throw if (!exists || !canViewExistence) {
+                organizationNotFoundException(request.organizationId)
+            } else {
+                ConsoleApiError(
+                    ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
+                    "insufficient permission to view organization",
+                )
+                    .toStatusRuntimeException()
+            }
+        }
+
+        val organization = Organization
+            .findById(request.organizationId)
+            ?: throw organizationNotFoundException(request.organizationId)
+        val response = getOrganizationResponse {
+            this.organization = organization {
+                id = organization.id
+                publishedAppLimit = organization.publishedAppLimit
+                publishedAppCount = App.countInOrganization(organization.id).toInt()
+            }
+        }
+
+        return Uni.createFrom().item { response }
+    }
+
     @Transactional
     override fun listOrganizations(
         request: ListOrganizationsRequest,
@@ -67,6 +113,8 @@ class OrganizationServiceImpl : OrganizationService {
             .map { organization ->
                 organization {
                     id = organization.id
+                    publishedAppLimit = organization.publishedAppLimit
+                    publishedAppCount = App.countInOrganization(organization.id).toInt()
                 }
             }
 
@@ -92,6 +140,12 @@ class OrganizationServiceImpl : OrganizationService {
         private val invalidPageTokenError = ConsoleApiError(
             ErrorReason.ERROR_REASON_INVALID_REQUEST,
             "provided page token is invalid",
+        )
+            .toStatusRuntimeException()
+
+        private fun organizationNotFoundException(organizationId: String) = ConsoleApiError(
+            ErrorReason.ERROR_REASON_RESOURCE_NOT_FOUND,
+            "organization \"$organizationId\" not found",
         )
             .toStatusRuntimeException()
     }

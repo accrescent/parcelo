@@ -29,6 +29,7 @@ import app.accrescent.console.v1alpha1.GetAppDraftRequest
 import app.accrescent.console.v1alpha1.GetAppEditDownloadInfoRequest
 import app.accrescent.console.v1alpha1.GetAppEditRequest
 import app.accrescent.console.v1alpha1.GetAppRequest
+import app.accrescent.console.v1alpha1.GetOrganizationRequest
 import app.accrescent.console.v1alpha1.GetSelfRequest
 import app.accrescent.console.v1alpha1.ListAppDraftsRequest
 import app.accrescent.console.v1alpha1.ListAppEditsRequest
@@ -84,6 +85,7 @@ class GrpcRequestValidationInterceptor : ServerInterceptor {
                 GetAppPackageInfoRequest.getDescriptor(),
                 GetAppRequest.getDescriptor(),
                 GetAppUpdateInfoRequest.getDescriptor(),
+                GetOrganizationRequest.getDescriptor(),
                 GetSelfRequest.getDescriptor(),
                 ListAppDraftsRequest.getDescriptor(),
                 ListAppEditsRequest.getDescriptor(),
