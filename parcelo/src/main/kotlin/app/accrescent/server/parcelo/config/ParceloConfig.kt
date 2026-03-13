@@ -14,6 +14,7 @@ import java.util.Optional
 @ConfigMapping(prefix = "parcelo")
 interface ParceloConfig {
     fun admin(): Admin
+    fun authRedirectUrl(): String
     fun buckets(): Buckets
     fun artifactsBaseUrl(): String
     fun fileProcessingDirectory(): String

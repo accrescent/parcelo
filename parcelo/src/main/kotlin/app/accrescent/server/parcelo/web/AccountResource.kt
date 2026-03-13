@@ -4,6 +4,7 @@
 
 package app.accrescent.server.parcelo.web
 
+import app.accrescent.server.parcelo.config.ParceloConfig
 import app.accrescent.server.parcelo.data.OidcProvider
 import app.accrescent.server.parcelo.data.Organization
 import app.accrescent.server.parcelo.data.OrganizationRelationshipSet
@@ -20,17 +21,19 @@ import jakarta.ws.rs.Path
 import jakarta.ws.rs.core.Response
 import org.eclipse.microprofile.jwt.Claims
 import org.eclipse.microprofile.jwt.JsonWebToken
+import java.net.URI
 import java.time.OffsetDateTime
 
 @Authenticated
 @Path("/web/account")
 class AccountResource(
+    private val config: ParceloConfig,
     @IdToken val idToken: JsonWebToken,
     private val userRegistrationService: UserRegistrationService,
 ) {
     @GET
     @Path("/login")
-    fun login() = Unit
+    fun login(): Response = Response.seeOther(URI(config.authRedirectUrl())).build()
 
     @PUT
     @Path("/register")
