@@ -17,6 +17,7 @@ import app.accrescent.parcelo.impl.v1.ListOrganizationsPageToken
 import app.accrescent.parcelo.impl.v1.listOrganizationsPageToken
 import app.accrescent.server.parcelo.api.error.ConsoleApiError
 import app.accrescent.server.parcelo.data.App
+import app.accrescent.server.parcelo.data.AppDraft
 import app.accrescent.server.parcelo.data.Organization
 import app.accrescent.server.parcelo.security.AuthnContextKey
 import app.accrescent.server.parcelo.security.GrpcAuthenticationInterceptor
@@ -73,6 +74,8 @@ class OrganizationServiceImpl @Inject constructor(
                 id = organization.id
                 publishedAppLimit = organization.publishedAppLimit
                 publishedAppCount = App.countInOrganization(organization.id).toInt()
+                activeAppDraftLimit = organization.activeAppDraftLimit
+                activeAppDraftCount = AppDraft.countActiveInOrganization(organization.id).toInt()
             }
         }
 
@@ -115,6 +118,8 @@ class OrganizationServiceImpl @Inject constructor(
                     id = organization.id
                     publishedAppLimit = organization.publishedAppLimit
                     publishedAppCount = App.countInOrganization(organization.id).toInt()
+                    activeAppDraftLimit = organization.activeAppDraftLimit
+                    activeAppDraftCount = AppDraft.countActiveInOrganization(organization.id).toInt()
                 }
             }
 
