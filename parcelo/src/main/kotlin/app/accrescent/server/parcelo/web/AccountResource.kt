@@ -13,9 +13,12 @@ import app.accrescent.server.parcelo.security.IdType
 import app.accrescent.server.parcelo.security.Identifier
 import app.accrescent.server.parcelo.security.UserRegistrationService
 import io.quarkus.oidc.IdToken
+import io.quarkus.oidc.OidcSession
 import io.quarkus.security.Authenticated
+import io.smallrye.mutiny.Uni
 import jakarta.transaction.Transactional
 import jakarta.ws.rs.GET
+import jakarta.ws.rs.POST
 import jakarta.ws.rs.PUT
 import jakarta.ws.rs.Path
 import jakarta.ws.rs.core.Response
@@ -29,11 +32,16 @@ import java.time.OffsetDateTime
 class AccountResource(
     private val config: ParceloConfig,
     @IdToken val idToken: JsonWebToken,
+    private val oidcSession: OidcSession,
     private val userRegistrationService: UserRegistrationService,
 ) {
     @GET
     @Path("/login")
     fun login(): Response = Response.seeOther(URI(config.authRedirectUrl())).build()
+
+    @POST
+    @Path("/logout")
+    fun logout(): Uni<Response> = oidcSession.logout().map { Response.ok().build() }
 
     @PUT
     @Path("/register")
