@@ -19,7 +19,7 @@ kotlin = "2.3.10"
 log4j1 = "1.2.17"
 minio = "8.6.0"
 protovalidate = "1.1.1"
-quarkus = "3.32.3"
+quarkus = "3.34.1"
 
 [libraries]
 apkanalyzer = { module = "com.android.tools.apkparser:apkanalyzer", version.ref = "apkanalyzer" }
