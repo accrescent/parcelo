@@ -117,21 +117,12 @@ class AppDraftServiceImpl @Inject constructor(
         val canCreateAppDraft = permissionService
             .hasPermission(HasPermissionRequest.CreateAppDraft(request.organizationId, userId))
         if (!canCreateAppDraft) {
-            val orgExists = Organization.existsById(request.organizationId)
-            val canViewOrgExistence = permissionService.hasPermission(
-                HasPermissionRequest.ViewOrganizationExistence(request.organizationId, userId),
+            throw ConsoleApiError(
+                ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
+                "insufficient permission to create app drafts in organization " +
+                        "\"${request.organizationId}\"",
             )
-
-            throw if (!orgExists || !canViewOrgExistence) {
-                organizationNotFoundException(request.organizationId)
-            } else {
-                ConsoleApiError(
-                    ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
-                    "insufficient permission to create app drafts in organization " +
-                            "\"${request.organizationId}\"",
-                )
-                    .toStatusRuntimeException()
-            }
+                .toStatusRuntimeException()
         }
 
         val organization = Organization
@@ -174,20 +165,11 @@ class AppDraftServiceImpl @Inject constructor(
         val canView = permissionService
             .hasPermission(HasPermissionRequest.ViewAppDraft(request.appDraftId, userId))
         if (!canView) {
-            val exists = AppDraft.existsById(request.appDraftId)
-            val canViewExistence = permissionService.hasPermission(
-                HasPermissionRequest.ViewAppDraftExistence(request.appDraftId, userId),
+            throw ConsoleApiError(
+                ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
+                "insufficient permission to view app draft",
             )
-
-            throw if (!exists || !canViewExistence) {
-                appDraftNotFoundException(request.appDraftId)
-            } else {
-                ConsoleApiError(
-                    ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
-                    "insufficient permission to view app draft",
-                )
-                    .toStatusRuntimeException()
-            }
+                .toStatusRuntimeException()
         }
 
         val appDraft = AppDraft
@@ -319,20 +301,11 @@ class AppDraftServiceImpl @Inject constructor(
         val canReplacePackage = permissionService
             .hasPermission(HasPermissionRequest.ReplaceAppDraftPackage(request.appDraftId, userId))
         if (!canReplacePackage) {
-            val exists = AppDraft.existsById(request.appDraftId)
-            val canViewExistence = permissionService.hasPermission(
-                HasPermissionRequest.ViewAppDraftExistence(request.appDraftId, userId),
+            throw ConsoleApiError(
+                ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
+                "insufficient permission to replace package",
             )
-
-            throw if (!exists || !canViewExistence) {
-                appDraftNotFoundException(request.appDraftId)
-            } else {
-                ConsoleApiError(
-                    ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
-                    "insufficient permission to replace package",
-                )
-                    .toStatusRuntimeException()
-            }
+                .toStatusRuntimeException()
         }
 
         val appDraft = AppDraft
@@ -384,20 +357,11 @@ class AppDraftServiceImpl @Inject constructor(
         val canDownload = permissionService
             .hasPermission(HasPermissionRequest.DownloadAppDraft(request.appDraftId, userId))
         if (!canDownload) {
-            val exists = AppDraft.existsById(request.appDraftId)
-            val canViewExistence = permissionService.hasPermission(
-                HasPermissionRequest.ViewAppDraftExistence(request.appDraftId, userId),
+            throw ConsoleApiError(
+                ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
+                "insufficient permission to download app draft",
             )
-
-            throw if (!exists || !canViewExistence) {
-                appDraftNotFoundException(request.appDraftId)
-            } else {
-                ConsoleApiError(
-                    ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
-                    "insufficient permission to download app draft",
-                )
-                    .toStatusRuntimeException()
-            }
+                .toStatusRuntimeException()
         }
 
         val appDraft = AppDraft
@@ -428,20 +392,11 @@ class AppDraftServiceImpl @Inject constructor(
         val canUpdate = permissionService
             .hasPermission(HasPermissionRequest.UpdateAppDraft(request.appDraftId, userId))
         if (!canUpdate) {
-            val exists = AppDraft.existsById(request.appDraftId)
-            val canViewExistence = permissionService.hasPermission(
-                HasPermissionRequest.ViewAppDraftExistence(request.appDraftId, userId),
+            throw ConsoleApiError(
+                ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
+                "insufficient permission to update app draft",
             )
-
-            throw if (!exists || !canViewExistence) {
-                appDraftNotFoundException(request.appDraftId)
-            } else {
-                ConsoleApiError(
-                    ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
-                    "insufficient permission to update app draft",
-                )
-                    .toStatusRuntimeException()
-            }
+                .toStatusRuntimeException()
         }
 
         val appDraft = AppDraft
@@ -470,20 +425,11 @@ class AppDraftServiceImpl @Inject constructor(
         val canSubmit = permissionService
             .hasPermission(HasPermissionRequest.SubmitAppDraft(request.appDraftId, userId))
         if (!canSubmit) {
-            val exists = AppDraft.existsById(request.appDraftId)
-            val canViewExistence = permissionService.hasPermission(
-                HasPermissionRequest.ViewAppDraftExistence(request.appDraftId, userId),
+            throw ConsoleApiError(
+                ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
+                "insufficient permission to submit app draft",
             )
-
-            throw if (!exists || !canViewExistence) {
-                appDraftNotFoundException(request.appDraftId)
-            } else {
-                ConsoleApiError(
-                    ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
-                    "insufficient permission to submit app draft",
-                )
-                    .toStatusRuntimeException()
-            }
+                .toStatusRuntimeException()
         }
 
         val appDraft = AppDraft
@@ -578,20 +524,11 @@ class AppDraftServiceImpl @Inject constructor(
         val canDelete = permissionService
             .hasPermission(HasPermissionRequest.DeleteAppDraft(request.appDraftId, userId))
         if (!canDelete) {
-            val exists = AppDraft.existsById(request.appDraftId)
-            val canViewExistence = permissionService.hasPermission(
-                HasPermissionRequest.ViewAppDraftExistence(request.appDraftId, userId),
+            throw ConsoleApiError(
+                ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
+                "insufficient permission to delete app draft",
             )
-
-            throw if (!exists || !canViewExistence) {
-                appDraftNotFoundException(request.appDraftId)
-            } else {
-                ConsoleApiError(
-                    ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
-                    "insufficient permission to delete app draft",
-                )
-                    .toStatusRuntimeException()
-            }
+                .toStatusRuntimeException()
         }
 
         val appDraft = AppDraft
@@ -632,20 +569,11 @@ class AppDraftServiceImpl @Inject constructor(
         val canCreateListing = permissionService
             .hasPermission(HasPermissionRequest.CreateAppDraftListing(request.appDraftId, userId))
         if (!canCreateListing) {
-            val exists = AppDraft.existsById(request.appDraftId)
-            val canViewExistence = permissionService.hasPermission(
-                HasPermissionRequest.ViewAppDraftExistence(request.appDraftId, userId),
+            throw ConsoleApiError(
+                ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
+                "insufficient permission to create app draft listing",
             )
-
-            throw if (!exists || !canViewExistence) {
-                appDraftNotFoundException(request.appDraftId)
-            } else {
-                ConsoleApiError(
-                    ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
-                    "insufficient permission to create app draft listing",
-                )
-                    .toStatusRuntimeException()
-            }
+                .toStatusRuntimeException()
         }
 
         val appDraft = AppDraft
@@ -689,21 +617,11 @@ class AppDraftServiceImpl @Inject constructor(
         val canReplaceIcon = permissionService
             .hasPermission(HasPermissionRequest.ReplaceAppDraftListingIcon(request.appDraftId, userId))
         if (!canReplaceIcon) {
-            val draftExists = AppDraft.existsById(request.appDraftId)
-            val listingExists = AppDraftListing.exists(request.appDraftId, request.language)
-            val canViewExistence = permissionService.hasPermission(
-                HasPermissionRequest.ViewAppDraftExistence(request.appDraftId, userId),
+            throw ConsoleApiError(
+                ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
+                "insufficient permission to replace app listing icon",
             )
-
-            throw when {
-                !draftExists || !canViewExistence -> appDraftNotFoundException(request.appDraftId)
-                !listingExists -> appDraftListingNotFoundException(request.language)
-                else -> throw ConsoleApiError(
-                    ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
-                    "insufficient permission to replace app listing icon",
-                )
-                    .toStatusRuntimeException()
-            }
+                .toStatusRuntimeException()
         }
 
         val appDraft = AppDraft
@@ -760,20 +678,11 @@ class AppDraftServiceImpl @Inject constructor(
             HasPermissionRequest.DownloadAppDraftListingIcons(request.appDraftId, userId),
         )
         if (!canDownload) {
-            val exists = AppDraft.existsById(request.appDraftId)
-            val canViewExistence = permissionService.hasPermission(
-                HasPermissionRequest.ViewAppDraftExistence(request.appDraftId, userId),
+            throw ConsoleApiError(
+                ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
+                "insufficient permission to download app draft listing icon",
             )
-
-            throw if (!exists || !canViewExistence) {
-                appDraftNotFoundException(request.appDraftId)
-            } else {
-                ConsoleApiError(
-                    ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
-                    "insufficient permission to download app draft listing icon",
-                )
-                    .toStatusRuntimeException()
-            }
+                .toStatusRuntimeException()
         }
 
         val appDraftListing = AppDraftListing
@@ -800,21 +709,11 @@ class AppDraftServiceImpl @Inject constructor(
         val canDelete = permissionService
             .hasPermission(HasPermissionRequest.DeleteAppDraftListing(request.appDraftId, userId))
         if (!canDelete) {
-            val draftExists = AppDraft.existsById(request.appDraftId)
-            val listingExists = AppDraftListing.exists(request.appDraftId, request.language)
-            val canViewExistence = permissionService.hasPermission(
-                HasPermissionRequest.ViewAppDraftExistence(request.appDraftId, userId),
+            throw ConsoleApiError(
+                ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
+                "insufficient permission to delete app draft listing",
             )
-
-            throw when {
-                !draftExists || !canViewExistence -> appDraftNotFoundException(request.appDraftId)
-                !listingExists -> appDraftListingNotFoundException(request.language)
-                else -> throw ConsoleApiError(
-                    ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
-                    "insufficient permission to delete app draft listing",
-                )
-                    .toStatusRuntimeException()
-            }
+                .toStatusRuntimeException()
         }
 
         val appDraft = AppDraft
@@ -855,20 +754,11 @@ class AppDraftServiceImpl @Inject constructor(
         val canPublish = permissionService
             .hasPermission(HasPermissionRequest.PublishAppDraft(request.appDraftId, userId))
         if (!canPublish) {
-            val exists = AppDraft.existsById(request.appDraftId)
-            val canViewExistence = permissionService.hasPermission(
-                HasPermissionRequest.ViewAppDraftExistence(request.appDraftId, userId),
+            throw ConsoleApiError(
+                ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
+                "insufficient permission to publish app draft",
             )
-
-            throw if (!exists || !canViewExistence) {
-                appDraftNotFoundException(request.appDraftId)
-            } else {
-                ConsoleApiError(
-                    ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
-                    "insufficient permission to publish app draft",
-                )
-                    .toStatusRuntimeException()
-            }
+                .toStatusRuntimeException()
         }
 
         val appDraft = AppDraft

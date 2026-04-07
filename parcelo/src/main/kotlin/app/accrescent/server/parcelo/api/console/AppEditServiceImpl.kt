@@ -112,19 +112,11 @@ class AppEditServiceImpl @Inject constructor(
         val canCreateAppEdit = permissionService
             .hasPermission(HasPermissionRequest.CreateAppEdit(request.appId, userId))
         if (!canCreateAppEdit) {
-            val appExists = App.existsById(request.appId)
-            val canViewAppExistence = permissionService
-                .hasPermission(HasPermissionRequest.ViewAppExistence(request.appId, userId))
-
-            throw if (!canViewAppExistence || !appExists) {
-                appNotFoundException(request.appId)
-            } else {
-                ConsoleApiError(
-                    ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
-                    "insufficient permission to create edits for app \"${request.appId}\"",
-                )
-                    .toStatusRuntimeException()
-            }
+            throw ConsoleApiError(
+                ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
+                "insufficient permission to create edits for app \"${request.appId}\"",
+            )
+                .toStatusRuntimeException()
         }
         val app = App.findById(request.appId) ?: throw appNotFoundException(request.appId)
 
@@ -175,19 +167,11 @@ class AppEditServiceImpl @Inject constructor(
         val canView = permissionService
             .hasPermission(HasPermissionRequest.ViewAppEdit(request.appEditId, userId))
         if (!canView) {
-            val exists = AppEdit.existsById(request.appEditId)
-            val canViewExistence = permissionService
-                .hasPermission(HasPermissionRequest.ViewAppEditExistence(request.appEditId, userId))
-
-            throw if (!exists || !canViewExistence) {
-                appEditNotFoundException(request.appEditId)
-            } else {
-                ConsoleApiError(
-                    ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
-                    "insufficient permission to view app edit",
-                )
-                    .toStatusRuntimeException()
-            }
+            throw ConsoleApiError(
+                ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
+                "insufficient permission to view app edit",
+            )
+                .toStatusRuntimeException()
         }
 
         val appEdit = AppEdit
@@ -310,19 +294,11 @@ class AppEditServiceImpl @Inject constructor(
         val canReplacePackage = permissionService
             .hasPermission(HasPermissionRequest.ReplaceAppEditPackage(request.appEditId, userId))
         if (!canReplacePackage) {
-            val exists = AppEdit.existsById(request.appEditId)
-            val canViewExistence = permissionService
-                .hasPermission(HasPermissionRequest.ViewAppEditExistence(request.appEditId, userId))
-
-            throw if (!exists || !canViewExistence) {
-                appEditNotFoundException(request.appEditId)
-            } else {
-                ConsoleApiError(
-                    ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
-                    "insufficient permission to replace package",
-                )
-                    .toStatusRuntimeException()
-            }
+            throw ConsoleApiError(
+                ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
+                "insufficient permission to replace package",
+            )
+                .toStatusRuntimeException()
         }
 
         val appEdit = AppEdit
@@ -374,19 +350,11 @@ class AppEditServiceImpl @Inject constructor(
         val canDownload = permissionService
             .hasPermission(HasPermissionRequest.DownloadAppEdit(request.appEditId, userId))
         if (!canDownload) {
-            val exists = AppEdit.existsById(request.appEditId)
-            val canViewExistence = permissionService
-                .hasPermission(HasPermissionRequest.ViewAppEditExistence(request.appEditId, userId))
-
-            throw if (!exists || !canViewExistence) {
-                appEditNotFoundException(request.appEditId)
-            } else {
-                ConsoleApiError(
-                    ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
-                    "insufficient permission to download app edit",
-                )
-                    .toStatusRuntimeException()
-            }
+            throw ConsoleApiError(
+                ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
+                "insufficient permission to download app edit",
+            )
+                .toStatusRuntimeException()
         }
 
         val appEdit = AppEdit
@@ -411,19 +379,11 @@ class AppEditServiceImpl @Inject constructor(
         val canUpdate = permissionService
             .hasPermission(HasPermissionRequest.UpdateAppEdit(request.appEditId, userId))
         if (!canUpdate) {
-            val exists = AppEdit.existsById(request.appEditId)
-            val canViewExistence = permissionService
-                .hasPermission(HasPermissionRequest.ViewAppEditExistence(request.appEditId, userId))
-
-            throw if (!exists || !canViewExistence) {
-                appEditNotFoundException(request.appEditId)
-            } else {
-                ConsoleApiError(
-                    ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
-                    "insufficient permission to update app edit",
-                )
-                    .toStatusRuntimeException()
-            }
+            throw ConsoleApiError(
+                ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
+                "insufficient permission to update app edit",
+            )
+                .toStatusRuntimeException()
         }
 
         val appEdit = AppEdit
@@ -457,19 +417,11 @@ class AppEditServiceImpl @Inject constructor(
         val canSubmit = permissionService
             .hasPermission(HasPermissionRequest.SubmitAppEdit(request.appEditId, userId))
         if (!canSubmit) {
-            val exists = AppEdit.existsById(request.appEditId)
-            val canViewExistence = permissionService
-                .hasPermission(HasPermissionRequest.ViewAppEditExistence(request.appEditId, userId))
-
-            throw if (!exists || !canViewExistence) {
-                appEditNotFoundException(request.appEditId)
-            } else {
-                ConsoleApiError(
-                    ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
-                    "insufficient permission to submit app edit",
-                )
-                    .toStatusRuntimeException()
-            }
+            throw ConsoleApiError(
+                ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
+                "insufficient permission to submit app edit",
+            )
+                .toStatusRuntimeException()
         }
 
         val appEdit = AppEdit
@@ -587,19 +539,11 @@ class AppEditServiceImpl @Inject constructor(
         val canDelete = permissionService
             .hasPermission(HasPermissionRequest.DeleteAppEdit(request.appEditId, userId))
         if (!canDelete) {
-            val exists = AppEdit.existsById(request.appEditId)
-            val canViewExistence = permissionService
-                .hasPermission(HasPermissionRequest.ViewAppEditExistence(request.appEditId, userId))
-
-            throw if (!exists || !canViewExistence) {
-                appEditNotFoundException(request.appEditId)
-            } else {
-                ConsoleApiError(
-                    ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
-                    "insufficient permission to delete app edit",
-                )
-                    .toStatusRuntimeException()
-            }
+            throw ConsoleApiError(
+                ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
+                "insufficient permission to delete app edit",
+            )
+                .toStatusRuntimeException()
         }
 
         // Check preconditions
@@ -638,19 +582,11 @@ class AppEditServiceImpl @Inject constructor(
         val canCreateListing = permissionService
             .hasPermission(HasPermissionRequest.CreateAppEditListing(request.appEditId, userId))
         if (!canCreateListing) {
-            val exists = AppEdit.existsById(request.appEditId)
-            val canViewExistence = permissionService
-                .hasPermission(HasPermissionRequest.ViewAppEditExistence(request.appEditId, userId))
-
-            throw if (!exists || !canViewExistence) {
-                appEditNotFoundException(request.appEditId)
-            } else {
-                ConsoleApiError(
-                    ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
-                    "insufficient permission to create app edit listing",
-                )
-                    .toStatusRuntimeException()
-            }
+            throw ConsoleApiError(
+                ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
+                "insufficient permission to create app edit listing",
+            )
+                .toStatusRuntimeException()
         }
 
         val appEdit = AppEdit
@@ -692,20 +628,11 @@ class AppEditServiceImpl @Inject constructor(
         val canReplaceIcon = permissionService
             .hasPermission(HasPermissionRequest.ReplaceAppEditListingIcon(request.appEditId, userId))
         if (!canReplaceIcon) {
-            val editExists = AppEdit.existsById(request.appEditId)
-            val listingExists = AppEditListing.exists(request.appEditId, request.language)
-            val canViewExistence = permissionService
-                .hasPermission(HasPermissionRequest.ViewAppEditExistence(request.appEditId, userId))
-
-            throw when {
-                !editExists || !canViewExistence -> appEditNotFoundException(request.appEditId)
-                !listingExists -> appEditListingNotFoundException(request.language)
-                else -> throw ConsoleApiError(
-                    ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
-                    "insufficient permission to replace app listing icon",
-                )
-                    .toStatusRuntimeException()
-            }
+            throw ConsoleApiError(
+                ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
+                "insufficient permission to replace app listing icon",
+            )
+                .toStatusRuntimeException()
         }
 
         val appEdit = AppEdit
@@ -761,19 +688,11 @@ class AppEditServiceImpl @Inject constructor(
         val canDelete = permissionService
             .hasPermission(HasPermissionRequest.DeleteAppEditListing(request.appEditId, userId))
         if (!canDelete) {
-            val exists = AppEdit.existsById(request.appEditId)
-            val canViewExistence = permissionService
-                .hasPermission(HasPermissionRequest.ViewAppEditExistence(request.appEditId, userId))
-
-            throw if (!exists || !canViewExistence) {
-                appEditNotFoundException(request.appEditId)
-            } else {
-                ConsoleApiError(
-                    ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
-                    "insufficient permission to delete app edit listing",
-                )
-                    .toStatusRuntimeException()
-            }
+            throw ConsoleApiError(
+                ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
+                "insufficient permission to delete app edit listing",
+            )
+                .toStatusRuntimeException()
         }
 
         val appEdit = AppEdit

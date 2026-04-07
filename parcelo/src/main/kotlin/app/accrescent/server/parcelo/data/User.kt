@@ -71,10 +71,6 @@ class User(
     var registeredAt: OffsetDateTime,
 ) : PanacheEntityBase {
     companion object : PanacheCompanionBase<User, String> {
-        fun existsById(id: String): Boolean {
-            return count("WHERE id = ?1", id) > 0
-        }
-
         fun existsByOidcId(issuer: String, subject: String): Boolean {
             return count("WHERE oidcIssuer = ?1 AND oidcSubject = ?2", issuer, subject) > 0
         }

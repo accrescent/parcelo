@@ -28,10 +28,6 @@ class Organization(
     var publishedAppLimit = DEFAULT_PUBLISHED_APP_LIMIT
 
     companion object : PanacheCompanionBase<Organization, String> {
-        fun existsById(id: String): Boolean {
-            return count("WHERE id = ?1", id) > 0
-        }
-
         fun findForUserByQuery(
             userId: String,
             pageSize: UInt,

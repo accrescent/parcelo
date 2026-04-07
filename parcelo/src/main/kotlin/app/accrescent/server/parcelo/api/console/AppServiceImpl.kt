@@ -51,19 +51,11 @@ class AppServiceImpl @Inject constructor(
         val canView = permissionService
             .hasPermission(HasPermissionRequest.ViewApp(request.appId, userId))
         if (!canView) {
-            val exists = App.existsById(request.appId)
-            val canViewExistence = permissionService
-                .hasPermission(HasPermissionRequest.ViewAppExistence(request.appId, userId))
-
-            throw if (!exists || !canViewExistence) {
-                appNotFoundException(request.appId)
-            } else {
-                ConsoleApiError(
-                    ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
-                    "insufficient permission to view app",
-                )
-                    .toStatusRuntimeException()
-            }
+            throw ConsoleApiError(
+                ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
+                "insufficient permission to view app",
+            )
+                .toStatusRuntimeException()
         }
 
         val app = App.findById(request.appId) ?: throw appNotFoundException(request.appId)
@@ -141,19 +133,11 @@ class AppServiceImpl @Inject constructor(
         val canUpdate = permissionService
             .hasPermission(HasPermissionRequest.UpdateApp(request.appId, userId))
         if (!canUpdate) {
-            val exists = App.existsById(request.appId)
-            val canViewExistence = permissionService
-                .hasPermission(HasPermissionRequest.ViewAppExistence(request.appId, userId))
-
-            throw if (!exists || !canViewExistence) {
-                appNotFoundException(request.appId)
-            } else {
-                ConsoleApiError(
-                    ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
-                    "insufficient permission to modify app",
-                )
-                    .toStatusRuntimeException()
-            }
+            throw ConsoleApiError(
+                ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
+                "insufficient permission to modify app",
+            )
+                .toStatusRuntimeException()
         }
 
         // Update the app based on the update mask

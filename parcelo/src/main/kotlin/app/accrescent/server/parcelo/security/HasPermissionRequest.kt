@@ -15,9 +15,6 @@ sealed class HasPermissionRequest(val resourceId: String, val subjectId: String)
     data class ViewApp(private val appId: String, private val userId: String) :
         HasPermissionRequest(appId, userId)
 
-    data class ViewAppExistence(private val appId: String, private val userId: String) :
-        HasPermissionRequest(appId, userId)
-
     // App draft permissions
     data class CreateAppDraft(private val organizationId: String, private val userId: String) :
         HasPermissionRequest(organizationId, userId)
@@ -62,9 +59,6 @@ sealed class HasPermissionRequest(val resourceId: String, val subjectId: String)
     data class ViewAppDraft(private val appDraftId: String, private val userId: String) :
         HasPermissionRequest(appDraftId, userId)
 
-    data class ViewAppDraftExistence(private val appDraftId: String, private val userId: String) :
-        HasPermissionRequest(appDraftId, userId)
-
     // App edit permissions
     data class CreateAppEditListing(private val appEditId: String, private val userId: String) :
         HasPermissionRequest(appEditId, userId)
@@ -103,17 +97,9 @@ sealed class HasPermissionRequest(val resourceId: String, val subjectId: String)
     data class ViewAppEdit(private val appEditId: String, private val userId: String) :
         HasPermissionRequest(appEditId, userId)
 
-    data class ViewAppEditExistence(private val appEditId: String, private val userId: String) :
-        HasPermissionRequest(appEditId, userId)
-
     // Organization permissions
     data class ViewOrganization(private val organizationId: String, private val userId: String) :
         HasPermissionRequest(organizationId, userId)
-
-    data class ViewOrganizationExistence(
-        private val organizationId: String,
-        private val userId: String,
-    ) : HasPermissionRequest(organizationId, userId)
 
     // User permissions
     data class UpdateUser(private val targetUserId: String, private val userId: String) :
@@ -122,6 +108,7 @@ sealed class HasPermissionRequest(val resourceId: String, val subjectId: String)
     data class UpdateUserRoles(private val targetUserId: String, private val userId: String) :
         HasPermissionRequest(targetUserId, userId)
 
-    data class ViewUserExistence(private val targetUserId: String, private val userId: String) :
-        HasPermissionRequest(targetUserId, userId)
+    // Operation permissions
+    data class ViewOperation(private val operationId: String, private val userId: String) :
+        HasPermissionRequest(operationId, userId)
 }

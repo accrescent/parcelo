@@ -10,6 +10,8 @@ import app.accrescent.server.parcelo.data.AppDraftRelationshipSet
 import app.accrescent.server.parcelo.data.AppEdit
 import app.accrescent.server.parcelo.data.AppEditRelationshipSet
 import app.accrescent.server.parcelo.data.AppPackage
+import app.accrescent.server.parcelo.data.BackgroundOperation
+import app.accrescent.server.parcelo.data.BackgroundOperationType
 import app.accrescent.server.parcelo.data.OidcProvider
 import app.accrescent.server.parcelo.data.Organization
 import app.accrescent.server.parcelo.data.OrganizationRelationshipSet
@@ -30,6 +32,7 @@ private val TEST_APP_PACKAGE_ID = UUID.fromString("ec5371bb-2471-4e7d-8beb-ec10f
 private const val TEST_ORGANIZATION_ID = "org_4YucHKDdgFrZBfqotNhUCk"
 
 private const val TEST_ADMIN_USER_ID = "user_23xNQqvWAhJSjTVHUpNIzk"
+private const val TEST_OPERATION_ID = "op_8Ts54l8g9THsJp0lJCiPvN"
 private const val TEST_USER_ID = "user_2jJhXL1SXJDbWdCJeNRsHA"
 private const val TEST_REVIEWER_USER_ID = "user_6gD8P9iTHTXZ5KtssBcxDv"
 private const val TEST_PUBLISHER_USER_ID = "user_3MjZ3zHQjR9FRKk57pdRlC"
@@ -66,10 +69,6 @@ class PermissionServiceTest {
                 ),
                 HasPermissionReturnsTrueWhenRequiredParams(
                     request = HasPermissionRequest.ViewApp(TEST_APP_ID, TEST_USER_ID),
-                    setUpData = { setUpAppData() },
-                ),
-                HasPermissionReturnsTrueWhenRequiredParams(
-                    request = HasPermissionRequest.ViewAppExistence(TEST_APP_ID, TEST_USER_ID),
                     setUpData = { setUpAppData() },
                 ),
                 // App draft permissions
@@ -140,17 +139,12 @@ class PermissionServiceTest {
                 ),
                 HasPermissionReturnsTrueWhenRequiredParams(
                     request = HasPermissionRequest
-                        .ViewAppDraftExistence(TEST_APP_DRAFT_ID, TEST_USER_ID),
-                    setUpData = { setUpAppDraftData() },
-                ),
-                HasPermissionReturnsTrueWhenRequiredParams(
-                    request = HasPermissionRequest
-                        .ViewAppDraftExistence(TEST_APP_DRAFT_ID, TEST_PUBLISHER_USER_ID),
+                        .ViewAppDraft(TEST_APP_DRAFT_ID, TEST_PUBLISHER_USER_ID),
                     setUpData = { setUpAppDraftPublisherData() },
                 ),
                 HasPermissionReturnsTrueWhenRequiredParams(
                     request = HasPermissionRequest
-                        .ViewAppDraftExistence(TEST_APP_DRAFT_ID, TEST_REVIEWER_USER_ID),
+                        .ViewAppDraft(TEST_APP_DRAFT_ID, TEST_REVIEWER_USER_ID),
                     setUpData = { setUpAppDraftReviewerData() },
                 ),
                 // App edit permissions
@@ -216,12 +210,7 @@ class PermissionServiceTest {
                 ),
                 HasPermissionReturnsTrueWhenRequiredParams(
                     request = HasPermissionRequest
-                        .ViewAppEditExistence(TEST_APP_EDIT_ID, TEST_USER_ID),
-                    setUpData = { setUpAppEditData() },
-                ),
-                HasPermissionReturnsTrueWhenRequiredParams(
-                    request = HasPermissionRequest
-                        .ViewAppEditExistence(TEST_APP_EDIT_ID, TEST_REVIEWER_USER_ID),
+                        .ViewAppEdit(TEST_APP_EDIT_ID, TEST_REVIEWER_USER_ID),
                     setUpData = { setUpAppEditReviewerData() },
                 ),
                 // Organization permissions
@@ -235,11 +224,6 @@ class PermissionServiceTest {
                         .ViewOrganization(TEST_ORGANIZATION_ID, TEST_USER_ID),
                     setUpData = { setUpOrganizationData() },
                 ),
-                HasPermissionReturnsTrueWhenRequiredParams(
-                    request = HasPermissionRequest
-                        .ViewOrganizationExistence(TEST_ORGANIZATION_ID, TEST_USER_ID),
-                    setUpData = { setUpOrganizationData() },
-                ),
                 // User permissions
                 HasPermissionReturnsTrueWhenRequiredParams(
                     request = HasPermissionRequest.UpdateUser(TEST_USER_ID, TEST_ADMIN_USER_ID),
@@ -249,14 +233,31 @@ class PermissionServiceTest {
                     request = HasPermissionRequest.UpdateUserRoles(TEST_USER_ID, TEST_ADMIN_USER_ID),
                     setUpData = { setUpUserAdminData() },
                 ),
+                // Operation permissions
                 HasPermissionReturnsTrueWhenRequiredParams(
-                    request = HasPermissionRequest.ViewUserExistence(TEST_USER_ID, TEST_USER_ID),
-                    setUpData = { setUpUserData() },
+                    request = HasPermissionRequest.ViewOperation(TEST_OPERATION_ID, TEST_USER_ID),
+                    setUpData = { setUpOperationData(BackgroundOperationType.UPLOAD_APP_DRAFT) },
+                ),
+                HasPermissionReturnsTrueWhenRequiredParams(
+                    request = HasPermissionRequest.ViewOperation(TEST_OPERATION_ID, TEST_USER_ID),
+                    setUpData = { setUpOperationData(BackgroundOperationType.UPLOAD_APP_DRAFT_LISTING_ICON) },
+                ),
+                HasPermissionReturnsTrueWhenRequiredParams(
+                    request = HasPermissionRequest.ViewOperation(TEST_OPERATION_ID, TEST_USER_ID),
+                    setUpData = { setUpOperationData(BackgroundOperationType.PUBLISH_APP_EDIT) },
+                ),
+                HasPermissionReturnsTrueWhenRequiredParams(
+                    request = HasPermissionRequest.ViewOperation(TEST_OPERATION_ID, TEST_USER_ID),
+                    setUpData = { setUpOperationData(BackgroundOperationType.UPLOAD_APP_EDIT) },
+                ),
+                HasPermissionReturnsTrueWhenRequiredParams(
+                    request = HasPermissionRequest.ViewOperation(TEST_OPERATION_ID, TEST_USER_ID),
+                    setUpData = { setUpOperationData(BackgroundOperationType.UPLOAD_APP_EDIT_LISTING_ICON) },
                 ),
                 HasPermissionReturnsTrueWhenRequiredParams(
                     request = HasPermissionRequest
-                        .ViewUserExistence(TEST_USER_ID, TEST_ADMIN_USER_ID),
-                    setUpData = { setUpUserAdminData() },
+                        .ViewOperation(TEST_OPERATION_ID, TEST_PUBLISHER_USER_ID),
+                    setUpData = { setUpOperationData(BackgroundOperationType.PUBLISH_APP_DRAFT) },
                 ),
             )
         }
@@ -360,6 +361,33 @@ class PermissionServiceTest {
                 reviewer = false,
                 publisher = false,
                 registeredAt = OffsetDateTime.parse("2000-01-01T00:00:00Z"),
+            )
+                .persist()
+        }
+
+        private fun setUpOperationData(type: BackgroundOperationType) {
+            val (setup, parentId) = when (type) {
+                BackgroundOperationType.PUBLISH_APP_DRAFT ->
+                    ::setUpAppDraftPublisherData to TEST_APP_DRAFT_ID
+
+                BackgroundOperationType.UPLOAD_APP_DRAFT,
+                BackgroundOperationType.UPLOAD_APP_DRAFT_LISTING_ICON ->
+                    ::setUpAppDraftData to TEST_APP_DRAFT_ID
+
+                BackgroundOperationType.PUBLISH_APP_EDIT,
+                BackgroundOperationType.UPLOAD_APP_EDIT,
+                BackgroundOperationType.UPLOAD_APP_EDIT_LISTING_ICON ->
+                    ::setUpAppEditData to TEST_APP_EDIT_ID
+            }
+            setup()
+
+            BackgroundOperation(
+                id = TEST_OPERATION_ID,
+                type = type,
+                parentId = parentId,
+                createdAt = OffsetDateTime.parse("2000-01-01T00:00:00Z"),
+                result = null,
+                succeeded = false,
             )
                 .persist()
         }

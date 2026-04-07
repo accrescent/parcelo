@@ -124,10 +124,6 @@ class AppDraft(
             )
         }
 
-        fun existsById(id: String): Boolean {
-            return count("WHERE id = ?1", id) > 0
-        }
-
         fun findForOrganizationAndUserByQuery(
             organizationId: String,
             userId: String,

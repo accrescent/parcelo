@@ -79,20 +79,11 @@ class ReviewServiceImpl @Inject constructor(
         val canReview = permissionService
             .hasPermission(HasPermissionRequest.ReviewAppDraft(request.appDraftId, userId))
         if (!canReview) {
-            val exists = AppDraft.existsById(request.appDraftId)
-            val canViewExistence = permissionService.hasPermission(
-                HasPermissionRequest.ViewAppDraftExistence(request.appDraftId, userId),
+            throw ConsoleApiError(
+                ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
+                "insufficient permission to review app draft",
             )
-
-            throw if (!exists || !canViewExistence) {
-                appDraftNotFoundException(request.appDraftId)
-            } else {
-                throw ConsoleApiError(
-                    ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
-                    "insufficient permission to review app draft",
-                )
-                    .toStatusRuntimeException()
-            }
+                .toStatusRuntimeException()
         }
 
         val appDraft = AppDraft
@@ -169,19 +160,11 @@ class ReviewServiceImpl @Inject constructor(
         val canReview = permissionService
             .hasPermission(HasPermissionRequest.ReviewAppEdit(request.appEditId, userId))
         if (!canReview) {
-            val exists = AppEdit.existsById(request.appEditId)
-            val canViewExistence = permissionService
-                .hasPermission(HasPermissionRequest.ViewAppEditExistence(request.appEditId, userId))
-
-            throw if (!exists || !canViewExistence) {
-                appEditNotFoundException(request.appEditId)
-            } else {
-                ConsoleApiError(
-                    ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
-                    "insufficient permission to review app edit",
-                )
-                    .toStatusRuntimeException()
-            }
+            throw ConsoleApiError(
+                ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
+                "insufficient permission to review app edit",
+            )
+                .toStatusRuntimeException()
         }
 
         val appEdit = AppEdit

@@ -65,19 +65,11 @@ class UserServiceImpl @Inject constructor(
         val canUpdateUser = permissionService
             .hasPermission(HasPermissionRequest.UpdateUser(request.userId, userId))
         if (!canUpdateUser) {
-            val exists = User.existsById(request.userId)
-            val canViewExistence = permissionService
-                .hasPermission(HasPermissionRequest.ViewUserExistence(request.userId, userId))
-
-            throw if (!exists || !canViewExistence) {
-                userNotFoundException(request.userId)
-            } else {
-                ConsoleApiError(
-                    ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
-                    "insufficient permission to update user",
-                )
-                    .toStatusRuntimeException()
-            }
+            throw ConsoleApiError(
+                ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
+                "insufficient permission to update user",
+            )
+                .toStatusRuntimeException()
         }
 
         val user = User.findById(request.userId) ?: throw userNotFoundException(request.userId)

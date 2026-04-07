@@ -7,6 +7,8 @@ package app.accrescent.server.parcelo.security
 import app.accrescent.server.parcelo.config.ParceloConfig
 import app.accrescent.server.parcelo.data.AppDraftRelationshipSet
 import app.accrescent.server.parcelo.data.AppEditRelationshipSet
+import app.accrescent.server.parcelo.data.BackgroundOperation
+import app.accrescent.server.parcelo.data.BackgroundOperationType
 import app.accrescent.server.parcelo.data.OidcProvider
 import app.accrescent.server.parcelo.data.OrganizationRelationshipSet
 import app.accrescent.server.parcelo.data.User
@@ -21,8 +23,7 @@ class PermissionService @Inject constructor(private val config: ParceloConfig) {
         return when (request) {
             is HasPermissionRequest.CreateAppEdit,
             is HasPermissionRequest.UpdateApp,
-            is HasPermissionRequest.ViewApp,
-            is HasPermissionRequest.ViewAppExistence -> OrganizationRelationshipSet
+            is HasPermissionRequest.ViewApp -> OrganizationRelationshipSet
                 .findByAppIdAndUserId(request.resourceId, request.subjectId)
                 ?.owner == true
 
@@ -32,8 +33,7 @@ class PermissionService @Inject constructor(private val config: ParceloConfig) {
             is HasPermissionRequest.ReplaceAppDraftListingIcon,
             is HasPermissionRequest.ReplaceAppDraftPackage,
             is HasPermissionRequest.SubmitAppDraft,
-            is HasPermissionRequest.UpdateAppDraft,
-            is HasPermissionRequest.ViewAppDraft -> OrganizationRelationshipSet
+            is HasPermissionRequest.UpdateAppDraft -> OrganizationRelationshipSet
                 .findByAppDraftIdAndUserId(request.resourceId, request.subjectId)
                 ?.owner == true
 
@@ -57,7 +57,7 @@ class PermissionService @Inject constructor(private val config: ParceloConfig) {
                 .findByAppDraftIdAndUserId(request.resourceId, request.subjectId)
                 ?.reviewer == true
 
-            is HasPermissionRequest.ViewAppDraftExistence -> {
+            is HasPermissionRequest.ViewAppDraft -> {
                 val isOrgOwner = OrganizationRelationshipSet
                     .findByAppDraftIdAndUserId(request.resourceId, request.subjectId)
                     ?.owner == true
@@ -74,8 +74,7 @@ class PermissionService @Inject constructor(private val config: ParceloConfig) {
             is HasPermissionRequest.ReplaceAppEditListingIcon,
             is HasPermissionRequest.ReplaceAppEditPackage,
             is HasPermissionRequest.SubmitAppEdit,
-            is HasPermissionRequest.UpdateAppEdit,
-            is HasPermissionRequest.ViewAppEdit -> OrganizationRelationshipSet
+            is HasPermissionRequest.UpdateAppEdit -> OrganizationRelationshipSet
                 .findByAppEditIdAndUserId(request.resourceId, request.subjectId)
                 ?.owner == true
 
@@ -85,7 +84,7 @@ class PermissionService @Inject constructor(private val config: ParceloConfig) {
 
             is HasPermissionRequest.DownloadAppEdit,
             is HasPermissionRequest.DownloadAppEditListingIcons,
-            is HasPermissionRequest.ViewAppEditExistence -> {
+            is HasPermissionRequest.ViewAppEdit -> {
                 val isOrgOwner = OrganizationRelationshipSet
                     .findByAppEditIdAndUserId(request.resourceId, request.subjectId)
                     ?.owner == true
@@ -97,8 +96,7 @@ class PermissionService @Inject constructor(private val config: ParceloConfig) {
             }
 
             is HasPermissionRequest.CreateAppDraft,
-            is HasPermissionRequest.ViewOrganization,
-            is HasPermissionRequest.ViewOrganizationExistence -> OrganizationRelationshipSet
+            is HasPermissionRequest.ViewOrganization -> OrganizationRelationshipSet
                 .findByOrganizationIdAndUserId(request.resourceId, request.subjectId)
                 ?.owner == true
 
@@ -107,14 +105,25 @@ class PermissionService @Inject constructor(private val config: ParceloConfig) {
                 .findById(request.subjectId)
                 ?.let { isAdmin(it) } == true
 
-            is HasPermissionRequest.ViewUserExistence -> if (request.resourceId == request.subjectId) {
-                // A user should always be able to view the existence of themselves
-                true
-            } else {
-                // Admins can view the existence of any user
-                User
-                    .findById(request.subjectId)
-                    ?.let { isAdmin(it) } == true
+            is HasPermissionRequest.ViewOperation -> {
+                val operation = BackgroundOperation.findById(request.resourceId) ?: return false
+
+                when (operation.type) {
+                    BackgroundOperationType.PUBLISH_APP_DRAFT -> AppDraftRelationshipSet
+                        .findByAppDraftIdAndUserId(operation.parentId, request.subjectId)
+                        ?.publisher == true
+
+                    BackgroundOperationType.UPLOAD_APP_DRAFT,
+                    BackgroundOperationType.UPLOAD_APP_DRAFT_LISTING_ICON -> OrganizationRelationshipSet
+                        .findByAppDraftIdAndUserId(operation.parentId, request.subjectId)
+                        ?.owner == true
+
+                    BackgroundOperationType.PUBLISH_APP_EDIT,
+                    BackgroundOperationType.UPLOAD_APP_EDIT,
+                    BackgroundOperationType.UPLOAD_APP_EDIT_LISTING_ICON -> OrganizationRelationshipSet
+                        .findByAppEditIdAndUserId(operation.parentId, request.subjectId)
+                        ?.owner == true
+                }
             }
         }
     }

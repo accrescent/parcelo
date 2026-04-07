@@ -10,8 +10,6 @@ import app.accrescent.console.v1alpha1.UploadAppDraftListingIconResult
 import app.accrescent.console.v1alpha1.UploadAppDraftResult
 import app.accrescent.console.v1alpha1.UploadAppEditListingIconResult
 import app.accrescent.console.v1alpha1.UploadAppEditResult
-import app.accrescent.server.parcelo.data.AppDraft
-import app.accrescent.server.parcelo.data.AppEdit
 import app.accrescent.server.parcelo.data.BackgroundOperation
 import app.accrescent.server.parcelo.data.BackgroundOperationType
 import app.accrescent.server.parcelo.security.AuthnContextKey
@@ -35,8 +33,6 @@ import jakarta.transaction.Transactional
 import org.eclipse.microprofile.context.ManagedExecutor
 import com.google.rpc.Status as GoogleStatus
 
-private enum class ParentType { APP_DRAFT, APP_EDIT }
-
 @GrpcService
 @RegisterInterceptor(GrpcAuthenticationInterceptor::class)
 @RegisterInterceptor(GrpcRateLimitInterceptor::class)
@@ -59,53 +55,22 @@ class OperationsImpl @Inject constructor(
         request: GetOperationRequest,
         responseObserver: StreamObserver<Operation>,
     ) {
-        val metadata = BackgroundOperation.findById(request.name) ?: run {
-            responseObserver.onError(operationNotFoundException(request.name))
-            return
-        }
-
-        val parentType = when (metadata.type) {
-            BackgroundOperationType.PUBLISH_APP_DRAFT,
-            BackgroundOperationType.UPLOAD_APP_DRAFT,
-            BackgroundOperationType.UPLOAD_APP_DRAFT_LISTING_ICON -> ParentType.APP_DRAFT
-
-            BackgroundOperationType.PUBLISH_APP_EDIT,
-            BackgroundOperationType.UPLOAD_APP_EDIT,
-            BackgroundOperationType.UPLOAD_APP_EDIT_LISTING_ICON -> ParentType.APP_EDIT
-        }
-        val canView = permissionService.hasPermission(
-            when (parentType) {
-                ParentType.APP_DRAFT -> HasPermissionRequest.ViewAppDraft(metadata.parentId, userId)
-                ParentType.APP_EDIT -> HasPermissionRequest.ViewAppEdit(metadata.parentId, userId)
-            },
-        )
+        val canView = permissionService
+            .hasPermission(HasPermissionRequest.ViewOperation(request.name, userId))
         if (!canView) {
-            val exists = when (parentType) {
-                ParentType.APP_DRAFT -> AppDraft.existsById(metadata.parentId)
-                ParentType.APP_EDIT -> AppEdit.existsById(metadata.parentId)
-            }
-            val canViewExistence = permissionService.hasPermission(
-                when (parentType) {
-                    ParentType.APP_DRAFT ->
-                        HasPermissionRequest.ViewAppDraftExistence(metadata.parentId, userId)
-
-                    ParentType.APP_EDIT ->
-                        HasPermissionRequest.ViewAppEditExistence(metadata.parentId, userId)
-                },
-            )
-
-            val error = if (!exists || !canViewExistence) {
-                operationNotFoundException(request.name)
-            } else {
+            responseObserver.onError(
                 Status
                     .PERMISSION_DENIED
                     .withDescription("insufficient permission to view operation")
                     .asRuntimeException()
-            }
-            responseObserver.onError(error)
+            )
             return
         }
 
+        val metadata = BackgroundOperation.findById(request.name) ?: run {
+            responseObserver.onError(operationNotFoundException(request.name))
+            return
+        }
         val result = metadata.result?.let {
             if (metadata.succeeded) {
                 when (metadata.type) {

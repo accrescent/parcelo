@@ -50,20 +50,11 @@ class OrganizationServiceImpl @Inject constructor(
         val canView = permissionService
             .hasPermission(HasPermissionRequest.ViewOrganization(request.organizationId, userId))
         if (!canView) {
-            val exists = Organization.existsById(request.organizationId)
-            val canViewExistence = permissionService.hasPermission(
-                HasPermissionRequest.ViewOrganizationExistence(request.organizationId, userId)
+            throw ConsoleApiError(
+                ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
+                "insufficient permission to view organization",
             )
-
-            throw if (!exists || !canViewExistence) {
-                organizationNotFoundException(request.organizationId)
-            } else {
-                ConsoleApiError(
-                    ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
-                    "insufficient permission to view organization",
-                )
-                    .toStatusRuntimeException()
-            }
+                .toStatusRuntimeException()
         }
 
         val organization = Organization
