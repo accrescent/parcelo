@@ -12,9 +12,7 @@ plugins {
 
 dependencies {
     implementation(platform(libs.quarkus.bom))
-    // TODO: Does this need to be an api() dependency, or can it be an implementation() dependency (or
-    // something else)?
-    api(libs.google.cloud.sql.postgres.socket.factory)
+    runtimeOnly(libs.google.cloud.sql.postgres.socket.factory)
     implementation(libs.quarkus.core)
     kapt(libs.quarkus.extension.processor)
 }
