@@ -29,16 +29,13 @@ class PermissionService @Inject constructor(private val config: ParceloConfig) {
 
             is HasPermissionRequest.CreateAppDraftListing,
             is HasPermissionRequest.DeleteAppDraft,
-            is HasPermissionRequest.DeleteAppDraftListing,
-            is HasPermissionRequest.ReplaceAppDraftListingIcon,
             is HasPermissionRequest.ReplaceAppDraftPackage,
             is HasPermissionRequest.SubmitAppDraft,
             is HasPermissionRequest.UpdateAppDraft -> OrganizationRelationshipSet
                 .findByAppDraftIdAndUserId(request.resourceId, request.subjectId)
                 ?.owner == true
 
-            is HasPermissionRequest.DownloadAppDraft,
-            is HasPermissionRequest.DownloadAppDraftListingIcons -> {
+            is HasPermissionRequest.DownloadAppDraft -> {
                 val isOrgOwner = OrganizationRelationshipSet
                     .findByAppDraftIdAndUserId(request.resourceId, request.subjectId)
                     ?.owner == true
@@ -63,6 +60,22 @@ class PermissionService @Inject constructor(private val config: ParceloConfig) {
                     ?.owner == true
                 val (isReviewer, isPublisher) = AppDraftRelationshipSet
                     .findByAppDraftIdAndUserId(request.resourceId, request.subjectId)
+                    .let { Pair(it?.reviewer == true, it?.publisher == true) }
+
+                isOrgOwner || isReviewer || isPublisher
+            }
+
+            is HasPermissionRequest.DeleteAppDraftListing,
+            is HasPermissionRequest.ReplaceAppDraftListingIcon -> OrganizationRelationshipSet
+                .findByAppDraftListingIdAndUserId(request.resourceId, request.subjectId)
+                ?.owner == true
+
+            is HasPermissionRequest.DownloadAppDraftListingIcon -> {
+                val isOrgOwner = OrganizationRelationshipSet
+                    .findByAppDraftListingIdAndUserId(request.resourceId, request.subjectId)
+                    ?.owner == true
+                val (isReviewer, isPublisher) = AppDraftRelationshipSet
+                    .findByAppDraftListingIdAndUserId(request.resourceId, request.subjectId)
                     .let { Pair(it?.reviewer == true, it?.publisher == true) }
 
                 isOrgOwner || isReviewer || isPublisher

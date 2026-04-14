@@ -4,21 +4,21 @@
 
 package app.accrescent.server.parcelo.testutil
 
-import app.accrescent.console.v1alpha1.AppDraftServiceGrpc
-import app.accrescent.console.v1alpha1.AppEditServiceGrpc
-import app.accrescent.console.v1alpha1.OrganizationServiceGrpc
-import app.accrescent.console.v1alpha1.ReviewServiceGrpc
-import app.accrescent.console.v1alpha1.UserServiceGrpc
-import app.accrescent.console.v1alpha1.createAppDraftListingIconUploadOperationRequest
-import app.accrescent.console.v1alpha1.createAppDraftListingRequest
-import app.accrescent.console.v1alpha1.createAppDraftRequest
-import app.accrescent.console.v1alpha1.createAppDraftReviewRequest
-import app.accrescent.console.v1alpha1.createAppDraftUploadOperationRequest
-import app.accrescent.console.v1alpha1.getAppDraftRequest
-import app.accrescent.console.v1alpha1.listOrganizationsRequest
-import app.accrescent.console.v1alpha1.publishAppDraftRequest
-import app.accrescent.console.v1alpha1.submitAppDraftRequest
-import app.accrescent.console.v1alpha1.updateAppDraftRequest
+import app.accrescent.console.v1.AppDraftServiceGrpc
+import app.accrescent.console.v1.AppEditServiceGrpc
+import app.accrescent.console.v1.OrganizationServiceGrpc
+import app.accrescent.console.v1.ReviewServiceGrpc
+import app.accrescent.console.v1.UserServiceGrpc
+import app.accrescent.console.v1.createAppDraftListingIconUploadOperationRequest
+import app.accrescent.console.v1.createAppDraftListingRequest
+import app.accrescent.console.v1.createAppDraftRequest
+import app.accrescent.console.v1.createAppDraftReviewRequest
+import app.accrescent.console.v1.createAppDraftUploadOperationRequest
+import app.accrescent.console.v1.getAppDraftRequest
+import app.accrescent.console.v1.listOrganizationsRequest
+import app.accrescent.console.v1.publishAppDraftRequest
+import app.accrescent.console.v1.submitAppDraftRequest
+import app.accrescent.console.v1.updateAppDraftRequest
 import com.google.longrunning.GetOperationRequest
 import com.google.longrunning.Operation
 import com.google.longrunning.OperationsGrpc
@@ -41,7 +41,7 @@ import java.net.URI
 import java.time.Duration
 import kotlin.io.encoding.Base64
 import app.accrescent.appstore.v1.AppServiceGrpc as StoreAppServiceGrpc
-import app.accrescent.console.v1alpha1.AppServiceGrpc as DevAppServiceGrpc
+import app.accrescent.console.v1.AppServiceGrpc as DevAppServiceGrpc
 
 private const val DEFAULT_SERVER_HOST = "localhost"
 private const val DEFAULT_SERVER_PORT = 8081

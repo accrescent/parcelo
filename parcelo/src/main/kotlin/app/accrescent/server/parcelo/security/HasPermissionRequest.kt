@@ -25,24 +25,11 @@ sealed class HasPermissionRequest(val resourceId: String, val subjectId: String)
     data class DeleteAppDraft(private val appDraftId: String, private val userId: String) :
         HasPermissionRequest(appDraftId, userId)
 
-    data class DeleteAppDraftListing(private val appDraftId: String, private val userId: String) :
-        HasPermissionRequest(appDraftId, userId)
-
     data class DownloadAppDraft(private val appDraftId: String, private val userId: String) :
         HasPermissionRequest(appDraftId, userId)
 
-    data class DownloadAppDraftListingIcons(
-        private val appDraftId: String,
-        private val userId: String,
-    ) : HasPermissionRequest(appDraftId, userId)
-
     data class PublishAppDraft(private val appDraftId: String, private val userId: String) :
         HasPermissionRequest(appDraftId, userId)
-
-    data class ReplaceAppDraftListingIcon(
-        private val appDraftId: String,
-        private val userId: String,
-    ) : HasPermissionRequest(appDraftId, userId)
 
     data class ReplaceAppDraftPackage(private val appDraftId: String, private val userId: String) :
         HasPermissionRequest(appDraftId, userId)
@@ -59,6 +46,20 @@ sealed class HasPermissionRequest(val resourceId: String, val subjectId: String)
     data class ViewAppDraft(private val appDraftId: String, private val userId: String) :
         HasPermissionRequest(appDraftId, userId)
 
+    // App draft listing permissions
+    data class DeleteAppDraftListing(private val appDraftListingId: String, private val userId: String) :
+        HasPermissionRequest(appDraftListingId, userId)
+
+    data class DownloadAppDraftListingIcon(
+        private val appDraftListingId: String,
+        private val userId: String,
+    ) : HasPermissionRequest(appDraftListingId, userId)
+
+    data class ReplaceAppDraftListingIcon(
+        private val appDraftListingId: String,
+        private val userId: String,
+    ) : HasPermissionRequest(appDraftListingId, userId)
+
     // App edit permissions
     data class CreateAppEditListing(private val appEditId: String, private val userId: String) :
         HasPermissionRequest(appEditId, userId)
@@ -66,18 +67,10 @@ sealed class HasPermissionRequest(val resourceId: String, val subjectId: String)
     data class DeleteAppEdit(private val appEditId: String, private val userId: String) :
         HasPermissionRequest(appEditId, userId)
 
-    data class DeleteAppEditListing(private val appEditId: String, private val userId: String) :
-        HasPermissionRequest(appEditId, userId)
-
     data class DownloadAppEdit(private val appEditId: String, private val userId: String) :
         HasPermissionRequest(appEditId, userId)
 
     data class DownloadAppEditListingIcons(
-        private val appEditId: String,
-        private val userId: String,
-    ) : HasPermissionRequest(appEditId, userId)
-
-    data class ReplaceAppEditListingIcon(
         private val appEditId: String,
         private val userId: String,
     ) : HasPermissionRequest(appEditId, userId)
@@ -96,6 +89,15 @@ sealed class HasPermissionRequest(val resourceId: String, val subjectId: String)
 
     data class ViewAppEdit(private val appEditId: String, private val userId: String) :
         HasPermissionRequest(appEditId, userId)
+
+    // App edit listing permissions
+    data class DeleteAppEditListing(private val appEditListingId: String, private val userId: String) :
+        HasPermissionRequest(appEditListingId, userId)
+
+    data class ReplaceAppEditListingIcon(
+        private val appEditListingId: String,
+        private val userId: String,
+    ) : HasPermissionRequest(appEditListingId, userId)
 
     // Organization permissions
     data class ViewOrganization(private val organizationId: String, private val userId: String) :

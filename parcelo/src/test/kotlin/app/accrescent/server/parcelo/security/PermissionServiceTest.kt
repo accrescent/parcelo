@@ -6,12 +6,14 @@ package app.accrescent.server.parcelo.security
 
 import app.accrescent.server.parcelo.data.App
 import app.accrescent.server.parcelo.data.AppDraft
+import app.accrescent.server.parcelo.data.AppDraftListing
 import app.accrescent.server.parcelo.data.AppDraftRelationshipSet
 import app.accrescent.server.parcelo.data.AppEdit
 import app.accrescent.server.parcelo.data.AppEditRelationshipSet
 import app.accrescent.server.parcelo.data.AppPackage
 import app.accrescent.server.parcelo.data.BackgroundOperation
 import app.accrescent.server.parcelo.data.BackgroundOperationType
+import app.accrescent.server.parcelo.data.Image
 import app.accrescent.server.parcelo.data.OidcProvider
 import app.accrescent.server.parcelo.data.Organization
 import app.accrescent.server.parcelo.data.OrganizationRelationshipSet
@@ -27,8 +29,10 @@ import java.util.UUID
 
 private const val TEST_APP_ID = "com.example.app"
 private const val TEST_APP_DRAFT_ID = "ad_3kij4XC0fQH88oA1e5w1z0"
+private const val TEST_APP_DRAFT_LISTING_ID = "adl_3yx093KJYj1C4JCvhqmKdN"
 private const val TEST_APP_EDIT_ID = "ae_1xpp2iRrFYD5YJu0OoMq0i"
 private val TEST_APP_PACKAGE_ID = UUID.fromString("ec5371bb-2471-4e7d-8beb-ec10fd2f4749")
+private val TEST_ICON_IMAGE_LISTING_ID = UUID.fromString("956b9bc2-623c-48fd-ad87-23c7a3be18e8")
 private const val TEST_ORGANIZATION_ID = "org_4YucHKDdgFrZBfqotNhUCk"
 
 private const val TEST_ADMIN_USER_ID = "user_23xNQqvWAhJSjTVHUpNIzk"
@@ -83,8 +87,8 @@ class PermissionServiceTest {
                 ),
                 HasPermissionReturnsTrueWhenRequiredParams(
                     request = HasPermissionRequest
-                        .DeleteAppDraftListing(TEST_APP_DRAFT_ID, TEST_USER_ID),
-                    setUpData = { setUpAppDraftData() },
+                        .DeleteAppDraftListing(TEST_APP_DRAFT_LISTING_ID, TEST_USER_ID),
+                    setUpData = { setUpAppDraftListingData() },
                 ),
                 HasPermissionReturnsTrueWhenRequiredParams(
                     request = HasPermissionRequest.DownloadAppDraft(TEST_APP_DRAFT_ID, TEST_USER_ID),
@@ -97,13 +101,13 @@ class PermissionServiceTest {
                 ),
                 HasPermissionReturnsTrueWhenRequiredParams(
                     request = HasPermissionRequest
-                        .DownloadAppDraftListingIcons(TEST_APP_DRAFT_ID, TEST_USER_ID),
-                    setUpData = { setUpAppDraftData() },
+                        .DownloadAppDraftListingIcon(TEST_APP_DRAFT_LISTING_ID, TEST_USER_ID),
+                    setUpData = { setUpAppDraftListingData() },
                 ),
                 HasPermissionReturnsTrueWhenRequiredParams(
                     request = HasPermissionRequest
-                        .DownloadAppDraftListingIcons(TEST_APP_DRAFT_ID, TEST_REVIEWER_USER_ID),
-                    setUpData = { setUpAppDraftReviewerData() },
+                        .DownloadAppDraftListingIcon(TEST_APP_DRAFT_LISTING_ID, TEST_REVIEWER_USER_ID),
+                    setUpData = { setUpAppDraftListingReviewerData() },
                 ),
                 HasPermissionReturnsTrueWhenRequiredParams(
                     request = HasPermissionRequest
@@ -112,8 +116,8 @@ class PermissionServiceTest {
                 ),
                 HasPermissionReturnsTrueWhenRequiredParams(
                     request = HasPermissionRequest
-                        .ReplaceAppDraftListingIcon(TEST_APP_DRAFT_ID, TEST_USER_ID),
-                    setUpData = { setUpAppDraftData() },
+                        .ReplaceAppDraftListingIcon(TEST_APP_DRAFT_LISTING_ID, TEST_USER_ID),
+                    setUpData = { setUpAppDraftListingData() },
                 ),
                 HasPermissionReturnsTrueWhenRequiredParams(
                     request = HasPermissionRequest
@@ -272,6 +276,16 @@ class PermissionServiceTest {
             createAppDraft()
         }
 
+        private fun setUpAppDraftListingData() {
+            setUpAppDraftData()
+            createAppDraftListing()
+        }
+
+        private fun setUpAppDraftListingReviewerData() {
+            setUpAppDraftReviewerData()
+            createAppDraftListing()
+        }
+
         private fun setUpAppDraftPublisherData() {
             setUpAppDraftData()
             User(
@@ -428,6 +442,25 @@ class PermissionServiceTest {
                 reviewId = null,
                 publishing = false,
                 publishedAt = null,
+            )
+                .persist()
+        }
+
+        private fun createAppDraftListing() {
+            val iconImage = Image(
+                id = TEST_ICON_IMAGE_LISTING_ID,
+                bucketId = "somebucket",
+                objectId = "someobject",
+                uploadPubSubEventTime = OffsetDateTime.parse("2000-01-01T00:00:00Z"),
+            )
+                .also { it.persist() }
+            AppDraftListing(
+                id = TEST_APP_DRAFT_LISTING_ID,
+                appDraftId = TEST_APP_DRAFT_ID,
+                language = "en-US",
+                name = "Example",
+                shortDescription = "An example app",
+                iconImageId = iconImage.id,
             )
                 .persist()
         }

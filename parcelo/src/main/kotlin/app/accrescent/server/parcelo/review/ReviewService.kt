@@ -19,7 +19,7 @@ class ReviewService {
     }
 
     private fun appEditListingChangesRequireReview(appEdit: AppEdit): Boolean {
-        val appListings = appEdit.app.listings.associateBy { it.id.language }
+        val appListings = appEdit.app.listings.associateBy { it.language }
         val editListings = appEdit.listings
         val descriptionChangesRequiringReview = editListings
             .filter { listing ->

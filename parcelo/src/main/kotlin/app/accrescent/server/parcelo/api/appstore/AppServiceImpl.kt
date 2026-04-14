@@ -33,9 +33,9 @@ import app.accrescent.parcelo.impl.v1.listAppListingsPageToken
 import app.accrescent.server.parcelo.config.ParceloConfig
 import app.accrescent.server.parcelo.data.App
 import app.accrescent.server.parcelo.data.AppDefaultListingLanguage
+import app.accrescent.server.parcelo.data.AppIdAndLanguage
 import app.accrescent.server.parcelo.data.AppListing
 import app.accrescent.server.parcelo.data.AppPackage
-import app.accrescent.server.parcelo.data.ListingId
 import app.accrescent.server.parcelo.data.PublishedApk
 import app.accrescent.server.parcelo.data.PublishedImage
 import app.accrescent.server.parcelo.security.GrpcRateLimitInterceptor
@@ -84,7 +84,7 @@ class AppServiceImpl(private val config: ParceloConfig) : AppService {
                 .withDescription("listing for best matching language not found")
                 .asRuntimeException()
         val publishedIcon = PublishedImage
-            .findIconByAppIdAndListingLanguage(app.id, appListing.id.language)
+            .findIconByAppIdAndListingLanguage(app.id, appListing.language)
             ?: throw Status
                 .DATA_LOSS
                 .withDescription("published icon for listing \"$bestMatchingLanguage\" not found")
@@ -92,7 +92,7 @@ class AppServiceImpl(private val config: ParceloConfig) : AppService {
         val response = getAppListingResponse {
             listing = appListing {
                 appId = app.id
-                language = appListing.id.language
+                language = appListing.language
                 name = appListing.name
                 shortDescription = appListing.shortDescription
                 icon = image {
@@ -136,9 +136,9 @@ class AppServiceImpl(private val config: ParceloConfig) : AppService {
                 AppDefaultListingLanguage::id,
                 AppDefaultListingLanguage::defaultListingLanguage,
             )
-        val listingIds = AppListing.findIdsForApps(defaultListingLanguages.keys)
-        val bestMatchingLanguages = listingIds
-            .groupBy(ListingId::appId, ListingId::language)
+        val appIdsAndLanguages = AppListing.findAppIdsAndLanguagesForApps(defaultListingLanguages.keys)
+        val bestMatchingLanguages = appIdsAndLanguages
+            .groupBy(AppIdAndLanguage::appId, AppIdAndLanguage::language)
             .map { (appId, availableLanguages) ->
                 val bestMatchingLanguage = Locale
                     .lookupTag(
@@ -154,18 +154,18 @@ class AppServiceImpl(private val config: ParceloConfig) : AppService {
                 appId to bestMatchingLanguage
             }
         val listings = AppListing
-            .findByIdsOrdered(bestMatchingLanguages)
+            .findByAppIdsAndLanguagesOrdered(bestMatchingLanguages)
             .map {
                 val publishedIcon = PublishedImage
-                    .findIconByAppIdAndListingLanguage(it.id.appId, it.id.language)
+                    .findIconByAppIdAndListingLanguage(it.appId, it.language)
                     ?: throw Status
                         .DATA_LOSS
-                        .withDescription("published icon for listing \"${it.id.language}\" not found")
+                        .withDescription("published icon for listing \"${it.language}\" not found")
                         .asRuntimeException()
 
                 appListing {
-                    appId = it.id.appId
-                    language = it.id.language
+                    appId = it.appId
+                    language = it.language
                     name = it.name
                     shortDescription = it.shortDescription
                     icon = image {

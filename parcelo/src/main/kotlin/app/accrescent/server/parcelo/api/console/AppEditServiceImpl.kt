@@ -4,43 +4,47 @@
 
 package app.accrescent.server.parcelo.api.console
 
-import app.accrescent.console.v1alpha1.AppEditService
-import app.accrescent.console.v1alpha1.CreateAppEditListingIconUploadOperationRequest
-import app.accrescent.console.v1alpha1.CreateAppEditListingIconUploadOperationResponse
-import app.accrescent.console.v1alpha1.CreateAppEditListingRequest
-import app.accrescent.console.v1alpha1.CreateAppEditListingResponse
-import app.accrescent.console.v1alpha1.CreateAppEditRequest
-import app.accrescent.console.v1alpha1.CreateAppEditResponse
-import app.accrescent.console.v1alpha1.CreateAppEditUploadOperationRequest
-import app.accrescent.console.v1alpha1.CreateAppEditUploadOperationResponse
-import app.accrescent.console.v1alpha1.DeleteAppEditListingRequest
-import app.accrescent.console.v1alpha1.DeleteAppEditListingResponse
-import app.accrescent.console.v1alpha1.DeleteAppEditRequest
-import app.accrescent.console.v1alpha1.DeleteAppEditResponse
-import app.accrescent.console.v1alpha1.ErrorReason
-import app.accrescent.console.v1alpha1.GetAppEditDownloadInfoRequest
-import app.accrescent.console.v1alpha1.GetAppEditDownloadInfoResponse
-import app.accrescent.console.v1alpha1.GetAppEditRequest
-import app.accrescent.console.v1alpha1.GetAppEditResponse
-import app.accrescent.console.v1alpha1.ListAppEditsRequest
-import app.accrescent.console.v1alpha1.ListAppEditsResponse
-import app.accrescent.console.v1alpha1.SubmitAppEditRequest
-import app.accrescent.console.v1alpha1.SubmitAppEditResponse
-import app.accrescent.console.v1alpha1.UpdateAppEditRequest
-import app.accrescent.console.v1alpha1.UpdateAppEditResponse
-import app.accrescent.console.v1alpha1.appEdit
-import app.accrescent.console.v1alpha1.appPackage
-import app.accrescent.console.v1alpha1.createAppEditListingIconUploadOperationResponse
-import app.accrescent.console.v1alpha1.createAppEditListingResponse
-import app.accrescent.console.v1alpha1.createAppEditResponse
-import app.accrescent.console.v1alpha1.createAppEditUploadOperationResponse
-import app.accrescent.console.v1alpha1.deleteAppEditListingResponse
-import app.accrescent.console.v1alpha1.deleteAppEditResponse
-import app.accrescent.console.v1alpha1.getAppEditDownloadInfoResponse
-import app.accrescent.console.v1alpha1.getAppEditResponse
-import app.accrescent.console.v1alpha1.listAppEditsResponse
-import app.accrescent.console.v1alpha1.submitAppEditResponse
-import app.accrescent.console.v1alpha1.updateAppEditResponse
+import app.accrescent.console.v1.AppEditService
+import app.accrescent.console.v1.CreateAppEditListingRequest
+import app.accrescent.console.v1.CreateAppEditListingResponse
+import app.accrescent.console.v1.CreateAppEditRequest
+import app.accrescent.console.v1.CreateAppEditResponse
+import app.accrescent.console.v1.DeleteAppEditListingRequest
+import app.accrescent.console.v1.DeleteAppEditListingResponse
+import app.accrescent.console.v1.DeleteAppEditRequest
+import app.accrescent.console.v1.DeleteAppEditResponse
+import app.accrescent.console.v1.DownloadAppEditRequest
+import app.accrescent.console.v1.DownloadAppEditResponse
+import app.accrescent.console.v1.ErrorReason
+import app.accrescent.console.v1.GetAppEditRequest
+import app.accrescent.console.v1.GetAppEditResponse
+import app.accrescent.console.v1.ListAppEditListingsRequest
+import app.accrescent.console.v1.ListAppEditListingsResponse
+import app.accrescent.console.v1.ListAppEditsRequest
+import app.accrescent.console.v1.ListAppEditsResponse
+import app.accrescent.console.v1.SubmitAppEditRequest
+import app.accrescent.console.v1.SubmitAppEditResponse
+import app.accrescent.console.v1.UpdateAppEditListingRequest
+import app.accrescent.console.v1.UpdateAppEditListingResponse
+import app.accrescent.console.v1.UpdateAppEditRequest
+import app.accrescent.console.v1.UpdateAppEditResponse
+import app.accrescent.console.v1.UploadAppEditListingIconRequest
+import app.accrescent.console.v1.UploadAppEditListingIconResponse
+import app.accrescent.console.v1.UploadAppEditRequest
+import app.accrescent.console.v1.UploadAppEditResponse
+import app.accrescent.console.v1.appEdit
+import app.accrescent.console.v1.appPackage
+import app.accrescent.console.v1.createAppEditListingResponse
+import app.accrescent.console.v1.createAppEditResponse
+import app.accrescent.console.v1.deleteAppEditListingResponse
+import app.accrescent.console.v1.deleteAppEditResponse
+import app.accrescent.console.v1.downloadAppEditResponse
+import app.accrescent.console.v1.getAppEditResponse
+import app.accrescent.console.v1.listAppEditsResponse
+import app.accrescent.console.v1.submitAppEditResponse
+import app.accrescent.console.v1.updateAppEditResponse
+import app.accrescent.console.v1.uploadAppEditListingIconResponse
+import app.accrescent.console.v1.uploadAppEditResponse
 import app.accrescent.parcelo.impl.v1.ListAppEditsPageToken
 import app.accrescent.parcelo.impl.v1.listAppEditsPageToken
 import app.accrescent.server.parcelo.api.error.ConsoleApiError
@@ -71,6 +75,7 @@ import com.google.cloud.storage.Storage
 import com.google.longrunning.Operation
 import com.google.protobuf.InvalidProtocolBufferException
 import com.google.protobuf.timestamp
+import io.grpc.Status
 import io.quarkus.grpc.GrpcService
 import io.quarkus.grpc.RegisterInterceptor
 import io.quarkus.mailer.MailTemplate
@@ -145,9 +150,9 @@ class AppEditServiceImpl @Inject constructor(
             .also { it.persist() }
         for (listing in app.listings) {
             AppEditListing(
-                id = UUID.randomUUID(),
+                id = Identifier.generateNew(IdType.APP_EDIT_LISTING),
                 appEditId = appEdit.id,
-                language = listing.id.language,
+                language = listing.language,
                 name = listing.name,
                 shortDescription = listing.shortDescription,
                 iconImageId = listing.iconImageId,
@@ -180,25 +185,25 @@ class AppEditServiceImpl @Inject constructor(
         val response = getAppEditResponse {
             this.appEdit = appEdit {
                 id = appEdit.id
-                createdAt = timestamp {
+                createTime = timestamp {
                     seconds = appEdit.createdAt.toEpochSecond()
                     nanos = appEdit.createdAt.nano
                 }
                 defaultListingLanguage = appEdit.defaultListingLanguage
                 appPackage = appPackage {
-                    appId = appEdit.appPackage.appId
+                    androidApplicationId = appEdit.appPackage.appId
                     versionCode = appEdit.appPackage.versionCode.toLong()
                     versionName = appEdit.appPackage.versionName
                     targetSdk = appEdit.appPackage.targetSdk.toLong()
                 }
                 appEdit.submittedAt?.let { submissionTimestamp ->
-                    submittedAt = timestamp {
+                    submitTime = timestamp {
                         seconds = submissionTimestamp.toEpochSecond()
                         nanos = submissionTimestamp.nano
                     }
                 }
                 appEdit.publishedAt?.let { publicationTimestamp ->
-                    publishedAt = timestamp {
+                    publishTime = timestamp {
                         seconds = publicationTimestamp.toEpochSecond()
                         nanos = publicationTimestamp.nano
                     }
@@ -241,25 +246,25 @@ class AppEditServiceImpl @Inject constructor(
             .map { appEdit ->
                 appEdit {
                     id = appEdit.id
-                    createdAt = timestamp {
+                    createTime = timestamp {
                         seconds = appEdit.createdAt.toEpochSecond()
                         nanos = appEdit.createdAt.nano
                     }
                     defaultListingLanguage = appEdit.defaultListingLanguage
                     appPackage = appPackage {
-                        appId = appEdit.appPackage.appId
+                        androidApplicationId = appEdit.appPackage.appId
                         versionCode = appEdit.appPackage.versionCode.toLong()
                         versionName = appEdit.appPackage.versionName
                         targetSdk = appEdit.appPackage.targetSdk.toLong()
                     }
                     appEdit.submittedAt?.let { submissionTimestamp ->
-                        submittedAt = timestamp {
+                        submitTime = timestamp {
                             seconds = submissionTimestamp.toEpochSecond()
                             nanos = submissionTimestamp.nano
                         }
                     }
                     appEdit.publishedAt?.let { publicationTimestamp ->
-                        publishedAt = timestamp {
+                        publishTime = timestamp {
                             seconds = publicationTimestamp.toEpochSecond()
                             nanos = publicationTimestamp.nano
                         }
@@ -286,9 +291,7 @@ class AppEditServiceImpl @Inject constructor(
     }
 
     @Transactional
-    override fun createAppEditUploadOperation(
-        request: CreateAppEditUploadOperationRequest,
-    ): Uni<CreateAppEditUploadOperationResponse> {
+    override fun uploadAppEdit(request: UploadAppEditRequest): Uni<UploadAppEditResponse> {
         val userId = AuthnContextKey.USER_ID.get()
 
         val canReplacePackage = permissionService
@@ -333,7 +336,7 @@ class AppEditServiceImpl @Inject constructor(
         )
             .persist()
 
-        val response = createAppEditUploadOperationResponse {
+        val response = uploadAppEditResponse {
             apkSetUploadUrl = uploadUrl.toString()
             processingOperation = Operation.newBuilder().setName(backgroundOperation.id).build()
         }
@@ -342,9 +345,7 @@ class AppEditServiceImpl @Inject constructor(
     }
 
     @Transactional
-    override fun getAppEditDownloadInfo(
-        request: GetAppEditDownloadInfoRequest,
-    ): Uni<GetAppEditDownloadInfoResponse> {
+    override fun downloadAppEdit(request: DownloadAppEditRequest): Uni<DownloadAppEditResponse> {
         val userId = AuthnContextKey.USER_ID.get()
 
         val canDownload = permissionService
@@ -365,7 +366,7 @@ class AppEditServiceImpl @Inject constructor(
         val apkSetBlob = BlobInfo.newBuilder(appPackage.bucketId, appPackage.objectId).build()
         val downloadUrl = storage.signDownloadUrl(apkSetBlob)
 
-        val response = getAppEditDownloadInfoResponse {
+        val response = downloadAppEditResponse {
             apkSetUrl = downloadUrl.toString()
         }
 
@@ -607,7 +608,7 @@ class AppEditServiceImpl @Inject constructor(
         }
 
         AppEditListing(
-            id = UUID.randomUUID(),
+            id = Identifier.generateNew(IdType.APP_EDIT_LISTING),
             appEditId = request.appEditId,
             language = request.language,
             name = request.name,
@@ -619,14 +620,27 @@ class AppEditServiceImpl @Inject constructor(
         return Uni.createFrom().item { createAppEditListingResponse {} }
     }
 
+    override fun listAppEditListings(
+        request: ListAppEditListingsRequest,
+    ): Uni<ListAppEditListingsResponse> {
+        throw Status.UNIMPLEMENTED.asRuntimeException()
+    }
+
+    override fun updateAppEditListing(
+        request: UpdateAppEditListingRequest,
+    ): Uni<UpdateAppEditListingResponse> {
+        throw Status.UNIMPLEMENTED.asRuntimeException()
+    }
+
     @Transactional
-    override fun createAppEditListingIconUploadOperation(
-        request: CreateAppEditListingIconUploadOperationRequest,
-    ): Uni<CreateAppEditListingIconUploadOperationResponse> {
+    override fun uploadAppEditListingIcon(
+        request: UploadAppEditListingIconRequest,
+    ): Uni<UploadAppEditListingIconResponse> {
         val userId = AuthnContextKey.USER_ID.get()
 
-        val canReplaceIcon = permissionService
-            .hasPermission(HasPermissionRequest.ReplaceAppEditListingIcon(request.appEditId, userId))
+        val canReplaceIcon = permissionService.hasPermission(
+            HasPermissionRequest.ReplaceAppEditListingIcon(request.appEditListingId, userId)
+        )
         if (!canReplaceIcon) {
             throw ConsoleApiError(
                 ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
@@ -635,19 +649,16 @@ class AppEditServiceImpl @Inject constructor(
                 .toStatusRuntimeException()
         }
 
-        val appEdit = AppEdit
-            .findById(request.appEditId)
-            ?: throw appEditNotFoundException(request.appEditId)
-        if (appEdit.submitted) {
+        val appEditListing = AppEditListing
+            .findById(request.appEditListingId)
+            ?: throw appEditListingNotFoundException(request.appEditListingId)
+        if (appEditListing.appEdit.submitted) {
             throw ConsoleApiError(
                 ErrorReason.ERROR_REASON_RESOURCE_IMMUTABLE,
                 "submitted edits cannot be modified",
             )
                 .toStatusRuntimeException()
         }
-        val appEditListing = AppEditListing
-            .findByAppEditIdAndLanguage(request.appEditId, request.language)
-            ?: throw appEditNotFoundException(request.language)
 
         val blobInfo = BlobInfo
             .newBuilder(config.buckets().editListingIconUpload(), UUID.randomUUID().toString())
@@ -657,7 +668,7 @@ class AppEditServiceImpl @Inject constructor(
         val backgroundOperation = BackgroundOperation(
             id = Identifier.generateNew(IdType.OPERATION),
             type = BackgroundOperationType.UPLOAD_APP_EDIT_LISTING_ICON,
-            parentId = request.appEditId,
+            parentId = request.appEditListingId,
             createdAt = OffsetDateTime.now(),
             result = null,
             succeeded = false,
@@ -671,7 +682,7 @@ class AppEditServiceImpl @Inject constructor(
         )
             .persist()
 
-        val response = createAppEditListingIconUploadOperationResponse {
+        val response = uploadAppEditListingIconResponse {
             this.uploadUrl = uploadUrl.toString()
             processingOperation = Operation.newBuilder().setName(backgroundOperation.id).build()
         }
@@ -685,8 +696,9 @@ class AppEditServiceImpl @Inject constructor(
     ): Uni<DeleteAppEditListingResponse> {
         val userId = AuthnContextKey.USER_ID.get()
 
-        val canDelete = permissionService
-            .hasPermission(HasPermissionRequest.DeleteAppEditListing(request.appEditId, userId))
+        val canDelete = permissionService.hasPermission(
+            HasPermissionRequest.DeleteAppEditListing(request.appEditListingId, userId),
+        )
         if (!canDelete) {
             throw ConsoleApiError(
                 ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
@@ -695,25 +707,22 @@ class AppEditServiceImpl @Inject constructor(
                 .toStatusRuntimeException()
         }
 
-        val appEdit = AppEdit
-            .findById(request.appEditId)
-            ?: throw appEditNotFoundException(request.appEditId)
+        val appEditListing = AppEditListing
+            .findById(request.appEditListingId)
+            ?: throw appEditListingNotFoundException(request.appEditListingId)
         when {
-            appEdit.submitted -> throw ConsoleApiError(
+            appEditListing.appEdit.submitted -> throw ConsoleApiError(
                 ErrorReason.ERROR_REASON_RESOURCE_IMMUTABLE,
                 "submitted edits cannot be modified",
             )
                 .toStatusRuntimeException()
 
-            request.language == appEdit.defaultListingLanguage -> throw ConsoleApiError(
+            appEditListing.language == appEditListing.appEdit.defaultListingLanguage -> throw ConsoleApiError(
                 ErrorReason.ERROR_REASON_CONSTRAINT_VIOLATION,
                 "cannot delete listing for the default listing language",
             )
                 .toStatusRuntimeException()
         }
-        val appEditListing = AppEditListing
-            .findByAppEditIdAndLanguage(request.appEditId, request.language)
-            ?: throw appEditListingNotFoundException(request.language)
 
         // Delete the associated icon if one exists
         appEditListing.icon?.let { icon ->
@@ -751,9 +760,9 @@ class AppEditServiceImpl @Inject constructor(
         )
             .toStatusRuntimeException()
 
-        private fun appEditListingNotFoundException(language: String) = ConsoleApiError(
+        private fun appEditListingNotFoundException(id: String) = ConsoleApiError(
             ErrorReason.ERROR_REASON_RESOURCE_NOT_FOUND,
-            "listing with language \"$language\" not found",
+            "listing with ID \"$id\" not found",
         )
             .toStatusRuntimeException()
     }

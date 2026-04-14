@@ -4,7 +4,7 @@
 
 package app.accrescent.server.parcelo.async
 
-import app.accrescent.console.v1alpha1.ErrorReason
+import app.accrescent.console.v1.ErrorReason
 import app.accrescent.server.parcelo.api.error.ConsoleApiError
 import app.accrescent.server.parcelo.parsers.ApkSetParseError
 

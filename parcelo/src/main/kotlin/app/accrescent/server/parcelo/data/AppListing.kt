@@ -4,24 +4,34 @@
 
 package app.accrescent.server.parcelo.data
 
-import io.quarkus.hibernate.orm.panache.kotlin.PanacheCompanion
+import io.quarkus.hibernate.orm.panache.kotlin.PanacheCompanionBase
 import io.quarkus.hibernate.orm.panache.kotlin.PanacheEntityBase
 import io.quarkus.runtime.annotations.RegisterForReflection
 import jakarta.persistence.Column
-import jakarta.persistence.Embeddable
-import jakarta.persistence.EmbeddedId
 import jakarta.persistence.Entity
 import jakarta.persistence.FetchType
+import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
+import jakarta.persistence.UniqueConstraint
 import java.util.UUID
 
 @Entity
-@Table(name = "app_listings")
+@Table(
+    name = "app_listings",
+    uniqueConstraints = [UniqueConstraint(columnNames = ["app_id", "language"])],
+)
 class AppListing(
-    @EmbeddedId
-    var id: ListingId,
+    @Id
+    @Column(columnDefinition = "text")
+    var id: String,
+
+    @Column(columnDefinition = "text", name = "app_id", nullable = false)
+    var appId: String,
+
+    @Column(columnDefinition = "text", nullable = false)
+    var language: String,
 
     @Column(columnDefinition = "text", nullable = false)
     var name: String,
@@ -40,35 +50,35 @@ class AppListing(
     @JoinColumn(name = "icon_image_id", insertable = false, updatable = false)
     lateinit var icon: Image
 
-    companion object : PanacheCompanion<AppListing> {
+    companion object : PanacheCompanionBase<AppListing, String> {
         fun findByAppIdAndLanguage(appId: String, language: String): AppListing? {
-            return find("id", ListingId(appId, language)).firstResult()
+            return find("WHERE appId = ?1 AND language = ?2", appId, language).firstResult()
         }
 
-        fun findByIdsOrdered(ids: List<Pair<String, String>>): List<AppListing> {
+        fun findByAppIdsAndLanguagesOrdered(ids: List<Pair<String, String>>): List<AppListing> {
             return find(
                 "WHERE id IN ?1 ORDER BY id ASC",
-                ids.map { ListingId(it.first, it.second) },
+                ids.map { arrayOf(it.first, it.second) },
             )
                 .list()
         }
 
-        fun findIdsForApps(appIds: Set<String>): List<ListingId> {
+        fun findAppIdsAndLanguagesForApps(appIds: Set<String>): List<AppIdAndLanguage> {
             return find(
-                "SELECT app_listings.id.appId, app_listings.id.language " +
+                "SELECT app_listings.appId, app_listings.language " +
                         "FROM AppListing app_listings " +
-                        "WHERE app_listings.id.appId IN ?1",
+                        "WHERE app_listings.appId IN ?1",
                 appIds,
             )
-                .project(ListingId::class.java)
+                .project(AppIdAndLanguage::class.java)
                 .list()
         }
 
         fun getListingLanguagesForApp(appId: String): List<ListingLanguage> {
             return find(
-                "SELECT app_listings.id.language " +
+                "SELECT app_listings.language " +
                         "FROM AppListing app_listings " +
-                        "WHERE app_listings.id.appId = ?1",
+                        "WHERE app_listings.appId = ?1",
                 appId,
             )
                 .project(ListingLanguage::class.java)
@@ -77,14 +87,8 @@ class AppListing(
     }
 }
 
-@Embeddable
-data class ListingId(
-    @Column(columnDefinition = "text", name = "app_id", nullable = false)
-    var appId: String,
-
-    @Column(columnDefinition = "text", nullable = false)
-    var language: String,
-)
+@RegisterForReflection
+data class AppIdAndLanguage(val appId: String, val language: String)
 
 @RegisterForReflection
 data class ListingLanguage(val language: String)

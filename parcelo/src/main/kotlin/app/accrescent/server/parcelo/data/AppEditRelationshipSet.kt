@@ -30,5 +30,23 @@ class AppEditRelationshipSet(
         fun findByAppEditIdAndUserId(appEditId: String, userId: String): AppEditRelationshipSet? {
             return find("WHERE appEditId = ?1 AND userId = ?2", appEditId, userId).firstResult()
         }
+
+        fun findByAppEditListingIdAndUserId(
+            appEditListingId: String,
+            userId: String,
+        ): AppEditRelationshipSet? {
+            return find(
+                "FROM AppEditRelationshipSet app_edit_relationship_sets " +
+                        "JOIN AppEdit app_edits " +
+                        "ON app_edits.id = app_edit_relationship_sets.appEditId " +
+                        "JOIN AppEditListing app_edit_listings " +
+                        "ON app_edit_listings.appEditId = app_edits.id " +
+                        "WHERE app_edit_listings.id = ?1 " +
+                        "AND app_edit_relationship_sets.userId = ?2",
+                appEditListingId,
+                userId,
+            )
+                .firstResult()
+        }
     }
 }

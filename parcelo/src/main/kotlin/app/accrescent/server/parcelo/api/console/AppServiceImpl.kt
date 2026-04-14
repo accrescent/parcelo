@@ -4,18 +4,20 @@
 
 package app.accrescent.server.parcelo.api.console
 
-import app.accrescent.console.v1alpha1.AppService
-import app.accrescent.console.v1alpha1.ErrorReason
-import app.accrescent.console.v1alpha1.GetAppRequest
-import app.accrescent.console.v1alpha1.GetAppResponse
-import app.accrescent.console.v1alpha1.ListAppsRequest
-import app.accrescent.console.v1alpha1.ListAppsResponse
-import app.accrescent.console.v1alpha1.UpdateAppRequest
-import app.accrescent.console.v1alpha1.UpdateAppResponse
-import app.accrescent.console.v1alpha1.app
-import app.accrescent.console.v1alpha1.getAppResponse
-import app.accrescent.console.v1alpha1.listAppsResponse
-import app.accrescent.console.v1alpha1.updateAppResponse
+import app.accrescent.console.v1.AppService
+import app.accrescent.console.v1.ErrorReason
+import app.accrescent.console.v1.GetAppRequest
+import app.accrescent.console.v1.GetAppResponse
+import app.accrescent.console.v1.ListAppListingsRequest
+import app.accrescent.console.v1.ListAppListingsResponse
+import app.accrescent.console.v1.ListAppsRequest
+import app.accrescent.console.v1.ListAppsResponse
+import app.accrescent.console.v1.UpdateAppRequest
+import app.accrescent.console.v1.UpdateAppResponse
+import app.accrescent.console.v1.app
+import app.accrescent.console.v1.getAppResponse
+import app.accrescent.console.v1.listAppsResponse
+import app.accrescent.console.v1.updateAppResponse
 import app.accrescent.parcelo.impl.v1.ListAppsPageToken
 import app.accrescent.parcelo.impl.v1.listAppsPageToken
 import app.accrescent.server.parcelo.api.error.ConsoleApiError
@@ -27,6 +29,7 @@ import app.accrescent.server.parcelo.security.GrpcRequestValidationInterceptor
 import app.accrescent.server.parcelo.security.HasPermissionRequest
 import app.accrescent.server.parcelo.security.PermissionService
 import com.google.protobuf.InvalidProtocolBufferException
+import io.grpc.Status
 import io.quarkus.grpc.GrpcService
 import io.quarkus.grpc.RegisterInterceptor
 import io.smallrye.mutiny.Uni
@@ -124,6 +127,11 @@ class AppServiceImpl @Inject constructor(
         }
 
         return Uni.createFrom().item { response }
+    }
+
+    @Transactional
+    override fun listAppListings(request: ListAppListingsRequest): Uni<ListAppListingsResponse> {
+        throw Status.UNIMPLEMENTED.asRuntimeException()
     }
 
     @Transactional

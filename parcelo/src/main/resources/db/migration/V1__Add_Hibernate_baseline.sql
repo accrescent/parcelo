@@ -24,7 +24,7 @@ CREATE SEQUENCE rejection_reasons_seq START WITH 1 INCREMENT BY 50;
 
 CREATE TABLE app_draft_listing_icon_upload_jobs (
     id bigint NOT NULL,
-    app_draft_listing_id uuid NOT NULL,
+    app_draft_listing_id text NOT NULL,
     background_operation_id text NOT NULL,
     bucket_id text NOT NULL,
     object_id text NOT NULL,
@@ -34,8 +34,8 @@ CREATE TABLE app_draft_listing_icon_upload_jobs (
 
 CREATE TABLE app_draft_listings (
     icon_image_id uuid,
-    id uuid NOT NULL,
     app_draft_id text NOT NULL,
+    id text NOT NULL,
     language text NOT NULL,
     name text NOT NULL,
     short_description text NOT NULL,
@@ -84,7 +84,7 @@ CREATE TABLE app_drafts (
 
 CREATE TABLE app_edit_listing_icon_upload_jobs (
     id bigint NOT NULL,
-    app_edit_listing_id uuid NOT NULL,
+    app_edit_listing_id text NOT NULL,
     background_operation_id text NOT NULL,
     bucket_id text NOT NULL,
     object_id text NOT NULL,
@@ -94,8 +94,8 @@ CREATE TABLE app_edit_listing_icon_upload_jobs (
 
 CREATE TABLE app_edit_listings (
     icon_image_id uuid,
-    id uuid NOT NULL,
     app_edit_id text NOT NULL,
+    id text NOT NULL,
     language text NOT NULL,
     name text NOT NULL,
     short_description text NOT NULL,
@@ -143,10 +143,12 @@ CREATE TABLE app_edits (
 CREATE TABLE app_listings (
     icon_image_id uuid NOT NULL,
     app_id text NOT NULL,
+    id text NOT NULL,
     language text NOT NULL,
     name text NOT NULL,
     short_description text NOT NULL,
-    PRIMARY KEY (app_id, language)
+    PRIMARY KEY (id),
+    UNIQUE (app_id, language)
 );
 
 CREATE TABLE app_package_permissions (

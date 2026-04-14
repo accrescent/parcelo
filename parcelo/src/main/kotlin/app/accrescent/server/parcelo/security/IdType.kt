@@ -6,7 +6,10 @@ package app.accrescent.server.parcelo.security
 
 enum class IdType {
     APP_DRAFT,
+    APP_DRAFT_LISTING,
     APP_EDIT,
+    APP_EDIT_LISTING,
+    APP_LISTING,
     OPERATION,
     ORGANIZATION,
     USER,

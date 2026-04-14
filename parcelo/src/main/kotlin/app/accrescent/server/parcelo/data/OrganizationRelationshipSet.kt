@@ -67,6 +67,24 @@ class OrganizationRelationshipSet(
                 .firstResult()
         }
 
+        fun findByAppDraftListingIdAndUserId(
+            appDraftListingId: String,
+            userId: String,
+        ): OrganizationRelationshipSet? {
+            return find(
+                "FROM OrganizationRelationshipSet organization_relationship_sets " +
+                        "JOIN AppDraft app_drafts " +
+                        "ON app_drafts.organizationId = organization_relationship_sets.organizationId " +
+                        "JOIN AppDraftListing app_draft_listings " +
+                        "ON app_draft_listings.appDraftId = app_drafts.id " +
+                        "WHERE app_draft_listings.id = ?1 " +
+                        "AND organization_relationship_sets.userId = ?2",
+                appDraftListingId,
+                userId,
+            )
+                .firstResult()
+        }
+
         fun findByAppEditIdAndUserId(appEditId: String, userId: String): OrganizationRelationshipSet? {
             return find(
                 "FROM OrganizationRelationshipSet organization_relationship_sets " +
@@ -77,6 +95,26 @@ class OrganizationRelationshipSet(
                         "WHERE app_edits.id = ?1 " +
                         "AND organization_relationship_sets.userId = ?2",
                 appEditId,
+                userId,
+            )
+                .firstResult()
+        }
+
+        fun findByAppEditListingIdAndUserId(
+            appEditListingId: String,
+            userId: String,
+        ): OrganizationRelationshipSet? {
+            return find(
+                "FROM OrganizationRelationshipSet organization_relationship_sets " +
+                        "JOIN App apps " +
+                        "ON apps.organizationId = organization_relationship_sets.organizationId " +
+                        "JOIN AppEdit app_edits " +
+                        "ON app_edits.appId = apps.id " +
+                        "JOIN AppEditListing app_edit_listings " +
+                        "ON app_edit_listings.appEditId = app_edits.id " +
+                        "WHERE app_edit_listings.id = ?1 " +
+                        "AND organization_relationship_sets.userId = ?2",
+                appEditListingId,
                 userId,
             )
                 .firstResult()
