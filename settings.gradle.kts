@@ -20,15 +20,6 @@ include(
     "quarkus-minio-devservices",
     "quarkus-protovalidate",
     "quarkus-protovalidate-deployment",
-    "testdata:android-app-valid",
-    "testdata:android-app-valid2",
-    "testdata:android-app-valid3",
-    "testdata:android-app-valid4",
-    "testdata:android-app-valid5",
-    "testdata:android-app-valid6",
-    "testdata:android-app-valid7",
-    "testdata:android-app-valid7-update",
-    "testdata:android-app-valid8",
 )
 
 dependencyResolutionManagement {
