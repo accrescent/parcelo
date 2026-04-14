@@ -15,7 +15,6 @@ import jakarta.persistence.Table
 import jakarta.persistence.UniqueConstraint
 import org.hibernate.annotations.OnDelete
 import org.hibernate.annotations.OnDeleteAction
-import java.util.UUID
 
 @Entity
 @Table(
@@ -23,8 +22,8 @@ import java.util.UUID
     uniqueConstraints = [UniqueConstraint(columnNames = ["bucket_id", "object_id"])],
 )
 class AppDraftListingIconUploadJob(
-    @Column(name = "app_draft_listing_id", nullable = false)
-    var appDraftListingId: UUID,
+    @Column(columnDefinition = "text", name = "app_draft_listing_id", nullable = false)
+    var appDraftListingId: String,
 
     @Column(columnDefinition = "text", name = "bucket_id", nullable = false)
     var bucketId: String,

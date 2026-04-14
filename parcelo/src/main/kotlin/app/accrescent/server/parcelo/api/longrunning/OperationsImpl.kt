@@ -4,12 +4,12 @@
 
 package app.accrescent.server.parcelo.api.longrunning
 
-import app.accrescent.console.v1alpha1.PublishAppDraftResult
-import app.accrescent.console.v1alpha1.PublishAppEditResult
-import app.accrescent.console.v1alpha1.UploadAppDraftListingIconResult
-import app.accrescent.console.v1alpha1.UploadAppDraftResult
-import app.accrescent.console.v1alpha1.UploadAppEditListingIconResult
-import app.accrescent.console.v1alpha1.UploadAppEditResult
+import app.accrescent.console.v1.PublishAppDraftResult
+import app.accrescent.console.v1.PublishAppEditResult
+import app.accrescent.console.v1.UploadAppDraftListingIconResult
+import app.accrescent.console.v1.UploadAppDraftResult
+import app.accrescent.console.v1.UploadAppEditListingIconResult
+import app.accrescent.console.v1.UploadAppEditResult
 import app.accrescent.server.parcelo.data.BackgroundOperation
 import app.accrescent.server.parcelo.data.BackgroundOperationType
 import app.accrescent.server.parcelo.security.AuthnContextKey

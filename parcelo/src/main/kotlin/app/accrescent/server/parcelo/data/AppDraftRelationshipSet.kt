@@ -48,5 +48,23 @@ class AppDraftRelationshipSet(
         fun findByAppDraftIdAndUserId(appDraftId: String, userId: String): AppDraftRelationshipSet? {
             return find("WHERE appDraftId = ?1 AND userId = ?2", appDraftId, userId).firstResult()
         }
+
+        fun findByAppDraftListingIdAndUserId(
+            appDraftListingId: String,
+            userId: String,
+        ): AppDraftRelationshipSet? {
+            return find(
+                "FROM AppDraftRelationshipSet app_draft_relationship_sets " +
+                        "JOIN AppDraft app_drafts " +
+                        "ON app_drafts.id = app_draft_relationship_sets.appDraftId " +
+                        "JOIN AppDraftListing app_draft_listings " +
+                        "ON app_draft_listings.appDraftId = app_drafts.id " +
+                        "WHERE app_draft_listings.id = ?1 " +
+                        "AND app_draft_relationship_sets.userId = ?2",
+                appDraftListingId,
+                userId,
+            )
+                .firstResult()
+        }
     }
 }

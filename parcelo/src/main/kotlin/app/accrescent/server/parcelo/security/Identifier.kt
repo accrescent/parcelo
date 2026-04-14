@@ -17,7 +17,10 @@ object Identifier {
         val encodedBytes = Base62.encode(randomBytes)
         val prefix = when (type) {
             IdType.APP_DRAFT -> "ad"
+            IdType.APP_DRAFT_LISTING -> "adl"
             IdType.APP_EDIT -> "ae"
+            IdType.APP_EDIT_LISTING -> "ael"
+            IdType.APP_LISTING -> "al"
             IdType.OPERATION -> "op"
             IdType.ORGANIZATION -> "org"
             IdType.USER -> "user"

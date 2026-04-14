@@ -4,15 +4,15 @@
 
 package app.accrescent.server.parcelo.api.console
 
-import app.accrescent.console.v1alpha1.ErrorReason
-import app.accrescent.console.v1alpha1.GetOrganizationRequest
-import app.accrescent.console.v1alpha1.GetOrganizationResponse
-import app.accrescent.console.v1alpha1.ListOrganizationsRequest
-import app.accrescent.console.v1alpha1.ListOrganizationsResponse
-import app.accrescent.console.v1alpha1.OrganizationService
-import app.accrescent.console.v1alpha1.getOrganizationResponse
-import app.accrescent.console.v1alpha1.listOrganizationsResponse
-import app.accrescent.console.v1alpha1.organization
+import app.accrescent.console.v1.ErrorReason
+import app.accrescent.console.v1.GetOrganizationRequest
+import app.accrescent.console.v1.GetOrganizationResponse
+import app.accrescent.console.v1.ListOrganizationsRequest
+import app.accrescent.console.v1.ListOrganizationsResponse
+import app.accrescent.console.v1.OrganizationService
+import app.accrescent.console.v1.getOrganizationResponse
+import app.accrescent.console.v1.listOrganizationsResponse
+import app.accrescent.console.v1.organization
 import app.accrescent.parcelo.impl.v1.ListOrganizationsPageToken
 import app.accrescent.parcelo.impl.v1.listOrganizationsPageToken
 import app.accrescent.server.parcelo.api.error.ConsoleApiError

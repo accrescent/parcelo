@@ -11,7 +11,6 @@ import app.accrescent.server.parcelo.data.AppListing
 import app.accrescent.server.parcelo.data.AppPackage
 import app.accrescent.server.parcelo.data.AppPackagePermission
 import app.accrescent.server.parcelo.data.Image
-import app.accrescent.server.parcelo.data.ListingId
 import app.accrescent.server.parcelo.data.Organization
 import io.quarkus.test.TestTransaction
 import io.quarkus.test.junit.QuarkusTest
@@ -25,6 +24,7 @@ import java.util.UUID
 
 private const val APP_EDIT_ID = "ae_G27TpHwSD6ox7sOIcLUab"
 private const val APP_ID = "com.example.app"
+private const val APP_LISTING_ID = "al_adGW8SkSfP1WFDfmQ8y5xV"
 private const val ORIGINAL_APP_LISTING_NAME = "Example App"
 private const val ORIGINAL_APP_LISTING_SHORT_DESCRIPTION = "An example application"
 private val DUMMY_TIMESTAMP = OffsetDateTime.parse("2000-01-01T00:00:00Z")
@@ -32,8 +32,8 @@ private val ORIGINAL_APP_PACKAGE_ID = UUID.fromString("4b8d5f54-6346-4ef9-bc3a-d
 private val EDIT_APP_PACKAGE_ID = UUID.fromString("7c1a2b3d-4e5f-6789-0abc-def012345678")
 private val ORIGINAL_LISTING_ICON_ID = UUID.fromString("ac384a6b-235a-47e5-99d1-7d6b5b300373")
 private val EDIT_LISTING_ICON_ID = UUID.fromString("9803cbdd-7e59-46b2-be08-519df67b38cb")
-private val APP_EDIT_LISTING_EN_US_ID = UUID.fromString("9d941c50-444e-4aa0-9acc-cf7786435a7c")
-private val APP_EDIT_LISTING_DE_DE_ID = UUID.fromString("b5e2d1a3-f7c4-4901-8def-ab2345678901")
+private const val APP_EDIT_LISTING_EN_US_ID = "ael_WElnutSzGWHqKrImaxDT0t"
+private const val APP_EDIT_LISTING_DE_DE_ID = "ael_S9826jy2vRPXUfE1EYXi76"
 
 @QuarkusTest
 class ReviewServiceTest {
@@ -236,7 +236,9 @@ class ReviewServiceTest {
             )
                 .also { it.persist() }
             AppListing(
-                id = ListingId(appId = APP_ID, language = "en-US"),
+                id = APP_LISTING_ID,
+                appId = APP_ID,
+                language = "en-US",
                 name = ORIGINAL_APP_LISTING_NAME,
                 shortDescription = ORIGINAL_APP_LISTING_SHORT_DESCRIPTION,
                 iconImageId = icon.id,

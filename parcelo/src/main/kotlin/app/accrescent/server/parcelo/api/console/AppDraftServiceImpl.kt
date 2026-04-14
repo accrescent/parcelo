@@ -4,49 +4,53 @@
 
 package app.accrescent.server.parcelo.api.console
 
-import app.accrescent.console.v1alpha1.AppDraftService
-import app.accrescent.console.v1alpha1.CreateAppDraftListingIconUploadOperationRequest
-import app.accrescent.console.v1alpha1.CreateAppDraftListingIconUploadOperationResponse
-import app.accrescent.console.v1alpha1.CreateAppDraftListingRequest
-import app.accrescent.console.v1alpha1.CreateAppDraftListingResponse
-import app.accrescent.console.v1alpha1.CreateAppDraftRequest
-import app.accrescent.console.v1alpha1.CreateAppDraftResponse
-import app.accrescent.console.v1alpha1.CreateAppDraftUploadOperationRequest
-import app.accrescent.console.v1alpha1.CreateAppDraftUploadOperationResponse
-import app.accrescent.console.v1alpha1.DeleteAppDraftListingRequest
-import app.accrescent.console.v1alpha1.DeleteAppDraftListingResponse
-import app.accrescent.console.v1alpha1.DeleteAppDraftRequest
-import app.accrescent.console.v1alpha1.DeleteAppDraftResponse
-import app.accrescent.console.v1alpha1.ErrorReason
-import app.accrescent.console.v1alpha1.GetAppDraftDownloadInfoRequest
-import app.accrescent.console.v1alpha1.GetAppDraftDownloadInfoResponse
-import app.accrescent.console.v1alpha1.GetAppDraftListingIconDownloadInfoRequest
-import app.accrescent.console.v1alpha1.GetAppDraftListingIconDownloadInfoResponse
-import app.accrescent.console.v1alpha1.GetAppDraftRequest
-import app.accrescent.console.v1alpha1.GetAppDraftResponse
-import app.accrescent.console.v1alpha1.ListAppDraftsRequest
-import app.accrescent.console.v1alpha1.ListAppDraftsResponse
-import app.accrescent.console.v1alpha1.PublishAppDraftRequest
-import app.accrescent.console.v1alpha1.PublishAppDraftResponse
-import app.accrescent.console.v1alpha1.SubmitAppDraftRequest
-import app.accrescent.console.v1alpha1.SubmitAppDraftResponse
-import app.accrescent.console.v1alpha1.UpdateAppDraftRequest
-import app.accrescent.console.v1alpha1.UpdateAppDraftResponse
-import app.accrescent.console.v1alpha1.appDraft
-import app.accrescent.console.v1alpha1.appPackage
-import app.accrescent.console.v1alpha1.createAppDraftListingIconUploadOperationResponse
-import app.accrescent.console.v1alpha1.createAppDraftListingResponse
-import app.accrescent.console.v1alpha1.createAppDraftResponse
-import app.accrescent.console.v1alpha1.createAppDraftUploadOperationResponse
-import app.accrescent.console.v1alpha1.deleteAppDraftListingResponse
-import app.accrescent.console.v1alpha1.deleteAppDraftResponse
-import app.accrescent.console.v1alpha1.getAppDraftDownloadInfoResponse
-import app.accrescent.console.v1alpha1.getAppDraftListingIconDownloadInfoResponse
-import app.accrescent.console.v1alpha1.getAppDraftResponse
-import app.accrescent.console.v1alpha1.listAppDraftsResponse
-import app.accrescent.console.v1alpha1.publishAppDraftResponse
-import app.accrescent.console.v1alpha1.submitAppDraftResponse
-import app.accrescent.console.v1alpha1.updateAppDraftResponse
+import app.accrescent.console.v1.AppDraftService
+import app.accrescent.console.v1.CreateAppDraftListingRequest
+import app.accrescent.console.v1.CreateAppDraftListingResponse
+import app.accrescent.console.v1.CreateAppDraftRequest
+import app.accrescent.console.v1.CreateAppDraftResponse
+import app.accrescent.console.v1.DeleteAppDraftListingRequest
+import app.accrescent.console.v1.DeleteAppDraftListingResponse
+import app.accrescent.console.v1.DeleteAppDraftRequest
+import app.accrescent.console.v1.DeleteAppDraftResponse
+import app.accrescent.console.v1.DownloadAppDraftListingIconRequest
+import app.accrescent.console.v1.DownloadAppDraftListingIconResponse
+import app.accrescent.console.v1.DownloadAppDraftRequest
+import app.accrescent.console.v1.DownloadAppDraftResponse
+import app.accrescent.console.v1.ErrorReason
+import app.accrescent.console.v1.GetAppDraftRequest
+import app.accrescent.console.v1.GetAppDraftResponse
+import app.accrescent.console.v1.ListAppDraftListingsRequest
+import app.accrescent.console.v1.ListAppDraftListingsResponse
+import app.accrescent.console.v1.ListAppDraftsRequest
+import app.accrescent.console.v1.ListAppDraftsResponse
+import app.accrescent.console.v1.PublishAppDraftRequest
+import app.accrescent.console.v1.PublishAppDraftResponse
+import app.accrescent.console.v1.SubmitAppDraftRequest
+import app.accrescent.console.v1.SubmitAppDraftResponse
+import app.accrescent.console.v1.UpdateAppDraftListingRequest
+import app.accrescent.console.v1.UpdateAppDraftListingResponse
+import app.accrescent.console.v1.UpdateAppDraftRequest
+import app.accrescent.console.v1.UpdateAppDraftResponse
+import app.accrescent.console.v1.UploadAppDraftListingIconRequest
+import app.accrescent.console.v1.UploadAppDraftListingIconResponse
+import app.accrescent.console.v1.UploadAppDraftRequest
+import app.accrescent.console.v1.UploadAppDraftResponse
+import app.accrescent.console.v1.appDraft
+import app.accrescent.console.v1.appPackage
+import app.accrescent.console.v1.createAppDraftListingResponse
+import app.accrescent.console.v1.createAppDraftResponse
+import app.accrescent.console.v1.deleteAppDraftListingResponse
+import app.accrescent.console.v1.deleteAppDraftResponse
+import app.accrescent.console.v1.downloadAppDraftListingIconResponse
+import app.accrescent.console.v1.downloadAppDraftResponse
+import app.accrescent.console.v1.getAppDraftResponse
+import app.accrescent.console.v1.listAppDraftsResponse
+import app.accrescent.console.v1.publishAppDraftResponse
+import app.accrescent.console.v1.submitAppDraftResponse
+import app.accrescent.console.v1.updateAppDraftResponse
+import app.accrescent.console.v1.uploadAppDraftListingIconResponse
+import app.accrescent.console.v1.uploadAppDraftResponse
 import app.accrescent.parcelo.impl.v1.ListAppDraftsPageToken
 import app.accrescent.parcelo.impl.v1.listAppDraftsPageToken
 import app.accrescent.server.parcelo.api.error.ConsoleApiError
@@ -77,6 +81,7 @@ import com.google.cloud.storage.Storage
 import com.google.longrunning.Operation
 import com.google.protobuf.InvalidProtocolBufferException
 import com.google.protobuf.timestamp
+import io.grpc.Status
 import io.quarkus.grpc.GrpcService
 import io.quarkus.grpc.RegisterInterceptor
 import io.quarkus.mailer.MailTemplate
@@ -178,27 +183,27 @@ class AppDraftServiceImpl @Inject constructor(
         val response = getAppDraftResponse {
             draft = appDraft {
                 id = appDraft.id
-                createdAt = timestamp {
+                createTime = timestamp {
                     seconds = appDraft.createdAt.toEpochSecond()
                     nanos = appDraft.createdAt.nano
                 }
                 appDraft.defaultListingLanguage?.let { defaultListingLanguage = it }
                 appDraft.appPackage?.let { pkg ->
                     appPackage = appPackage {
-                        appId = pkg.appId
+                        androidApplicationId = pkg.appId
                         versionCode = pkg.versionCode.toLong()
                         versionName = pkg.versionName
                         targetSdk = pkg.targetSdk.toLong()
                     }
                 }
                 appDraft.submittedAt?.let { submissionTimestamp ->
-                    submittedAt = timestamp {
+                    submitTime = timestamp {
                         seconds = submissionTimestamp.toEpochSecond()
                         nanos = submissionTimestamp.nano
                     }
                 }
                 appDraft.publishedAt?.let { publicationTimestamp ->
-                    publishedAt = timestamp {
+                    publishTime = timestamp {
                         seconds = publicationTimestamp.toEpochSecond()
                         nanos = publicationTimestamp.nano
                     }
@@ -246,27 +251,27 @@ class AppDraftServiceImpl @Inject constructor(
             .map { appDraft ->
                 appDraft {
                     id = appDraft.id
-                    createdAt = timestamp {
+                    createTime = timestamp {
                         seconds = appDraft.createdAt.toEpochSecond()
                         nanos = appDraft.createdAt.nano
                     }
                     appDraft.defaultListingLanguage?.let { defaultListingLanguage = it }
                     appDraft.appPackage?.let { pkg ->
                         appPackage = appPackage {
-                            appId = pkg.appId
+                            androidApplicationId = pkg.appId
                             versionCode = pkg.versionCode.toLong()
                             versionName = pkg.versionName
                             targetSdk = pkg.targetSdk.toLong()
                         }
                     }
                     appDraft.submittedAt?.let { submissionTimestamp ->
-                        submittedAt = timestamp {
+                        submitTime = timestamp {
                             seconds = submissionTimestamp.toEpochSecond()
                             nanos = submissionTimestamp.nano
                         }
                     }
                     appDraft.publishedAt?.let { publicationTimestamp ->
-                        publishedAt = timestamp {
+                        publishTime = timestamp {
                             seconds = publicationTimestamp.toEpochSecond()
                             nanos = publicationTimestamp.nano
                         }
@@ -293,9 +298,7 @@ class AppDraftServiceImpl @Inject constructor(
     }
 
     @Transactional
-    override fun createAppDraftUploadOperation(
-        request: CreateAppDraftUploadOperationRequest,
-    ): Uni<CreateAppDraftUploadOperationResponse> {
+    override fun uploadAppDraft(request: UploadAppDraftRequest): Uni<UploadAppDraftResponse> {
         val userId = AuthnContextKey.USER_ID.get()
 
         val canReplacePackage = permissionService
@@ -340,7 +343,7 @@ class AppDraftServiceImpl @Inject constructor(
         )
             .persist()
 
-        val response = createAppDraftUploadOperationResponse {
+        val response = uploadAppDraftResponse {
             apkSetUploadUrl = uploadUrl.toString()
             processingOperation = Operation.newBuilder().setName(backgroundOperation.id).build()
         }
@@ -349,9 +352,7 @@ class AppDraftServiceImpl @Inject constructor(
     }
 
     @Transactional
-    override fun getAppDraftDownloadInfo(
-        request: GetAppDraftDownloadInfoRequest,
-    ): Uni<GetAppDraftDownloadInfoResponse> {
+    override fun downloadAppDraft(request: DownloadAppDraftRequest): Uni<DownloadAppDraftResponse> {
         val userId = AuthnContextKey.USER_ID.get()
 
         val canDownload = permissionService
@@ -378,7 +379,7 @@ class AppDraftServiceImpl @Inject constructor(
         val apkSetBlob = BlobInfo.newBuilder(appPackage.bucketId, appPackage.objectId).build()
         val downloadUrl = storage.signDownloadUrl(apkSetBlob)
 
-        val response = getAppDraftDownloadInfoResponse {
+        val response = downloadAppDraftResponse {
             apkSetUrl = downloadUrl.toString()
         }
 
@@ -596,7 +597,7 @@ class AppDraftServiceImpl @Inject constructor(
         }
 
         AppDraftListing(
-            id = UUID.randomUUID(),
+            id = Identifier.generateNew(IdType.APP_DRAFT_LISTING),
             appDraftId = request.appDraftId,
             language = request.language,
             name = request.name,
@@ -608,14 +609,27 @@ class AppDraftServiceImpl @Inject constructor(
         return Uni.createFrom().item { createAppDraftListingResponse {} }
     }
 
+    override fun listAppDraftListings(
+        request: ListAppDraftListingsRequest,
+    ): Uni<ListAppDraftListingsResponse> {
+        throw Status.UNIMPLEMENTED.asRuntimeException()
+    }
+
+    override fun updateAppDraftListing(
+        request: UpdateAppDraftListingRequest,
+    ): Uni<UpdateAppDraftListingResponse> {
+        throw Status.UNIMPLEMENTED.asRuntimeException()
+    }
+
     @Transactional
-    override fun createAppDraftListingIconUploadOperation(
-        request: CreateAppDraftListingIconUploadOperationRequest,
-    ): Uni<CreateAppDraftListingIconUploadOperationResponse> {
+    override fun uploadAppDraftListingIcon(
+        request: UploadAppDraftListingIconRequest,
+    ): Uni<UploadAppDraftListingIconResponse> {
         val userId = AuthnContextKey.USER_ID.get()
 
-        val canReplaceIcon = permissionService
-            .hasPermission(HasPermissionRequest.ReplaceAppDraftListingIcon(request.appDraftId, userId))
+        val canReplaceIcon = permissionService.hasPermission(
+            HasPermissionRequest.ReplaceAppDraftListingIcon(request.appDraftListingId, userId)
+        )
         if (!canReplaceIcon) {
             throw ConsoleApiError(
                 ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
@@ -624,19 +638,16 @@ class AppDraftServiceImpl @Inject constructor(
                 .toStatusRuntimeException()
         }
 
-        val appDraft = AppDraft
-            .findById(request.appDraftId)
-            ?: throw appDraftNotFoundException(request.appDraftId)
-        if (appDraft.submitted) {
+        val appDraftListing = AppDraftListing
+            .findById(request.appDraftListingId)
+            ?: throw appDraftListingNotFoundException(request.appDraftListingId)
+        if (appDraftListing.appDraft.submitted) {
             throw ConsoleApiError(
                 ErrorReason.ERROR_REASON_RESOURCE_IMMUTABLE,
                 "submitted drafts cannot be modified",
             )
                 .toStatusRuntimeException()
         }
-        val appDraftListing = AppDraftListing
-            .findByAppDraftIdAndLanguage(request.appDraftId, request.language)
-            ?: throw appDraftListingNotFoundException(request.language)
 
         val blobInfo = BlobInfo
             .newBuilder(config.buckets().draftListingIconUpload(), UUID.randomUUID().toString())
@@ -646,7 +657,7 @@ class AppDraftServiceImpl @Inject constructor(
         val backgroundOperation = BackgroundOperation(
             id = Identifier.generateNew(IdType.OPERATION),
             type = BackgroundOperationType.UPLOAD_APP_DRAFT_LISTING_ICON,
-            parentId = request.appDraftId,
+            parentId = request.appDraftListingId,
             createdAt = OffsetDateTime.now(),
             result = null,
             succeeded = false,
@@ -660,7 +671,7 @@ class AppDraftServiceImpl @Inject constructor(
         )
             .persist()
 
-        val response = createAppDraftListingIconUploadOperationResponse {
+        val response = uploadAppDraftListingIconResponse {
             this.uploadUrl = uploadUrl.toString()
             processingOperation = Operation.newBuilder().setName(backgroundOperation.id).build()
         }
@@ -669,13 +680,13 @@ class AppDraftServiceImpl @Inject constructor(
     }
 
     @Transactional
-    override fun getAppDraftListingIconDownloadInfo(
-        request: GetAppDraftListingIconDownloadInfoRequest,
-    ): Uni<GetAppDraftListingIconDownloadInfoResponse> {
+    override fun downloadAppDraftListingIcon(
+        request: DownloadAppDraftListingIconRequest,
+    ): Uni<DownloadAppDraftListingIconResponse> {
         val userId = AuthnContextKey.USER_ID.get()
 
         val canDownload = permissionService.hasPermission(
-            HasPermissionRequest.DownloadAppDraftListingIcons(request.appDraftId, userId),
+            HasPermissionRequest.DownloadAppDraftListingIcon(request.appDraftListingId, userId),
         )
         if (!canDownload) {
             throw ConsoleApiError(
@@ -686,14 +697,15 @@ class AppDraftServiceImpl @Inject constructor(
         }
 
         val appDraftListing = AppDraftListing
-            .findByAppDraftIdAndLanguage(request.appDraftId, request.language)
-            ?: throw appDraftListingNotFoundException(request.language)
-        val icon = appDraftListing.icon ?: throw appDraftListingIconNotFoundException(request.language)
+            .findById(request.appDraftListingId)
+            ?: throw appDraftListingNotFoundException(request.appDraftListingId)
+        val icon = appDraftListing.icon
+            ?: throw appDraftListingIconNotFoundException(request.appDraftListingId)
 
         val iconBlob = BlobInfo.newBuilder(icon.bucketId, icon.objectId).build()
         val downloadUrl = storage.signDownloadUrl(iconBlob)
 
-        val response = getAppDraftListingIconDownloadInfoResponse {
+        val response = downloadAppDraftListingIconResponse {
             iconUrl = downloadUrl.toString()
         }
 
@@ -706,8 +718,9 @@ class AppDraftServiceImpl @Inject constructor(
     ): Uni<DeleteAppDraftListingResponse> {
         val userId = AuthnContextKey.USER_ID.get()
 
-        val canDelete = permissionService
-            .hasPermission(HasPermissionRequest.DeleteAppDraftListing(request.appDraftId, userId))
+        val canDelete = permissionService.hasPermission(
+            HasPermissionRequest.DeleteAppDraftListing(request.appDraftListingId, userId)
+        )
         if (!canDelete) {
             throw ConsoleApiError(
                 ErrorReason.ERROR_REASON_INSUFFICIENT_PERMISSION,
@@ -716,19 +729,16 @@ class AppDraftServiceImpl @Inject constructor(
                 .toStatusRuntimeException()
         }
 
-        val appDraft = AppDraft
-            .findById(request.appDraftId)
-            ?: throw appDraftNotFoundException(request.appDraftId)
-        if (appDraft.submitted) {
+        val appDraftListing = AppDraftListing
+            .findById(request.appDraftListingId)
+            ?: throw appDraftListingNotFoundException(request.appDraftListingId)
+        if (appDraftListing.appDraft.submitted) {
             throw ConsoleApiError(
                 ErrorReason.ERROR_REASON_RESOURCE_IMMUTABLE,
                 "submitted drafts cannot be modified",
             )
                 .toStatusRuntimeException()
         }
-        val appDraftListing = AppDraftListing
-            .findByAppDraftIdAndLanguage(request.appDraftId, request.language)
-            ?: throw appDraftListingNotFoundException(request.language)
 
         // Delete the associated icon (if it exists) and mark its associated blob for deletion
         appDraftListing.icon?.let { icon ->
@@ -838,15 +848,15 @@ class AppDraftServiceImpl @Inject constructor(
         )
             .toStatusRuntimeException()
 
-        private fun appDraftListingNotFoundException(language: String) = ConsoleApiError(
+        private fun appDraftListingNotFoundException(id: String) = ConsoleApiError(
             ErrorReason.ERROR_REASON_RESOURCE_NOT_FOUND,
-            "listing with language \"$language\" not found',"
+            "listing with ID \"$id\" not found',"
         )
             .toStatusRuntimeException()
 
-        private fun appDraftListingIconNotFoundException(language: String) = ConsoleApiError(
+        private fun appDraftListingIconNotFoundException(id: String) = ConsoleApiError(
             ErrorReason.ERROR_REASON_RESOURCE_NOT_FOUND,
-            "listing with language \"$language\" has no icon",
+            "listing with ID \"$id\" has no icon",
         )
             .toStatusRuntimeException()
 

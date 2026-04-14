@@ -4,8 +4,8 @@
 
 package app.accrescent.server.parcelo.jobs
 
-import app.accrescent.console.v1alpha1.ErrorReason
-import app.accrescent.console.v1alpha1.PublishAppDraftResult
+import app.accrescent.console.v1.ErrorReason
+import app.accrescent.console.v1.PublishAppDraftResult
 import app.accrescent.server.parcelo.api.error.ConsoleApiError
 import app.accrescent.server.parcelo.config.ParceloConfig
 import app.accrescent.server.parcelo.data.App
@@ -14,12 +14,13 @@ import app.accrescent.server.parcelo.data.AppDraftListing
 import app.accrescent.server.parcelo.data.AppListing
 import app.accrescent.server.parcelo.data.BackgroundOperation
 import app.accrescent.server.parcelo.data.Image
-import app.accrescent.server.parcelo.data.ListingId
 import app.accrescent.server.parcelo.data.PublishedApk
 import app.accrescent.server.parcelo.data.PublishedImage
 import app.accrescent.server.parcelo.data.User
 import app.accrescent.server.parcelo.publish.PublishService
 import app.accrescent.server.parcelo.publish.PublishedIcon
+import app.accrescent.server.parcelo.security.IdType
+import app.accrescent.server.parcelo.security.Identifier
 import app.accrescent.server.parcelo.util.TempFile
 import app.accrescent.server.parcelo.util.apkPaths
 import com.android.bundle.Commands
@@ -172,7 +173,9 @@ class PublishAppDraftJob @Inject constructor(
             )
                 .persist()
             AppListing(
-                id = ListingId(appPackage.appId, listing.language),
+                id = Identifier.generateNew(IdType.APP_LISTING),
+                appId = appPackage.appId,
+                language = listing.language,
                 name = listing.name,
                 shortDescription = listing.shortDescription,
                 iconImageId = icon.id,

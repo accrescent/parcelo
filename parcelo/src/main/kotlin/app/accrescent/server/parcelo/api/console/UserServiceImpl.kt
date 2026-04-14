@@ -4,16 +4,16 @@
 
 package app.accrescent.server.parcelo.api.console
 
-import app.accrescent.console.v1alpha1.ErrorReason
-import app.accrescent.console.v1alpha1.GetSelfRequest
-import app.accrescent.console.v1alpha1.GetSelfResponse
-import app.accrescent.console.v1alpha1.UpdateUserRequest
-import app.accrescent.console.v1alpha1.UpdateUserResponse
-import app.accrescent.console.v1alpha1.UserRole
-import app.accrescent.console.v1alpha1.UserService
-import app.accrescent.console.v1alpha1.getSelfResponse
-import app.accrescent.console.v1alpha1.updateUserResponse
-import app.accrescent.console.v1alpha1.user
+import app.accrescent.console.v1.ErrorReason
+import app.accrescent.console.v1.GetSelfRequest
+import app.accrescent.console.v1.GetSelfResponse
+import app.accrescent.console.v1.UpdateUserRequest
+import app.accrescent.console.v1.UpdateUserResponse
+import app.accrescent.console.v1.UserRole
+import app.accrescent.console.v1.UserService
+import app.accrescent.console.v1.getSelfResponse
+import app.accrescent.console.v1.updateUserResponse
+import app.accrescent.console.v1.user
 import app.accrescent.server.parcelo.api.error.ConsoleApiError
 import app.accrescent.server.parcelo.data.User
 import app.accrescent.server.parcelo.security.AuthnContextKey

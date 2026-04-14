@@ -24,7 +24,8 @@ import java.util.UUID
 )
 class AppEditListing(
     @Id
-    var id: UUID,
+    @Column(columnDefinition = "text")
+    var id: String,
 
     @Column(columnDefinition = "text", name = "app_edit_id", nullable = false)
     var appEditId: String,
@@ -49,11 +50,7 @@ class AppEditListing(
     @JoinColumn(name = "icon_image_id", insertable = false, updatable = false)
     var icon: Image? = null
 
-    companion object : PanacheCompanionBase<AppEditListing, UUID> {
-        fun findByAppEditIdAndLanguage(appEditId: String, language: String): AppEditListing? {
-            return find("WHERE appEditId = ?1 AND language = ?2", appEditId, language).firstResult()
-        }
-
+    companion object : PanacheCompanionBase<AppEditListing, String> {
         fun exists(appEditId: String, language: String): Boolean {
             return count("WHERE appEditId = ?1 AND language = ?2", appEditId, language) > 0
         }

@@ -4,7 +4,7 @@
 
 package app.accrescent.server.parcelo.api.error
 
-import app.accrescent.console.v1alpha1.ErrorReason
+import app.accrescent.console.v1.ErrorReason
 import com.google.protobuf.Any
 import com.google.rpc.Code
 

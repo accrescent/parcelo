@@ -4,8 +4,8 @@
 
 package app.accrescent.server.parcelo.async
 
-import app.accrescent.console.v1alpha1.ErrorReason
-import app.accrescent.console.v1alpha1.UploadAppDraftListingIconResult
+import app.accrescent.console.v1.ErrorReason
+import app.accrescent.console.v1.UploadAppDraftListingIconResult
 import app.accrescent.quarkus.gcp.pubsub.PubSubHelper
 import app.accrescent.server.parcelo.api.error.ConsoleApiError
 import app.accrescent.server.parcelo.config.ParceloConfig

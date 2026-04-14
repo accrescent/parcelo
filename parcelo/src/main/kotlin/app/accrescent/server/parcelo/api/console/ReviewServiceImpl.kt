@@ -4,14 +4,14 @@
 
 package app.accrescent.server.parcelo.api.console
 
-import app.accrescent.console.v1alpha1.CreateAppDraftReviewRequest
-import app.accrescent.console.v1alpha1.CreateAppDraftReviewResponse
-import app.accrescent.console.v1alpha1.CreateAppEditReviewRequest
-import app.accrescent.console.v1alpha1.CreateAppEditReviewResponse
-import app.accrescent.console.v1alpha1.ErrorReason
-import app.accrescent.console.v1alpha1.ReviewService
-import app.accrescent.console.v1alpha1.createAppDraftReviewResponse
-import app.accrescent.console.v1alpha1.createAppEditReviewResponse
+import app.accrescent.console.v1.CreateAppDraftReviewRequest
+import app.accrescent.console.v1.CreateAppDraftReviewResponse
+import app.accrescent.console.v1.CreateAppEditReviewRequest
+import app.accrescent.console.v1.CreateAppEditReviewResponse
+import app.accrescent.console.v1.ErrorReason
+import app.accrescent.console.v1.ReviewService
+import app.accrescent.console.v1.createAppDraftReviewResponse
+import app.accrescent.console.v1.createAppEditReviewResponse
 import app.accrescent.server.parcelo.api.error.ConsoleApiError
 import app.accrescent.server.parcelo.data.AppDraft
 import app.accrescent.server.parcelo.data.AppDraftRelationshipSet
