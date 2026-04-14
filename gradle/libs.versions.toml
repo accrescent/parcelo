@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 [versions]
-agp = "9.1.0"
 apkanalyzer = "32.1.0"
 apksig = "9.1.0"
 appstore-api = "a980a6d649bc401dabdc0a9ec0df737b" # v1.0.3
@@ -68,7 +67,6 @@ testcontainers-gcloud = { module = "org.testcontainers:testcontainers-gcloud" }
 testcontainers-minio = { module = "org.testcontainers:testcontainers-minio" }
 
 [plugins]
-android-application = { id = "com.android.application", version.ref = "agp" }
 buf = { id = "build.buf", version.ref = "buf" }
 kotlin-allopen = { id = "org.jetbrains.kotlin.plugin.allopen", version.ref = "kotlin" }
 kotlin-jpa = { id = "org.jetbrains.kotlin.plugin.jpa", version.ref = "kotlin" }
