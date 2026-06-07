@@ -187,7 +187,7 @@ class AppEditListingIconUploadedProcessor(
                     .toByteArray()
                 return
             }
-        val image = TempFile(Path(config.fileProcessingDirectory())).use { tempIcon ->
+        TempFile(Path(config.fileProcessingDirectory())).use { tempIcon ->
             val blob = storage.get(BlobId.of(event.bucketId, event.objectId)) ?: run {
                 Log.warn(
                     "blob at bucket ${event.bucketId} and object ${event.objectId} not found, " +
@@ -201,6 +201,19 @@ class AppEditListingIconUploadedProcessor(
                 tempIcon.path.inputStream().use { iconInputStream ->
                     ImageIO.createImageInputStream(iconInputStream).use { imageInputStream ->
                         pngReader.input = imageInputStream
+                        // Check dimensions before decoding
+                        if (
+                            pngReader.getWidth(0) != REQUIRED_IMAGE_WIDTH
+                            || pngReader.getHeight(0) != REQUIRED_IMAGE_HEIGHT
+                        ) {
+                            job.backgroundOperation.result = ConsoleApiError(
+                                ErrorReason.ERROR_REASON_INCORRECT_IMAGE_DIMENSIONS,
+                                "uploaded PNG is not ${REQUIRED_IMAGE_WIDTH}x$REQUIRED_IMAGE_HEIGHT pixels",
+                            )
+                                .toStatus()
+                                .toByteArray()
+                            return
+                        }
                         pngReader.read(0)
                     }
                 }
@@ -214,17 +227,6 @@ class AppEditListingIconUploadedProcessor(
                     .toByteArray()
                 return
             }
-        }
-
-        // Validate the image
-        if (image.width != REQUIRED_IMAGE_WIDTH || image.height != REQUIRED_IMAGE_HEIGHT) {
-            job.backgroundOperation.result = ConsoleApiError(
-                ErrorReason.ERROR_REASON_INCORRECT_IMAGE_DIMENSIONS,
-                "uploaded PNG is not ${REQUIRED_IMAGE_WIDTH}x$REQUIRED_IMAGE_HEIGHT pixels",
-            )
-                .toStatus()
-                .toByteArray()
-            return
         }
 
         // Copy the image into a separate bucket.
