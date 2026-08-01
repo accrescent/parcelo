@@ -239,6 +239,7 @@ class AppServiceImpl(private val config: ParceloConfig) : AppService {
             appDownloadInfo = appDownloadInfo {
                 splitDownloadInfo.addAll(publishedApks.map {
                     splitDownloadInfo {
+                        @Suppress("TruncatingIntegerConversion")
                         downloadSize = it.size.toInt()
                         url = "${config.artifactsBaseUrl()}/${it.objectId}"
                     }
@@ -282,6 +283,7 @@ class AppServiceImpl(private val config: ParceloConfig) : AppService {
             appUpdateInfo = appUpdateInfo {
                 splitUpdateInfo.addAll(publishedApks.map {
                     splitUpdateInfo {
+                        @Suppress("TruncatingIntegerConversion")
                         apkDownloadSize = it.size.toInt()
                         apkUrl = "${config.artifactsBaseUrl()}/${it.objectId}"
                     }

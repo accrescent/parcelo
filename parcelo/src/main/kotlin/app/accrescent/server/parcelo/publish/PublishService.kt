@@ -5,6 +5,8 @@
 package app.accrescent.server.parcelo.publish
 
 import app.accrescent.server.parcelo.config.ParceloConfig
+import app.accrescent.server.parcelo.core.intoULong
+import app.accrescent.server.parcelo.core.unwrap
 import app.accrescent.server.parcelo.util.TempFile
 import app.accrescent.server.parcelo.util.sha256Hash
 import io.minio.MinioClient
@@ -50,7 +52,8 @@ class PublishService @Inject constructor(
                         pathsToPublishedApks[apkPath] = PublishedApk(
                             bucketId = bucketId,
                             objectId = objectId,
-                            size = size.toULong(),
+                            // InputStream.copyTo() should always return a positive Long
+                            size = size.intoULong().unwrap(),
                         )
 
                         val requestArgs = UploadObjectArgs

@@ -4,7 +4,7 @@
 
 package app.accrescent.server.parcelo.security
 
-import app.accrescent.server.parcelo.encoding.Base62
+import app.accrescent.server.parcelo.domain.encoding.Base62
 import java.security.SecureRandom
 
 private const val RAND_BYTE_COUNT = 16

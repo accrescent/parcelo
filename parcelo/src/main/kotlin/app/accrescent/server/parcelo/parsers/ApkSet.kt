@@ -4,6 +4,8 @@
 
 package app.accrescent.server.parcelo.parsers
 
+import app.accrescent.server.parcelo.core.unwrap
+import app.accrescent.server.parcelo.domain.android.SdkVersion
 import app.accrescent.server.parcelo.util.TempFile
 import app.accrescent.server.parcelo.util.apkPaths
 import arrow.core.Either
@@ -24,7 +26,7 @@ class ApkSet private constructor(
     val applicationId: String,
     val versionCode: Int,
     val versionName: String,
-    val targetSdk: Int,
+    val targetSdk: SdkVersion,
     val signingCert: X509Certificate,
     val buildApksResult: Commands.BuildApksResult,
     val permissions: Set<UsesPermission>,
@@ -170,7 +172,9 @@ class ApkSet private constructor(
                     applicationId = buildApksResult.packageName,
                     versionCode = pinnedVersionCode,
                     versionName = firstEncounteredVersionName,
-                    targetSdk = lowestEncounteredTargetSdk,
+                    // The check above guarantees lowestEncounteredTargetSdk is at least
+                    // MIN_TARGET_SDK, so this conversion always succeeds
+                    targetSdk = SdkVersion.fromInt(lowestEncounteredTargetSdk).unwrap(),
                     signingCert = pinnedSigningCert,
                     buildApksResult = buildApksResult,
                     permissions = allDeclaredPermissions,
