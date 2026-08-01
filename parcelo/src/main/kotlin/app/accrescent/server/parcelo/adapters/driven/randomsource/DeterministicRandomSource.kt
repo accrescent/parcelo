@@ -4,6 +4,7 @@
 
 package app.accrescent.server.parcelo.adapters.driven.randomsource
 
+import app.accrescent.server.parcelo.core.NonNegativeLong
 import app.accrescent.server.parcelo.core.PositiveLong
 import app.accrescent.server.parcelo.domain.ports.driven.randomsource.RandomSource
 import app.accrescent.server.parcelo.domain.ports.driven.randomsource.RandomSourceError
@@ -24,11 +25,15 @@ class DeterministicRandomSource : RandomSource() {
         return Either.Right(rng.nextLong())
     }
 
-    override fun randomPositiveLong(upperBound: PositiveLong): RandomSourceResult<PositiveLong> {
+    override fun randomNonNegativeLong(
+        upperBound: PositiveLong,
+    ): RandomSourceResult<NonNegativeLong> {
         val rawValue = rng.nextLong(upperBound.value)
 
-        return PositiveLong
+        return NonNegativeLong
             .new(rawValue)
+            // nextLong() returns a value in [0, upperBound), so this conversion will never fail for
+            // a conforming Random
             .toEither { RandomSourceError }
     }
 }

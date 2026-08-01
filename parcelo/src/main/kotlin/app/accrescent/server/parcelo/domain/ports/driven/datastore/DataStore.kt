@@ -111,7 +111,7 @@ abstract class DataStore(private val randomSource: RandomSource) {
                 .multiplyExact(BASE_TX_RETRY_DELAY_MILLIS, Math.powExact(2, attempt))
                 .let(PositiveLong::new)
                 .unwrap()
-                .let(randomSource::randomPositiveLong)
+                .let(randomSource::randomNonNegativeLong)
                 .bindMapLeft { DataStoreError.IllegalState }
             Thread.sleep(delayMillis.value)
         }

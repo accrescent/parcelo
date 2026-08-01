@@ -4,6 +4,7 @@
 
 package app.accrescent.server.parcelo.domain.ports.driven.randomsource
 
+import app.accrescent.server.parcelo.core.NonNegativeLong
 import app.accrescent.server.parcelo.core.PositiveLong
 import arrow.core.Either
 
@@ -14,5 +15,12 @@ data object RandomSourceError
 abstract class RandomSource {
     abstract fun fillRandomBytes(bytes: ByteArray): RandomSourceResult<Unit>
     abstract fun randomLong(): RandomSourceResult<Long>
-    abstract fun randomPositiveLong(upperBound: PositiveLong): RandomSourceResult<PositiveLong>
+
+    /**
+     * Generates a uniformly distributed random value in `[0, upperBound)`.
+     *
+     * @param upperBound the exclusive upper bound of the generated value.
+     * @return the generated value, or [RandomSourceError] if the underlying source failed.
+     */
+    abstract fun randomNonNegativeLong(upperBound: PositiveLong): RandomSourceResult<NonNegativeLong>
 }
