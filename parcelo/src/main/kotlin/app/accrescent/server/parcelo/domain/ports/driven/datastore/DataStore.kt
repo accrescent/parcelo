@@ -396,14 +396,15 @@ abstract class DataStore(private val randomSource: RandomSource) {
          * Updates the default listing of an app draft.
          *
          * @param appDraftId the ID of the app draft to update.
-         * @param defaultAppDraftListingId the ID of app draft listing to set as the default.
+         * @param defaultAppDraftListingId the ID of app draft listing to set as the default, or
+         * [None] to unset the app draft's default listing.
          * @return [DataStoreError.EntityNotFound] if the app draft does not exist, or
          * [DataStoreError.ForeignKeyViolation] if an app draft listing with the given ID does not
          * exist or if the referenced app draft listing is not associated with the given app draft.
          */
         abstract fun updateDefaultListing(
             appDraftId: String,
-            defaultAppDraftListingId: String,
+            defaultAppDraftListingId: Option<String>,
         ): DataStoreResult<Unit>
 
         /**

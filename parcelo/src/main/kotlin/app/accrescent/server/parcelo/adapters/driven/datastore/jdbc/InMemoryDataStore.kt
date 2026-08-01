@@ -963,11 +963,11 @@ private class InMemoryAppDraftRepository(
 
     override fun updateDefaultListing(
         appDraftId: String,
-        defaultAppDraftListingId: String,
+        defaultAppDraftListingId: Option<String>,
     ): DataStoreResult<Unit> = runCatchingSql {
         val sql = "UPDATE app_drafts SET default_app_draft_listing_id = ? WHERE id = ?"
         connection.prepareStatement(sql).use { stmt ->
-            stmt.setString(1, defaultAppDraftListingId)
+            stmt.setString(1, defaultAppDraftListingId.getOrNull())
             stmt.setString(2, appDraftId)
             stmt.executeSingleUpdate().bind()
         }
