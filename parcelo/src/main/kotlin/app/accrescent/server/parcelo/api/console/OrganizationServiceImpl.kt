@@ -64,8 +64,10 @@ class OrganizationServiceImpl @Inject constructor(
             this.organization = organization {
                 id = organization.id
                 publishedAppLimit = organization.publishedAppLimit
+                @Suppress("TruncatingIntegerConversion")
                 publishedAppCount = App.countInOrganization(organization.id).toInt()
                 activeAppDraftLimit = organization.activeAppDraftLimit
+                @Suppress("TruncatingIntegerConversion")
                 activeAppDraftCount = AppDraft.countActiveInOrganization(organization.id).toInt()
             }
         }
@@ -108,8 +110,10 @@ class OrganizationServiceImpl @Inject constructor(
                 organization {
                     id = organization.id
                     publishedAppLimit = organization.publishedAppLimit
+                    @Suppress("TruncatingIntegerConversion")
                     publishedAppCount = App.countInOrganization(organization.id).toInt()
                     activeAppDraftLimit = organization.activeAppDraftLimit
+                    @Suppress("TruncatingIntegerConversion")
                     activeAppDraftCount = AppDraft.countActiveInOrganization(organization.id).toInt()
                 }
             }

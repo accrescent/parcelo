@@ -5,6 +5,7 @@
 rootProject.name = "parcelo"
 
 include(
+    "detekt-rules",
     "parcelo",
     "quarkus-google-cloud-pubsub",
     "quarkus-google-cloud-pubsub-deployment",
@@ -22,6 +23,8 @@ include(
     "quarkus-protovalidate-deployment",
 )
 
+includeBuild("testdata")
+
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
@@ -30,6 +33,7 @@ dependencyResolutionManagement {
     }
 }
 pluginManagement {
+    includeBuild("build-logic")
     repositories {
         mavenCentral()
         google()

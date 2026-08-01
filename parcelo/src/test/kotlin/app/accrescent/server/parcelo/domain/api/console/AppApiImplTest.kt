@@ -1,0 +1,141 @@
+// SPDX-FileCopyrightText: © 2026 Logan Magee
+//
+// SPDX-License-Identifier: AGPL-3.0-only
+
+package app.accrescent.server.parcelo.domain.api.console
+
+import app.accrescent.server.parcelo.adapters.driven.datastore.jdbc.InMemoryDataStore
+import app.accrescent.server.parcelo.adapters.driven.randomsource.DeterministicRandomSource
+import app.accrescent.server.parcelo.core.unwrap
+import app.accrescent.server.parcelo.core.unwrap2
+import app.accrescent.server.parcelo.core.unwrapErr
+import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppListing
+import app.accrescent.server.parcelo.domain.ports.driven.datastore.ListingLanguage
+import app.accrescent.server.parcelo.domain.ports.driven.datastore.OrganizationOwnerRelationship
+import app.accrescent.server.parcelo.domain.ports.driving.console.GetAppRequest
+import app.accrescent.server.parcelo.domain.ports.driving.console.GetAppResponse
+import app.accrescent.server.parcelo.domain.ports.driving.console.InsufficientPermissionError
+import app.accrescent.server.parcelo.domain.ports.driving.console.UpdateAppRequest
+import app.accrescent.server.parcelo.organization
+import app.accrescent.server.parcelo.user
+import arrow.core.right
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Test
+import app.accrescent.server.parcelo.domain.ports.driven.datastore.App as DataApp
+import app.accrescent.server.parcelo.domain.ports.driving.console.App as ApiApp
+
+class AppApiImplTest {
+    @Test
+    fun `getApp returns InsufficientPermission for unauthorized request`() {
+        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+            dataStore.migrateToHead().unwrap()
+            val appApi = AppApiImpl(dataStore)
+
+            val response = appApi.getApp("user1", GetAppRequest("app1"))
+
+            assertEquals(InsufficientPermissionError, response.unwrapErr())
+        }
+    }
+
+    @Test
+    fun `getApp returns app for authorized request for existing app`() {
+        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+            dataStore.migrateToHead().unwrap()
+            val originalApp = makeApp()
+            dataStore.runTxWithRetry { tx ->
+                tx.organizations.save(organization()).bind()
+                tx.users.save(user()).bind()
+                tx.authz.saveRelationship(OrganizationOwnerRelationship("org1", "user1")).bind()
+                tx.apps.saveWithDefaultListing(
+                    originalApp,
+                    AppListing("appListing1", "app1", ListingLanguage.EN_US)
+                ).bind()
+            }.unwrap2()
+            val appApi = AppApiImpl(dataStore)
+
+            val response = appApi.getApp("user1", GetAppRequest("app1"))
+
+            assertEquals(
+                GetAppResponse(
+                    ApiApp(
+                        id = originalApp.id,
+                        defaultAppListingId = originalApp.defaultAppListingId,
+                        publiclyListed = originalApp.publiclyListed,
+                    )
+                )
+                    .right(),
+                response,
+            )
+        }
+    }
+
+    @Test
+    fun `updateApp returns InsufficientPermission for unauthorized request`() {
+        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+            dataStore.migrateToHead().unwrap()
+            val appApi = AppApiImpl(dataStore)
+
+            val response = appApi.updateApp("user1", UpdateAppRequest("app1", false))
+
+            assertEquals(InsufficientPermissionError, response.unwrapErr())
+        }
+    }
+
+    @Test
+    fun `updateApp returns successfully for authorized request to existing app`() {
+        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+            dataStore.migrateToHead().unwrap()
+            dataStore.runTxWithRetry { tx ->
+                tx.organizations.save(organization()).bind()
+                tx.users.save(user()).bind()
+                tx.authz.saveRelationship(OrganizationOwnerRelationship("org1", "user1")).bind()
+                tx.apps.saveWithDefaultListing(
+                    makeApp(),
+                    AppListing("appListing1", "app1", ListingLanguage.EN_US)
+                ).bind()
+            }.unwrap2()
+            val appApi = AppApiImpl(dataStore)
+
+            val response = appApi.updateApp("user1", UpdateAppRequest("app1", false))
+
+            assertEquals(Unit.right(), response)
+        }
+    }
+
+    @Test
+    fun `updateApp modifies app's publiclyListed attribute when masked`() {
+        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+            dataStore.migrateToHead().unwrap()
+            dataStore.runTxWithRetry { tx ->
+                tx.organizations.save(organization()).bind()
+                tx.users.save(user()).bind()
+                tx.authz.saveRelationship(OrganizationOwnerRelationship("org1", "user1")).bind()
+                tx.apps.saveWithDefaultListing(
+                    makeApp(),
+                    AppListing("appListing1", "app1", ListingLanguage.EN_US)
+                ).bind()
+            }.unwrap2()
+
+            val appApi = AppApiImpl(dataStore)
+
+            appApi.updateApp(
+                "user1",
+                UpdateAppRequest(appId = "app1", publiclyListed = true),
+            ).unwrap()
+            val dataStoreApp = dataStore
+                .runTxWithRetry { tx -> tx.apps.findById("app1").bind() }
+                .unwrap2()
+                .unwrap()
+
+            assertTrue(dataStoreApp.publiclyListed)
+        }
+    }
+
+    private fun makeApp(
+        id: String = "app1",
+        organizationId: String = "org1",
+        defaultAppListingId: String = "appListing1",
+        publiclyListed: Boolean = false,
+    ) = DataApp(id, organizationId, defaultAppListingId, publiclyListed)
+}

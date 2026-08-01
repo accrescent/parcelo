@@ -47,4 +47,5 @@ out/
 .kotlin/
 
 ### Android
-/local.properties
+.cxx/
+local.properties

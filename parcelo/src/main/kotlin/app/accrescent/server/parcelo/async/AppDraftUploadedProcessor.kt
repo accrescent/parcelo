@@ -211,7 +211,7 @@ class AppDraftUploadedProcessor @Inject constructor(
             appId = apkSet.applicationId,
             versionCode = apkSet.versionCode,
             versionName = apkSet.versionName,
-            targetSdk = apkSet.targetSdk,
+            targetSdk = apkSet.targetSdk.intoInner(),
             signingCertificate = apkSet.signingCert.encoded,
             buildApksResult = apkSet.buildApksResult.toByteArray(),
         )
