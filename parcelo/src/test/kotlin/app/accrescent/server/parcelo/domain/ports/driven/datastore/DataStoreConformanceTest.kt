@@ -387,7 +387,7 @@ abstract class DataStoreConformanceTest {
                 tx.appPackages.save(originalAppPackage).bind()
                 tx.appDrafts.save(unsubmittedAppDraft(appPackageId = Some("appPackage1"))).bind()
                 tx.appDrafts.saveListing(appDraftListing()).bind()
-                tx.appDrafts.updateDefaultListing("appDraft1", "appDraftListing1").bind()
+                tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
                 tx.appDrafts.updateSubmitTime("appDraft1", UNIX_EPOCH).bind()
             }
                 .unwrap2()
@@ -1233,7 +1233,7 @@ abstract class DataStoreConformanceTest {
                 .unwrap2()
 
             val result = dataStore.runTxWithRetry { tx ->
-                tx.appDrafts.updateDefaultListing("appDraft1", "appDraftListing1").bind()
+                tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
             }
                 .unwrap()
 
@@ -1253,7 +1253,7 @@ abstract class DataStoreConformanceTest {
                 .unwrap2()
 
             val result = dataStore.runTxWithRetry { tx ->
-                tx.appDrafts.updateDefaultListing("appDraft2", "appDraftListing1").bind()
+                tx.appDrafts.updateDefaultListing("appDraft2", Some("appDraftListing1")).bind()
             }
                 .unwrap()
 
@@ -1266,7 +1266,7 @@ abstract class DataStoreConformanceTest {
         withMigratedDataStore { dataStore ->
 
             val result = dataStore.runTxWithRetry { tx ->
-                tx.appDrafts.updateDefaultListing("appDraft1", "appDraftListing1").bind()
+                tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
             }
                 .unwrap()
 
@@ -1285,7 +1285,7 @@ abstract class DataStoreConformanceTest {
                 .unwrap2()
 
             dataStore.runTxWithRetry { tx ->
-                tx.appDrafts.updateDefaultListing("appDraft1", "appDraftListing1").bind()
+                tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
             }
                 .unwrap2()
             val appDraft = dataStore
@@ -1294,6 +1294,30 @@ abstract class DataStoreConformanceTest {
                 .unwrap()
 
             assertEquals(Some("appDraftListing1"), appDraft.optionalDefaultAppDraftListingId)
+        }
+    }
+
+    @Test
+    fun `appDrafts updateDefaultListing unsets defaultAppDraftListingId when given None`() {
+        withMigratedDataStore { dataStore ->
+            dataStore.runTxWithRetry { tx ->
+                tx.organizations.save(organization()).bind()
+                tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                tx.appDrafts.saveListing(appDraftListing()).bind()
+                tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
+            }
+                .unwrap2()
+
+            dataStore.runTxWithRetry { tx ->
+                tx.appDrafts.updateDefaultListing("appDraft1", None).bind()
+            }
+                .unwrap2()
+            val appDraft = dataStore
+                .runTxWithRetry { tx -> tx.appDrafts.findById("appDraft1").bind() }
+                .unwrap2()
+                .unwrap()
+
+            assertEquals(None, appDraft.optionalDefaultAppDraftListingId)
         }
     }
 
@@ -1526,7 +1550,7 @@ abstract class DataStoreConformanceTest {
                 tx.appPackages.save(appPackage()).bind()
                 tx.appDrafts.save(unsubmittedAppDraft(appPackageId = Some("appPackage1"))).bind()
                 tx.appDrafts.saveListing(appDraftListing()).bind()
-                tx.appDrafts.updateDefaultListing("appDraft1", "appDraftListing1").bind()
+                tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
             }
                 .unwrap2()
 
@@ -1551,7 +1575,7 @@ abstract class DataStoreConformanceTest {
                 tx.organizations.save(organization()).bind()
                 tx.appDrafts.save(unsubmittedAppDraft()).bind()
                 tx.appDrafts.saveListing(appDraftListing()).bind()
-                tx.appDrafts.updateDefaultListing("appDraft1", "appDraftListing1").bind()
+                tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
             }
                 .unwrap2()
 

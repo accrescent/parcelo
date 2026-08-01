@@ -88,6 +88,11 @@ interface AppDraftApi {
         request: DownloadAppDraftListingIconRequest,
     ): Either<DownloadAppDraftListingIconError, DownloadAppDraftListingIconResponse>
 
+    /**
+     * Deletes an app draft listing.
+     *
+     * If the listing is its app draft's default, the app draft's default listing is unset.
+     */
     fun deleteAppDraftListing(
         callerUserId: String,
         request: DeleteAppDraftListingRequest,

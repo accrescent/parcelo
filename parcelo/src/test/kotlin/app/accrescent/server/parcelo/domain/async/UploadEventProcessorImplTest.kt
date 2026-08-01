@@ -203,7 +203,7 @@ class UploadEventProcessorImplTest {
                     tx.appPackages.save(appPackage()).bind()
                     tx.appDrafts.save(unsubmittedAppDraft(appPackageId = Some("appPackage1"))).bind()
                     tx.appDrafts.saveListing(appDraftListing()).bind()
-                    tx.appDrafts.updateDefaultListing("appDraft1", "appDraftListing1").bind()
+                    tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
                     tx.appDrafts.updateSubmitTime("appDraft1", UNIX_EPOCH).bind()
                     tx.appDrafts.saveUpload(pendingAppDraftUpload()).bind()
                 }

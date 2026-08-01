@@ -83,6 +83,7 @@ import app.accrescent.server.parcelo.domain.ports.driving.console.UploadAppDraft
 import app.accrescent.server.parcelo.domain.ports.driving.console.toServerError
 import arrow.core.Either
 import arrow.core.None
+import arrow.core.Some
 import arrow.core.raise.either
 import arrow.core.raise.ensure
 import com.google.protobuf.InvalidProtocolBufferException
@@ -356,7 +357,7 @@ class AppDraftApiImpl(
             ensure(listingExists) { AppDraftListingNotFoundError(request.defaultAppDraftListingId) }
 
             tx.appDrafts
-                .updateDefaultListing(request.appDraftId, request.defaultAppDraftListingId)
+                .updateDefaultListing(request.appDraftId, Some(request.defaultAppDraftListingId))
                 .bindMapLeft(::toServerError)
         }
             .bindMapLeft(::toServerError)
@@ -718,6 +719,14 @@ class AppDraftApiImpl(
             // App draft is guaranteed to exist since permission is granted
             val appDraft = tx.appDrafts.requireById(listing.appDraftId).bindMapLeft(::toServerError)
             ensure(appDraft !is DataAppDraft.Submitted) { AppDraftSubmittedError(listing.appDraftId) }
+
+            val isDefaultListing = appDraft.optionalDefaultAppDraftListingId
+                .isSome { it == request.appDraftListingId }
+            if (isDefaultListing) {
+                tx.appDrafts
+                    .updateDefaultListing(listing.appDraftId, None)
+                    .bindMapLeft(::toServerError)
+            }
 
             tx.appDrafts.deleteListingById(request.appDraftListingId).bindMapLeft(::toServerError)
         }

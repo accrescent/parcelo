@@ -260,7 +260,7 @@ class AppDraftApiImplTest {
                 tx.appPackages.save(appPackage()).bind()
                 tx.appDrafts.save(unsubmittedAppDraft(appPackageId = Some("appPackage1"))).bind()
                 tx.appDrafts.saveListing(appDraftListing()).bind()
-                tx.appDrafts.updateDefaultListing("appDraft1", "appDraftListing1").bind()
+                tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
                 tx.appDrafts.updateSubmitTime("appDraft1", UNIX_EPOCH).bind()
                 tx.users.save(user()).bind()
                 tx.authz.saveRelationship(organizationOwnerRelationship()).bind()
@@ -334,7 +334,7 @@ class AppDraftApiImplTest {
                 tx.appPackages.save(appPackage()).bind()
                 tx.appDrafts.save(unsubmittedAppDraft(appPackageId = Some("appPackage1"))).bind()
                 tx.appDrafts.saveListing(appDraftListing()).bind()
-                tx.appDrafts.updateDefaultListing("appDraft1", "appDraftListing1").bind()
+                tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
                 tx.appDrafts.updateSubmitTime("appDraft1", UNIX_EPOCH).bind()
                 tx.users.save(user()).bind()
                 tx.authz.saveRelationship(organizationOwnerRelationship()).bind()
@@ -474,7 +474,7 @@ class AppDraftApiImplTest {
                 tx.appPackages.save(appPackage()).bind()
                 tx.appDrafts.save(unsubmittedAppDraft(appPackageId = Some("appPackage1"))).bind()
                 tx.appDrafts.saveListing(appDraftListing()).bind()
-                tx.appDrafts.updateDefaultListing("appDraft1", "appDraftListing1").bind()
+                tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
                 tx.appDrafts.updateSubmitTime("appDraft1", UNIX_EPOCH).bind()
                 tx.users.save(user()).bind()
                 tx.authz.saveRelationship(organizationOwnerRelationship()).bind()
@@ -544,13 +544,13 @@ class AppDraftApiImplTest {
                     .save(unsubmittedAppDraft("appDraft2", appPackageId = Some("appPackage1")))
                     .bind()
                 tx.appDrafts.saveListing(appDraftListing("appDraftListing2", "appDraft2")).bind()
-                tx.appDrafts.updateDefaultListing("appDraft2", "appDraftListing2").bind()
+                tx.appDrafts.updateDefaultListing("appDraft2", Some("appDraftListing2")).bind()
                 tx.appDrafts.updateSubmitTime("appDraft2", UNIX_EPOCH).bind()
                 tx.appDrafts
                     .save(unsubmittedAppDraft("appDraft1", appPackageId = Some("appPackage2")))
                     .bind()
                 tx.appDrafts.saveListing(appDraftListing("appDraftListing1", "appDraft1")).bind()
-                tx.appDrafts.updateDefaultListing("appDraft1", "appDraftListing1").bind()
+                tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
                 tx.users.save(user()).bind()
                 tx.authz.saveRelationship(organizationOwnerRelationship()).bind()
             }.unwrap2()
@@ -572,7 +572,7 @@ class AppDraftApiImplTest {
                 tx.appPackages.save(appPackage()).bind()
                 tx.appDrafts.save(unsubmittedAppDraft(appPackageId = Some("appPackage1"))).bind()
                 tx.appDrafts.saveListing(appDraftListing()).bind()
-                tx.appDrafts.updateDefaultListing("appDraft1", "appDraftListing1").bind()
+                tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
                 tx.apps.saveWithDefaultListing(
                     App("app1", "org1", "appListing1", false),
                     AppListing("appListing1", "app1", DataListingLanguage.EN_US),
@@ -598,7 +598,7 @@ class AppDraftApiImplTest {
                 tx.appPackages.save(appPackage()).bind()
                 tx.appDrafts.save(unsubmittedAppDraft(appPackageId = Some("appPackage1"))).bind()
                 tx.appDrafts.saveListing(appDraftListing()).bind()
-                tx.appDrafts.updateDefaultListing("appDraft1", "appDraftListing1").bind()
+                tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
                 tx.users.save(user()).bind()
                 tx.authz.saveRelationship(organizationOwnerRelationship()).bind()
             }
@@ -638,7 +638,7 @@ class AppDraftApiImplTest {
                 tx.appPackages.save(appPackage()).bind()
                 tx.appDrafts.save(unsubmittedAppDraft(appPackageId = Some("appPackage1"))).bind()
                 tx.appDrafts.saveListing(appDraftListing()).bind()
-                tx.appDrafts.updateDefaultListing("appDraft1", "appDraftListing1").bind()
+                tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
                 tx.appDrafts.updateSubmitTime("appDraft1", UNIX_EPOCH).bind()
                 tx.users.save(user()).bind()
                 tx.authz.saveRelationship(organizationOwnerRelationship()).bind()
@@ -707,7 +707,7 @@ class AppDraftApiImplTest {
                 tx.appPackages.save(appPackage()).bind()
                 tx.appDrafts.save(unsubmittedAppDraft(appPackageId = Some("appPackage1"))).bind()
                 tx.appDrafts.saveListing(appDraftListing()).bind()
-                tx.appDrafts.updateDefaultListing("appDraft1", "appDraftListing1").bind()
+                tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
                 tx.appDrafts.updateSubmitTime("appDraft1", UNIX_EPOCH).bind()
                 tx.users.save(user()).bind()
                 tx.authz.saveRelationship(organizationOwnerRelationship()).bind()
@@ -836,7 +836,7 @@ class AppDraftApiImplTest {
                 tx.appPackages.save(appPackage()).bind()
                 tx.appDrafts.save(unsubmittedAppDraft(appPackageId = Some("appPackage1"))).bind()
                 tx.appDrafts.saveListing(appDraftListing()).bind()
-                tx.appDrafts.updateDefaultListing("appDraft1", "appDraftListing1").bind()
+                tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
                 tx.appDrafts.updateSubmitTime("appDraft1", UNIX_EPOCH).bind()
                 tx.users.save(user()).bind()
                 tx.authz.saveRelationship(organizationOwnerRelationship()).bind()
@@ -977,7 +977,7 @@ class AppDraftApiImplTest {
                 tx.appPackages.save(appPackage()).bind()
                 tx.appDrafts.save(unsubmittedAppDraft(appPackageId = Some("appPackage1"))).bind()
                 tx.appDrafts.saveListing(appDraftListing()).bind()
-                tx.appDrafts.updateDefaultListing("appDraft1", "appDraftListing1").bind()
+                tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
                 tx.appDrafts.updateSubmitTime("appDraft1", UNIX_EPOCH).bind()
                 tx.users.save(user()).bind()
                 tx.authz.saveRelationship(organizationOwnerRelationship()).bind()
@@ -1150,7 +1150,7 @@ class AppDraftApiImplTest {
                 tx.appPackages.save(appPackage()).bind()
                 tx.appDrafts.save(unsubmittedAppDraft(appPackageId = Some("appPackage1"))).bind()
                 tx.appDrafts.saveListing(appDraftListing()).bind()
-                tx.appDrafts.updateDefaultListing("appDraft1", "appDraftListing1").bind()
+                tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
                 tx.appDrafts.updateSubmitTime("appDraft1", UNIX_EPOCH).bind()
                 tx.users.save(user()).bind()
                 tx.authz.saveRelationship(organizationOwnerRelationship()).bind()
@@ -1227,7 +1227,7 @@ class AppDraftApiImplTest {
                 tx.appPackages.save(appPackage()).bind()
                 tx.appDrafts.save(unsubmittedAppDraft(appPackageId = Some("appPackage1"))).bind()
                 tx.appDrafts.saveListing(appDraftListing()).bind()
-                tx.appDrafts.updateDefaultListing("appDraft1", "appDraftListing1").bind()
+                tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
                 tx.appDrafts.updateSubmitTime("appDraft1", UNIX_EPOCH).bind()
                 tx.users.save(user()).bind()
                 tx.authz.saveRelationship(organizationOwnerRelationship()).bind()
@@ -1360,7 +1360,7 @@ class AppDraftApiImplTest {
                 tx.appPackages.save(appPackage()).bind()
                 tx.appDrafts.save(unsubmittedAppDraft(appPackageId = Some("appPackage1"))).bind()
                 tx.appDrafts.saveListing(appDraftListing()).bind()
-                tx.appDrafts.updateDefaultListing("appDraft1", "appDraftListing1").bind()
+                tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
                 tx.appDrafts.updateSubmitTime("appDraft1", ConstantTimestampSource().now()).bind()
                 tx.users.save(user()).bind()
                 tx.authz.saveRelationship(organizationOwnerRelationship()).bind()
@@ -1372,6 +1372,32 @@ class AppDraftApiImplTest {
             val response = appDraftApi.deleteAppDraftListing("user1", request)
 
             assertEquals(AppDraftSubmittedError("appDraft1"), response.unwrapErr())
+        }
+    }
+
+    @Test
+    fun `deleteAppDraftListing unsets default listing if listing is the app draft default`() {
+        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+            dataStore.migrateToHead().unwrap()
+            dataStore.runTxWithRetry { tx ->
+                tx.organizations.save(organization()).bind()
+                tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                tx.appDrafts.saveListing(appDraftListing()).bind()
+                tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
+                tx.users.save(user()).bind()
+                tx.authz.saveRelationship(organizationOwnerRelationship()).bind()
+            }
+                .unwrap2()
+            val appDraftApi = makeAppDraftApi(dataStore)
+
+            val request = DeleteAppDraftListingRequest("appDraftListing1")
+            appDraftApi.deleteAppDraftListing("user1", request).unwrap()
+            val appDraft = dataStore
+                .runTxWithRetry { tx -> tx.appDrafts.findById("appDraft1").bind() }
+                .unwrap2()
+                .unwrap()
+
+            assertEquals(None, appDraft.optionalDefaultAppDraftListingId)
         }
     }
 
