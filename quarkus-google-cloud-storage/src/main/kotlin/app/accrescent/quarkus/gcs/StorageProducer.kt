@@ -84,8 +84,8 @@ private fun generateDevCredentials(): ServiceAccountCredentials {
         "fake-gcs-client",
         "fake-gcs-client@example.com",
         privateKeyPkcs8,
-        null,
-        null,
+        "",
+        emptyList(),
     )
 
     return credentials
