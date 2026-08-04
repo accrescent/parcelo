@@ -32,7 +32,5 @@ kotlin {
     compilerOptions {
         jvmTarget = JvmTarget.JVM_25
         javaParameters = true
-
-        freeCompilerArgs.add("-Xannotation-default-target=param-property")
     }
 }
