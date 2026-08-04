@@ -236,11 +236,17 @@ data class XmlDocument(val root: XmlElement) {
                     resourceId = resourceMap.flatMap { resourceIdOf(it, attribute.nameIndex()) },
                 ),
                 value = when (typedValue.type()) {
-                    BinaryResourceValue.Type.STRING -> stringPool
-                        .toEitherBind { FromBytesError }
-                        .let { sp -> readString { sp.getString(typedValue.data()) } }
-                        .bind()
-                        .let(ResourceValue::String)
+                    BinaryResourceValue.Type.STRING -> {
+                        // Ensure the raw value is the same as the typed value to prevent parser
+                        // differential vulnerabilities.
+                        ensure(attribute.rawValueIndex() == typedValue.data()) { FromBytesError }
+
+                        stringPool
+                            .toEitherBind { FromBytesError }
+                            .let { sp -> readString { sp.getString(typedValue.data()) } }
+                            .bind()
+                            .let(ResourceValue::String)
+                    }
 
                     BinaryResourceValue.Type.INT_DEC -> ResourceValue.IntDec(typedValue.data())
 

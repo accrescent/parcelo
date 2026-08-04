@@ -9,6 +9,8 @@ import app.accrescent.server.parcelo.core.unwrap
 import app.accrescent.server.parcelo.domain.uri.Uri
 import arrow.core.Some
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
 import java.io.InputStream
@@ -22,6 +24,22 @@ class XmlDocumentTest {
         val result = XmlDocument.fromBinaryXml(ByteBuffer.wrap(testCase.binaryXml.value)).unwrap()
 
         assertEquals(testCase.expectedDocument, result)
+    }
+
+    // String attributes have both a typed value and a raw value, which are both string pool
+    // indices. AOSP doesn't consistently prefer one over the other when reading the attribute's
+    // value, so to prevent parser differential vulnerabilities, we reject documents with string
+    // attributes which have different typed and raw values.
+    @Test
+    fun `fromBinaryXml rejects string attribute whose typed and raw values differ`() {
+        // You can see that this manifest's "package" attribute typed value is different from its
+        // raw value with `aapt2 dump xmltree`, which will display
+        // `A: package="com.example.decoy" (Raw: "com.example.real")`.
+        val binaryXml = binaryXmlTestData("mismatched-string-attribute-manifest.axml.gz")
+
+        val result = XmlDocument.fromBinaryXml(ByteBuffer.wrap(binaryXml.value))
+
+        assertTrue(result.isLeft())
     }
 
     data class FromBinaryXmlTestCase(val binaryXml: Bytes, val expectedDocument: XmlDocument)
