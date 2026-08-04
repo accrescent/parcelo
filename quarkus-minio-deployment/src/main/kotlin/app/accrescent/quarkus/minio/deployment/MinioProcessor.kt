@@ -29,49 +29,4 @@ class MinioProcessor {
     fun minioClientProducer(): AdditionalBeanBuildItem {
         return AdditionalBeanBuildItem(MinioClientProducer::class.java)
     }
-
-    @BuildStep
-    fun addDependencyIndexes(items: BuildProducer<IndexDependencyBuildItem>) {
-        items.produce(
-            listOf(
-                IndexDependencyBuildItem("io.minio", "minio"),
-                IndexDependencyBuildItem("com.carrotsearch.thirdparty", "simple-xml-safe"),
-            )
-        )
-    }
-
-    @BuildStep
-    fun addRuntimeInitializedItem(): RuntimeInitializedClassBuildItem {
-        return RuntimeInitializedClassBuildItem(UploadSnowballObjectsArgs::class.qualifiedName)
-    }
-
-    @BuildStep
-    fun registerForReflection(index: CombinedIndexBuildItem): ReflectiveClassBuildItem {
-        val minioArgClasses = index
-            .index
-            .getAllKnownSubclasses(DotName.createSimple(BaseArgs::class.java.name))
-            .map { it.name().toString() }
-        val minioMessageClasses = index
-            .index
-            .getClassesInPackage("io.minio.messages")
-            .map { it.name().toString() }
-        val simpleXmlClasses = index
-            .index
-            .getClassesInPackage("org.simpleframework.xml.core")
-            .map { it.name().toString() }
-
-        val classes = mutableListOf<String>()
-        classes.addAll(minioArgClasses)
-        classes.addAll(minioMessageClasses)
-        classes.addAll(simpleXmlClasses)
-
-        val item = ReflectiveClassBuildItem
-            .builder(*classes.toTypedArray())
-            .constructors(true)
-            .methods(true)
-            .fields(true)
-            .build()
-
-        return item
-    }
 }
