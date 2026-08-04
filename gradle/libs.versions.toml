@@ -20,7 +20,6 @@ htmlunit = "4.21.0"
 jena-iri3986 = "6.1.0"
 junit = "6.1.1"
 kotlin = "2.4.10"
-log4j1 = "1.2.17"
 minio = "8.6.0"
 protovalidate = "1.1.1"
 quarkus = "3.32.3"
@@ -48,8 +47,6 @@ jena-iri3986 = { module = "org.apache.jena:jena-iri3986", version.ref = "jena-ir
 junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
-log4j-api = { module = "org.apache.logging.log4j:log4j-api" }
-log4j1 = { module = "log4j:log4j", version.ref = "log4j1" }
 minio = { module = "io.minio:minio", version.ref = "minio" }
 protobuf-java = { module = "com.google.protobuf:protobuf-java" }
 protobuf-kotlin = { module = "com.google.protobuf:protobuf-kotlin" }

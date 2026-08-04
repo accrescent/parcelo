@@ -13,8 +13,6 @@ plugins {
 dependencies {
     api(platform(libs.google.cloud.libraries.bom))
     implementation(platform(libs.quarkus.bom))
-    implementation(libs.log4j.api)
-    implementation(libs.log4j1)
     api(libs.google.cloud.storage)
     implementation(libs.quarkus.core)
     kapt(libs.quarkus.extension.processor)
