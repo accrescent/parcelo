@@ -462,6 +462,40 @@ abstract class DataStoreConformanceTest {
     }
 
     @Test
+    fun `appDrafts findPendingUploadByAppDraftId returns None when no upload for the given app draft exists`() {
+        withMigratedDataStore { dataStore ->
+            val foundUpload = dataStore
+                .runTxWithRetry { tx ->
+                    tx.appDrafts.findPendingUploadByAppDraftId("appDraft1").bind()
+                }
+                .unwrap2()
+
+            assertTrue(foundUpload.isNone())
+        }
+    }
+
+    @Test
+    fun `appDrafts findPendingUploadByAppDraftId returns the given app draft's pending upload`() {
+        withMigratedDataStore { dataStore ->
+            val originalUpload = pendingAppDraftUpload()
+
+            dataStore.runTxWithRetry { tx ->
+                tx.organizations.save(organization()).bind()
+                tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                tx.externalBlobs.save(pendingExternalBlob()).bind()
+                tx.appDrafts.saveUpload(originalUpload).bind()
+            }.unwrap2()
+            val foundUpload = dataStore
+                .runTxWithRetry { tx ->
+                    tx.appDrafts.findPendingUploadByAppDraftId("appDraft1").bind()
+                }
+                .unwrap2()
+
+            assertEquals(Some(originalUpload), foundUpload)
+        }
+    }
+
+    @Test
     fun `appDrafts findPendingUploadByObjectKey returns None when no upload for the given object exists`() {
         withMigratedDataStore { dataStore ->
             val foundUpload = dataStore

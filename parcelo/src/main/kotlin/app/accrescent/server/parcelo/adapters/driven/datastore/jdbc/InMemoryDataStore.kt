@@ -751,6 +751,24 @@ private class InMemoryAppDraftRepository(
         }
     }
 
+    override fun findPendingUploadByAppDraftId(
+        appDraftId: String,
+    ): DataStoreResult<Option<PendingAppDraftUpload>> = runCatchingSql {
+        val sql = """
+            SELECT id, app_draft_id, external_blob_id, object_key, create_time, processing_result
+            FROM pending_app_draft_uploads
+            WHERE app_draft_id = ?
+        """.trimIndent()
+        connection.prepareStatement(sql).use { stmt ->
+            stmt.setString(1, appDraftId)
+            stmt.executeQuery().use { rs ->
+                if (!rs.next()) return@use None
+
+                Some(rs.readPendingAppDraftUpload().bind())
+            }
+        }
+    }
+
     override fun findPendingUploadByObjectKey(
         objectKey: String,
     ): DataStoreResult<Option<PendingAppDraftUpload>> = runCatchingSql {
@@ -764,19 +782,7 @@ private class InMemoryAppDraftRepository(
             stmt.executeQuery().use { rs ->
                 if (!rs.next()) return@use None
 
-                PendingAppDraftUpload(
-                    id = rs.requireString("id").bind(),
-                    appDraftId = rs.requireString("app_draft_id").bind(),
-                    externalBlobId = rs.requireString("external_blob_id").bind(),
-                    objectKey = rs.requireString("object_key").bind(),
-                    createTime = rs.requireObject<OffsetDateTime>("create_time").bind(),
-                    result = rs.getSafeString("processing_result")
-                        .map {
-                            processingResultFromColumnValue(it)
-                                .toEitherBind { DataStoreError.IllegalState }
-                        },
-                )
-                    .some()
+                Some(rs.readPendingAppDraftUpload().bind())
             }
         }
     }
@@ -1613,6 +1619,25 @@ private fun ResultSet.readAppPackage(): DataStoreResult<AppPackage> = either {
             .toEitherBind { DataStoreError.IllegalState },
         signerCertificate = Bytes(requireBytes("signer_certificate").bind()),
         buildApksResult = Bytes(requireBytes("build_apks_result").bind()),
+    )
+}
+
+/**
+ * Reads a [PendingAppDraftUpload] from the current row, which must expose every
+ * `pending_app_draft_uploads` column selected by this repository.
+ */
+private fun ResultSet.readPendingAppDraftUpload(): DataStoreResult<PendingAppDraftUpload> = either {
+    PendingAppDraftUpload(
+        id = requireString("id").bind(),
+        appDraftId = requireString("app_draft_id").bind(),
+        externalBlobId = requireString("external_blob_id").bind(),
+        objectKey = requireString("object_key").bind(),
+        createTime = requireObject<OffsetDateTime>("create_time").bind(),
+        result = getSafeString("processing_result")
+            .map {
+                processingResultFromColumnValue(it)
+                    .toEitherBind { DataStoreError.IllegalState }
+            },
     )
 }
 
