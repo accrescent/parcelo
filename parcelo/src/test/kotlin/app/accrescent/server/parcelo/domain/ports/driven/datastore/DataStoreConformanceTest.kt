@@ -1608,7 +1608,6 @@ abstract class DataStoreConformanceTest {
         }
     }
 
-
     @Test
     fun `appPackages deleteById returns EntityNotFound for non-existent package`() {
         withMigratedDataStore { dataStore ->
