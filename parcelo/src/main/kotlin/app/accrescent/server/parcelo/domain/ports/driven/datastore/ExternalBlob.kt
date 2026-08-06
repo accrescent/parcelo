@@ -4,6 +4,9 @@
 
 package app.accrescent.server.parcelo.domain.ports.driven.datastore
 
+import arrow.core.None
+import arrow.core.Option
+import arrow.core.Some
 import java.time.OffsetDateTime
 
 /**
@@ -89,32 +92,36 @@ sealed interface ExternalBlob<out S : ExternalBlob.Status<*>> {
         data object Pending : Status<Nothing>
 
         /**
-         * A blob which has been persisted to blob storage in the past and may still be persisted.
+         * A blob which is guaranteed to be available in blob storage.
          *
          * @param V the type of the blob's version assigned once it has been persisted.
          * @property version the blob's version assigned by the blob storage service once it has
          * been persisted.
          */
-        sealed interface Persisted<out V : BlobVersion> : Status<V> {
-            val version: V
-        }
-
-        /**
-         * A blob which is guaranteed to be available in blob storage.
-         *
-         * @param V the type of the blob's version assigned once it has been persisted.
-         */
-        data class Committed<out V : BlobVersion>(override val version: V) : Persisted<V>
+        data class Committed<out V : BlobVersion>(val version: V) : Status<V>
 
         /**
          * A blob which is irreversibly marked as deleted to later be removed from blob storage.
          *
          * @param V the type of the blob's version assigned once it has been persisted.
+         * @property version the blob's version assigned by the blob storage service, or [None] if
+         * the blob was marked as deleted while still pending and was therefore never assigned one.
          * @property deleteTime the time at which the blob was marked as deleted.
          */
         data class Deleted<out V : BlobVersion>(
-            override val version: V,
+            val version: Option<V>,
             val deleteTime: OffsetDateTime,
-        ) : Persisted<V>
+        ) : Status<V>
+
+        /**
+         * The blob's version assigned by the blob storage service, or [None] if the blob has not
+         * been assigned one.
+         */
+        val optionalVersion: Option<V>
+            get() = when (this) {
+                is Committed -> Some(this.version)
+                is Deleted -> this.version
+                Pending -> None
+            }
     }
 }

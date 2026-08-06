@@ -2168,9 +2168,27 @@ abstract class DataStoreConformanceTest {
                 .unwrap2()
 
             assertEquals(
-                ExternalBlob.Status.Deleted(ExternalBlob.LocalBlobVersion(1), UNIX_EPOCH),
+                ExternalBlob.Status.Deleted(Some(ExternalBlob.LocalBlobVersion(1)), UNIX_EPOCH),
                 foundBlob.status,
             )
+        }
+    }
+
+    @Test
+    fun `externalBlobs markDeleted marks pending blob as deleted without a version`() {
+        withMigratedDataStore { dataStore ->
+            dataStore
+                .runTxWithRetry { tx -> tx.externalBlobs.save(pendingExternalBlob()).bind() }
+                .unwrap2()
+
+            dataStore
+                .runTxWithRetry { tx -> tx.externalBlobs.markDeleted("blob1", UNIX_EPOCH).bind() }
+                .unwrap2()
+            val foundBlob = dataStore
+                .runTxWithRetry { tx -> tx.externalBlobs.requireById("blob1").bind() }
+                .unwrap2()
+
+            assertEquals(ExternalBlob.Status.Deleted(None, UNIX_EPOCH), foundBlob.status)
         }
     }
 

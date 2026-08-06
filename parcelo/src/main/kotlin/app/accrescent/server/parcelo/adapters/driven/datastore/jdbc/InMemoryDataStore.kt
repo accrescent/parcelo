@@ -187,8 +187,9 @@ class InMemoryDataStore private constructor(
                         delete_time timestamp with time zone,
                         UNIQUE (id, status),
                         UNIQUE (service, bucket_name, object_key),
-                        CHECK ((status != 'pending') = (generation IS NOT NULL)),
-                        CHECK ((status != 'pending' AND service = 'gcs') = (meta_generation IS NOT NULL)),
+                        CHECK (status != 'pending' OR generation IS NULL),
+                        CHECK (status != 'committed' OR generation IS NOT NULL),
+                        CHECK ((service = 'gcs' AND generation IS NOT NULL) = (meta_generation IS NOT NULL)),
                         CHECK ((status = 'deleted') = (delete_time IS NOT NULL))
                     )
                     """.trimIndent()
@@ -1317,9 +1318,9 @@ private class InMemoryExternalBlobRepository(
                             )
 
                             "deleted" -> ExternalBlob.Status.Deleted(
-                                ExternalBlob.LocalBlobVersion(
-                                    rs.requireLong("generation").bind(),
-                                ),
+                                rs.getSafeLong("generation").map {
+                                    ExternalBlob.LocalBlobVersion(it)
+                                },
                                 rs.requireObject<OffsetDateTime>("delete_time").bind(),
                             )
 
@@ -1342,10 +1343,12 @@ private class InMemoryExternalBlobRepository(
                             )
 
                             "deleted" -> ExternalBlob.Status.Deleted(
-                                ExternalBlob.GcsBlobVersion(
-                                    rs.requireLong("generation").bind(),
-                                    rs.requireLong("meta_generation").bind(),
-                                ),
+                                rs.getSafeLong("generation").map { generation ->
+                                    ExternalBlob.GcsBlobVersion(
+                                        generation,
+                                        rs.requireLong("meta_generation").bind(),
+                                    )
+                                },
                                 rs.requireObject<OffsetDateTime>("delete_time").bind(),
                             )
 
@@ -1402,28 +1405,16 @@ private class InMemoryExternalBlobRepository(
             stmt.setString(6, blob.bucketName)
             stmt.setString(7, blob.objectKey)
             when (blob) {
-                is ExternalBlob.Gcs -> when (val status = blob.status) {
-                    is ExternalBlob.Status.Persisted -> {
-                        stmt.setLong(8, status.version.generation)
-                        stmt.setLong(9, status.version.metaGeneration)
-                    }
-
-                    is ExternalBlob.Status.Pending -> {
-                        stmt.setNull(8, Types.BIGINT)
-                        stmt.setNull(9, Types.BIGINT)
-                    }
+                is ExternalBlob.Gcs -> {
+                    val version = blob.status.optionalVersion.getOrNull()
+                    stmt.setObject(8, version?.generation, Types.BIGINT)
+                    stmt.setObject(9, version?.metaGeneration, Types.BIGINT)
                 }
 
-                is ExternalBlob.Local -> when (val status = blob.status) {
-                    is ExternalBlob.Status.Persisted -> {
-                        stmt.setLong(8, status.version.generation)
-                        stmt.setNull(9, Types.BIGINT)
-                    }
-
-                    is ExternalBlob.Status.Pending -> {
-                        stmt.setNull(8, Types.BIGINT)
-                        stmt.setNull(9, Types.BIGINT)
-                    }
+                is ExternalBlob.Local -> {
+                    val version = blob.status.optionalVersion.getOrNull()
+                    stmt.setObject(8, version?.generation, Types.BIGINT)
+                    stmt.setNull(9, Types.BIGINT)
                 }
             }
             stmt.executeSingleUpdate().bind()

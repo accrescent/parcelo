@@ -28,6 +28,7 @@ import app.accrescent.server.parcelo.domain.ports.driven.datastore.User
 import arrow.core.Either
 import arrow.core.None
 import arrow.core.Option
+import arrow.core.Some
 import java.time.OffsetDateTime
 
 val UNIX_EPOCH = ConstantTimestampSource().now()
@@ -107,7 +108,7 @@ fun deletedExternalBlob(
     bucketName: String = "bucket1",
     objectKey: String = "object1",
     createTime: OffsetDateTime = UNIX_EPOCH,
-    generation: Long = 1,
+    generation: Option<Long> = Some(1),
     deleteTime: OffsetDateTime = UNIX_EPOCH,
 ): ExternalBlob<ExternalBlob.Status.Deleted<*>> {
     return ExternalBlob.Local(
@@ -115,7 +116,10 @@ fun deletedExternalBlob(
         createTime = createTime,
         bucketName = bucketName,
         objectKey = objectKey,
-        status = ExternalBlob.Status.Deleted(ExternalBlob.LocalBlobVersion(generation), deleteTime),
+        status = ExternalBlob.Status.Deleted(
+            generation.map { ExternalBlob.LocalBlobVersion(it) },
+            deleteTime,
+        ),
     )
 }
 
