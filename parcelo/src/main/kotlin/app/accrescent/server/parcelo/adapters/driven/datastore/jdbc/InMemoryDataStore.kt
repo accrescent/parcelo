@@ -715,6 +715,30 @@ private class InMemoryAppDraftRepository(
         }
     }
 
+    override fun findPendingListingIconUploadByListingId(
+        appDraftListingId: String,
+    ): DataStoreResult<Option<PendingAppDraftListingIconUpload>> = runCatchingSql {
+        val sql = """
+            SELECT
+                id,
+                app_draft_listing_id,
+                external_blob_id,
+                object_key,
+                create_time,
+                processing_result
+            FROM pending_app_draft_listing_icon_uploads
+            WHERE app_draft_listing_id = ?
+        """.trimIndent()
+        connection.prepareStatement(sql).use { stmt ->
+            stmt.setString(1, appDraftListingId)
+            stmt.executeQuery().use { rs ->
+                if (!rs.next()) return@use None
+
+                Some(rs.readPendingAppDraftListingIconUpload().bind())
+            }
+        }
+    }
+
     override fun findPendingListingIconUploadByObjectKey(
         objectKey: String,
     ): DataStoreResult<Option<PendingAppDraftListingIconUpload>> = runCatchingSql {
@@ -734,19 +758,7 @@ private class InMemoryAppDraftRepository(
             stmt.executeQuery().use { rs ->
                 if (!rs.next()) return@use None
 
-                PendingAppDraftListingIconUpload(
-                    id = rs.requireString("id").bind(),
-                    appDraftListingId = rs.requireString("app_draft_listing_id").bind(),
-                    externalBlobId = rs.requireString("external_blob_id").bind(),
-                    objectKey = rs.requireString("object_key").bind(),
-                    createTime = rs.requireObject<OffsetDateTime>("create_time").bind(),
-                    result = rs.getSafeString("processing_result")
-                        .map {
-                            iconProcessingResultFromColumnValue(it)
-                                .toEitherBind { DataStoreError.IllegalState }
-                        },
-                )
-                    .some()
+                Some(rs.readPendingAppDraftListingIconUpload().bind())
             }
         }
     }
@@ -1619,6 +1631,26 @@ private fun ResultSet.readAppPackage(): DataStoreResult<AppPackage> = either {
             .toEitherBind { DataStoreError.IllegalState },
         signerCertificate = Bytes(requireBytes("signer_certificate").bind()),
         buildApksResult = Bytes(requireBytes("build_apks_result").bind()),
+    )
+}
+
+/**
+ * Reads a [PendingAppDraftListingIconUpload] from the current row, which must expose every
+ * `pending_app_draft_listing_icon_uploads` column selected by this repository.
+ */
+private fun ResultSet.readPendingAppDraftListingIconUpload():
+        DataStoreResult<PendingAppDraftListingIconUpload> = either {
+    PendingAppDraftListingIconUpload(
+        id = requireString("id").bind(),
+        appDraftListingId = requireString("app_draft_listing_id").bind(),
+        externalBlobId = requireString("external_blob_id").bind(),
+        objectKey = requireString("object_key").bind(),
+        createTime = requireObject<OffsetDateTime>("create_time").bind(),
+        result = getSafeString("processing_result")
+            .map {
+                iconProcessingResultFromColumnValue(it)
+                    .toEitherBind { DataStoreError.IllegalState }
+            },
     )
 }
 

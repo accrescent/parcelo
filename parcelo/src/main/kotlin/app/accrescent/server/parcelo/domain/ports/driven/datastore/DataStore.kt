@@ -248,6 +248,17 @@ abstract class DataStore(private val randomSource: RandomSource) {
         ): DataStoreResult<List<AppDraftListing>>
 
         /**
+         * Finds the pending app draft listing icon upload for a given app draft listing.
+         *
+         * @param appDraftListingId the app draft listing to find a pending icon upload for.
+         * @return the pending app draft listing icon upload for the given app draft listing, or
+         * [None] if it doesn't exist.
+         */
+        abstract fun findPendingListingIconUploadByListingId(
+            appDraftListingId: String,
+        ): DataStoreResult<Option<PendingAppDraftListingIconUpload>>
+
+        /**
          * Finds a pending app draft listing icon upload by its target blob's object key.
          *
          * @param objectKey the object key of the blob the pending icon upload targets.
