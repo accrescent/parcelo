@@ -787,6 +787,59 @@ class AppDraftApiImplTest {
     }
 
     @Test
+    fun `uploadAppDraft marks replaced pending upload's blob for deletion`() {
+        val randomSource = DeterministicRandomSource()
+        LocalBlobStorage(randomSource).use { blobStorage ->
+            InMemoryDataStore.create(randomSource).unwrap().use { dataStore ->
+                dataStore.migrateToHead().unwrap()
+                dataStore.runTxWithRetry { tx ->
+                    tx.organizations.save(organization()).bind()
+                    tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                    tx.externalBlobs.save(pendingExternalBlob()).bind()
+                    tx.appDrafts.saveUpload(pendingAppDraftUpload()).bind()
+                    tx.users.save(user()).bind()
+                    tx.authz.saveRelationship(organizationOwnerRelationship()).bind()
+                }.unwrap2()
+                val appDraftApi = makeAppDraftApi(dataStore, blobStorage = blobStorage)
+
+                appDraftApi.uploadAppDraft("user1", UploadAppDraftRequest("appDraft1")).unwrap()
+                val replacedBlob = dataStore
+                    .runTxWithRetry { tx -> tx.externalBlobs.requireById("blob1").bind() }
+                    .unwrap2()
+
+                assertInstanceOf<ExternalBlob.Status.Deleted<*>>(replacedBlob.status)
+            }
+        }
+    }
+
+    @Test
+    fun `uploadAppDraft does not mark committed blob of replaced pending upload for deletion`() {
+        val randomSource = DeterministicRandomSource()
+        LocalBlobStorage(randomSource).use { blobStorage ->
+            InMemoryDataStore.create(randomSource).unwrap().use { dataStore ->
+                dataStore.migrateToHead().unwrap()
+                dataStore.runTxWithRetry { tx ->
+                    tx.organizations.save(organization()).bind()
+                    tx.externalBlobs.save(committedExternalBlob()).bind()
+                    tx.appPackages.save(appPackage()).bind()
+                    tx.appDrafts.save(unsubmittedAppDraft(appPackageId = Some("appPackage1"))).bind()
+                    tx.appDrafts.saveUpload(pendingAppDraftUpload()).bind()
+                    tx.users.save(user()).bind()
+                    tx.authz.saveRelationship(organizationOwnerRelationship()).bind()
+                }.unwrap2()
+                val appDraftApi = makeAppDraftApi(dataStore, blobStorage = blobStorage)
+
+                appDraftApi.uploadAppDraft("user1", UploadAppDraftRequest("appDraft1")).unwrap()
+                val adoptedBlob = dataStore
+                    .runTxWithRetry { tx -> tx.externalBlobs.requireById("blob1").bind() }
+                    .unwrap2()
+
+                assertInstanceOf<ExternalBlob.Status.Committed<*>>(adoptedBlob.status)
+            }
+        }
+    }
+
+    @Test
     fun `updateAppDraft updates default listing ID for valid request`() {
         InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
             dataStore.migrateToHead().unwrap()
@@ -1318,6 +1371,35 @@ class AppDraftApiImplTest {
                     ),
                     replacedUpload,
                 )
+            }
+        }
+    }
+
+    @Test
+    fun `uploadAppDraftListingIcon marks replaced pending upload's blob for deletion`() {
+        val randomSource = DeterministicRandomSource()
+        LocalBlobStorage(randomSource).use { blobStorage ->
+            InMemoryDataStore.create(randomSource).unwrap().use { dataStore ->
+                dataStore.migrateToHead().unwrap()
+                dataStore.runTxWithRetry { tx ->
+                    tx.organizations.save(organization()).bind()
+                    tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                    tx.appDrafts.saveListing(appDraftListing()).bind()
+                    tx.externalBlobs.save(pendingExternalBlob()).bind()
+                    tx.appDrafts.saveListingIconUpload(pendingAppDraftListingIconUpload()).bind()
+                    tx.users.save(user()).bind()
+                    tx.authz.saveRelationship(organizationOwnerRelationship()).bind()
+                }.unwrap2()
+                val appDraftApi = makeAppDraftApi(dataStore, blobStorage = blobStorage)
+
+                appDraftApi
+                    .uploadAppDraftListingIcon("user1", UploadAppDraftListingIconRequest("appDraftListing1"))
+                    .unwrap()
+                val replacedBlob = dataStore
+                    .runTxWithRetry { tx -> tx.externalBlobs.requireById("blob1").bind() }
+                    .unwrap2()
+
+                assertInstanceOf<ExternalBlob.Status.Deleted<*>>(replacedBlob.status)
             }
         }
     }

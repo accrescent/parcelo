@@ -87,6 +87,7 @@ import arrow.core.Some
 import arrow.core.raise.either
 import arrow.core.raise.ensure
 import com.google.protobuf.InvalidProtocolBufferException
+import java.time.OffsetDateTime
 import kotlin.io.encoding.Base64
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppDraft as DataAppDraft
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppDraftListing as DataAppDraftListing
@@ -263,15 +264,17 @@ class AppDraftApiImpl(
             }
             tx.externalBlobs.save(blob).bindMapLeft(::toServerError)
 
-            // Upsert the app draft's pending upload
-            val pendingUploadExists = tx.appDrafts
-                .pendingUploadExistsByAppDraftId(appDraft.id)
+            // Upsert the app draft's pending upload, marking the blob reserved by any replaced
+            // upload for deletion so it isn't orphaned
+            tx.appDrafts
+                .findPendingUploadByAppDraftId(appDraft.id)
                 .bindMapLeft(::toServerError)
-            if (pendingUploadExists) {
-                tx.appDrafts
-                    .deletePendingUploadByAppDraftId(appDraft.id)
-                    .bindMapLeft(::toServerError)
-            }
+                .onSome { replacedUpload ->
+                    tx.appDrafts
+                        .deletePendingUploadByAppDraftId(appDraft.id)
+                        .bindMapLeft(::toServerError)
+                    markPendingBlobDeleted(tx, replacedUpload.externalBlobId, now).bind()
+                }
             tx.appDrafts
                 .saveUpload(
                     PendingAppDraftUpload(
@@ -649,15 +652,17 @@ class AppDraftApiImpl(
             }
             tx.externalBlobs.save(blob).bindMapLeft(::toServerError)
 
-            // Upsert the app draft listing's pending icon upload
-            val pendingUploadExists = tx.appDrafts
-                .pendingListingIconUploadExistsByListingId(listing.id)
+            // Upsert the app draft listing's pending icon upload, marking the blob reserved by any
+            // replaced upload for deletion so it isn't orphaned
+            tx.appDrafts
+                .findPendingListingIconUploadByListingId(listing.id)
                 .bindMapLeft(::toServerError)
-            if (pendingUploadExists) {
-                tx.appDrafts
-                    .deletePendingListingIconUploadByListingId(listing.id)
-                    .bindMapLeft(::toServerError)
-            }
+                .onSome { replacedUpload ->
+                    tx.appDrafts
+                        .deletePendingListingIconUploadByListingId(listing.id)
+                        .bindMapLeft(::toServerError)
+                    markPendingBlobDeleted(tx, replacedUpload.externalBlobId, now).bind()
+                }
             tx.appDrafts
                 .saveListingIconUpload(
                     PendingAppDraftListingIconUpload(
@@ -739,6 +744,27 @@ class AppDraftApiImpl(
         request: PublishAppDraftRequest
     ): Either<PublishAppDraftError, PublishAppDraftResponse> {
         TODO()
+    }
+
+    /**
+     * Marks a blob for deletion if and only if it is currently pending.
+     *
+     * Committed blobs are generally "owned" by the row which points to them, i.e., the row which
+     * points to the blob is responsible for marking it deleted once the row itself is deleted.
+     * However, pending uploads can temporarily share committed blobs with other rows, in which case
+     * the pending upload should be deleted without marking the blob for deletion since another row
+     * "owns" it. This method is useful for such situations because it marks pending blobs as
+     * deleted and is a no-op for blobs in non-pending states.
+     */
+    private fun markPendingBlobDeleted(
+        tx: DataStore.Transaction,
+        externalBlobId: String,
+        deleteTime: OffsetDateTime,
+    ): Either<ServerError, Unit> = either {
+        val blob = tx.externalBlobs.requireById(externalBlobId).bindMapLeft(::toServerError)
+        if (blob.status is ExternalBlob.Status.Pending) {
+            tx.externalBlobs.markDeleted(externalBlobId, deleteTime).bindMapLeft(::toServerError)
+        }
     }
 
     private fun DataAppDraft.toApiResource(
