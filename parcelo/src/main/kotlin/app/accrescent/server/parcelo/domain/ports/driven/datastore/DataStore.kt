@@ -125,7 +125,6 @@ abstract class DataStore(private val randomSource: RandomSource) {
         val authz: AuthorizationRepository
         val externalBlobs: ExternalBlobRepository
         val organizations: OrganizationRepository
-        val users: UserRepository
     }
 
     abstract class AppDraftRepository {
@@ -612,17 +611,6 @@ abstract class DataStore(private val randomSource: RandomSource) {
          * @return whether the permission is granted.
          */
         abstract fun hasPermission(request: HasPermissionRequest): DataStoreResult<Boolean>
-
-        /**
-         * Saves a new organization owner relationship.
-         *
-         * If the relationship already exists, this method is a no-op.
-         *
-         * @param relationship the relationship to save.
-         */
-        abstract fun saveRelationship(
-            relationship: OrganizationOwnerRelationship,
-        ): DataStoreResult<Unit>
     }
 
     abstract class ExternalBlobRepository {
@@ -729,23 +717,18 @@ abstract class DataStore(private val randomSource: RandomSource) {
         abstract fun findById(id: String): DataStoreResult<Option<Organization>>
 
         /**
-         * Saves a new organization.
+         * Saves a new organization along with the user owning it.
          *
          * @param organization the organization to save.
-         * @return [DataStoreError.UniqueConstraintViolation] if an organization with the same ID
-         * already exists.
+         * @param owner the user owning the organization to save.
+         * @return [DataStoreError.UniqueConstraintViolation] if an organization or user with the
+         * same ID already exists, or [DataStoreError.ForeignKeyViolation] if the organization's
+         * owner user ID doesn't match the owner's ID or the owner's organization ID doesn't match
+         * the organization's ID.
          */
-        abstract fun save(organization: Organization): DataStoreResult<Unit>
-    }
-
-    abstract class UserRepository {
-        /**
-         * Saves a new user.
-         *
-         * @param user the user to save.
-         * @return [DataStoreError.UniqueConstraintViolation] if a user with the same ID already
-         * exists.
-         */
-        abstract fun save(user: User): DataStoreResult<Unit>
+        abstract fun saveWithOwner(
+            organization: Organization,
+            owner: User,
+        ): DataStoreResult<Unit>
     }
 }

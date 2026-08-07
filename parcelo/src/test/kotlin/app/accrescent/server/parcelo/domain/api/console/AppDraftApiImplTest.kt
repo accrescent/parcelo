@@ -61,7 +61,6 @@ import app.accrescent.server.parcelo.domain.ports.driving.console.UploadAppDraft
 import app.accrescent.server.parcelo.domain.ports.driving.console.UploadAppDraftResponse
 import app.accrescent.server.parcelo.domain.uri.HttpUri
 import app.accrescent.server.parcelo.organization
-import app.accrescent.server.parcelo.organizationOwnerRelationship
 import app.accrescent.server.parcelo.pendingAppDraftListingIconUpload
 import app.accrescent.server.parcelo.pendingAppDraftUpload
 import app.accrescent.server.parcelo.pendingExternalBlob
@@ -101,9 +100,7 @@ class AppDraftApiImplTest {
         InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
-                tx.organizations.save(organization()).bind()
-                tx.users.save(user()).bind()
-                tx.authz.saveRelationship(organizationOwnerRelationship()).bind()
+                tx.organizations.saveWithOwner(organization(), user()).bind()
             }.unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
 
@@ -124,9 +121,7 @@ class AppDraftApiImplTest {
         InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
-                tx.organizations.save(organization()).bind()
-                tx.users.save(user()).bind()
-                tx.authz.saveRelationship(organizationOwnerRelationship()).bind()
+                tx.organizations.saveWithOwner(organization(), user()).bind()
                 tx.appDrafts.save(unsubmittedAppDraft("appDraft1")).bind()
                 tx.appDrafts.save(unsubmittedAppDraft("appDraft2")).bind()
                 tx.appDrafts.save(unsubmittedAppDraft("appDraft3")).bind()
@@ -156,9 +151,7 @@ class AppDraftApiImplTest {
         InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
-                tx.organizations.save(organization()).bind()
-                tx.users.save(user()).bind()
-                tx.authz.saveRelationship(organizationOwnerRelationship()).bind()
+                tx.organizations.saveWithOwner(organization(), user()).bind()
                 tx.appDrafts.save(unsubmittedAppDraft()).bind()
             }
                 .unwrap2()
@@ -176,9 +169,7 @@ class AppDraftApiImplTest {
         InMemoryDataStore.create(randomSource).unwrap().use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
-                tx.organizations.save(organization()).bind()
-                tx.users.save(user()).bind()
-                tx.authz.saveRelationship(organizationOwnerRelationship()).bind()
+                tx.organizations.saveWithOwner(organization(), user()).bind()
                 tx.externalBlobs.save(committedExternalBlob()).bind()
                 tx.appPackages.save(appPackage()).bind()
                 tx.appDrafts.save(unsubmittedAppDraft(appPackageId = Some("appPackage1"))).bind()
@@ -221,9 +212,7 @@ class AppDraftApiImplTest {
         InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
-                tx.organizations.save(organization()).bind()
-                tx.users.save(user()).bind()
-                tx.authz.saveRelationship(organizationOwnerRelationship()).bind()
+                tx.organizations.saveWithOwner(organization(), user()).bind()
             }
                 .unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
@@ -254,15 +243,13 @@ class AppDraftApiImplTest {
         InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
-                tx.organizations.save(organization()).bind()
+                tx.organizations.saveWithOwner(organization(), user()).bind()
                 tx.externalBlobs.save(committedExternalBlob()).bind()
                 tx.appPackages.save(appPackage()).bind()
                 tx.appDrafts.save(unsubmittedAppDraft(appPackageId = Some("appPackage1"))).bind()
                 tx.appDrafts.saveListing(appDraftListing()).bind()
                 tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
                 tx.appDrafts.updateSubmitTime("appDraft1", UNIX_EPOCH).bind()
-                tx.users.save(user()).bind()
-                tx.authz.saveRelationship(organizationOwnerRelationship()).bind()
             }
                 .unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
@@ -295,13 +282,19 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             val timestampSource = ConstantTimestampSource()
             dataStore.runTxWithRetry { tx ->
-                tx.organizations.save(organization("org1")).bind()
-                tx.organizations.save(organization("org2")).bind()
+                tx.organizations
+                    .saveWithOwner(
+                        organization("org1", ownerUserId = "user1"),
+                        user("user1", organizationId = "org1"),
+                    ).bind()
+                tx.organizations
+                    .saveWithOwner(
+                        organization("org2", ownerUserId = "user2"),
+                        user("user2", organizationId = "org2"),
+                    )
+                    .bind()
                 tx.appDrafts.save(unsubmittedAppDraft("appDraft1", "org1")).bind()
                 tx.appDrafts.save(unsubmittedAppDraft("appDraft2", "org2")).bind()
-                tx.users.save(user()).bind()
-                tx.authz.saveRelationship(organizationOwnerRelationship("org1", "user1")).bind()
-                tx.authz.saveRelationship(organizationOwnerRelationship("org2", "user1")).bind()
             }.unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
 
@@ -328,15 +321,13 @@ class AppDraftApiImplTest {
         InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
-                tx.organizations.save(organization()).bind()
+                tx.organizations.saveWithOwner(organization(), user()).bind()
                 tx.externalBlobs.save(committedExternalBlob()).bind()
                 tx.appPackages.save(appPackage()).bind()
                 tx.appDrafts.save(unsubmittedAppDraft(appPackageId = Some("appPackage1"))).bind()
                 tx.appDrafts.saveListing(appDraftListing()).bind()
                 tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
                 tx.appDrafts.updateSubmitTime("appDraft1", UNIX_EPOCH).bind()
-                tx.users.save(user()).bind()
-                tx.authz.saveRelationship(organizationOwnerRelationship()).bind()
             }
                 .unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
@@ -370,14 +361,24 @@ class AppDraftApiImplTest {
         InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
-                tx.organizations.save(organization()).bind()
+                tx.organizations
+                    .saveWithOwner(
+                        organization("org1", ownerUserId = "user1"),
+                        user("user1", organizationId = "org1"),
+                    )
+                    .bind()
                 tx.appDrafts.save(unsubmittedAppDraft()).bind()
-                tx.users.save(user()).bind()
+                tx.organizations
+                    .saveWithOwner(
+                        organization("org2", ownerUserId = "user2"),
+                        user("user2", organizationId = "org2"),
+                    )
+                    .bind()
             }.unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
 
             val response = appDraftApi
-                .listAppDrafts("user1", ListAppDraftsRequest("org1", 1u, null))
+                .listAppDrafts("user2", ListAppDraftsRequest("org1", 1u, null))
                 .map { it.appDrafts }
 
             assertEquals(emptyList<ApiAppDraft>().right(), response)
@@ -389,11 +390,9 @@ class AppDraftApiImplTest {
         InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
-                tx.organizations.save(organization()).bind()
+                tx.organizations.saveWithOwner(organization(), user()).bind()
                 tx.appDrafts.save(unsubmittedAppDraft("appDraft1")).bind()
                 tx.appDrafts.save(unsubmittedAppDraft("appDraft2")).bind()
-                tx.users.save(user()).bind()
-                tx.authz.saveRelationship(organizationOwnerRelationship()).bind()
             }.unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
 
@@ -409,11 +408,9 @@ class AppDraftApiImplTest {
         InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
-                tx.organizations.save(organization()).bind()
+                tx.organizations.saveWithOwner(organization(), user()).bind()
                 tx.appDrafts.save(unsubmittedAppDraft("appDraft1")).bind()
                 tx.appDrafts.save(unsubmittedAppDraft("appDraft2")).bind()
-                tx.users.save(user()).bind()
-                tx.authz.saveRelationship(organizationOwnerRelationship()).bind()
             }.unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
 
@@ -436,11 +433,9 @@ class AppDraftApiImplTest {
         InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
-                tx.organizations.save(organization()).bind()
+                tx.organizations.saveWithOwner(organization(), user()).bind()
                 tx.appDrafts.save(unsubmittedAppDraft("appDraft1")).bind()
                 tx.appDrafts.save(unsubmittedAppDraft("appDraft2")).bind()
-                tx.users.save(user()).bind()
-                tx.authz.saveRelationship(organizationOwnerRelationship()).bind()
             }.unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
 
@@ -468,15 +463,13 @@ class AppDraftApiImplTest {
         InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
-                tx.organizations.save(organization()).bind()
+                tx.organizations.saveWithOwner(organization(), user()).bind()
                 tx.externalBlobs.save(committedExternalBlob()).bind()
                 tx.appPackages.save(appPackage()).bind()
                 tx.appDrafts.save(unsubmittedAppDraft(appPackageId = Some("appPackage1"))).bind()
                 tx.appDrafts.saveListing(appDraftListing()).bind()
                 tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
                 tx.appDrafts.updateSubmitTime("appDraft1", UNIX_EPOCH).bind()
-                tx.users.save(user()).bind()
-                tx.authz.saveRelationship(organizationOwnerRelationship()).bind()
             }.unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
 
@@ -491,10 +484,8 @@ class AppDraftApiImplTest {
         InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
-                tx.organizations.save(organization()).bind()
+                tx.organizations.saveWithOwner(organization(), user()).bind()
                 tx.appDrafts.save(unsubmittedAppDraft()).bind()
-                tx.users.save(user()).bind()
-                tx.authz.saveRelationship(organizationOwnerRelationship()).bind()
             }.unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
 
@@ -509,12 +500,10 @@ class AppDraftApiImplTest {
         InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
-                tx.organizations.save(organization()).bind()
+                tx.organizations.saveWithOwner(organization(), user()).bind()
                 tx.externalBlobs.save(committedExternalBlob()).bind()
                 tx.appPackages.save(appPackage()).bind()
                 tx.appDrafts.save(unsubmittedAppDraft(appPackageId = Some("appPackage1"))).bind()
-                tx.users.save(user()).bind()
-                tx.authz.saveRelationship(organizationOwnerRelationship()).bind()
             }.unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
 
@@ -534,7 +523,7 @@ class AppDraftApiImplTest {
         InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
-                tx.organizations.save(organization()).bind()
+                tx.organizations.saveWithOwner(organization(), user()).bind()
                 tx.externalBlobs.save(committedExternalBlob("blob1", objectKey = "object1")).bind()
                 tx.externalBlobs.save(committedExternalBlob("blob2", objectKey = "object2")).bind()
                 tx.appPackages.save(appPackage("appPackage1", externalBlobId = "blob1")).bind()
@@ -550,8 +539,6 @@ class AppDraftApiImplTest {
                     .bind()
                 tx.appDrafts.saveListing(appDraftListing("appDraftListing1", "appDraft1")).bind()
                 tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
-                tx.users.save(user()).bind()
-                tx.authz.saveRelationship(organizationOwnerRelationship()).bind()
             }.unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
 
@@ -566,7 +553,7 @@ class AppDraftApiImplTest {
         InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
-                tx.organizations.save(organization()).bind()
+                tx.organizations.saveWithOwner(organization(), user()).bind()
                 tx.externalBlobs.save(committedExternalBlob()).bind()
                 tx.appPackages.save(appPackage()).bind()
                 tx.appDrafts.save(unsubmittedAppDraft(appPackageId = Some("appPackage1"))).bind()
@@ -576,8 +563,6 @@ class AppDraftApiImplTest {
                     App("app1", "org1", "appListing1", false),
                     AppListing("appListing1", "app1", DataListingLanguage.EN_US),
                 ).bind()
-                tx.users.save(user()).bind()
-                tx.authz.saveRelationship(organizationOwnerRelationship()).bind()
             }.unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
 
@@ -592,14 +577,12 @@ class AppDraftApiImplTest {
         InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
-                tx.organizations.save(organization()).bind()
+                tx.organizations.saveWithOwner(organization(), user()).bind()
                 tx.externalBlobs.save(committedExternalBlob()).bind()
                 tx.appPackages.save(appPackage()).bind()
                 tx.appDrafts.save(unsubmittedAppDraft(appPackageId = Some("appPackage1"))).bind()
                 tx.appDrafts.saveListing(appDraftListing()).bind()
                 tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
-                tx.users.save(user()).bind()
-                tx.authz.saveRelationship(organizationOwnerRelationship()).bind()
             }
                 .unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
@@ -632,15 +615,13 @@ class AppDraftApiImplTest {
         InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
-                tx.organizations.save(organization()).bind()
+                tx.organizations.saveWithOwner(organization(), user()).bind()
                 tx.externalBlobs.save(committedExternalBlob()).bind()
                 tx.appPackages.save(appPackage()).bind()
                 tx.appDrafts.save(unsubmittedAppDraft(appPackageId = Some("appPackage1"))).bind()
                 tx.appDrafts.saveListing(appDraftListing()).bind()
                 tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
                 tx.appDrafts.updateSubmitTime("appDraft1", UNIX_EPOCH).bind()
-                tx.users.save(user()).bind()
-                tx.authz.saveRelationship(organizationOwnerRelationship()).bind()
             }
                 .unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
@@ -658,10 +639,8 @@ class AppDraftApiImplTest {
             InMemoryDataStore.create(randomSource).unwrap().use { dataStore ->
                 dataStore.migrateToHead().unwrap()
                 dataStore.runTxWithRetry { tx ->
-                    tx.organizations.save(organization()).bind()
+                    tx.organizations.saveWithOwner(organization(), user()).bind()
                     tx.appDrafts.save(unsubmittedAppDraft()).bind()
-                    tx.users.save(user()).bind()
-                    tx.authz.saveRelationship(organizationOwnerRelationship()).bind()
                 }.unwrap2()
                 val appDraftApi = makeAppDraftApi(dataStore, blobStorage = blobStorage)
 
@@ -700,15 +679,13 @@ class AppDraftApiImplTest {
         InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
-                tx.organizations.save(organization()).bind()
+                tx.organizations.saveWithOwner(organization(), user()).bind()
                 tx.externalBlobs.save(committedExternalBlob()).bind()
                 tx.appPackages.save(appPackage()).bind()
                 tx.appDrafts.save(unsubmittedAppDraft(appPackageId = Some("appPackage1"))).bind()
                 tx.appDrafts.saveListing(appDraftListing()).bind()
                 tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
                 tx.appDrafts.updateSubmitTime("appDraft1", UNIX_EPOCH).bind()
-                tx.users.save(user()).bind()
-                tx.authz.saveRelationship(organizationOwnerRelationship()).bind()
             }
                 .unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
@@ -725,10 +702,8 @@ class AppDraftApiImplTest {
         InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
-                tx.organizations.save(organization()).bind()
+                tx.organizations.saveWithOwner(organization(), user()).bind()
                 tx.appDrafts.save(unsubmittedAppDraft()).bind()
-                tx.users.save(user()).bind()
-                tx.authz.saveRelationship(organizationOwnerRelationship()).bind()
             }
                 .unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
@@ -749,12 +724,10 @@ class AppDraftApiImplTest {
             InMemoryDataStore.create(randomSource).unwrap().use { dataStore ->
                 dataStore.migrateToHead().unwrap()
                 dataStore.runTxWithRetry { tx ->
-                    tx.organizations.save(organization()).bind()
+                    tx.organizations.saveWithOwner(organization(), user()).bind()
                     tx.appDrafts.save(unsubmittedAppDraft()).bind()
                     tx.externalBlobs.save(pendingExternalBlob()).bind()
                     tx.appDrafts.saveUpload(pendingAppDraftUpload()).bind()
-                    tx.users.save(user()).bind()
-                    tx.authz.saveRelationship(organizationOwnerRelationship()).bind()
                 }.unwrap2()
                 val appDraftApi = makeAppDraftApi(dataStore, blobStorage = blobStorage)
 
@@ -789,11 +762,9 @@ class AppDraftApiImplTest {
         InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
-                tx.organizations.save(organization()).bind()
+                tx.organizations.saveWithOwner(organization(), user()).bind()
                 tx.appDrafts.save(unsubmittedAppDraft()).bind()
                 tx.appDrafts.saveListing(appDraftListing()).bind()
-                tx.users.save(user()).bind()
-                tx.authz.saveRelationship(organizationOwnerRelationship()).bind()
             }
                 .unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
@@ -829,15 +800,13 @@ class AppDraftApiImplTest {
         InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
-                tx.organizations.save(organization()).bind()
+                tx.organizations.saveWithOwner(organization(), user()).bind()
                 tx.externalBlobs.save(committedExternalBlob()).bind()
                 tx.appPackages.save(appPackage()).bind()
                 tx.appDrafts.save(unsubmittedAppDraft(appPackageId = Some("appPackage1"))).bind()
                 tx.appDrafts.saveListing(appDraftListing()).bind()
                 tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
                 tx.appDrafts.updateSubmitTime("appDraft1", UNIX_EPOCH).bind()
-                tx.users.save(user()).bind()
-                tx.authz.saveRelationship(organizationOwnerRelationship()).bind()
             }
                 .unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
@@ -853,10 +822,8 @@ class AppDraftApiImplTest {
         InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
-                tx.organizations.save(organization()).bind()
+                tx.organizations.saveWithOwner(organization(), user()).bind()
                 tx.appDrafts.save(unsubmittedAppDraft()).bind()
-                tx.users.save(user()).bind()
-                tx.authz.saveRelationship(organizationOwnerRelationship()).bind()
             }
                 .unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
@@ -875,12 +842,10 @@ class AppDraftApiImplTest {
         InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
-                tx.organizations.save(organization()).bind()
+                tx.organizations.saveWithOwner(organization(), user()).bind()
                 tx.externalBlobs.save(committedExternalBlob()).bind()
                 tx.appPackages.save(appPackage()).bind()
                 tx.appDrafts.save(unsubmittedAppDraft(appPackageId = Some("appPackage1"))).bind()
-                tx.users.save(user()).bind()
-                tx.authz.saveRelationship(organizationOwnerRelationship()).bind()
             }
                 .unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
@@ -899,12 +864,10 @@ class AppDraftApiImplTest {
         InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
-                tx.organizations.save(organization()).bind()
+                tx.organizations.saveWithOwner(organization(), user()).bind()
                 tx.externalBlobs.save(committedExternalBlob()).bind()
                 tx.appPackages.save(appPackage()).bind()
                 tx.appDrafts.save(unsubmittedAppDraft(appPackageId = Some("appPackage1"))).bind()
-                tx.users.save(user()).bind()
-                tx.authz.saveRelationship(organizationOwnerRelationship()).bind()
             }
                 .unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
@@ -941,11 +904,9 @@ class AppDraftApiImplTest {
         InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
-                tx.organizations.save(organization()).bind()
+                tx.organizations.saveWithOwner(organization(), user()).bind()
                 tx.appDrafts.save(unsubmittedAppDraft()).bind()
                 tx.appDrafts.saveListing(appDraftListing()).bind()
-                tx.users.save(user()).bind()
-                tx.authz.saveRelationship(organizationOwnerRelationship()).bind()
             }
                 .unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
@@ -970,15 +931,13 @@ class AppDraftApiImplTest {
         InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
-                tx.organizations.save(organization()).bind()
+                tx.organizations.saveWithOwner(organization(), user()).bind()
                 tx.externalBlobs.save(committedExternalBlob()).bind()
                 tx.appPackages.save(appPackage()).bind()
                 tx.appDrafts.save(unsubmittedAppDraft(appPackageId = Some("appPackage1"))).bind()
                 tx.appDrafts.saveListing(appDraftListing()).bind()
                 tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
                 tx.appDrafts.updateSubmitTime("appDraft1", UNIX_EPOCH).bind()
-                tx.users.save(user()).bind()
-                tx.authz.saveRelationship(organizationOwnerRelationship()).bind()
             }
                 .unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
@@ -1000,10 +959,8 @@ class AppDraftApiImplTest {
         InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
-                tx.organizations.save(organization()).bind()
+                tx.organizations.saveWithOwner(organization(), user()).bind()
                 tx.appDrafts.save(unsubmittedAppDraft()).bind()
-                tx.users.save(user()).bind()
-                tx.authz.saveRelationship(organizationOwnerRelationship()).bind()
             }
                 .unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
@@ -1042,10 +999,8 @@ class AppDraftApiImplTest {
         InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
-                tx.organizations.save(organization()).bind()
+                tx.organizations.saveWithOwner(organization(), user()).bind()
                 tx.appDrafts.save(unsubmittedAppDraft()).bind()
-                tx.users.save(user()).bind()
-                tx.authz.saveRelationship(organizationOwnerRelationship()).bind()
             }
                 .unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
@@ -1076,13 +1031,11 @@ class AppDraftApiImplTest {
         InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
-                tx.organizations.save(organization()).bind()
+                tx.organizations.saveWithOwner(organization(), user()).bind()
                 tx.appDrafts.save(unsubmittedAppDraft("appDraft1")).bind()
                 tx.appDrafts.save(unsubmittedAppDraft("appDraft2")).bind()
                 tx.appDrafts.saveListing(appDraftListing("appDraftListing1", "appDraft1")).bind()
                 tx.appDrafts.saveListing(appDraftListing("appDraftListing2", "appDraft2")).bind()
-                tx.users.save(user()).bind()
-                tx.authz.saveRelationship(organizationOwnerRelationship()).bind()
             }.unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
 
@@ -1110,15 +1063,25 @@ class AppDraftApiImplTest {
         InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
-                tx.organizations.save(organization()).bind()
+                tx.organizations
+                    .saveWithOwner(
+                        organization("org1", ownerUserId = "user1"),
+                        user("user1", organizationId = "org1"),
+                    )
+                    .bind()
                 tx.appDrafts.save(unsubmittedAppDraft()).bind()
                 tx.appDrafts.saveListing(appDraftListing()).bind()
-                tx.users.save(user()).bind()
+                tx.organizations
+                    .saveWithOwner(
+                        organization("org2", ownerUserId = "user2"),
+                        user("user2", organizationId = "org2"),
+                    )
+                    .bind()
             }.unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
 
             val response = appDraftApi
-                .listAppDraftListings("user1", ListAppDraftListingsRequest("appDraft1", 1u, null))
+                .listAppDraftListings("user2", ListAppDraftListingsRequest("appDraft1", 1u, null))
                 .map { it.appDraftListings }
 
             assertEquals(emptyList<ApiAppDraftListing>().right(), response)
@@ -1143,15 +1106,13 @@ class AppDraftApiImplTest {
         InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
-                tx.organizations.save(organization()).bind()
+                tx.organizations.saveWithOwner(organization(), user()).bind()
                 tx.externalBlobs.save(committedExternalBlob()).bind()
                 tx.appPackages.save(appPackage()).bind()
                 tx.appDrafts.save(unsubmittedAppDraft(appPackageId = Some("appPackage1"))).bind()
                 tx.appDrafts.saveListing(appDraftListing()).bind()
                 tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
                 tx.appDrafts.updateSubmitTime("appDraft1", UNIX_EPOCH).bind()
-                tx.users.save(user()).bind()
-                tx.authz.saveRelationship(organizationOwnerRelationship()).bind()
             }
                 .unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
@@ -1168,11 +1129,9 @@ class AppDraftApiImplTest {
         InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
-                tx.organizations.save(organization()).bind()
+                tx.organizations.saveWithOwner(organization(), user()).bind()
                 tx.appDrafts.save(unsubmittedAppDraft()).bind()
                 tx.appDrafts.saveListing(appDraftListing()).bind()
-                tx.users.save(user()).bind()
-                tx.authz.saveRelationship(organizationOwnerRelationship()).bind()
             }
                 .unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
@@ -1220,15 +1179,13 @@ class AppDraftApiImplTest {
         InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
-                tx.organizations.save(organization()).bind()
+                tx.organizations.saveWithOwner(organization(), user()).bind()
                 tx.externalBlobs.save(committedExternalBlob()).bind()
                 tx.appPackages.save(appPackage()).bind()
                 tx.appDrafts.save(unsubmittedAppDraft(appPackageId = Some("appPackage1"))).bind()
                 tx.appDrafts.saveListing(appDraftListing()).bind()
                 tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
                 tx.appDrafts.updateSubmitTime("appDraft1", UNIX_EPOCH).bind()
-                tx.users.save(user()).bind()
-                tx.authz.saveRelationship(organizationOwnerRelationship()).bind()
             }
                 .unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
@@ -1247,11 +1204,9 @@ class AppDraftApiImplTest {
             InMemoryDataStore.create(randomSource).unwrap().use { dataStore ->
                 dataStore.migrateToHead().unwrap()
                 dataStore.runTxWithRetry { tx ->
-                    tx.organizations.save(organization()).bind()
+                    tx.organizations.saveWithOwner(organization(), user()).bind()
                     tx.appDrafts.save(unsubmittedAppDraft()).bind()
                     tx.appDrafts.saveListing(appDraftListing()).bind()
-                    tx.users.save(user()).bind()
-                    tx.authz.saveRelationship(organizationOwnerRelationship()).bind()
                 }.unwrap2()
                 val appDraftApi = makeAppDraftApi(dataStore, blobStorage = blobStorage)
 
@@ -1281,13 +1236,11 @@ class AppDraftApiImplTest {
             InMemoryDataStore.create(randomSource).unwrap().use { dataStore ->
                 dataStore.migrateToHead().unwrap()
                 dataStore.runTxWithRetry { tx ->
-                    tx.organizations.save(organization()).bind()
+                    tx.organizations.saveWithOwner(organization(), user()).bind()
                     tx.appDrafts.save(unsubmittedAppDraft()).bind()
                     tx.appDrafts.saveListing(appDraftListing()).bind()
                     tx.externalBlobs.save(pendingExternalBlob()).bind()
                     tx.appDrafts.saveListingIconUpload(pendingAppDraftListingIconUpload()).bind()
-                    tx.users.save(user()).bind()
-                    tx.authz.saveRelationship(organizationOwnerRelationship()).bind()
                 }.unwrap2()
                 val appDraftApi = makeAppDraftApi(dataStore, blobStorage = blobStorage)
 
@@ -1352,15 +1305,13 @@ class AppDraftApiImplTest {
         InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
-                tx.organizations.save(organization()).bind()
+                tx.organizations.saveWithOwner(organization(), user()).bind()
                 tx.externalBlobs.save(committedExternalBlob()).bind()
                 tx.appPackages.save(appPackage()).bind()
                 tx.appDrafts.save(unsubmittedAppDraft(appPackageId = Some("appPackage1"))).bind()
                 tx.appDrafts.saveListing(appDraftListing()).bind()
                 tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
                 tx.appDrafts.updateSubmitTime("appDraft1", ConstantTimestampSource().now()).bind()
-                tx.users.save(user()).bind()
-                tx.authz.saveRelationship(organizationOwnerRelationship()).bind()
             }
                 .unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
@@ -1377,12 +1328,10 @@ class AppDraftApiImplTest {
         InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
-                tx.organizations.save(organization()).bind()
+                tx.organizations.saveWithOwner(organization(), user()).bind()
                 tx.appDrafts.save(unsubmittedAppDraft()).bind()
                 tx.appDrafts.saveListing(appDraftListing()).bind()
                 tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
-                tx.users.save(user()).bind()
-                tx.authz.saveRelationship(organizationOwnerRelationship()).bind()
             }
                 .unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
@@ -1403,11 +1352,9 @@ class AppDraftApiImplTest {
         InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
-                tx.organizations.save(organization()).bind()
+                tx.organizations.saveWithOwner(organization(), user()).bind()
                 tx.appDrafts.save(unsubmittedAppDraft()).bind()
                 tx.appDrafts.saveListing(appDraftListing()).bind()
-                tx.users.save(user()).bind()
-                tx.authz.saveRelationship(organizationOwnerRelationship()).bind()
             }
                 .unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
