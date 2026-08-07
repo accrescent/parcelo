@@ -11,7 +11,6 @@ import app.accrescent.server.parcelo.core.unwrap2
 import app.accrescent.server.parcelo.core.unwrapErr
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppListing
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.ListingLanguage
-import app.accrescent.server.parcelo.domain.ports.driven.datastore.OrganizationOwnerRelationship
 import app.accrescent.server.parcelo.domain.ports.driving.console.GetAppRequest
 import app.accrescent.server.parcelo.domain.ports.driving.console.GetAppResponse
 import app.accrescent.server.parcelo.domain.ports.driving.console.InsufficientPermissionError
@@ -44,9 +43,7 @@ class AppApiImplTest {
             dataStore.migrateToHead().unwrap()
             val originalApp = makeApp()
             dataStore.runTxWithRetry { tx ->
-                tx.organizations.save(organization()).bind()
-                tx.users.save(user()).bind()
-                tx.authz.saveRelationship(OrganizationOwnerRelationship("org1", "user1")).bind()
+                tx.organizations.saveWithOwner(organization(), user()).bind()
                 tx.apps.saveWithDefaultListing(
                     originalApp,
                     AppListing("appListing1", "app1", ListingLanguage.EN_US)
@@ -87,9 +84,7 @@ class AppApiImplTest {
         InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
-                tx.organizations.save(organization()).bind()
-                tx.users.save(user()).bind()
-                tx.authz.saveRelationship(OrganizationOwnerRelationship("org1", "user1")).bind()
+                tx.organizations.saveWithOwner(organization(), user()).bind()
                 tx.apps.saveWithDefaultListing(
                     makeApp(),
                     AppListing("appListing1", "app1", ListingLanguage.EN_US)
@@ -108,9 +103,7 @@ class AppApiImplTest {
         InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
-                tx.organizations.save(organization()).bind()
-                tx.users.save(user()).bind()
-                tx.authz.saveRelationship(OrganizationOwnerRelationship("org1", "user1")).bind()
+                tx.organizations.saveWithOwner(organization(), user()).bind()
                 tx.apps.saveWithDefaultListing(
                     makeApp(),
                     AppListing("appListing1", "app1", ListingLanguage.EN_US)

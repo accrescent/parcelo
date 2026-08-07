@@ -38,6 +38,7 @@ import app.accrescent.server.parcelo.organization
 import app.accrescent.server.parcelo.pendingAppDraftUpload
 import app.accrescent.server.parcelo.pendingExternalBlob
 import app.accrescent.server.parcelo.unsubmittedAppDraft
+import app.accrescent.server.parcelo.user
 import arrow.core.Some
 import arrow.core.left
 import arrow.core.right
@@ -98,7 +99,7 @@ private fun seedSuccessfulUpload(
         .upload(validApkSetPath(), BlobId.Location("uploads", "upload1"))
         .unwrap()
     dataStore.runTxWithRetry { tx ->
-        tx.organizations.save(organization()).bind()
+        tx.organizations.saveWithOwner(organization(), user()).bind()
         tx.appDrafts.save(unsubmittedAppDraft()).bind()
         tx.externalBlobs
             .save(pendingExternalBlob(bucketName = "private", objectKey = "reserved1"))
@@ -139,7 +140,7 @@ class UploadEventProcessorImplTest {
             InMemoryDataStore.create(randomSource).unwrap().use { dataStore ->
                 dataStore.migrateToHead().unwrap()
                 dataStore.runTxWithRetry { tx ->
-                    tx.organizations.save(organization()).bind()
+                    tx.organizations.saveWithOwner(organization(), user()).bind()
                     tx.appDrafts.save(unsubmittedAppDraft()).bind()
                     tx.externalBlobs.save(pendingExternalBlob()).bind()
                     tx.appDrafts.saveUpload(
@@ -170,7 +171,7 @@ class UploadEventProcessorImplTest {
             InMemoryDataStore.create(randomSource).unwrap().use { dataStore ->
                 dataStore.migrateToHead().unwrap()
                 dataStore.runTxWithRetry { tx ->
-                    tx.organizations.save(organization()).bind()
+                    tx.organizations.saveWithOwner(organization(), user()).bind()
                     tx.externalBlobs.save(committedExternalBlob()).bind()
                     tx.appPackages.save(appPackage(uploadEventTime = UNIX_EPOCH.plusSeconds(1))).bind()
                     tx.appDrafts.save(unsubmittedAppDraft(appPackageId = Some("appPackage1"))).bind()
@@ -198,7 +199,7 @@ class UploadEventProcessorImplTest {
             InMemoryDataStore.create(randomSource).unwrap().use { dataStore ->
                 dataStore.migrateToHead().unwrap()
                 dataStore.runTxWithRetry { tx ->
-                    tx.organizations.save(organization()).bind()
+                    tx.organizations.saveWithOwner(organization(), user()).bind()
                     tx.externalBlobs.save(committedExternalBlob()).bind()
                     tx.appPackages.save(appPackage()).bind()
                     tx.appDrafts.save(unsubmittedAppDraft(appPackageId = Some("appPackage1"))).bind()
@@ -237,7 +238,7 @@ class UploadEventProcessorImplTest {
                 // A pending upload exists for the blob, but the object blob was never actually
                 // uploaded to blob storage
                 dataStore.runTxWithRetry { tx ->
-                    tx.organizations.save(organization()).bind()
+                    tx.organizations.saveWithOwner(organization(), user()).bind()
                     tx.appDrafts.save(unsubmittedAppDraft()).bind()
                     tx.externalBlobs.save(pendingExternalBlob()).bind()
                     tx.appDrafts.saveUpload(pendingAppDraftUpload()).bind()
@@ -273,7 +274,7 @@ class UploadEventProcessorImplTest {
                     .upload(apkSetPath, BlobId.Location("b1", "o1"))
                     .unwrap()
                 dataStore.runTxWithRetry { tx ->
-                    tx.organizations.save(organization()).bind()
+                    tx.organizations.saveWithOwner(organization(), user()).bind()
                     tx.appDrafts.save(unsubmittedAppDraft()).bind()
                     tx.externalBlobs.save(pendingExternalBlob()).bind()
                     tx.appDrafts.saveUpload(
@@ -478,7 +479,7 @@ class UploadEventProcessorImplTest {
                     .upload(validApkSetPath(), BlobId.Location("uploads", "upload1"))
                     .unwrap()
                 dataStore.runTxWithRetry { tx ->
-                    tx.organizations.save(organization()).bind()
+                    tx.organizations.saveWithOwner(organization(), user()).bind()
                     tx.externalBlobs
                         .save(committedExternalBlob(id = "oldBlob", bucketName = "private", objectKey = "old1"))
                         .bind()

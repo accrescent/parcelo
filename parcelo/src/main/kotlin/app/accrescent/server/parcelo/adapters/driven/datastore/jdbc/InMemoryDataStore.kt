@@ -30,14 +30,12 @@ import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStore.Aut
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStore.ExternalBlobRepository
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStore.OrganizationRepository
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStore.Transaction
-import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStore.UserRepository
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStoreError
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStoreResult
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.ExternalBlob
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.HasPermissionRequest
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.ListingLanguage
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.Organization
-import app.accrescent.server.parcelo.domain.ports.driven.datastore.OrganizationOwnerRelationship
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.PendingAppDraftListingIconUpload
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.PendingAppDraftUpload
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.User
@@ -192,12 +190,41 @@ class InMemoryDataStore private constructor(
                     )
                     """.trimIndent()
                 )
+                // organizations.owner_user_id should theoretically be NOT NULL, but an organization
+                // and its owner reference each other, and H2 supports neither deferrable foreign
+                // key constraints nor INSERT queries in common table expressions, so no statement
+                // order can create both rows with the cycle intact. As with
+                // apps.default_app_listing_id, this column is therefore kept non-null in practice
+                // through careful handling in the DataStore application code. Since this DataStore
+                // isn't meant to be used in production, there shouldn't be any significant
+                // consequences of this implementation.
                 statement.execute(
                     """
                     CREATE TABLE organizations (
                         id id_text PRIMARY KEY,
+                        owner_user_id varchar,
                         create_time timestamp with time zone NOT NULL
                     )
+                    """.trimIndent()
+                )
+                // Every user belongs to the single organization they own. The unique constraint on
+                // organization_id caps an organization at one member, and the composite foreign key
+                // added to organizations below forces that member to be the organization's owner,
+                // so the two references are always reciprocal.
+                statement.execute(
+                    """
+                    CREATE TABLE users (
+                        id id_text PRIMARY KEY,
+                        organization_id varchar NOT NULL UNIQUE REFERENCES organizations(id),
+                        UNIQUE (id, organization_id)
+                    )
+                    """.trimIndent()
+                )
+                statement.execute(
+                    """
+                    ALTER TABLE organizations
+                    ADD CONSTRAINT fk_organizations_owner
+                    FOREIGN KEY (owner_user_id, id) REFERENCES users(id, organization_id)
                     """.trimIndent()
                 )
                 statement.execute(
@@ -358,24 +385,6 @@ class InMemoryDataStore private constructor(
                     )
                     """.trimIndent()
                 )
-                statement.execute(
-                    """
-                    CREATE TABLE users (
-                        id id_text PRIMARY KEY
-                    )
-                    """.trimIndent()
-                )
-                statement.execute(
-                    """
-                    CREATE TABLE organization_owners (
-                        id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-                        organization_id varchar NOT NULL
-                            REFERENCES organizations(id) ON DELETE CASCADE,
-                        user_id varchar NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-                        UNIQUE (organization_id, user_id)
-                    )
-                    """.trimIndent()
-                )
             }
             migrated = true
             Unit.right()
@@ -499,7 +508,6 @@ private class InMemoryTransaction(connection: Connection) : Transaction {
     override val authz = InMemoryAuthorizationRepository(connection)
     override val externalBlobs = InMemoryExternalBlobRepository(connection)
     override val organizations = InMemoryOrganizationRepository(connection)
-    override val users = InMemoryUserRepository(connection)
 }
 
 private class InMemoryAppDraftRepository(
@@ -619,10 +627,10 @@ private class InMemoryAppDraftRepository(
                 app_drafts.app_package_id,
                 app_drafts.submit_time
             FROM app_drafts
-            JOIN organization_owners
-            ON organization_owners.organization_id = app_drafts.organization_id
+            JOIN organizations
+            ON organizations.id = app_drafts.organization_id
             WHERE app_drafts.organization_id = ?
-            AND organization_owners.user_id = ?
+            AND organizations.owner_user_id = ?
             AND (? IS NULL OR app_drafts.id > ?)
             ORDER BY app_drafts.id
             LIMIT ?
@@ -677,10 +685,10 @@ private class InMemoryAppDraftRepository(
             FROM app_draft_listings
             JOIN app_drafts
             ON app_drafts.id = app_draft_listings.app_draft_id
-            JOIN organization_owners
-            ON organization_owners.organization_id = app_drafts.organization_id
+            JOIN organizations
+            ON organizations.id = app_drafts.organization_id
             WHERE app_draft_listings.app_draft_id = ?
-            AND organization_owners.user_id = ?
+            AND organizations.owner_user_id = ?
             AND (? IS NULL OR app_draft_listings.language > ?)
             ORDER BY app_draft_listings.language
             LIMIT ?
@@ -1215,16 +1223,14 @@ private class InMemoryAuthorizationRepository(
 ) : AuthorizationRepository() {
     override fun hasPermission(request: HasPermissionRequest): DataStoreResult<Boolean> {
         // Every permission is granted by the same rule: the subject owns the organization the
-        // resource belongs to. Only the path from the resource to organization_owners varies, so
-        // the request kind selects a query and one binding site serves them all.
+        // resource belongs to. Only the path from the resource to organizations varies, so the
+        // request kind selects a query and one binding site serves them all.
         val sql = when (request) {
             is HasPermissionRequest.CreateAppDraft -> """
                 SELECT EXISTS(
                     SELECT 1 FROM organizations
-                    JOIN organization_owners
-                    ON organization_owners.organization_id = organizations.id
                     WHERE organizations.id = ?
-                    AND organization_owners.user_id = ?
+                    AND organizations.owner_user_id = ?
                 )
             """.trimIndent()
 
@@ -1232,10 +1238,10 @@ private class InMemoryAuthorizationRepository(
             is HasPermissionRequest.ViewApp -> """
                 SELECT EXISTS(
                     SELECT 1 FROM apps
-                    JOIN organization_owners
-                    ON organization_owners.organization_id = apps.organization_id
+                    JOIN organizations
+                    ON organizations.id = apps.organization_id
                     WHERE apps.id = ?
-                    AND organization_owners.user_id = ?
+                    AND organizations.owner_user_id = ?
                 )
             """.trimIndent()
 
@@ -1248,10 +1254,10 @@ private class InMemoryAuthorizationRepository(
             is HasPermissionRequest.ViewAppDraft -> """
                 SELECT EXISTS(
                     SELECT 1 FROM app_drafts
-                    JOIN organization_owners
-                    ON organization_owners.organization_id = app_drafts.organization_id
+                    JOIN organizations
+                    ON organizations.id = app_drafts.organization_id
                     WHERE app_drafts.id = ?
-                    AND organization_owners.user_id = ?
+                    AND organizations.owner_user_id = ?
                 )
             """.trimIndent()
 
@@ -1264,10 +1270,10 @@ private class InMemoryAuthorizationRepository(
                     SELECT 1 FROM app_draft_listings
                     JOIN app_drafts
                     ON app_drafts.id = app_draft_listings.app_draft_id
-                    JOIN organization_owners
-                    ON organization_owners.organization_id = app_drafts.organization_id
+                    JOIN organizations
+                    ON organizations.id = app_drafts.organization_id
                     WHERE app_draft_listings.id = ?
-                    AND organization_owners.user_id = ?
+                    AND organizations.owner_user_id = ?
                 )
             """.trimIndent()
         }
@@ -1278,21 +1284,6 @@ private class InMemoryAuthorizationRepository(
                 stmt.setString(2, request.subjectId)
                 stmt.executeQuery().use { rs -> rs.getSelectExistsResult().bind() }
             }
-        }
-    }
-
-    override fun saveRelationship(
-        relationship: OrganizationOwnerRelationship,
-    ): DataStoreResult<Unit> = runCatchingSql {
-        val sql = """
-            MERGE INTO organization_owners (organization_id, user_id)
-            KEY (organization_id, user_id)
-            VALUES (?, ?)
-        """.trimIndent()
-        connection.prepareStatement(sql).use { stmt ->
-            stmt.setString(1, relationship.organizationId)
-            stmt.setString(2, relationship.userId)
-            stmt.executeSingleUpdate().bind()
         }
     }
 }
@@ -1491,7 +1482,7 @@ private class InMemoryOrganizationRepository(
     private val connection: Connection,
 ) : OrganizationRepository() {
     override fun findById(id: String): DataStoreResult<Option<Organization>> = runCatchingSql {
-        val sql = "SELECT id, create_time FROM organizations WHERE id = ?"
+        val sql = "SELECT id, owner_user_id, create_time FROM organizations WHERE id = ?"
         connection.prepareStatement(sql).use { stmt ->
             stmt.setString(1, id)
             stmt.executeQuery().use { rs ->
@@ -1499,6 +1490,7 @@ private class InMemoryOrganizationRepository(
 
                 Organization(
                     id = rs.requireString("id").bind(),
+                    ownerUserId = rs.requireString("owner_user_id").bind(),
                     createTime = rs.requireObject<OffsetDateTime>("create_time").bind(),
                 )
                     .some()
@@ -1506,21 +1498,33 @@ private class InMemoryOrganizationRepository(
         }
     }
 
-    override fun save(organization: Organization): DataStoreResult<Unit> = runCatchingSql {
-        val sql = "INSERT INTO organizations (id, create_time) VALUES (?, ?)"
-        connection.prepareStatement(sql).use { stmt ->
+    override fun saveWithOwner(
+        organization: Organization,
+        owner: User,
+    ): DataStoreResult<Unit> = runCatchingSql {
+        if (organization.ownerUserId != owner.id || owner.organizationId != organization.id) {
+            raise(DataStoreError.ForeignKeyViolation)
+        }
+
+        val organizationInsertSql =
+            "INSERT INTO organizations (id, owner_user_id, create_time) VALUES (?, ?, ?)"
+        val userInsertSql = "INSERT INTO users (id, organization_id) VALUES (?, ?)"
+        val organizationUpdateSql = "UPDATE organizations SET owner_user_id = ? WHERE id = ?"
+
+        connection.prepareStatement(organizationInsertSql).use { stmt ->
             stmt.setString(1, organization.id)
-            stmt.setObject(2, organization.createTime)
+            stmt.setNull(2, Types.VARCHAR)
+            stmt.setObject(3, organization.createTime)
             stmt.executeSingleUpdate().bind()
         }
-    }
-}
-
-private class InMemoryUserRepository(private val connection: Connection) : UserRepository() {
-    override fun save(user: User): DataStoreResult<Unit> = runCatchingSql {
-        val sql = "INSERT INTO users (id) VALUES (?)"
-        connection.prepareStatement(sql).use { stmt ->
-            stmt.setString(1, user.id)
+        connection.prepareStatement(userInsertSql).use { stmt ->
+            stmt.setString(1, owner.id)
+            stmt.setString(2, owner.organizationId)
+            stmt.executeSingleUpdate().bind()
+        }
+        connection.prepareStatement(organizationUpdateSql).use { stmt ->
+            stmt.setString(1, organization.ownerUserId)
+            stmt.setString(2, organization.id)
             stmt.executeSingleUpdate().bind()
         }
     }
