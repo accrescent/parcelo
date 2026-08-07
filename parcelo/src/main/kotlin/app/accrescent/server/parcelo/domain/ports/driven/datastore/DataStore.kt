@@ -489,6 +489,16 @@ abstract class DataStore(private val randomSource: RandomSource) {
         abstract fun findByAppDraftId(appDraftId: String): DataStoreResult<Option<AppPackage>>
 
         /**
+         * Finds an app package's permissions.
+         *
+         * @param appPackageId the ID of the app package to find the permissions of.
+         * @return the permissions the requested app package requests.
+         */
+        abstract fun findPermissionsForAppPackage(
+            appPackageId: String,
+        ): DataStoreResult<List<AppPackagePermission>>
+
+        /**
          * Finds an app package by its ID.
          *
          * @param id the ID of the app package to find.
