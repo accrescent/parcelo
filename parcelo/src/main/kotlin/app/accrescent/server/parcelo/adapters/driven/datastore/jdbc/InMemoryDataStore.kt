@@ -1092,7 +1092,11 @@ private class InMemoryAppPackageRepository(
             stmt.setString(1, permission.id)
             stmt.setString(2, permission.appPackageId)
             stmt.setString(3, permission.name.intoInner())
-            stmt.setObject(4, permission.maxSdkVersion.getOrNull(), Types.INTEGER)
+            stmt.setObject(
+                4,
+                permission.maxSdkVersion.map(SdkVersion::intoInner).getOrNull(),
+                Types.INTEGER,
+            )
             stmt.executeSingleUpdate().bind()
         }
     }

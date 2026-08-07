@@ -18,6 +18,7 @@ import app.accrescent.server.parcelo.domain.android.ApkParseError
 import app.accrescent.server.parcelo.domain.android.ApkSetParseError
 import app.accrescent.server.parcelo.domain.android.ApplicationId
 import app.accrescent.server.parcelo.domain.android.NameAttribute
+import app.accrescent.server.parcelo.domain.android.SdkVersion
 import app.accrescent.server.parcelo.domain.android.VersionName
 import app.accrescent.server.parcelo.organization
 import app.accrescent.server.parcelo.organizationOwnerRelationship
@@ -1821,6 +1822,25 @@ abstract class DataStoreConformanceTest {
                 .unwrapErr()
 
             assertEquals(DataStoreError.ForeignKeyViolation, error)
+        }
+    }
+
+    @Test
+    fun `appPackages savePermission succeeds when maxSdkVersion is present`() {
+        withMigratedDataStore { dataStore ->
+            dataStore.runTxWithRetry { tx ->
+                tx.externalBlobs.save(committedExternalBlob()).bind()
+                tx.appPackages.save(appPackage()).bind()
+            }
+                .unwrap2()
+
+            val permission =
+                appPackagePermission(maxSdkVersion = Some(SdkVersion.fromInt(28).unwrap()))
+            val result = dataStore
+                .runTxWithRetry { tx -> tx.appPackages.savePermission(permission).bind() }
+                .unwrap()
+
+            assertInstanceOf<Either.Right<Unit>>(result)
         }
     }
 
