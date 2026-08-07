@@ -19,7 +19,6 @@ import app.accrescent.server.parcelo.domain.ports.driven.blobstorage.UploadType
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStore
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.ExternalBlob
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.HasPermissionRequest
-import app.accrescent.server.parcelo.domain.ports.driven.datastore.OperationType
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.PendingAppDraftListingIconUpload
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.PendingAppDraftUpload
 import app.accrescent.server.parcelo.domain.ports.driven.randomsource.RandomSource
@@ -92,12 +91,10 @@ import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppDraft as D
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppDraftListing as DataAppDraftListing
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppPackage as DataAppPackage
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.ListingLanguage as DataListingLanguage
-import app.accrescent.server.parcelo.domain.ports.driven.datastore.Operation as DataOperation
 import app.accrescent.server.parcelo.domain.ports.driving.console.AppDraft as ApiAppDraft
 import app.accrescent.server.parcelo.domain.ports.driving.console.AppDraftListing as ApiAppDraftListing
 import app.accrescent.server.parcelo.domain.ports.driving.console.AppPackage as ApiAppPackage
 import app.accrescent.server.parcelo.domain.ports.driving.console.ListingLanguage as ApiListingLanguage
-import app.accrescent.server.parcelo.domain.ports.driving.console.Operation as ApiOperation
 
 private val ACTIVE_APP_DRAFT_LIMIT = 3uL
 private val PUBLISHED_APP_LIMIT = 1uL
@@ -287,20 +284,7 @@ class AppDraftApiImpl(
                 )
                 .bindMapLeft(::toServerError)
 
-            val operationId = idGenerator.generateId(IdType.OPERATION).bindMapLeft(::toServerError)
-            tx.operations
-                .save(
-                    DataOperation(
-                        id = operationId,
-                        type = OperationType.APP_DRAFT_UPLOAD,
-                    )
-                )
-                .bindMapLeft(::toServerError)
-
-            UploadAppDraftResponse(
-                apkSetUploadUri = uploadUri,
-                processingOperation = ApiOperation.Incomplete(id = operationId),
-            )
+            UploadAppDraftResponse(uploadUri)
         }
             .bindMapLeft(::toServerError)
             .bind()
@@ -673,20 +657,7 @@ class AppDraftApiImpl(
                 )
                 .bindMapLeft(::toServerError)
 
-            val operationId = idGenerator.generateId(IdType.OPERATION).bindMapLeft(::toServerError)
-            tx.operations
-                .save(
-                    DataOperation(
-                        id = operationId,
-                        type = OperationType.APP_DRAFT_LISTING_ICON_UPLOAD,
-                    )
-                )
-                .bindMapLeft(::toServerError)
-
-            UploadAppDraftListingIconResponse(
-                uploadUri = uploadUri,
-                processingOperation = ApiOperation.Incomplete(id = operationId),
-            )
+            UploadAppDraftListingIconResponse(uploadUri)
         }
             .bindMapLeft(::toServerError)
             .bind()

@@ -27,7 +27,6 @@ import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStore.App
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStore.AppRepository
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStore.AuthorizationRepository
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStore.ExternalBlobRepository
-import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStore.OperationRepository
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStore.OrganizationRepository
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStore.Transaction
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStore.UserRepository
@@ -36,8 +35,6 @@ import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStoreResu
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.ExternalBlob
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.HasPermissionRequest
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.ListingLanguage
-import app.accrescent.server.parcelo.domain.ports.driven.datastore.Operation
-import app.accrescent.server.parcelo.domain.ports.driven.datastore.OperationType
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.Organization
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.OrganizationOwnerRelationship
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.PendingAppDraftListingIconUpload
@@ -369,17 +366,6 @@ class InMemoryDataStore private constructor(
                 )
                 statement.execute(
                     """
-                    CREATE TABLE operations (
-                        id id_text PRIMARY KEY,
-                        type varchar CHECK (type IN (
-                            'app_draft_upload',
-                            'app_draft_listing_icon_upload'
-                        ))
-                    )
-                    """.trimIndent()
-                )
-                statement.execute(
-                    """
                     CREATE TABLE organization_owners (
                         id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
                         organization_id varchar NOT NULL
@@ -511,7 +497,6 @@ private class InMemoryTransaction(connection: Connection) : Transaction {
     override val apps = InMemoryAppRepository(connection)
     override val authz = InMemoryAuthorizationRepository(connection)
     override val externalBlobs = InMemoryExternalBlobRepository(connection)
-    override val operations = InMemoryOperationRepository(connection)
     override val organizations = InMemoryOrganizationRepository(connection)
     override val users = InMemoryUserRepository(connection)
 }
@@ -1458,52 +1443,6 @@ private class InMemoryExternalBlobRepository(
         connection.prepareStatement(sql).use { stmt ->
             stmt.setObject(1, deleteTime)
             stmt.setString(2, id)
-            stmt.executeSingleUpdate().bind()
-        }
-    }
-}
-
-private class InMemoryOperationRepository(
-    private val connection: Connection,
-) : OperationRepository() {
-    override fun findById(id: String): DataStoreResult<Option<Operation>> = runCatchingSql {
-        val sql = """
-            SELECT id, type
-            FROM operations
-            WHERE id = ?
-        """.trimIndent()
-        connection.prepareStatement(sql).use { stmt ->
-            stmt.setString(1, id)
-            stmt.executeQuery().use { rs ->
-                if (!rs.next()) return@use None
-
-                Operation(
-                    id = rs.requireString("id").bind(),
-                    type = when (rs.requireString("type").bind()) {
-                        "app_draft_upload" -> OperationType.APP_DRAFT_UPLOAD
-                        "app_draft_listing_icon_upload" ->
-                            OperationType.APP_DRAFT_LISTING_ICON_UPLOAD
-
-                        else -> raise(DataStoreError.IllegalState)
-                    },
-                )
-                    .some()
-            }
-        }
-    }
-
-    override fun save(operation: Operation): DataStoreResult<Unit> = runCatchingSql {
-        val sql = "INSERT INTO operations (id, type) VALUES (?, ?)"
-        connection.prepareStatement(sql).use { stmt ->
-            stmt.setString(1, operation.id)
-            stmt.setString(
-                2,
-                when (operation.type) {
-                    OperationType.APP_DRAFT_UPLOAD -> "app_draft_upload"
-                    OperationType.APP_DRAFT_LISTING_ICON_UPLOAD ->
-                        "app_draft_listing_icon_upload"
-                }
-            )
             stmt.executeSingleUpdate().bind()
         }
     }

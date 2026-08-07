@@ -6,7 +6,4 @@ package app.accrescent.server.parcelo.domain.ports.driving.console
 
 import app.accrescent.server.parcelo.domain.uri.HttpUri
 
-data class UploadAppDraftResponse(
-    val apkSetUploadUri: HttpUri,
-    val processingOperation: Operation<Unit, Unit>,
-)
+data class UploadAppDraftResponse(val apkSetUploadUri: HttpUri)
