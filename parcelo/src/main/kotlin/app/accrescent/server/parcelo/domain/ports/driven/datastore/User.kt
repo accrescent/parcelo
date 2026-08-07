@@ -4,4 +4,10 @@
 
 package app.accrescent.server.parcelo.domain.ports.driven.datastore
 
-data class User(val id: String)
+/**
+ * A user of the console.
+ *
+ * @property id the user's unique ID.
+ * @property organizationId the ID of the organization this user exclusively owns.
+ */
+data class User(val id: String, val organizationId: String)

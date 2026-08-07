@@ -15,6 +15,7 @@ import app.accrescent.server.parcelo.core.unwrapErr
 import app.accrescent.server.parcelo.organization
 import app.accrescent.server.parcelo.pendingExternalBlob
 import app.accrescent.server.parcelo.unsubmittedAppDraft
+import app.accrescent.server.parcelo.user
 import arrow.core.Either
 import arrow.core.left
 import arrow.core.raise.Raise
@@ -78,7 +79,7 @@ class DataStoreTest {
         InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore
-                .runTxWithRetry { tx -> tx.organizations.save(organization()).bind() }
+                .runTxWithRetry { tx -> tx.organizations.saveWithOwner(organization(), user()).bind() }
                 .unwrap2()
             val originalAppDraft = unsubmittedAppDraft()
 
@@ -111,7 +112,7 @@ class DataStoreTest {
             dataStore.migrateToHead().unwrap()
             dataStore
                 .runTxWithRetry { tx ->
-                    tx.organizations.save(organization()).bind()
+                    tx.organizations.saveWithOwner(organization(), user()).bind()
                     tx.appDrafts.save(unsubmittedAppDraft()).bind()
                 }
                 .unwrap2()
@@ -178,7 +179,7 @@ class DataStoreTest {
             dataStore.migrateToHead().unwrap()
             val originalApp = App("app1", "org1", "appListing1", false)
             dataStore
-                .runTxWithRetry { tx -> tx.organizations.save(organization()).bind() }
+                .runTxWithRetry { tx -> tx.organizations.saveWithOwner(organization(), user()).bind() }
                 .unwrap2()
 
             val defaultListing = AppListing("appListing1", "app1", ListingLanguage.EN_US)

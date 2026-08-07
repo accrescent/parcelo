@@ -21,7 +21,6 @@ import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppPackagePer
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.ExternalBlob
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.ListingLanguage
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.Organization
-import app.accrescent.server.parcelo.domain.ports.driven.datastore.OrganizationOwnerRelationship
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.PendingAppDraftListingIconUpload
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.PendingAppDraftUpload
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.User
@@ -138,15 +137,12 @@ fun pendingExternalBlob(
     )
 }
 
-fun organization(id: String = "org1", createTime: OffsetDateTime = UNIX_EPOCH): Organization {
-    return Organization(id, createTime)
-}
-
-fun organizationOwnerRelationship(
-    organizationId: String = "org1",
-    userId: String = "user1",
-): OrganizationOwnerRelationship {
-    return OrganizationOwnerRelationship(organizationId, userId)
+fun organization(
+    id: String = "org1",
+    ownerUserId: String = "user1",
+    createTime: OffsetDateTime = UNIX_EPOCH,
+): Organization {
+    return Organization(id, ownerUserId, createTime)
 }
 
 fun pendingAppDraftUpload(
@@ -200,6 +196,6 @@ fun unsubmittedAppDraft(
     )
 }
 
-fun user(id: String = "user1"): User {
-    return User(id)
+fun user(id: String = "user1", organizationId: String = "org1"): User {
+    return User(id, organizationId)
 }
