@@ -10,6 +10,7 @@ import app.accrescent.server.parcelo.domain.android.AndroidManifest
 import app.accrescent.server.parcelo.domain.android.ApkParseError
 import app.accrescent.server.parcelo.domain.android.ApkSetParseError
 import app.accrescent.server.parcelo.domain.android.ApplicationId
+import app.accrescent.server.parcelo.domain.android.NameAttribute
 import app.accrescent.server.parcelo.domain.android.SdkVersion
 import app.accrescent.server.parcelo.domain.android.VersionCode
 import app.accrescent.server.parcelo.domain.android.VersionName
@@ -1048,6 +1049,40 @@ private class InMemoryAppPackageRepository(
                 if (!rs.next()) return@use None
 
                 Some(rs.readAppPackage().bind())
+            }
+        }
+    }
+
+    override fun findPermissionsForAppPackage(
+        appPackageId: String,
+    ): DataStoreResult<List<AppPackagePermission>> = runCatchingSql {
+        val sql = """
+            SELECT id, app_package_id, name, max_sdk_version
+            FROM app_package_permissions
+            WHERE app_package_id = ?
+        """.trimIndent()
+        connection.prepareStatement(sql).use { stmt ->
+            stmt.setString(1, appPackageId)
+            stmt.executeQuery().use { rs ->
+                val permissions = mutableListOf<AppPackagePermission>()
+                while (rs.next()) {
+                    val permission = AppPackagePermission(
+                        id = rs.requireString("id").bind(),
+                        appPackageId = rs.requireString("app_package_id").bind(),
+                        name = rs.requireString("name")
+                            .bind()
+                            .let(NameAttribute::fromString)
+                            .toEitherBind { DataStoreError.IllegalState },
+                        maxSdkVersion = rs.getSafeInt("max_sdk_version")
+                            .map {
+                                SdkVersion
+                                    .fromInt(it)
+                                    .toEitherBind { DataStoreError.IllegalState }
+                            },
+                    )
+                    permissions.add(permission)
+                }
+                permissions
             }
         }
     }

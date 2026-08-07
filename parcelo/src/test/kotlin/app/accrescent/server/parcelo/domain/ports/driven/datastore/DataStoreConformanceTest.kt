@@ -1683,6 +1683,61 @@ abstract class DataStoreConformanceTest {
     }
 
     @Test
+    fun `appPackages findPermissionsForAppPackage returns permission for only requested app package`() {
+        withMigratedDataStore { dataStore ->
+            val appPackage2Permissions = listOf(
+                appPackagePermission(
+                    id = "perm3",
+                    appPackageId = "appPackage2",
+                    name = NameAttribute.fromString("android.permission.BLUETOOTH").unwrap(),
+                    maxSdkVersion = Some(SdkVersion.fromInt(30).unwrap()),
+                ),
+                appPackagePermission(
+                    id = "perm4",
+                    appPackageId = "appPackage2",
+                    name = NameAttribute.fromString("android.permission.CAMERA").unwrap()
+                ),
+            )
+            dataStore.runTxWithRetry { tx ->
+                tx.organizations.save(organization()).bind()
+                tx.appDrafts.save(unsubmittedAppDraft(id = "appDraft1")).bind()
+                tx.appDrafts.save(unsubmittedAppDraft(id = "appDraft2")).bind()
+                tx.externalBlobs.save(committedExternalBlob(id = "blob1", objectKey = "object1")).bind()
+                tx.externalBlobs.save(committedExternalBlob(id = "blob2", objectKey = "object2")).bind()
+                tx.appPackages.save(appPackage(id = "appPackage1", externalBlobId = "blob1")).bind()
+                tx.appPackages.save(appPackage(id = "appPackage2", externalBlobId = "blob2")).bind()
+                tx.appPackages.savePermission(
+                    appPackagePermission(
+                        id = "perm1",
+                        appPackageId = "appPackage1",
+                        name = NameAttribute.fromString("android.permission.INTERNET").unwrap(),
+                    )
+                ).bind()
+                tx.appPackages.savePermission(
+                    appPackagePermission(
+                        id = "perm2",
+                        appPackageId = "appPackage1",
+                        name = NameAttribute
+                            .fromString("android.permission.READ_EXTERNAL_STORAGE").unwrap(),
+                        maxSdkVersion = Some(SdkVersion.fromInt(32).unwrap()),
+                    )
+                ).bind()
+                for (permission in appPackage2Permissions) {
+                    tx.appPackages.savePermission(permission).bind()
+                }
+            }
+                .unwrap2()
+
+            val result = dataStore.runTxWithRetry { tx ->
+                tx.appPackages.findPermissionsForAppPackage("appPackage2").bind()
+            }
+                .unwrap2()
+
+            assertEquals(appPackage2Permissions, result)
+        }
+    }
+
+    @Test
     fun `appPackages save returns UniqueConstraintViolation for duplicate ID`() {
         withMigratedDataStore { dataStore ->
             dataStore
