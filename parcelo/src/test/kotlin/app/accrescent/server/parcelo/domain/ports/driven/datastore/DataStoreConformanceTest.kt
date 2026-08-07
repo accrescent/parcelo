@@ -1661,6 +1661,36 @@ abstract class DataStoreConformanceTest {
     }
 
     @Test
+    fun `appPackages deleteById deletes the package's permissions`() {
+        withMigratedDataStore { dataStore ->
+            dataStore
+                .runTxWithRetry { tx ->
+                    tx.externalBlobs.save(committedExternalBlob()).bind()
+                    tx.appPackages.save(appPackage()).bind()
+                    tx.appPackages.savePermission(
+                        appPackagePermission(
+                            id = "perm1",
+                            appPackageId = "appPackage1",
+                            name = NameAttribute.fromString("android.permission.INTERNET").unwrap(),
+                        )
+                    ).bind()
+                }
+                .unwrap2()
+
+            dataStore
+                .runTxWithRetry { tx -> tx.appPackages.deleteById("appPackage1").bind() }
+                .unwrap2()
+            val permissions = dataStore
+                .runTxWithRetry { tx ->
+                    tx.appPackages.findPermissionsForAppPackage("appPackage1").bind()
+                }
+                .unwrap2()
+
+            assertTrue(permissions.isEmpty())
+        }
+    }
+
+    @Test
     fun `appPackages findByAppDraftId returns None when no package exists for app draft`() {
         withMigratedDataStore { dataStore ->
             val appPackage = dataStore
