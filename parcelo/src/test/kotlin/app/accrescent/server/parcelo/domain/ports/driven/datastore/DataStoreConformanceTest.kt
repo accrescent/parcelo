@@ -2368,48 +2368,6 @@ abstract class DataStoreConformanceTest {
     }
 
     @Test
-    fun `operations findById returns None when no operation with the given ID exists`() {
-        withMigratedDataStore { dataStore ->
-            val foundOperation = dataStore
-                .runTxWithRetry { tx -> tx.operations.findById("op1").bind() }
-                .unwrap2()
-
-            assertTrue(foundOperation.isNone())
-        }
-    }
-
-    @Test
-    fun `operations save returns UniqueConstraintViolation for duplicate ID`() {
-        withMigratedDataStore { dataStore ->
-            val operation = Operation("op1", OperationType.APP_DRAFT_UPLOAD)
-            dataStore
-                .runTxWithRetry { tx -> tx.operations.save(operation).bind() }
-                .unwrap2()
-            val result = dataStore
-                .runTxWithRetry { tx -> tx.operations.save(operation).bind() }
-                .unwrap()
-
-            assertEquals(DataStoreError.UniqueConstraintViolation, result.unwrapErr())
-        }
-    }
-
-    @Test
-    fun `operations save and findById round-trip data`() {
-        withMigratedDataStore { dataStore ->
-            val originalOperation = Operation("op1", OperationType.APP_DRAFT_UPLOAD)
-
-            dataStore
-                .runTxWithRetry { tx -> tx.operations.save(originalOperation).bind() }
-                .unwrap2()
-            val foundOperation = dataStore
-                .runTxWithRetry { tx -> tx.operations.findById("op1").bind() }
-                .unwrap2()
-
-            assertEquals(Some(originalOperation), foundOperation)
-        }
-    }
-
-    @Test
     fun `organizations findById returns None when no org with the given ID exists`() {
         withMigratedDataStore { dataStore ->
             val foundOrg = dataStore
@@ -2683,11 +2641,6 @@ abstract class DataStoreConformanceTest {
                     tx.externalBlobs.save(committedExternalBlob()).bind()
                     tx.appPackages.save(appPackage()).bind()
                     tx.appPackages.savePermission(appPackagePermission(id = invalid)).bind()
-                }
-            },
-            TextColumnConstraintTestCase("operations.id") { tx, invalid ->
-                either {
-                    tx.operations.save(Operation(invalid, OperationType.APP_DRAFT_UPLOAD)).bind()
                 }
             },
             TextColumnConstraintTestCase("organizations.id") { tx, invalid ->

@@ -51,7 +51,6 @@ import app.accrescent.server.parcelo.domain.ports.driving.console.InsufficientPe
 import app.accrescent.server.parcelo.domain.ports.driving.console.ListAppDraftListingsRequest
 import app.accrescent.server.parcelo.domain.ports.driving.console.ListAppDraftsRequest
 import app.accrescent.server.parcelo.domain.ports.driving.console.ListAppDraftsResponse
-import app.accrescent.server.parcelo.domain.ports.driving.console.Operation
 import app.accrescent.server.parcelo.domain.ports.driving.console.PublishedAppLimitExceededError
 import app.accrescent.server.parcelo.domain.ports.driving.console.SubmitAppDraftRequest
 import app.accrescent.server.parcelo.domain.ports.driving.console.UpdateAppDraftListingRequest
@@ -676,7 +675,6 @@ class AppDraftApiImplTest {
                                         "bb20b45f-d4d9-5138-3d93-cb799b3970be"
                             )
                             .unwrap(),
-                        processingOperation = Operation.Incomplete("op_15TfMFK4XWQ8gt714e6cqx"),
                     )
                         .right(),
                     response,
@@ -1268,7 +1266,6 @@ class AppDraftApiImplTest {
                                         "bb20b45f-d4d9-5138-3d93-cb799b3970be"
                             )
                             .unwrap(),
-                        processingOperation = Operation.Incomplete("op_15TfMFK4XWQ8gt714e6cqx"),
                     )
                         .right(),
                     response,
