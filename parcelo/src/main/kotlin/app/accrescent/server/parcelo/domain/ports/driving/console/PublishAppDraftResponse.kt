@@ -4,4 +4,4 @@
 
 package app.accrescent.server.parcelo.domain.ports.driving.console
 
-data class PublishAppDraftResponse(val operation: Operation<Unit, Unit>)
+data object PublishAppDraftResponse

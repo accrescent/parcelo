@@ -124,7 +124,6 @@ abstract class DataStore(private val randomSource: RandomSource) {
         val apps: AppRepository
         val authz: AuthorizationRepository
         val externalBlobs: ExternalBlobRepository
-        val operations: OperationRepository
         val organizations: OrganizationRepository
         val users: UserRepository
     }
@@ -718,25 +717,6 @@ abstract class DataStore(private val randomSource: RandomSource) {
          * blob's ([ExternalBlob.bucketName], [ExternalBlob.objectKey]) pair.
          */
         abstract fun save(blob: ExternalBlob<*>): DataStoreResult<Unit>
-    }
-
-    abstract class OperationRepository {
-        /**
-         * Finds an existing operation.
-         *
-         * @param id the ID of the operation to find.
-         * @return the operation with the given ID, or [None] if it doesn't exist.
-         */
-        abstract fun findById(id: String): DataStoreResult<Option<Operation>>
-
-        /**
-         * Saves a new operation.
-         *
-         * @param operation the operation to save.
-         * @return [DataStoreError.UniqueConstraintViolation] if an operation with the same ID
-         * already exists.
-         */
-        abstract fun save(operation: Operation): DataStoreResult<Unit>
     }
 
     abstract class OrganizationRepository {
