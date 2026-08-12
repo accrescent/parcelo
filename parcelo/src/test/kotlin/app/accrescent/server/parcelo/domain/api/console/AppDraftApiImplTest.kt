@@ -85,7 +85,7 @@ import app.accrescent.server.parcelo.domain.ports.driving.console.ListingLanguag
 class AppDraftApiImplTest {
     @Test
     fun `createAppDraft returns InsufficientPermission for unauthorized request`() {
-        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             val appDraftApi = makeAppDraftApi(dataStore)
 
@@ -97,7 +97,7 @@ class AppDraftApiImplTest {
 
     @Test
     fun `createAppDraft returns persisted app draft ID for authorized request`() {
-        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
@@ -118,7 +118,7 @@ class AppDraftApiImplTest {
 
     @Test
     fun `createAppDraft returns ActiveAppDraftLimitExceeded when attempting to exceed org active app draft limit`() {
-        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
@@ -136,7 +136,7 @@ class AppDraftApiImplTest {
 
     @Test
     fun `downloadAppDraft returns InsufficientPermission for unauthorized request`() {
-        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             val appDraftApi = makeAppDraftApi(dataStore)
 
@@ -148,7 +148,7 @@ class AppDraftApiImplTest {
 
     @Test
     fun `downloadAppDraft returns AppDraftPackageNotFound when app draft exists without package`() {
-        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
@@ -166,7 +166,7 @@ class AppDraftApiImplTest {
     @Test
     fun `downloadAppDraft returns successfully when permitted`() {
         val randomSource = DeterministicRandomSource()
-        InMemoryDataStore.create(randomSource).unwrap().use { dataStore ->
+        InMemoryDataStore(randomSource).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
@@ -197,7 +197,7 @@ class AppDraftApiImplTest {
 
     @Test
     fun `getAppDraft returns InsufficientPermission for unauthorized request`() {
-        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             val appDraftApi = makeAppDraftApi(dataStore)
 
@@ -209,7 +209,7 @@ class AppDraftApiImplTest {
 
     @Test
     fun `getAppDraft returns entity created by createAppDraft`() {
-        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
@@ -240,7 +240,7 @@ class AppDraftApiImplTest {
 
     @Test
     fun `getAppDraft returns correct fully populated app draft`() {
-        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
@@ -278,7 +278,7 @@ class AppDraftApiImplTest {
 
     @Test
     fun `listAppDrafts returns app drafts from only requested organization`() {
-        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             val timestampSource = ConstantTimestampSource()
             dataStore.runTxWithRetry { tx ->
@@ -318,7 +318,7 @@ class AppDraftApiImplTest {
 
     @Test
     fun `listAppDrafts returns correct fully populated app drafts`() {
-        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
@@ -358,7 +358,7 @@ class AppDraftApiImplTest {
 
     @Test
     fun `listAppDrafts returns only authorized app drafts`() {
-        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations
@@ -387,7 +387,7 @@ class AppDraftApiImplTest {
 
     @Test
     fun `listAppDrafts respects page size as maximum`() {
-        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
@@ -405,7 +405,7 @@ class AppDraftApiImplTest {
 
     @Test
     fun `listAppDrafts traverses all items when paginating`() {
-        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
@@ -430,7 +430,7 @@ class AppDraftApiImplTest {
 
     @Test
     fun `listAppDrafts returns page token if items remain`() {
-        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
@@ -448,7 +448,7 @@ class AppDraftApiImplTest {
 
     @Test
     fun `submitAppDraft returns InsufficientPermission for unauthorized request`() {
-        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             val appDraftApi = makeAppDraftApi(dataStore)
 
@@ -460,7 +460,7 @@ class AppDraftApiImplTest {
 
     @Test
     fun `submitAppDraft returns AppDraftSubmitted when app draft is already submitted`() {
-        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
@@ -481,7 +481,7 @@ class AppDraftApiImplTest {
 
     @Test
     fun `submitAppDraft returns AppDraftHasNoPackage when app draft does not have a package`() {
-        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
@@ -497,7 +497,7 @@ class AppDraftApiImplTest {
 
     @Test
     fun `submitAppDraft returns AppDraftHasNoDefaultListing when app draft does not have a default listing`() {
-        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
@@ -520,7 +520,7 @@ class AppDraftApiImplTest {
 
     @Test
     fun `submitAppDraft returns AppDraftSubmittedForAppId when an app draft has already been submitted with the app ID`() {
-        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
@@ -550,7 +550,7 @@ class AppDraftApiImplTest {
 
     @Test
     fun `submitAppDraft returns PublishedAppLimitExceeded when the organization's published app limit is already reached`() {
-        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
@@ -574,7 +574,7 @@ class AppDraftApiImplTest {
 
     @Test
     fun `submitAppDraft submits app draft for valid request`() {
-        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
@@ -600,7 +600,7 @@ class AppDraftApiImplTest {
 
     @Test
     fun `uploadAppDraft returns InsufficientPermission for unauthorized request`() {
-        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             val appDraftApi = makeAppDraftApi(dataStore)
 
@@ -612,7 +612,7 @@ class AppDraftApiImplTest {
 
     @Test
     fun `uploadAppDraft returns AppDraftSubmitted when app draft is already submitted`() {
-        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
@@ -636,7 +636,7 @@ class AppDraftApiImplTest {
     fun `uploadAppDraft returns successfully when permitted`() {
         val randomSource = DeterministicRandomSource()
         LocalBlobStorage(randomSource).use { blobStorage ->
-            InMemoryDataStore.create(randomSource).unwrap().use { dataStore ->
+            InMemoryDataStore(randomSource).use { dataStore ->
                 dataStore.migrateToHead().unwrap()
                 dataStore.runTxWithRetry { tx ->
                     tx.organizations.saveWithOwner(organization(), user()).bind()
@@ -664,7 +664,7 @@ class AppDraftApiImplTest {
 
     @Test
     fun `updateAppDraft returns InsufficientPermission for unauthorized request`() {
-        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             val appDraftApi = makeAppDraftApi(dataStore)
 
@@ -676,7 +676,7 @@ class AppDraftApiImplTest {
 
     @Test
     fun `updateAppDraft returns AppDraftSubmitted when app draft is already submitted`() {
-        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
@@ -699,7 +699,7 @@ class AppDraftApiImplTest {
 
     @Test
     fun `updateAppDraft returns AppDraftListingNotFound when new default listing ID does not exist`() {
-        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
@@ -721,7 +721,7 @@ class AppDraftApiImplTest {
     fun `uploadAppDraft replaces existing pending upload when one already exists for the app draft`() {
         val randomSource = DeterministicRandomSource()
         LocalBlobStorage(randomSource).use { blobStorage ->
-            InMemoryDataStore.create(randomSource).unwrap().use { dataStore ->
+            InMemoryDataStore(randomSource).use { dataStore ->
                 dataStore.migrateToHead().unwrap()
                 dataStore.runTxWithRetry { tx ->
                     tx.organizations.saveWithOwner(organization(), user()).bind()
@@ -759,7 +759,7 @@ class AppDraftApiImplTest {
 
     @Test
     fun `updateAppDraft updates default listing ID for valid request`() {
-        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
@@ -785,7 +785,7 @@ class AppDraftApiImplTest {
 
     @Test
     fun `deleteAppDraft returns InsufficientPermission for unauthorized request`() {
-        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             val appDraftApi = makeAppDraftApi(dataStore)
 
@@ -797,7 +797,7 @@ class AppDraftApiImplTest {
 
     @Test
     fun `deleteAppDraft returns AppDraftSubmitted when app draft is already submitted`() {
-        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
@@ -819,7 +819,7 @@ class AppDraftApiImplTest {
 
     @Test
     fun `deleteAppDraft deletes app draft entity`() {
-        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
@@ -839,7 +839,7 @@ class AppDraftApiImplTest {
 
     @Test
     fun `deleteAppDraft deletes app draft's associated package`() {
-        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
@@ -861,7 +861,7 @@ class AppDraftApiImplTest {
 
     @Test
     fun `deleteAppDraft marks app draft package's blob for deletion`() {
-        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
@@ -883,7 +883,7 @@ class AppDraftApiImplTest {
 
     @Test
     fun `createAppDraftListing returns InsufficientPermission for unauthorized request`() {
-        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             val appDraftApi = makeAppDraftApi(dataStore)
 
@@ -901,7 +901,7 @@ class AppDraftApiImplTest {
 
     @Test
     fun `createAppDraftListing returns AppDraftListingAlreadyExists if listing exists for app draft with same language`() {
-        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
@@ -928,7 +928,7 @@ class AppDraftApiImplTest {
 
     @Test
     fun `createAppDraftListing returns AppDraftSubmitted if app draft has already been submitted`() {
-        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
@@ -956,7 +956,7 @@ class AppDraftApiImplTest {
 
     @Test
     fun `createAppDraftListing returns persisted app draft listing ID for authorized request`() {
-        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
@@ -983,7 +983,7 @@ class AppDraftApiImplTest {
 
     @Test
     fun `getAppDraftListing returns InsufficientPermission for unauthorized request`() {
-        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             val appDraftApi = makeAppDraftApi(dataStore)
 
@@ -996,7 +996,7 @@ class AppDraftApiImplTest {
 
     @Test
     fun `getAppDraftListing returns entity created by createAppDraftListing`() {
-        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
@@ -1028,7 +1028,7 @@ class AppDraftApiImplTest {
 
     @Test
     fun `listAppDraftListings returns app draft listings from only requested app draft`() {
-        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
@@ -1060,7 +1060,7 @@ class AppDraftApiImplTest {
 
     @Test
     fun `listAppDraftListings returns only authorized app draft listings`() {
-        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations
@@ -1090,7 +1090,7 @@ class AppDraftApiImplTest {
 
     @Test
     fun `updateAppDraftListing returns InsufficientPermission for unauthorized request`() {
-        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             val appDraftApi = makeAppDraftApi(dataStore)
 
@@ -1103,7 +1103,7 @@ class AppDraftApiImplTest {
 
     @Test
     fun `updateAppDraftListing returns AppDraftSubmitted if app draft is already submitted`() {
-        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
@@ -1126,7 +1126,7 @@ class AppDraftApiImplTest {
 
     @Test
     fun `updateAppDraftListing updates all requested fields for authorized request`() {
-        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
@@ -1163,7 +1163,7 @@ class AppDraftApiImplTest {
 
     @Test
     fun `uploadAppDraftListingIcon returns InsufficientPermission for unauthorized request`() {
-        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             val appDraftApi = makeAppDraftApi(dataStore)
 
@@ -1176,7 +1176,7 @@ class AppDraftApiImplTest {
 
     @Test
     fun `uploadAppDraftListingIcon returns AppDraftSubmitted when app draft is already submitted`() {
-        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
@@ -1201,7 +1201,7 @@ class AppDraftApiImplTest {
     fun `uploadAppDraftListingIcon returns successfully when permitted`() {
         val randomSource = DeterministicRandomSource()
         LocalBlobStorage(randomSource).use { blobStorage ->
-            InMemoryDataStore.create(randomSource).unwrap().use { dataStore ->
+            InMemoryDataStore(randomSource).use { dataStore ->
                 dataStore.migrateToHead().unwrap()
                 dataStore.runTxWithRetry { tx ->
                     tx.organizations.saveWithOwner(organization(), user()).bind()
@@ -1233,7 +1233,7 @@ class AppDraftApiImplTest {
     fun `uploadAppDraftListingIcon replaces existing pending upload when one already exists for the listing`() {
         val randomSource = DeterministicRandomSource()
         LocalBlobStorage(randomSource).use { blobStorage ->
-            InMemoryDataStore.create(randomSource).unwrap().use { dataStore ->
+            InMemoryDataStore(randomSource).use { dataStore ->
                 dataStore.migrateToHead().unwrap()
                 dataStore.runTxWithRetry { tx ->
                     tx.organizations.saveWithOwner(organization(), user()).bind()
@@ -1289,7 +1289,7 @@ class AppDraftApiImplTest {
 
     @Test
     fun `deleteAppDraftListing returns InsufficientPermission for unauthorized request`() {
-        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             val appDraftApi = makeAppDraftApi(dataStore)
 
@@ -1302,7 +1302,7 @@ class AppDraftApiImplTest {
 
     @Test
     fun `deleteAppDraftListing returns AppDraftSubmitted if app draft has been submitted`() {
-        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
@@ -1325,7 +1325,7 @@ class AppDraftApiImplTest {
 
     @Test
     fun `deleteAppDraftListing unsets default listing if listing is the app draft default`() {
-        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
@@ -1349,7 +1349,7 @@ class AppDraftApiImplTest {
 
     @Test
     fun `deleteAppDraftListing deletes app draft listing entity`() {
-        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()

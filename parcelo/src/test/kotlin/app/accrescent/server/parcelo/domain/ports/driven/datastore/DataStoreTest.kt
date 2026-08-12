@@ -62,7 +62,7 @@ class DataStoreTest {
 
     @Test
     fun `appDrafts requireById returns EntityNotFound if app draft does not exist`() {
-        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
 
             val error = dataStore
@@ -76,7 +76,7 @@ class DataStoreTest {
 
     @Test
     fun `appDrafts requireById returns app draft persisted with save`() {
-        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore
                 .runTxWithRetry { tx -> tx.organizations.saveWithOwner(organization(), user()).bind() }
@@ -94,7 +94,7 @@ class DataStoreTest {
 
     @Test
     fun `appDrafts requireListingById returns EntityNotFound if listing does not exist`() {
-        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
 
             val error = dataStore
@@ -108,7 +108,7 @@ class DataStoreTest {
 
     @Test
     fun `appDrafts requireListingById returns app draft listing persisted with save`() {
-        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore
                 .runTxWithRetry { tx ->
@@ -129,7 +129,7 @@ class DataStoreTest {
 
     @Test
     fun `appPackages requireById returns EntityNotFound if app package does not exist`() {
-        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
 
             val error = dataStore
@@ -143,7 +143,7 @@ class DataStoreTest {
 
     @Test
     fun `appPackages requireById returns app package persisted with save`() {
-        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             val originalPackage = appPackage()
 
@@ -161,7 +161,7 @@ class DataStoreTest {
 
     @Test
     fun `apps requireById returns EntityNotFound if app does not exist`() {
-        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
 
             val error = dataStore
@@ -175,7 +175,7 @@ class DataStoreTest {
 
     @Test
     fun `apps requireById returns app persisted with save`() {
-        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             val originalApp = App("app1", "org1", "appListing1", false)
             dataStore
@@ -197,7 +197,7 @@ class DataStoreTest {
 
     @Test
     fun `externalBlobs requireById returns EntityNotFound if blob does not exist`() {
-        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
 
             val error = dataStore
@@ -211,7 +211,7 @@ class DataStoreTest {
 
     @Test
     fun `externalBlobs requireById returns blob persisted with save`() {
-        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             val originalBlob = committedExternalBlob()
 
@@ -226,7 +226,7 @@ class DataStoreTest {
 
     @Test
     fun `externalBlobs requireCommittedById returns EntityNotFound if blob does not exist`() {
-        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
 
             val error = dataStore
@@ -240,7 +240,7 @@ class DataStoreTest {
 
     @Test
     fun `externalBlobs requireCommittedById returns EntityNotFound if blob is not committed`() {
-        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             val pendingBlob = pendingExternalBlob()
 
@@ -256,7 +256,7 @@ class DataStoreTest {
 
     @Test
     fun `externalBlobs requireCommittedById returns committed blob persisted with save`() {
-        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             val originalBlob = committedExternalBlob()
 

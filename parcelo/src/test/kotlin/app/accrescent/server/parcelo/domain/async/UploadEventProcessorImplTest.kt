@@ -117,7 +117,7 @@ class UploadEventProcessorImplTest {
     ) {
         val randomSource = DeterministicRandomSource()
         LocalBlobStorage(randomSource).use { blobStorage ->
-            InMemoryDataStore.create(randomSource).unwrap().use { dataStore ->
+            InMemoryDataStore(randomSource).use { dataStore ->
                 dataStore.migrateToHead().unwrap()
                 val processor = uploadEventProcessor(dataStore, blobStorage, randomSource, downloadDir)
                 val event = UploadEvent.Local("bucket1", "object1", UNIX_EPOCH, 1L)
@@ -137,7 +137,7 @@ class UploadEventProcessorImplTest {
     ) {
         val randomSource = DeterministicRandomSource()
         LocalBlobStorage(randomSource).use { blobStorage ->
-            InMemoryDataStore.create(randomSource).unwrap().use { dataStore ->
+            InMemoryDataStore(randomSource).use { dataStore ->
                 dataStore.migrateToHead().unwrap()
                 dataStore.runTxWithRetry { tx ->
                     tx.organizations.saveWithOwner(organization(), user()).bind()
@@ -168,7 +168,7 @@ class UploadEventProcessorImplTest {
     ) {
         val randomSource = DeterministicRandomSource()
         LocalBlobStorage(randomSource).use { blobStorage ->
-            InMemoryDataStore.create(randomSource).unwrap().use { dataStore ->
+            InMemoryDataStore(randomSource).use { dataStore ->
                 dataStore.migrateToHead().unwrap()
                 dataStore.runTxWithRetry { tx ->
                     tx.organizations.saveWithOwner(organization(), user()).bind()
@@ -196,7 +196,7 @@ class UploadEventProcessorImplTest {
     ) {
         val randomSource = DeterministicRandomSource()
         LocalBlobStorage(randomSource).use { blobStorage ->
-            InMemoryDataStore.create(randomSource).unwrap().use { dataStore ->
+            InMemoryDataStore(randomSource).use { dataStore ->
                 dataStore.migrateToHead().unwrap()
                 dataStore.runTxWithRetry { tx ->
                     tx.organizations.saveWithOwner(organization(), user()).bind()
@@ -233,7 +233,7 @@ class UploadEventProcessorImplTest {
     ) {
         val randomSource = DeterministicRandomSource()
         LocalBlobStorage(randomSource).use { blobStorage ->
-            InMemoryDataStore.create(randomSource).unwrap().use { dataStore ->
+            InMemoryDataStore(randomSource).use { dataStore ->
                 dataStore.migrateToHead().unwrap()
                 // A pending upload exists for the blob, but the object blob was never actually
                 // uploaded to blob storage
@@ -267,7 +267,7 @@ class UploadEventProcessorImplTest {
         )
         val randomSource = DeterministicRandomSource()
         LocalBlobStorage(randomSource).use { blobStorage ->
-            InMemoryDataStore.create(randomSource).unwrap().use { dataStore ->
+            InMemoryDataStore(randomSource).use { dataStore ->
                 dataStore.migrateToHead().unwrap()
                 // Upload the APK set so the processor can download it from object storage
                 val blobId = blobStorage
@@ -322,7 +322,7 @@ class UploadEventProcessorImplTest {
     ) {
         val randomSource = DeterministicRandomSource()
         LocalBlobStorage(randomSource).use { blobStorage ->
-            InMemoryDataStore.create(randomSource).unwrap().use { dataStore ->
+            InMemoryDataStore(randomSource).use { dataStore ->
                 dataStore.migrateToHead().unwrap()
                 val event = seedSuccessfulUpload(dataStore, blobStorage)
                 val processor = uploadEventProcessor(dataStore, blobStorage, randomSource, downloadDir)
@@ -342,7 +342,7 @@ class UploadEventProcessorImplTest {
     ) {
         val randomSource = DeterministicRandomSource()
         LocalBlobStorage(randomSource).use { blobStorage ->
-            InMemoryDataStore.create(randomSource).unwrap().use { dataStore ->
+            InMemoryDataStore(randomSource).use { dataStore ->
                 dataStore.migrateToHead().unwrap()
                 val event = seedSuccessfulUpload(dataStore, blobStorage)
                 val processor = uploadEventProcessor(dataStore, blobStorage, randomSource, downloadDir)
@@ -390,7 +390,7 @@ class UploadEventProcessorImplTest {
     ) {
         val randomSource = DeterministicRandomSource()
         LocalBlobStorage(randomSource).use { blobStorage ->
-            InMemoryDataStore.create(randomSource).unwrap().use { dataStore ->
+            InMemoryDataStore(randomSource).use { dataStore ->
                 dataStore.migrateToHead().unwrap()
                 val event = seedSuccessfulUpload(dataStore, blobStorage)
                 val processor = uploadEventProcessor(dataStore, blobStorage, randomSource, downloadDir)
@@ -415,7 +415,7 @@ class UploadEventProcessorImplTest {
     ) {
         val randomSource = DeterministicRandomSource()
         LocalBlobStorage(randomSource).use { blobStorage ->
-            InMemoryDataStore.create(randomSource).unwrap().use { dataStore ->
+            InMemoryDataStore(randomSource).use { dataStore ->
                 dataStore.migrateToHead().unwrap()
                 val event = seedSuccessfulUpload(dataStore, blobStorage)
                 val processor = uploadEventProcessor(dataStore, blobStorage, randomSource, downloadDir)
@@ -438,7 +438,7 @@ class UploadEventProcessorImplTest {
     ) {
         val randomSource = DeterministicRandomSource()
         LocalBlobStorage(randomSource).use { blobStorage ->
-            InMemoryDataStore.create(randomSource).unwrap().use { dataStore ->
+            InMemoryDataStore(randomSource).use { dataStore ->
                 dataStore.migrateToHead().unwrap()
                 val event = seedSuccessfulUpload(dataStore, blobStorage)
                 val processor = uploadEventProcessor(dataStore, blobStorage, randomSource, downloadDir)
@@ -473,7 +473,7 @@ class UploadEventProcessorImplTest {
     ) {
         val randomSource = DeterministicRandomSource()
         LocalBlobStorage(randomSource).use { blobStorage ->
-            InMemoryDataStore.create(randomSource).unwrap().use { dataStore ->
+            InMemoryDataStore(randomSource).use { dataStore ->
                 dataStore.migrateToHead().unwrap()
                 val blobId = blobStorage
                     .upload(validApkSetPath(), BlobId.Location("uploads", "upload1"))
