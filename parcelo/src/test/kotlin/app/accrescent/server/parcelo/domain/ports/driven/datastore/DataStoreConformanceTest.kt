@@ -65,14 +65,18 @@ abstract class DataStoreConformanceTest {
     /**
      * Convenience method for running a lambda with a new, migrated [DataStore] instance.
      *
-     * This method has almost the same behavior as [withDataStore], but runs
-     * [DataStore.migrateToHead] before running [block]. If migrating fails, this method will throw.
+     * This method has almost the same behavior as [withDataStore], but migrates the [DataStore] to
+     * head before running [block]. If migrating fails, this method will throw.
+     *
+     * Implementations may override this method, e.g., to reach that state more cheaply than by
+     * calling [DataStore.migrateToHead], but the data store's state must be identical to that
+     * produced by [DataStore.migrateToHead].
      *
      * @param block the lambda to run with access to a new, migrated [DataStore] instance.
      * @return the return value of [block].
-     * @throws Throwable if [DataStore.migrateToHead] returns an error.
+     * @throws Throwable if migrating fails.
      */
-    fun <T> withMigratedDataStore(block: (DataStore) -> T): T {
+    protected open fun <T> withMigratedDataStore(block: (DataStore) -> T): T {
         return withDataStore { dataStore ->
             dataStore.migrateToHead().unwrap()
             block(dataStore)

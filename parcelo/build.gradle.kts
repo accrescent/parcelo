@@ -76,6 +76,7 @@ dependencies {
     testImplementation(libs.htmlunit)
     testImplementation(libs.quarkus.junit)
     testImplementation(libs.rest.assured)
+    testImplementation(libs.testcontainers.postgresql)
     testApkSets("app.accrescent.server.testdata:android-app-low-target-sdk")
     testApkSets("app.accrescent.server.testdata:android-app-valid")
     testApks("app.accrescent.server.testdata:android-app-signing")

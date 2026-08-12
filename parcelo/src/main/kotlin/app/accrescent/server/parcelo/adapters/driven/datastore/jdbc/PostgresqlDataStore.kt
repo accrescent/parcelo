@@ -1,0 +1,1354 @@
+// SPDX-FileCopyrightText: © 2026 Logan Magee
+//
+// SPDX-License-Identifier: AGPL-3.0-only
+
+package app.accrescent.server.parcelo.adapters.driven.datastore.jdbc
+
+import app.accrescent.server.parcelo.core.Bytes
+import app.accrescent.server.parcelo.core.toEitherBind
+import app.accrescent.server.parcelo.domain.android.AndroidManifest
+import app.accrescent.server.parcelo.domain.android.ApkParseError
+import app.accrescent.server.parcelo.domain.android.ApkSetParseError
+import app.accrescent.server.parcelo.domain.android.ApplicationId
+import app.accrescent.server.parcelo.domain.android.SdkVersion
+import app.accrescent.server.parcelo.domain.android.VersionCode
+import app.accrescent.server.parcelo.domain.android.VersionName
+import app.accrescent.server.parcelo.domain.ports.driven.datastore.App
+import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppDraft
+import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppDraftListing
+import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppDraftListingIconUploadProcessingResult
+import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppDraftUploadProcessingError
+import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppListing
+import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppPackage
+import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppPackagePermission
+import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStore
+import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStoreError
+import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStoreResult
+import app.accrescent.server.parcelo.domain.ports.driven.datastore.ExternalBlob
+import app.accrescent.server.parcelo.domain.ports.driven.datastore.HasPermissionRequest
+import app.accrescent.server.parcelo.domain.ports.driven.datastore.ListingLanguage
+import app.accrescent.server.parcelo.domain.ports.driven.datastore.Organization
+import app.accrescent.server.parcelo.domain.ports.driven.datastore.PendingAppDraftListingIconUpload
+import app.accrescent.server.parcelo.domain.ports.driven.datastore.PendingAppDraftUpload
+import app.accrescent.server.parcelo.domain.ports.driven.datastore.User
+import app.accrescent.server.parcelo.domain.ports.driven.randomsource.RandomSource
+import arrow.core.Either
+import arrow.core.None
+import arrow.core.Option
+import arrow.core.Some
+import arrow.core.left
+import arrow.core.raise.Raise
+import arrow.core.raise.either
+import arrow.core.right
+import org.flywaydb.core.Flyway
+import org.flywaydb.core.api.FlywayException
+import org.postgresql.util.PSQLState
+import java.sql.Connection
+import java.sql.ResultSet
+import java.sql.SQLException
+import java.sql.Types
+import java.time.OffsetDateTime
+import javax.sql.DataSource
+
+/**
+ * Runs the given lambda of JDBC code, converting [SQLException]s from this [DataStore]
+ * implementation into appropriate typed errors.
+ *
+ * @param block the lambda to run in the catching context.
+ * @return the return value of [block], or a [DataStoreError] if [block] throws a [SQLException].
+ */
+private inline fun <T> runCatchingSql(block: Raise<DataStoreError>.() -> T): DataStoreResult<T> {
+    return either {
+        try {
+            block()
+        } catch (e: SQLException) {
+            raise(e.toDataStoreError())
+        }
+    }
+}
+
+/**
+ * Converts a [SQLException] thrown by this [DataStore] implementation into the appropriate typed
+ * error.
+ *
+ * @return the [DataStoreError] corresponding to this exception's SQL state.
+ */
+private fun SQLException.toDataStoreError(): DataStoreError {
+    return when (sqlState) {
+        PSQLState.CHECK_VIOLATION.state -> DataStoreError.CheckConstraintViolation
+        PSQLState.FOREIGN_KEY_VIOLATION.state -> DataStoreError.ForeignKeyViolation
+        PSQLState.UNIQUE_VIOLATION.state -> DataStoreError.UniqueConstraintViolation
+        PSQLState.DEADLOCK_DETECTED.state,
+        PSQLState.SERIALIZATION_FAILURE.state -> DataStoreError.SerializationFailure
+
+        else -> DataStoreError.Unknown
+    }
+}
+
+/**
+ * PostgreSQL-backed application data store.
+ *
+ * @param dataSource the data source to use for accessing the PostgreSQL database.
+ * @param randomSource the random source to use for calculating backoff on transaction serialization
+ * failures.
+ */
+class PostgresqlDataStore(
+    private val dataSource: DataSource,
+    randomSource: RandomSource,
+) : DataStore(randomSource) {
+    private val flyway = Flyway.configure()
+        .dataSource(dataSource)
+        .locations("db/migration/postgresql")
+        .validateOnMigrate(true)
+        .validateMigrationNaming(true)
+        .load()
+
+    override fun migrateToHead(): DataStoreResult<Unit> {
+        return try {
+            flyway.migrate()
+            Either.Right(Unit)
+        } catch (_: FlywayException) {
+            Either.Left(DataStoreError.Unknown)
+        }
+    }
+
+    override fun <T, E> runInTransaction(
+        block: Raise<E>.(Transaction) -> T,
+    ): DataStoreResult<Either<E, T>> {
+        return try {
+            dataSource.connection
+        } catch (e: SQLException) {
+            return e.toDataStoreError().left()
+        }.use { connection ->
+            try {
+                connection.transactionIsolation = Connection.TRANSACTION_SERIALIZABLE
+                connection.autoCommit = false
+            } catch (e: SQLException) {
+                return e.toDataStoreError().left()
+            }
+
+            val result: Either<E, T> = try {
+                either { block(PostgresqlTransaction(connection)) }
+            } catch (t: Throwable) {
+                // Block threw, so attempt to roll back and rethrow the original throwable
+                // unconditionally so the caller can handle it. A failed rollback is reported as a
+                // suppressed exception rather than replacing the throwable the caller expects.
+                try {
+                    connection.rollback()
+                } catch (e: SQLException) {
+                    t.addSuppressed(e)
+                }
+                throw t
+            }
+
+            when (result) {
+                // Block returned an error, so attempt to roll back, returning the block's error if
+                // the rollback succeeds and the rollback error if it doesn't.
+                is Either.Left -> try {
+                    connection.rollback()
+                    result.right()
+                } catch (e: SQLException) {
+                    e.toDataStoreError().left()
+                }
+
+                // Block succeeded, so attempt to commit, returning the block result if successful
+                // and the commit error otherwise. No rollback is attempted after a failed commit,
+                // since a commit which reports an error may still have been applied, in which case
+                // the rollback wouldn't roll anything back.
+                is Either.Right -> try {
+                    connection.commit()
+                    result.right()
+                } catch (e: SQLException) {
+                    e.toDataStoreError().left()
+                }
+            }
+        }
+    }
+}
+
+private class PostgresqlTransaction(connection: Connection) : DataStore.Transaction {
+    override val appDrafts = PostgresqlAppDraftRepository(connection)
+    override val appPackages = PostgresqlAppPackageRepository(connection)
+    override val apps = PostgresqlAppRepository(connection)
+    override val authz = PostgresqlAuthorizationRepository(connection)
+    override val externalBlobs = PostgresqlExternalBlobRepository(connection)
+    override val organizations = PostgresqlOrganizationRepository(connection)
+}
+
+private class PostgresqlAppDraftRepository(
+    private val connection: Connection,
+) : DataStore.AppDraftRepository() {
+    override fun countActiveInOrganization(organizationId: String): DataStoreResult<ULong> =
+        runCatchingSql {
+            val sql = "SELECT COUNT(1) FROM app_drafts WHERE app_drafts.organization_id = ?"
+            connection.prepareStatement(sql).use { stmt ->
+                stmt.setString(1, organizationId)
+                stmt.executeQuery().use { rs -> rs.getSelectCountResult().bind() }
+            }
+        }
+
+    override fun deleteById(id: String): DataStoreResult<Unit> = runCatchingSql {
+        val sql = "DELETE FROM app_drafts WHERE id = ?"
+        connection.prepareStatement(sql).use { stmt ->
+            stmt.setString(1, id)
+            stmt.executeSingleUpdate().bind()
+        }
+    }
+
+    override fun deleteListingById(id: String): DataStoreResult<Unit> = runCatchingSql {
+        val sql = "DELETE FROM app_draft_listings WHERE id = ?"
+        connection.prepareStatement(sql).use { stmt ->
+            stmt.setString(1, id)
+            stmt.executeSingleUpdate().bind()
+        }
+    }
+
+    override fun deletePendingListingIconUploadByListingId(
+        appDraftListingId: String,
+    ): DataStoreResult<Unit> = runCatchingSql {
+        val sql = "DELETE FROM pending_app_draft_listing_icon_uploads WHERE app_draft_listing_id = ?"
+        connection.prepareStatement(sql).use { stmt ->
+            stmt.setString(1, appDraftListingId)
+            stmt.executeSingleUpdate().bind()
+        }
+    }
+
+    override fun deletePendingUploadByAppDraftId(
+        appDraftId: String,
+    ): DataStoreResult<Unit> = runCatchingSql {
+        val sql = "DELETE FROM pending_app_draft_uploads WHERE app_draft_id = ?"
+        connection.prepareStatement(sql).use { stmt ->
+            stmt.setString(1, appDraftId)
+            stmt.executeSingleUpdate().bind()
+        }
+    }
+
+    override fun existsById(id: String): DataStoreResult<Boolean> = runCatchingSql {
+        val sql = "SELECT EXISTS(SELECT 1 FROM app_drafts WHERE id = ?)"
+        connection.prepareStatement(sql).use { stmt ->
+            stmt.setString(1, id)
+            stmt.executeQuery().use { rs -> rs.getSelectExistsResult().bind() }
+        }
+    }
+
+    override fun existsSubmittedForAppId(appId: ApplicationId): DataStoreResult<Boolean> =
+        runCatchingSql {
+            val sql = """
+                SELECT EXISTS(
+                    SELECT 1
+                    FROM app_drafts
+                    JOIN app_packages
+                    ON app_packages.id = app_drafts.app_package_id
+                    WHERE app_drafts.submit_time IS NOT NULL
+                    AND app_packages.app_id = ?
+                )
+            """.trimIndent()
+            connection.prepareStatement(sql).use { stmt ->
+                stmt.setString(1, appId.intoInner())
+                stmt.executeQuery().use { rs -> rs.getSelectExistsResult().bind() }
+            }
+        }
+
+    override fun findById(id: String): DataStoreResult<Option<AppDraft>> = runCatchingSql {
+        val sql = """
+            SELECT
+                id,
+                organization_id,
+                create_time,
+                default_app_draft_listing_id,
+                app_package_id,
+                submit_time
+            FROM app_drafts
+            WHERE id = ?
+        """.trimIndent()
+        connection.prepareStatement(sql).use { stmt ->
+            stmt.setString(1, id)
+            stmt.executeQuery().use { rs ->
+                if (!rs.next()) return@use None
+
+                Some(rs.readAppDraft().bind())
+            }
+        }
+    }
+
+    override fun findForOrganizationAndUserByQuery(
+        organizationId: String,
+        userId: String,
+        maxResults: UInt,
+        afterAppDraftId: String?,
+    ): DataStoreResult<List<AppDraft>> = runCatchingSql {
+        val sql = """
+            SELECT
+                app_drafts.id,
+                app_drafts.organization_id,
+                app_drafts.create_time,
+                app_drafts.default_app_draft_listing_id,
+                app_drafts.app_package_id,
+                app_drafts.submit_time
+            FROM app_drafts
+            JOIN organizations
+            ON organizations.id = app_drafts.organization_id
+            WHERE app_drafts.organization_id = ?
+            AND organizations.owner_user_id = ?
+            AND (? IS NULL OR app_drafts.id > ?)
+            ORDER BY app_drafts.id
+            LIMIT ?
+        """.trimIndent()
+        connection.prepareStatement(sql).use { stmt ->
+            stmt.setString(1, organizationId)
+            stmt.setString(2, userId)
+            stmt.setString(3, afterAppDraftId)
+            stmt.setString(4, afterAppDraftId)
+            stmt.setLong(5, maxResults.toLong())
+            stmt.executeQuery().use { rs ->
+                val appDrafts = mutableListOf<AppDraft>()
+                while (rs.next()) {
+                    appDrafts.add(rs.readAppDraft().bind())
+                }
+                appDrafts
+            }
+        }
+    }
+
+    override fun findListingById(
+        id: String,
+    ): DataStoreResult<Option<AppDraftListing>> = runCatchingSql {
+        val sql = """
+            SELECT id, app_draft_id, language, name, short_description
+            FROM app_draft_listings
+            WHERE id = ?
+        """.trimIndent()
+        connection.prepareStatement(sql).use { stmt ->
+            stmt.setString(1, id)
+            stmt.executeQuery().use { rs ->
+                if (!rs.next()) return@use None
+
+                Some(rs.readAppDraftListing().bind())
+            }
+        }
+    }
+
+    override fun findListingsForAppDraftAndUserByQuery(
+        appDraftId: String,
+        userId: String,
+        maxResults: UInt,
+        afterLanguage: ListingLanguage?,
+    ): DataStoreResult<List<AppDraftListing>> = runCatchingSql {
+        val sql = """
+            SELECT
+                app_draft_listings.id,
+                app_draft_listings.app_draft_id,
+                app_draft_listings.language,
+                app_draft_listings.name,
+                app_draft_listings.short_description
+            FROM app_draft_listings
+            JOIN app_drafts
+            ON app_drafts.id = app_draft_listings.app_draft_id
+            JOIN organizations
+            ON organizations.id = app_drafts.organization_id
+            WHERE app_draft_listings.app_draft_id = ?
+            AND organizations.owner_user_id = ?
+            AND (? IS NULL OR app_draft_listings.language > ?)
+            ORDER BY app_draft_listings.language
+            LIMIT ?
+        """.trimIndent()
+        connection.prepareStatement(sql).use { stmt ->
+            stmt.setString(1, appDraftId)
+            stmt.setString(2, userId)
+            stmt.setString(3, afterLanguage?.toString())
+            stmt.setString(4, afterLanguage?.toString())
+            stmt.setLong(5, maxResults.toLong())
+            stmt.executeQuery().use { rs ->
+                val listings = mutableListOf<AppDraftListing>()
+                while (rs.next()) {
+                    listings.add(rs.readAppDraftListing().bind())
+                }
+                listings
+            }
+        }
+    }
+
+    override fun findPendingListingIconUploadByObjectKey(
+        objectKey: String,
+    ): DataStoreResult<Option<PendingAppDraftListingIconUpload>> = runCatchingSql {
+        val sql = """
+            SELECT
+                id,
+                app_draft_listing_id,
+                external_blob_id,
+                object_key,
+                create_time,
+                processing_result
+            FROM pending_app_draft_listing_icon_uploads
+            WHERE object_key = ?
+        """.trimIndent()
+        connection.prepareStatement(sql).use { stmt ->
+            stmt.setString(1, objectKey)
+            stmt.executeQuery().use { rs ->
+                if (!rs.next()) return@use None
+
+                Some(
+                    PendingAppDraftListingIconUpload(
+                        id = rs.requireString("id").bind(),
+                        appDraftListingId = rs.requireString("app_draft_listing_id").bind(),
+                        externalBlobId = rs.requireString("external_blob_id").bind(),
+                        objectKey = rs.requireString("object_key").bind(),
+                        createTime = rs.requireObject<OffsetDateTime>("create_time").bind(),
+                        result = rs.getSafeString("processing_result")
+                            .map {
+                                iconProcessingResultFromColumnValue(it)
+                                    .toEitherBind { DataStoreError.IllegalState }
+                            },
+                    )
+                )
+            }
+        }
+    }
+
+    override fun findPendingUploadByObjectKey(
+        objectKey: String,
+    ): DataStoreResult<Option<PendingAppDraftUpload>> = runCatchingSql {
+        val sql = """
+            SELECT id, app_draft_id, external_blob_id, object_key, create_time, processing_result
+            FROM pending_app_draft_uploads
+            WHERE object_key = ?
+        """.trimIndent()
+        connection.prepareStatement(sql).use { stmt ->
+            stmt.setString(1, objectKey)
+            stmt.executeQuery().use { rs ->
+                if (!rs.next()) return@use None
+
+                Some(
+                    PendingAppDraftUpload(
+                        id = rs.requireString("id").bind(),
+                        appDraftId = rs.requireString("app_draft_id").bind(),
+                        externalBlobId = rs.requireString("external_blob_id").bind(),
+                        objectKey = rs.requireString("object_key").bind(),
+                        createTime = rs.requireObject<OffsetDateTime>("create_time").bind(),
+                        result = rs.getSafeString("processing_result")
+                            .map {
+                                processingResultFromColumnValue(it)
+                                    .toEitherBind { DataStoreError.IllegalState }
+                            },
+                    )
+                )
+            }
+        }
+    }
+
+    override fun listingExistsByIdForAppDraft(
+        listingId: String,
+        appDraftId: String,
+    ): DataStoreResult<Boolean> = runCatchingSql {
+        val sql = "SELECT EXISTS(SELECT 1 FROM app_draft_listings WHERE id = ? AND app_draft_id = ?)"
+        connection.prepareStatement(sql).use { stmt ->
+            stmt.setString(1, listingId)
+            stmt.setString(2, appDraftId)
+            stmt.executeQuery().use { rs -> rs.getSelectExistsResult().bind() }
+        }
+    }
+
+    override fun listingExistsByLanguageForAppDraft(
+        appDraftId: String,
+        language: ListingLanguage,
+    ): DataStoreResult<Boolean> = runCatchingSql {
+        val sql = """
+            SELECT EXISTS(
+                SELECT 1 FROM app_draft_listings WHERE app_draft_id = ? AND language = ?
+            )
+        """.trimIndent()
+        connection.prepareStatement(sql).use { stmt ->
+            stmt.setString(1, appDraftId)
+            stmt.setString(2, language.toString())
+            stmt.executeQuery().use { rs -> rs.getSelectExistsResult().bind() }
+        }
+    }
+
+    override fun pendingListingIconUploadExistsByListingId(
+        appDraftListingId: String,
+    ): DataStoreResult<Boolean> = runCatchingSql {
+        val sql = """
+            SELECT EXISTS(
+                SELECT 1 FROM pending_app_draft_listing_icon_uploads WHERE app_draft_listing_id = ?
+            )
+        """.trimIndent()
+        connection.prepareStatement(sql).use { stmt ->
+            stmt.setString(1, appDraftListingId)
+            stmt.executeQuery().use { rs -> rs.getSelectExistsResult().bind() }
+        }
+    }
+
+    override fun pendingUploadExistsByAppDraftId(
+        appDraftId: String,
+    ): DataStoreResult<Boolean> = runCatchingSql {
+        val sql = "SELECT EXISTS(SELECT 1 FROM pending_app_draft_uploads WHERE app_draft_id = ?)"
+        connection.prepareStatement(sql).use { stmt ->
+            stmt.setString(1, appDraftId)
+            stmt.executeQuery().use { rs -> rs.getSelectExistsResult().bind() }
+        }
+    }
+
+    override fun save(appDraft: AppDraft): DataStoreResult<Unit> = runCatchingSql {
+        val sql = """
+            INSERT INTO app_drafts (
+                id,
+                organization_id,
+                create_time,
+                default_app_draft_listing_id,
+                app_package_id,
+                submit_time
+            )
+            VALUES (?, ?, ?, ?, ?, ?)
+        """.trimIndent()
+        connection.prepareStatement(sql).use { stmt ->
+            stmt.setString(1, appDraft.id)
+            stmt.setString(2, appDraft.organizationId)
+            stmt.setObject(3, appDraft.createTime)
+            stmt.setString(4, appDraft.optionalDefaultAppDraftListingId.getOrNull())
+            stmt.setString(5, appDraft.optionalAppPackageId.getOrNull())
+            stmt.setObject(6, appDraft.optionalSubmitTime.getOrNull(), Types.TIMESTAMP_WITH_TIMEZONE)
+            stmt.executeSingleUpdate().bind()
+        }
+    }
+
+    override fun saveListing(listing: AppDraftListing): DataStoreResult<Unit> = runCatchingSql {
+        val sql = """
+            INSERT INTO app_draft_listings (id, app_draft_id, language, name, short_description)
+            VALUES (?, ?, ?, ?, ?)
+        """.trimIndent()
+        connection.prepareStatement(sql).use { stmt ->
+            stmt.setString(1, listing.id)
+            stmt.setString(2, listing.appDraftId)
+            stmt.setString(3, listing.language.toString())
+            stmt.setString(4, listing.name)
+            stmt.setString(5, listing.shortDescription)
+            stmt.executeSingleUpdate().bind()
+        }
+    }
+
+    override fun saveListingIconUpload(
+        upload: PendingAppDraftListingIconUpload,
+    ): DataStoreResult<Unit> = runCatchingSql {
+        val sql = """
+            INSERT INTO pending_app_draft_listing_icon_uploads (
+                id,
+                app_draft_listing_id,
+                external_blob_id,
+                object_key,
+                create_time,
+                processing_result
+            )
+            VALUES (?, ?, ?, ?, ?, ?)
+        """.trimIndent()
+        connection.prepareStatement(sql).use { stmt ->
+            stmt.setString(1, upload.id)
+            stmt.setString(2, upload.appDraftListingId)
+            stmt.setString(3, upload.externalBlobId)
+            stmt.setString(4, upload.objectKey)
+            stmt.setObject(5, upload.createTime)
+            stmt.setString(6, upload.result.map { it.toColumnValue() }.getOrNull())
+            stmt.executeSingleUpdate().bind()
+        }
+    }
+
+    override fun saveUpload(upload: PendingAppDraftUpload): DataStoreResult<Unit> = runCatchingSql {
+        val sql = """
+            INSERT INTO pending_app_draft_uploads (
+                id,
+                app_draft_id,
+                external_blob_id,
+                object_key,
+                create_time,
+                processing_result
+            )
+            VALUES (?, ?, ?, ?, ?, ?)
+        """.trimIndent()
+        connection.prepareStatement(sql).use { stmt ->
+            stmt.setString(1, upload.id)
+            stmt.setString(2, upload.appDraftId)
+            stmt.setString(3, upload.externalBlobId)
+            stmt.setString(4, upload.objectKey)
+            stmt.setObject(5, upload.createTime)
+            stmt.setString(6, upload.result.map { it.toColumnValue() }.getOrNull())
+            stmt.executeSingleUpdate().bind()
+        }
+    }
+
+    override fun updateAppPackageId(
+        appDraftId: String,
+        appPackageId: String,
+    ): DataStoreResult<Unit> = runCatchingSql {
+        val sql = "UPDATE app_drafts SET app_package_id = ? WHERE id = ?"
+        connection.prepareStatement(sql).use { stmt ->
+            stmt.setString(1, appPackageId)
+            stmt.setString(2, appDraftId)
+            stmt.executeSingleUpdate().bind()
+        }
+    }
+
+    override fun updateDefaultListing(
+        appDraftId: String,
+        defaultAppDraftListingId: Option<String>,
+    ): DataStoreResult<Unit> = runCatchingSql {
+        val sql = "UPDATE app_drafts SET default_app_draft_listing_id = ? WHERE id = ?"
+        connection.prepareStatement(sql).use { stmt ->
+            stmt.setString(1, defaultAppDraftListingId.getOrNull())
+            stmt.setString(2, appDraftId)
+            stmt.executeSingleUpdate().bind()
+        }
+    }
+
+    override fun updateListing(
+        listingId: String,
+        name: String?,
+        shortDescription: String?,
+    ): DataStoreResult<Unit> = runCatchingSql {
+        val sql = """
+            UPDATE app_draft_listings
+            SET name = COALESCE(?, name), short_description = COALESCE(?, short_description)
+            WHERE id = ?
+        """.trimIndent()
+        connection.prepareStatement(sql).use { stmt ->
+            stmt.setObject(1, name, Types.VARCHAR)
+            stmt.setObject(2, shortDescription, Types.VARCHAR)
+            stmt.setString(3, listingId)
+            stmt.executeSingleUpdate().bind()
+        }
+    }
+
+    override fun updatePendingListingIconUploadResult(
+        pendingUploadId: String,
+        result: AppDraftListingIconUploadProcessingResult,
+    ): DataStoreResult<Unit> = runCatchingSql {
+        val sql =
+            "UPDATE pending_app_draft_listing_icon_uploads SET processing_result = ? WHERE id = ?"
+        connection.prepareStatement(sql).use { stmt ->
+            stmt.setString(1, result.toColumnValue())
+            stmt.setString(2, pendingUploadId)
+            stmt.executeSingleUpdate().bind()
+        }
+    }
+
+    override fun updatePendingUploadResult(
+        pendingUploadId: String,
+        result: Either<AppDraftUploadProcessingError, Unit>,
+    ): DataStoreResult<Unit> = runCatchingSql {
+        val sql = "UPDATE pending_app_draft_uploads SET processing_result = ? WHERE id = ?"
+        connection.prepareStatement(sql).use { stmt ->
+            stmt.setString(1, result.toColumnValue())
+            stmt.setString(2, pendingUploadId)
+            stmt.executeSingleUpdate().bind()
+        }
+    }
+
+    override fun updateSubmitTime(
+        appDraftId: String,
+        submitTime: OffsetDateTime,
+    ): DataStoreResult<Unit> = runCatchingSql {
+        val sql = "UPDATE app_drafts SET submit_time = ? WHERE id = ?"
+        connection.prepareStatement(sql).use { stmt ->
+            stmt.setObject(1, submitTime)
+            stmt.setString(2, appDraftId)
+            stmt.executeSingleUpdate().bind()
+        }
+    }
+}
+
+private class PostgresqlAppPackageRepository(
+    private val connection: Connection,
+) : DataStore.AppPackageRepository() {
+    override fun deleteById(id: String): DataStoreResult<Unit> = runCatchingSql {
+        val sql = "DELETE FROM app_packages WHERE id = ?"
+        connection.prepareStatement(sql).use { stmt ->
+            stmt.setString(1, id)
+            stmt.executeSingleUpdate().bind()
+        }
+    }
+
+    override fun findById(id: String): DataStoreResult<Option<AppPackage>> = runCatchingSql {
+        val sql = """
+            SELECT
+                id,
+                external_blob_id,
+                upload_event_time,
+                app_id,
+                version_code,
+                version_name,
+                target_sdk,
+                signer_certificate,
+                build_apks_result
+            FROM app_packages
+            WHERE id = ?
+        """.trimIndent()
+        connection.prepareStatement(sql).use { stmt ->
+            stmt.setString(1, id)
+            stmt.executeQuery().use { rs ->
+                if (!rs.next()) return@use None
+
+                Some(rs.readAppPackage().bind())
+            }
+        }
+    }
+
+    override fun findByAppDraftId(
+        appDraftId: String,
+    ): DataStoreResult<Option<AppPackage>> = runCatchingSql {
+        val sql = """
+            SELECT
+                app_packages.id,
+                app_packages.external_blob_id,
+                app_packages.upload_event_time,
+                app_packages.app_id,
+                app_packages.version_code,
+                app_packages.version_name,
+                app_packages.target_sdk,
+                app_packages.signer_certificate,
+                app_packages.build_apks_result
+            FROM app_packages
+            JOIN app_drafts
+            ON app_drafts.app_package_id = app_packages.id
+            WHERE app_drafts.id = ?
+        """.trimIndent()
+        connection.prepareStatement(sql).use { stmt ->
+            stmt.setString(1, appDraftId)
+            stmt.executeQuery().use { rs ->
+                if (!rs.next()) return@use None
+
+                Some(rs.readAppPackage().bind())
+            }
+        }
+    }
+
+    override fun save(appPackage: AppPackage): DataStoreResult<Unit> = runCatchingSql {
+        val sql = """
+            INSERT INTO app_packages (
+                id,
+                external_blob_id,
+                upload_event_time,
+                app_id,
+                version_code,
+                version_name,
+                target_sdk,
+                signer_certificate,
+                build_apks_result
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """.trimIndent()
+        connection.prepareStatement(sql).use { stmt ->
+            stmt.setString(1, appPackage.id)
+            stmt.setString(2, appPackage.externalBlobId)
+            stmt.setObject(3, appPackage.uploadEventTime)
+            stmt.setString(4, appPackage.appId.intoInner())
+            stmt.setInt(5, appPackage.versionCode.intoInner())
+            stmt.setString(6, appPackage.versionName.intoInner())
+            stmt.setInt(7, appPackage.targetSdk.intoInner())
+            stmt.setBytes(8, appPackage.signerCertificate.value)
+            stmt.setBytes(9, appPackage.buildApksResult.value)
+            stmt.executeSingleUpdate().bind()
+        }
+    }
+
+    override fun savePermission(
+        permission: AppPackagePermission,
+    ): DataStoreResult<Unit> = runCatchingSql {
+        val sql = """
+            INSERT INTO app_package_permissions (id, app_package_id, name, max_sdk_version)
+            VALUES (?, ?, ?, ?)
+        """.trimIndent()
+        connection.prepareStatement(sql).use { stmt ->
+            stmt.setString(1, permission.id)
+            stmt.setString(2, permission.appPackageId)
+            stmt.setString(3, permission.name.intoInner())
+            stmt.setObject(
+                4,
+                permission.maxSdkVersion.map { it.intoInner() }.getOrNull(),
+                Types.INTEGER,
+            )
+            stmt.executeSingleUpdate().bind()
+        }
+    }
+}
+
+private class PostgresqlAppRepository(
+    private val connection: Connection,
+) : DataStore.AppRepository() {
+    override fun countInOrganization(organizationId: String): DataStoreResult<ULong> =
+        runCatchingSql {
+            val sql = "SELECT COUNT(1) FROM apps WHERE apps.organization_id = ?"
+            connection.prepareStatement(sql).use { stmt ->
+                stmt.setString(1, organizationId)
+                stmt.executeQuery().use { rs -> rs.getSelectCountResult().bind() }
+            }
+        }
+
+    override fun existsById(id: String): DataStoreResult<Boolean> = runCatchingSql {
+        val sql = "SELECT EXISTS(SELECT 1 FROM apps WHERE id = ?)"
+        connection.prepareStatement(sql).use { stmt ->
+            stmt.setString(1, id)
+            stmt.executeQuery().use { rs -> rs.getSelectExistsResult().bind() }
+        }
+    }
+
+    override fun findById(id: String): DataStoreResult<Option<App>> = runCatchingSql {
+        val sql = """
+            SELECT id, organization_id, default_app_listing_id, publicly_listed
+            FROM apps
+            WHERE id = ?
+        """.trimIndent()
+        connection.prepareStatement(sql).use { stmt ->
+            stmt.setString(1, id)
+            stmt.executeQuery().use { rs ->
+                if (!rs.next()) return@use None
+
+                Some(
+                    App(
+                        id = rs.requireString("id").bind(),
+                        organizationId = rs.requireString("organization_id").bind(),
+                        defaultAppListingId = rs.requireString("default_app_listing_id").bind(),
+                        publiclyListed = rs.requireBoolean("publicly_listed").bind(),
+                    )
+                )
+            }
+        }
+    }
+
+    override fun saveWithDefaultListing(
+        app: App,
+        defaultListing: AppListing,
+    ): DataStoreResult<Unit> = runCatchingSql {
+        val sql = """
+            WITH new_app AS (
+                INSERT INTO apps (id, organization_id, default_app_listing_id, publicly_listed)
+                VALUES (?, ?, ?, ?)
+                RETURNING id
+            )
+            INSERT INTO app_listings (id, app_id, language)
+            SELECT ?, new_app.id, ? FROM new_app WHERE new_app.id = ?
+        """.trimIndent()
+        connection.prepareStatement(sql).use { stmt ->
+            stmt.setString(1, app.id)
+            stmt.setString(2, app.organizationId)
+            stmt.setString(3, app.defaultAppListingId)
+            stmt.setBoolean(4, app.publiclyListed)
+            stmt.setString(5, defaultListing.id)
+            stmt.setString(6, defaultListing.language.toString())
+            stmt.setString(7, defaultListing.appId)
+            stmt.executeSingleUpdate().bind()
+        }
+    }
+
+    override fun updatePubliclyListed(
+        appId: String,
+        publiclyListed: Boolean,
+    ): DataStoreResult<Unit> = runCatchingSql {
+        val sql = "UPDATE apps SET publicly_listed = ? WHERE apps.id = ?"
+        connection.prepareStatement(sql).use { stmt ->
+            stmt.setBoolean(1, publiclyListed)
+            stmt.setString(2, appId)
+            stmt.executeSingleUpdate().bind()
+        }
+    }
+}
+
+private class PostgresqlAuthorizationRepository(
+    private val connection: Connection,
+) : DataStore.AuthorizationRepository() {
+    override fun hasPermission(request: HasPermissionRequest): DataStoreResult<Boolean> {
+        // Every permission is granted by the same rule: the subject owns the organization the
+        // resource belongs to. Only the path from the resource to organizations varies, so the
+        // request kind selects a query and one binding site serves them all.
+        val sql = when (request) {
+            is HasPermissionRequest.CreateAppDraft -> """
+                SELECT EXISTS(
+                    SELECT 1 FROM organizations
+                    WHERE organizations.id = ?
+                    AND organizations.owner_user_id = ?
+                )
+            """.trimIndent()
+
+            is HasPermissionRequest.UpdateApp,
+            is HasPermissionRequest.ViewApp -> """
+                SELECT EXISTS(
+                    SELECT 1 FROM apps
+                    JOIN organizations
+                    ON organizations.id = apps.organization_id
+                    WHERE apps.id = ?
+                    AND organizations.owner_user_id = ?
+                )
+            """.trimIndent()
+
+            is HasPermissionRequest.CreateAppDraftListing,
+            is HasPermissionRequest.DeleteAppDraft,
+            is HasPermissionRequest.DownloadAppDraft,
+            is HasPermissionRequest.ReplaceAppDraftPackage,
+            is HasPermissionRequest.SubmitAppDraft,
+            is HasPermissionRequest.UpdateAppDraft,
+            is HasPermissionRequest.ViewAppDraft -> """
+                SELECT EXISTS(
+                    SELECT 1 FROM app_drafts
+                    JOIN organizations
+                    ON organizations.id = app_drafts.organization_id
+                    WHERE app_drafts.id = ?
+                    AND organizations.owner_user_id = ?
+                )
+            """.trimIndent()
+
+            is HasPermissionRequest.DeleteAppDraftListing,
+            is HasPermissionRequest.DownloadAppDraftListingIcon,
+            is HasPermissionRequest.UpdateAppDraftListing,
+            is HasPermissionRequest.UploadAppDraftListingIcon,
+            is HasPermissionRequest.ViewAppDraftListing -> """
+                SELECT EXISTS(
+                    SELECT 1 FROM app_draft_listings
+                    JOIN app_drafts
+                    ON app_drafts.id = app_draft_listings.app_draft_id
+                    JOIN organizations
+                    ON organizations.id = app_drafts.organization_id
+                    WHERE app_draft_listings.id = ?
+                    AND organizations.owner_user_id = ?
+                )
+            """.trimIndent()
+        }
+
+        return runCatchingSql {
+            connection.prepareStatement(sql).use { stmt ->
+                stmt.setString(1, request.resourceId)
+                stmt.setString(2, request.subjectId)
+                stmt.executeQuery().use { rs -> rs.getSelectExistsResult().bind() }
+            }
+        }
+    }
+}
+
+private class PostgresqlExternalBlobRepository(
+    private val connection: Connection,
+) : DataStore.ExternalBlobRepository() {
+    override fun commitPending(
+        id: String,
+        version: ExternalBlob.BlobVersion,
+    ): DataStoreResult<Unit> = runCatchingSql {
+        val sql = """
+            UPDATE external_blobs
+            SET status = 'committed', generation = ?, meta_generation = ?
+            WHERE id = ? AND status = 'pending' AND service = ?
+        """.trimIndent()
+        connection.prepareStatement(sql).use { stmt ->
+            val service = when (version) {
+                is ExternalBlob.GcsBlobVersion -> {
+                    stmt.setLong(1, version.generation)
+                    stmt.setLong(2, version.metaGeneration)
+                    "gcs"
+                }
+
+                is ExternalBlob.LocalBlobVersion -> {
+                    stmt.setLong(1, version.generation)
+                    stmt.setNull(2, Types.BIGINT)
+                    "local"
+                }
+            }
+            stmt.setString(3, id)
+            stmt.setString(4, service)
+            stmt.executeSingleUpdate().bind()
+        }
+    }
+
+    override fun findById(id: String): DataStoreResult<Option<ExternalBlob<*>>> = runCatchingSql {
+        val sql = """
+            SELECT
+                id,
+                create_time,
+                service,
+                status,
+                bucket_name,
+                object_key,
+                generation,
+                meta_generation,
+                delete_time
+            FROM external_blobs
+            WHERE id = ?
+        """.trimIndent()
+        connection.prepareStatement(sql).use { stmt ->
+            stmt.setString(1, id)
+            stmt.executeQuery().use { rs ->
+                if (!rs.next()) return@use None
+
+                val blobId = rs.requireString("id").bind()
+                val createTime = rs.requireObject<OffsetDateTime>("create_time").bind()
+                val service = rs.requireString("service").bind()
+                val status = rs.requireString("status").bind()
+                val bucketName = rs.requireString("bucket_name").bind()
+                val objectKey = rs.requireString("object_key").bind()
+
+                Some(
+                    when (service) {
+                        "local" -> ExternalBlob.Local(
+                            id = blobId,
+                            createTime = createTime,
+                            bucketName = bucketName,
+                            objectKey = objectKey,
+                            status = when (status) {
+                                "pending" -> ExternalBlob.Status.Pending
+                                "committed" -> ExternalBlob.Status.Committed(
+                                    ExternalBlob.LocalBlobVersion(
+                                        rs.requireLong("generation").bind(),
+                                    ),
+                                )
+
+                                "deleted" -> ExternalBlob.Status.Deleted(
+                                    rs.getSafeLong("generation").map {
+                                        ExternalBlob.LocalBlobVersion(it)
+                                    },
+                                    rs.requireObject<OffsetDateTime>("delete_time").bind(),
+                                )
+
+                                else -> raise(DataStoreError.IllegalState)
+                            },
+                        )
+
+                        "gcs" -> ExternalBlob.Gcs(
+                            id = blobId,
+                            createTime = createTime,
+                            bucketName = bucketName,
+                            objectKey = objectKey,
+                            status = when (status) {
+                                "pending" -> ExternalBlob.Status.Pending
+                                "committed" -> ExternalBlob.Status.Committed(
+                                    ExternalBlob.GcsBlobVersion(
+                                        rs.requireLong("generation").bind(),
+                                        rs.requireLong("meta_generation").bind(),
+                                    ),
+                                )
+
+                                "deleted" -> ExternalBlob.Status.Deleted(
+                                    rs.getSafeLong("generation").map { generation ->
+                                        ExternalBlob.GcsBlobVersion(
+                                            generation,
+                                            rs.requireLong("meta_generation").bind(),
+                                        )
+                                    },
+                                    rs.requireObject<OffsetDateTime>("delete_time").bind(),
+                                )
+
+                                else -> raise(DataStoreError.IllegalState)
+                            },
+                        )
+
+                        else -> raise(DataStoreError.IllegalState)
+                    }
+                )
+            }
+        }
+    }
+
+    override fun markDeleted(
+        id: String,
+        deleteTime: OffsetDateTime,
+    ): DataStoreResult<Unit> = runCatchingSql {
+        val sql = "UPDATE external_blobs SET status = 'deleted', delete_time = ? WHERE id = ?"
+        connection.prepareStatement(sql).use { stmt ->
+            stmt.setObject(1, deleteTime)
+            stmt.setString(2, id)
+            stmt.executeSingleUpdate().bind()
+        }
+    }
+
+    override fun save(blob: ExternalBlob<*>): DataStoreResult<Unit> = runCatchingSql {
+        val sql = """
+            INSERT INTO external_blobs (
+                id,
+                create_time,
+                service,
+                status,
+                delete_time,
+                bucket_name,
+                object_key,
+                generation,
+                meta_generation
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """.trimIndent()
+        connection.prepareStatement(sql).use { stmt ->
+            stmt.setString(1, blob.id)
+            stmt.setObject(2, blob.createTime)
+            stmt.setString(
+                3,
+                when (blob) {
+                    is ExternalBlob.Gcs -> "gcs"
+                    is ExternalBlob.Local -> "local"
+                }
+            )
+            stmt.setString(
+                4,
+                when (blob.status) {
+                    ExternalBlob.Status.Pending -> "pending"
+                    is ExternalBlob.Status.Committed -> "committed"
+                    is ExternalBlob.Status.Deleted -> "deleted"
+                }
+            )
+            when (val status = blob.status) {
+                is ExternalBlob.Status.Deleted -> stmt.setObject(5, status.deleteTime)
+                is ExternalBlob.Status.Pending,
+                is ExternalBlob.Status.Committed ->
+                    stmt.setNull(5, Types.TIMESTAMP_WITH_TIMEZONE)
+            }
+            stmt.setString(6, blob.bucketName)
+            stmt.setString(7, blob.objectKey)
+            when (blob) {
+                is ExternalBlob.Gcs -> {
+                    val version = blob.status.optionalVersion.getOrNull()
+                    stmt.setObject(8, version?.generation, Types.BIGINT)
+                    stmt.setObject(9, version?.metaGeneration, Types.BIGINT)
+                }
+
+                is ExternalBlob.Local -> {
+                    val version = blob.status.optionalVersion.getOrNull()
+                    stmt.setObject(8, version?.generation, Types.BIGINT)
+                    stmt.setNull(9, Types.BIGINT)
+                }
+            }
+            stmt.executeSingleUpdate().bind()
+        }
+    }
+}
+
+private class PostgresqlOrganizationRepository(
+    private val connection: Connection,
+) : DataStore.OrganizationRepository() {
+    override fun findById(id: String): DataStoreResult<Option<Organization>> = runCatchingSql {
+        val sql = "SELECT id, owner_user_id, create_time FROM organizations WHERE id = ?"
+        connection.prepareStatement(sql).use { stmt ->
+            stmt.setString(1, id)
+            stmt.executeQuery().use { rs ->
+                if (!rs.next()) return@use None
+
+                Some(
+                    Organization(
+                        id = rs.requireString("id").bind(),
+                        ownerUserId = rs.requireString("owner_user_id").bind(),
+                        createTime = rs.requireObject<OffsetDateTime>("create_time").bind(),
+                    )
+                )
+            }
+        }
+    }
+
+    override fun saveWithOwner(
+        organization: Organization,
+        owner: User,
+    ): DataStoreResult<Unit> = runCatchingSql {
+        val sql = """
+            WITH new_organization AS (
+                INSERT INTO organizations (id, owner_user_id, create_time) VALUES (?, ?, ?)
+            )
+            INSERT INTO users (id, organization_id) VALUES (?, ?)
+        """.trimIndent()
+        connection.prepareStatement(sql).use { stmt ->
+            stmt.setString(1, organization.id)
+            stmt.setString(2, organization.ownerUserId)
+            stmt.setObject(3, organization.createTime)
+            stmt.setString(4, owner.id)
+            stmt.setString(5, owner.organizationId)
+            stmt.executeSingleUpdate().bind()
+        }
+    }
+}
+
+/**
+ * Reads an [AppDraft] from the current row, which must expose every `app_drafts` column selected by
+ * this repository.
+ */
+private fun ResultSet.readAppDraft(): DataStoreResult<AppDraft> = either {
+    val id = requireString("id").bind()
+    val organizationId = requireString("organization_id").bind()
+    val createTime = requireObject<OffsetDateTime>("create_time").bind()
+    val defaultAppDraftListingId = getSafeString("default_app_draft_listing_id")
+    val appPackageId = getSafeString("app_package_id")
+
+    when (val submitTime = getSafeObject<OffsetDateTime>("submit_time")) {
+        None -> AppDraft.Unsubmitted(
+            id,
+            organizationId,
+            createTime,
+            defaultAppDraftListingId,
+            appPackageId,
+        )
+
+        is Some -> AppDraft.Submitted(
+            id,
+            organizationId,
+            createTime,
+            defaultAppDraftListingId.toEitherBind { DataStoreError.IllegalState },
+            appPackageId.toEitherBind { DataStoreError.IllegalState },
+            submitTime.value,
+        )
+    }
+}
+
+/**
+ * Reads an [AppDraftListing] from the current row, which must expose every `app_draft_listings`
+ * column selected by this repository.
+ */
+private fun ResultSet.readAppDraftListing(): DataStoreResult<AppDraftListing> = either {
+    AppDraftListing(
+        id = requireString("id").bind(),
+        appDraftId = requireString("app_draft_id").bind(),
+        language = ListingLanguage.fromString(requireString("language").bind())
+            .toEitherBind { DataStoreError.IllegalState },
+        name = requireString("name").bind(),
+        shortDescription = requireString("short_description").bind(),
+    )
+}
+
+/**
+ * Reads an [AppPackage] from the current row, which must expose every `app_packages` column
+ * selected by this repository.
+ */
+private fun ResultSet.readAppPackage(): DataStoreResult<AppPackage> = either {
+    AppPackage(
+        id = requireString("id").bind(),
+        externalBlobId = requireString("external_blob_id").bind(),
+        uploadEventTime = requireObject<OffsetDateTime>("upload_event_time").bind(),
+        appId = ApplicationId.fromString(requireString("app_id").bind())
+            .toEitherBind { DataStoreError.IllegalState },
+        versionCode = VersionCode.fromInt(requireInt("version_code").bind())
+            .toEitherBind { DataStoreError.IllegalState },
+        versionName = VersionName.fromString(requireString("version_name").bind())
+            .toEitherBind { DataStoreError.IllegalState },
+        targetSdk = SdkVersion.fromInt(requireInt("target_sdk").bind())
+            .toEitherBind { DataStoreError.IllegalState },
+        signerCertificate = Bytes(requireBytes("signer_certificate").bind()),
+        buildApksResult = Bytes(requireBytes("build_apks_result").bind()),
+    )
+}
+
+private fun Either<AppDraftUploadProcessingError, Unit>.toColumnValue(): String = when (this) {
+    is Either.Right -> "success"
+    is Either.Left -> when (val error = value) {
+        AppDraftUploadProcessingError.AppDraftSubmitted -> "app_draft_submitted"
+        is AppDraftUploadProcessingError.ApkSetParseFailed -> error.error.toColumnValue()
+    }
+}
+
+private fun ApkSetParseError.toColumnValue(): String = when (this) {
+    ApkSetParseError.InvalidFormat -> "apk_set_invalid_format"
+    ApkSetParseError.Io -> "apk_set_io_error"
+    ApkSetParseError.Policy.Missing64BitCode -> "apk_set_missing_64_bit_code"
+    ApkSetParseError.Policy.LowTargetSdk -> "apk_set_low_target_sdk"
+    is ApkSetParseError.Policy.Apk -> error.toColumnValue()
+}
+
+private fun ApkParseError.Policy.toColumnValue(): String = when (this) {
+    ApkParseError.Policy.NoModernSignature -> "apk_set_no_modern_signature"
+    ApkParseError.Policy.SignedWithDebugCert -> "apk_set_signed_with_debug_cert"
+    ApkParseError.Policy.SignedWithMultipleCerts -> "apk_set_signed_with_multiple_certs"
+    ApkParseError.Policy.Unverified -> "apk_set_unverified"
+    is ApkParseError.Policy.Manifest -> error.toColumnValue()
+}
+
+private fun AndroidManifest.FromXmlError.Policy.toColumnValue(): String = when (this) {
+    AndroidManifest.FromXmlError.Policy.DuplicatePermission -> "apk_set_duplicate_permission"
+    AndroidManifest.FromXmlError.Policy.InvalidApplicationId -> "apk_set_invalid_application_id"
+    AndroidManifest.FromXmlError.Policy.DebuggableTrue -> "apk_set_debuggable"
+    AndroidManifest.FromXmlError.Policy.TestOnlyTrue -> "apk_set_test_only"
+    AndroidManifest.FromXmlError.Policy.MultipleApplicationElements ->
+        "apk_set_multiple_application_elements"
+
+    AndroidManifest.FromXmlError.Policy.MultipleUsesSdkElements ->
+        "apk_set_multiple_uses_sdk_elements"
+
+    AndroidManifest.FromXmlError.Policy.NoVersionCode -> "apk_set_no_version_code"
+    AndroidManifest.FromXmlError.Policy.PermissionMaxSdkOutOfRange ->
+        "apk_set_permission_max_sdk_out_of_range"
+
+    AndroidManifest.FromXmlError.Policy.PermissionNameTooLong ->
+        "apk_set_permission_name_too_long"
+
+    AndroidManifest.FromXmlError.Policy.VersionCodeOutOfRange ->
+        "apk_set_version_code_out_of_range"
+
+    AndroidManifest.FromXmlError.Policy.VersionCodeMajorNonZero ->
+        "apk_set_version_code_major_non_zero"
+
+    AndroidManifest.FromXmlError.Policy.VersionNameTooLong -> "apk_set_version_name_too_long"
+}
+
+private fun processingResultFromColumnValue(
+    value: String,
+): Option<Either<AppDraftUploadProcessingError, Unit>> = when (value) {
+    "success" -> Some(Unit.right())
+    "app_draft_submitted" -> Some(AppDraftUploadProcessingError.AppDraftSubmitted.left())
+    else -> apkSetParseErrorFromColumnValue(value)
+        .map { AppDraftUploadProcessingError.ApkSetParseFailed(it).left() }
+}
+
+private fun apkSetParseErrorFromColumnValue(value: String): Option<ApkSetParseError> =
+    when (value) {
+        "apk_set_invalid_format" -> Some(ApkSetParseError.InvalidFormat)
+        "apk_set_io_error" -> Some(ApkSetParseError.Io)
+        "apk_set_missing_64_bit_code" -> Some(ApkSetParseError.Policy.Missing64BitCode)
+        "apk_set_low_target_sdk" -> Some(ApkSetParseError.Policy.LowTargetSdk)
+        else -> apkParseErrorFromColumnValue(value).map { ApkSetParseError.Policy.Apk(it) }
+    }
+
+private fun apkParseErrorFromColumnValue(value: String): Option<ApkParseError.Policy> =
+    when (value) {
+        "apk_set_no_modern_signature" -> Some(ApkParseError.Policy.NoModernSignature)
+        "apk_set_signed_with_debug_cert" -> Some(ApkParseError.Policy.SignedWithDebugCert)
+        "apk_set_signed_with_multiple_certs" -> Some(ApkParseError.Policy.SignedWithMultipleCerts)
+        "apk_set_unverified" -> Some(ApkParseError.Policy.Unverified)
+        else -> manifestParseErrorFromColumnValue(value).map { ApkParseError.Policy.Manifest(it) }
+    }
+
+private fun manifestParseErrorFromColumnValue(
+    value: String,
+): Option<AndroidManifest.FromXmlError.Policy> = when (value) {
+    "apk_set_duplicate_permission" ->
+        Some(AndroidManifest.FromXmlError.Policy.DuplicatePermission)
+
+    "apk_set_invalid_application_id" ->
+        Some(AndroidManifest.FromXmlError.Policy.InvalidApplicationId)
+
+    "apk_set_debuggable" -> Some(AndroidManifest.FromXmlError.Policy.DebuggableTrue)
+    "apk_set_test_only" -> Some(AndroidManifest.FromXmlError.Policy.TestOnlyTrue)
+    "apk_set_multiple_application_elements" ->
+        Some(AndroidManifest.FromXmlError.Policy.MultipleApplicationElements)
+
+    "apk_set_multiple_uses_sdk_elements" ->
+        Some(AndroidManifest.FromXmlError.Policy.MultipleUsesSdkElements)
+
+    "apk_set_no_version_code" -> Some(AndroidManifest.FromXmlError.Policy.NoVersionCode)
+    "apk_set_permission_max_sdk_out_of_range" ->
+        Some(AndroidManifest.FromXmlError.Policy.PermissionMaxSdkOutOfRange)
+
+    "apk_set_permission_name_too_long" ->
+        Some(AndroidManifest.FromXmlError.Policy.PermissionNameTooLong)
+
+    "apk_set_version_code_out_of_range" ->
+        Some(AndroidManifest.FromXmlError.Policy.VersionCodeOutOfRange)
+
+    "apk_set_version_code_major_non_zero" ->
+        Some(AndroidManifest.FromXmlError.Policy.VersionCodeMajorNonZero)
+
+    "apk_set_version_name_too_long" -> Some(AndroidManifest.FromXmlError.Policy.VersionNameTooLong)
+    else -> None
+}
+
+private fun AppDraftListingIconUploadProcessingResult.toColumnValue(): String = when (this) {
+    AppDraftListingIconUploadProcessingResult.Success -> "success"
+    AppDraftListingIconUploadProcessingResult.Error.AppDraftSubmitted -> "app_draft_submitted"
+    AppDraftListingIconUploadProcessingResult.Error.InvalidImage -> "invalid_image"
+    AppDraftListingIconUploadProcessingResult.Error.IncorrectImageDimensions ->
+        "incorrect_image_dimensions"
+}
+
+private fun iconProcessingResultFromColumnValue(
+    value: String,
+): Option<AppDraftListingIconUploadProcessingResult> = when (value) {
+    "success" -> Some(AppDraftListingIconUploadProcessingResult.Success)
+    "app_draft_submitted" -> Some(AppDraftListingIconUploadProcessingResult.Error.AppDraftSubmitted)
+    "invalid_image" -> Some(AppDraftListingIconUploadProcessingResult.Error.InvalidImage)
+    "incorrect_image_dimensions" ->
+        Some(AppDraftListingIconUploadProcessingResult.Error.IncorrectImageDimensions)
+
+    else -> None
+}
