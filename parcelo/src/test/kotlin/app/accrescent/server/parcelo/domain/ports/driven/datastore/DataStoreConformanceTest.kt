@@ -113,6 +113,43 @@ abstract class DataStoreConformanceTest {
     }
 
     @Test
+    fun `runTxWithRetry rolls back write when block throws`() {
+        withMigratedDataStore { dataStore ->
+            class CustomException : Exception()
+
+            assertThrows<CustomException> {
+                dataStore.runTxWithRetry { tx ->
+                    tx.organizations.saveWithOwner(organization(), user()).bind()
+                    throw CustomException()
+                }.unwrap2()
+            }
+
+            val foundOrganization = dataStore
+                .runTxWithRetry { tx -> tx.organizations.findById("org1").bind() }
+                .unwrap2()
+
+            assertTrue(foundOrganization.isNone())
+        }
+    }
+
+    @Test
+    fun `runTxWithRetry rolls back write when block raises an error`() {
+        withMigratedDataStore { dataStore ->
+            val result = dataStore.runTxWithRetry { tx ->
+                tx.organizations.saveWithOwner(organization(), user()).bind()
+                raise(DataStoreError.IllegalState)
+            }.unwrap()
+
+            assertEquals(DataStoreError.IllegalState.left(), result)
+            val foundOrganization = dataStore
+                .runTxWithRetry { tx -> tx.organizations.findById("org1").bind() }
+                .unwrap2()
+
+            assertTrue(foundOrganization.isNone())
+        }
+    }
+
+    @Test
     fun `runTxWithRetry commits write when block completes successfully`() {
         withMigratedDataStore { dataStore ->
             val originalAppDraft = unsubmittedAppDraft()

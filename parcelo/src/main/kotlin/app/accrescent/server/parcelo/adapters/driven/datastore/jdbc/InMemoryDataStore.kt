@@ -470,7 +470,7 @@ class InMemoryDataStore private constructor(
     companion object {
         fun create(randomSource: RandomSource): DataStoreResult<InMemoryDataStore> {
             val connection = try {
-                DriverManager.getConnection("jdbc:h2:mem:")
+                DriverManager.getConnection("jdbc:h2:mem:").apply { autoCommit = false }
             } catch (e: SQLException) {
                 return e.toDataStoreError().left()
             }
