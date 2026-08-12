@@ -29,7 +29,7 @@ sealed interface UploadAppDraftListingIconError
 
 data class ActiveAppDraftLimitExceededError(val limit: ULong) : CreateAppDraftError
 
-data class AppDraftAlreadyPublishedError(val id: String): PublishAppDraftError
+data class AppDraftAlreadyPublishedError(val id: String) : PublishAppDraftError
 
 data class AppDraftHasNoDefaultListingError(val id: String) : SubmitAppDraftError
 
@@ -47,7 +47,7 @@ data class AppDraftListingNotFoundError(val id: String) : UpdateAppDraftError
 
 data class AppDraftPackageNotFoundError(val appDraftId: String) : DownloadAppDraftError
 
-data class AppDraftPublishingError(val id: String): PublishAppDraftError
+data class AppDraftPublishingError(val id: String) : PublishAppDraftError
 
 data class AppDraftSubmittedError(val id: String) :
     CreateAppDraftListingError,
