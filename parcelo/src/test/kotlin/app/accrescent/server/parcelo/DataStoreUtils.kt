@@ -196,6 +196,10 @@ fun unsubmittedAppDraft(
     )
 }
 
-fun user(id: String = "user1", organizationId: String = "org1"): User {
-    return User(id, organizationId)
+fun user(
+    id: String = "user1",
+    organizationId: String = "org1",
+    createTime: OffsetDateTime = UNIX_EPOCH,
+): User {
+    return User(id, organizationId, createTime)
 }

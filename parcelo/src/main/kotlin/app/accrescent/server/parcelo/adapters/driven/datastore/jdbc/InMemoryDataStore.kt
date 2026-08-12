@@ -216,6 +216,7 @@ class InMemoryDataStore private constructor(
                     CREATE TABLE users (
                         id id_text PRIMARY KEY,
                         organization_id varchar NOT NULL UNIQUE REFERENCES organizations(id),
+                        create_time timestamp with time zone NOT NULL,
                         UNIQUE (id, organization_id)
                     )
                     """.trimIndent()
@@ -1508,7 +1509,8 @@ private class InMemoryOrganizationRepository(
 
         val organizationInsertSql =
             "INSERT INTO organizations (id, owner_user_id, create_time) VALUES (?, ?, ?)"
-        val userInsertSql = "INSERT INTO users (id, organization_id) VALUES (?, ?)"
+        val userInsertSql =
+            "INSERT INTO users (id, organization_id, create_time) VALUES (?, ?, ?)"
         val organizationUpdateSql = "UPDATE organizations SET owner_user_id = ? WHERE id = ?"
 
         connection.prepareStatement(organizationInsertSql).use { stmt ->
@@ -1520,6 +1522,7 @@ private class InMemoryOrganizationRepository(
         connection.prepareStatement(userInsertSql).use { stmt ->
             stmt.setString(1, owner.id)
             stmt.setString(2, owner.organizationId)
+            stmt.setObject(3, owner.createTime)
             stmt.executeSingleUpdate().bind()
         }
         connection.prepareStatement(organizationUpdateSql).use { stmt ->
