@@ -76,6 +76,7 @@ rest-assured = { module = "io.rest-assured:rest-assured" }
 testcontainers = { module = "org.testcontainers:testcontainers"  }
 testcontainers-gcloud = { module = "org.testcontainers:testcontainers-gcloud" }
 testcontainers-minio = { module = "org.testcontainers:testcontainers-minio" }
+testcontainers-postgresql = { module = "org.testcontainers:testcontainers-postgresql" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
