@@ -58,6 +58,7 @@ CREATE TABLE organizations (
 CREATE TABLE users (
     id id_text PRIMARY KEY,
     organization_id canon_text NOT NULL UNIQUE REFERENCES organizations(id),
+    create_time timestamp with time zone NOT NULL,
     UNIQUE (id, organization_id)
 );
 ALTER TABLE organizations

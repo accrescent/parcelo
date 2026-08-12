@@ -1140,7 +1140,7 @@ private class PostgresqlOrganizationRepository(
             WITH new_organization AS (
                 INSERT INTO organizations (id, owner_user_id, create_time) VALUES (?, ?, ?)
             )
-            INSERT INTO users (id, organization_id) VALUES (?, ?)
+            INSERT INTO users (id, organization_id, create_time) VALUES (?, ?, ?)
         """.trimIndent()
         connection.prepareStatement(sql).use { stmt ->
             stmt.setString(1, organization.id)
@@ -1148,6 +1148,7 @@ private class PostgresqlOrganizationRepository(
             stmt.setObject(3, organization.createTime)
             stmt.setString(4, owner.id)
             stmt.setString(5, owner.organizationId)
+            stmt.setObject(6, owner.createTime)
             stmt.executeSingleUpdate().bind()
         }
     }
