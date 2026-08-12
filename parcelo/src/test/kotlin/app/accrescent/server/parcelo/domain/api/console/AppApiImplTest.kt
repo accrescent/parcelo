@@ -27,7 +27,7 @@ import app.accrescent.server.parcelo.domain.ports.driving.console.App as ApiApp
 class AppApiImplTest {
     @Test
     fun `getApp returns InsufficientPermission for unauthorized request`() {
-        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             val appApi = AppApiImpl(dataStore)
 
@@ -39,7 +39,7 @@ class AppApiImplTest {
 
     @Test
     fun `getApp returns app for authorized request for existing app`() {
-        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             val originalApp = makeApp()
             dataStore.runTxWithRetry { tx ->
@@ -69,7 +69,7 @@ class AppApiImplTest {
 
     @Test
     fun `updateApp returns InsufficientPermission for unauthorized request`() {
-        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             val appApi = AppApiImpl(dataStore)
 
@@ -81,7 +81,7 @@ class AppApiImplTest {
 
     @Test
     fun `updateApp returns successfully for authorized request to existing app`() {
-        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
@@ -100,7 +100,7 @@ class AppApiImplTest {
 
     @Test
     fun `updateApp modifies app's publiclyListed attribute when masked`() {
-        InMemoryDataStore.create(DeterministicRandomSource()).unwrap().use { dataStore ->
+        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()

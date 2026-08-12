@@ -50,13 +50,15 @@ import arrow.core.raise.either
 import arrow.core.right
 import arrow.core.some
 import org.h2.api.ErrorCode
+import org.h2.jdbcx.JdbcDataSource
 import java.sql.Connection
-import java.sql.DriverManager
 import java.sql.ResultSet
 import java.sql.SQLException
 import java.sql.Types
 import java.text.Normalizer
 import java.time.OffsetDateTime
+import java.util.UUID
+import javax.sql.DataSource
 
 /**
  * Runs the given lambda of JDBC code, converting [SQLException]s from this [DataStore]
@@ -88,10 +90,11 @@ private fun SQLException.toDataStoreError(): DataStoreError {
     }
 }
 
-class InMemoryDataStore private constructor(
-    randomSource: RandomSource,
-    private val connection: Connection,
-) : DataStore(randomSource), AutoCloseable {
+class InMemoryDataStore(randomSource: RandomSource) : DataStore(randomSource), AutoCloseable {
+    private val dataSource: DataSource = JdbcDataSource().apply {
+        setURL("jdbc:h2:mem:${UUID.randomUUID()};DB_CLOSE_DELAY=-1")
+    }
+
     // According to https://www.h2database.com/html/advanced.html#transaction_isolation regarding
     // ANSI SERIALIZABLE transactions:
     //
@@ -105,24 +108,9 @@ class InMemoryDataStore private constructor(
     // since InMemoryDataStore is intended only for testing and development, that's fine.
     private val dbLock = Any()
 
-    // A connection with a failed rollback must be considered broken and cannot be reused because
-    // the database is in an unknown state. The typical approach to this scenario is to tell the
-    // database connection pool to terminate the connection and replace it later. However, since
-    // this DataStore's state is tied to the lifetime of one connection, there is no recovery path
-    // for a failed rollback. Thus, we maintain a poisoned flag which is set when any rollback
-    // fails, causing all subsequent calls to this DataStore to return an error.
-    private var poisoned = false
     private var migrated = false
 
-    // The repositories are stateless apart from the connection, which is fixed for this DataStore's
-    // lifetime, so one Transaction instance serves every runInTransaction call. Callers may not use
-    // a Transaction outside the scope of the block it was passed to, so sharing it is unobservable.
-    private val transaction = InMemoryTransaction(connection)
-
     override fun migrateToHead(): DataStoreResult<Unit> = synchronized(dbLock) {
-        if (poisoned) {
-            return@synchronized DataStoreError.IllegalState.left()
-        }
         if (migrated) {
             return@synchronized Unit.right()
         }
@@ -135,257 +123,265 @@ class InMemoryDataStore private constructor(
         // Thus, don't bother running the following statements within a transaction.
         val aliasTarget = InMemoryDataStore::class.java.name
         try {
-            connection.createStatement().use { statement ->
-                statement.execute(
-                    """
-                    CREATE ALIAS code_point_length
-                    FOR "$aliasTarget.codePointLength"
-                    """.trimIndent()
-                )
-                statement.execute(
-                    """
-                    CREATE ALIAS is_nfc_normalized
-                    FOR "$aliasTarget.isNfcNormalized"
-                    """.trimIndent()
-                )
-                statement.execute(
-                    """
-                    CREATE ALIAS is_unicode_assigned
-                    FOR "$aliasTarget.isUnicodeAssigned"
-                    """.trimIndent()
-                )
-                statement.execute(
-                    """
-                    CREATE DOMAIN nonempty_can_text
-                    AS varchar
-                    CHECK (VALUE != '' AND is_unicode_assigned(VALUE) AND is_nfc_normalized(VALUE))
-                    """.trimIndent()
-                )
-                statement.execute(
-                    """
-                    CREATE DOMAIN id_text
-                    AS nonempty_can_text
-                    CHECK (code_point_length(VALUE) <= 64 AND REGEXP_LIKE(VALUE, '^[A-Za-z0-9_]*$'))
-                    """.trimIndent()
-                )
-                statement.execute(
-                    """
-                    CREATE TABLE external_blobs (
-                        id id_text PRIMARY KEY,
-                        create_time timestamp with time zone NOT NULL,
-                        service varchar NOT NULL CHECK (service IN ('local', 'gcs')),
-                        status varchar NOT NULL
-                            CHECK (status IN ('pending', 'committed', 'deleted')),
-                        bucket_name nonempty_can_text NOT NULL,
-                        object_key nonempty_can_text NOT NULL,
-                        generation bigint,
-                        meta_generation bigint,
-                        delete_time timestamp with time zone,
-                        UNIQUE (id, status),
-                        UNIQUE (service, bucket_name, object_key),
-                        CHECK (status != 'pending' OR generation IS NULL),
-                        CHECK (status != 'committed' OR generation IS NOT NULL),
-                        CHECK ((service = 'gcs' AND generation IS NOT NULL) = (meta_generation IS NOT NULL)),
-                        CHECK ((status = 'deleted') = (delete_time IS NOT NULL))
+            dataSource.connection.use { connection ->
+                connection.createStatement().use { statement ->
+                    statement.execute(
+                        """
+                        CREATE ALIAS code_point_length
+                        FOR "$aliasTarget.codePointLength"
+                        """.trimIndent()
                     )
-                    """.trimIndent()
-                )
-                // organizations.owner_user_id should theoretically be NOT NULL, but an organization
-                // and its owner reference each other, and H2 supports neither deferrable foreign
-                // key constraints nor INSERT queries in common table expressions, so no statement
-                // order can create both rows with the cycle intact. As with
-                // apps.default_app_listing_id, this column is therefore kept non-null in practice
-                // through careful handling in the DataStore application code. Since this DataStore
-                // isn't meant to be used in production, there shouldn't be any significant
-                // consequences of this implementation.
-                statement.execute(
-                    """
-                    CREATE TABLE organizations (
-                        id id_text PRIMARY KEY,
-                        owner_user_id varchar,
-                        create_time timestamp with time zone NOT NULL
+                    statement.execute(
+                        """
+                        CREATE ALIAS is_nfc_normalized
+                        FOR "$aliasTarget.isNfcNormalized"
+                        """.trimIndent()
                     )
-                    """.trimIndent()
-                )
-                // Every user belongs to the single organization they own. The unique constraint on
-                // organization_id caps an organization at one member, and the composite foreign key
-                // added to organizations below forces that member to be the organization's owner,
-                // so the two references are always reciprocal.
-                statement.execute(
-                    """
-                    CREATE TABLE users (
-                        id id_text PRIMARY KEY,
-                        organization_id varchar NOT NULL UNIQUE REFERENCES organizations(id),
-                        create_time timestamp with time zone NOT NULL,
-                        UNIQUE (id, organization_id)
+                    statement.execute(
+                        """
+                        CREATE ALIAS is_unicode_assigned
+                        FOR "$aliasTarget.isUnicodeAssigned"
+                        """.trimIndent()
                     )
-                    """.trimIndent()
-                )
-                statement.execute(
-                    """
-                    ALTER TABLE organizations
-                    ADD CONSTRAINT fk_organizations_owner
-                    FOREIGN KEY (owner_user_id, id) REFERENCES users(id, organization_id)
-                    """.trimIndent()
-                )
-                statement.execute(
-                    """
-                    CREATE TABLE app_packages (
-                        id id_text PRIMARY KEY,
-                        external_blob_id varchar NOT NULL,
-                        blob_status varchar NOT NULL GENERATED ALWAYS AS ('committed'),
-                        upload_event_time timestamp with time zone NOT NULL,
-                        app_id nonempty_can_text NOT NULL,
-                        version_code bigint NOT NULL,
-                        version_name nonempty_can_text NOT NULL,
-                        target_sdk int NOT NULL CHECK (target_sdk > 0),
-                        signer_certificate varbinary NOT NULL,
-                        build_apks_result varbinary NOT NULL,
-                        FOREIGN KEY (external_blob_id, blob_status)
-                            REFERENCES external_blobs(id, status)
+                    statement.execute(
+                        """
+                        CREATE DOMAIN nonempty_can_text
+                        AS varchar
+                        CHECK (VALUE != '' AND is_unicode_assigned(VALUE) AND is_nfc_normalized(VALUE))
+                        """.trimIndent()
                     )
-                    """.trimIndent()
-                )
-                statement.execute(
-                    """
-                    CREATE TABLE app_package_permissions (
-                        id id_text PRIMARY KEY,
-                        app_package_id varchar NOT NULL
-                            REFERENCES app_packages(id) ON DELETE CASCADE,
-                        name nonempty_can_text NOT NULL,
-                        max_sdk_version int,
-                        UNIQUE (app_package_id, name)
+                    statement.execute(
+                        """
+                        CREATE DOMAIN id_text
+                        AS nonempty_can_text
+                        CHECK (code_point_length(VALUE) <= 64 AND REGEXP_LIKE(VALUE, '^[A-Za-z0-9_]*$'))
+                        """.trimIndent()
                     )
-                    """.trimIndent()
-                )
-                statement.execute(
-                    """
-                    CREATE TABLE app_drafts (
-                        id id_text PRIMARY KEY,
-                        organization_id varchar NOT NULL REFERENCES organizations(id),
-                        create_time timestamp with time zone NOT NULL,
-                        default_app_draft_listing_id varchar,
-                        app_package_id varchar REFERENCES app_packages(id),
-                        submit_time timestamp with time zone,
-                        CHECK (submit_time IS NULL OR app_package_id IS NOT NULL),
-                        CHECK (submit_time IS NULL OR default_app_draft_listing_id IS NOT NULL)
+                    statement.execute(
+                        """
+                        CREATE TABLE external_blobs (
+                            id id_text PRIMARY KEY,
+                            create_time timestamp with time zone NOT NULL,
+                            service varchar NOT NULL
+                                CHECK (ARRAY_CONTAINS(ARRAY['local', 'gcs'], service)),
+                            status varchar NOT NULL
+                                CHECK (ARRAY_CONTAINS(
+                                    ARRAY['pending', 'committed', 'deleted'],
+                                    status
+                                )),
+                            bucket_name nonempty_can_text NOT NULL,
+                            object_key nonempty_can_text NOT NULL,
+                            generation bigint,
+                            meta_generation bigint,
+                            delete_time timestamp with time zone,
+                            UNIQUE (id, status),
+                            UNIQUE (service, bucket_name, object_key),
+                            CHECK (status != 'pending' OR generation IS NULL),
+                            CHECK (status != 'committed' OR generation IS NOT NULL),
+                            CHECK ((service = 'gcs' AND generation IS NOT NULL) = (meta_generation IS NOT NULL)),
+                            CHECK ((status = 'deleted') = (delete_time IS NOT NULL))
+                        )
+                        """.trimIndent()
                     )
-                    """.trimIndent()
-                )
-                statement.execute(
-                    """
-                    CREATE TABLE app_draft_listings (
-                        id id_text PRIMARY KEY,
-                        app_draft_id varchar NOT NULL
-                            REFERENCES app_drafts(id) ON DELETE CASCADE,
-                        language varchar NOT NULL CHECK (language IN ('en-US')),
-                        name nonempty_can_text NOT NULL CHECK (code_point_length(name) <= 30),
-                        short_description nonempty_can_text NOT NULL
-                            CHECK (code_point_length(short_description) <= 80),
-                        UNIQUE (app_draft_id, language),
-                        UNIQUE (app_draft_id, id)
+                    // organizations.owner_user_id should theoretically be NOT NULL, but an organization
+                    // and its owner reference each other, and H2 supports neither deferrable foreign
+                    // key constraints nor INSERT queries in common table expressions, so no statement
+                    // order can create both rows with the cycle intact. As with
+                    // apps.default_app_listing_id, this column is therefore kept non-null in practice
+                    // through careful handling in the DataStore application code. Since this DataStore
+                    // isn't meant to be used in production, there shouldn't be any significant
+                    // consequences of this implementation.
+                    statement.execute(
+                        """
+                        CREATE TABLE organizations (
+                            id id_text PRIMARY KEY,
+                            owner_user_id varchar,
+                            create_time timestamp with time zone NOT NULL
+                        )
+                        """.trimIndent()
                     )
-                    """.trimIndent()
-                )
-                statement.execute(
-                    """
-                    ALTER TABLE app_drafts
-                    ADD CONSTRAINT fk_app_drafts_default_listing
-                    FOREIGN KEY (id, default_app_draft_listing_id)
-                    REFERENCES app_draft_listings(app_draft_id, id)
-                    """.trimIndent()
-                )
-                // apps.default_app_listing_id should theoretically be NOT NULL. However, H2
-                // does not have either of the features we need to enforce circular references
-                // at the schema level, i.e., deferrable foreign key constraints or INSERT
-                // queries in common table expressions. Thus, we must keep this column non-null
-                // in practice through careful handling in the DataStore application code. Since
-                // this DataStore isn't meant to be used in production, there shouldn't be any
-                // significant consequences of this implementation.
-                statement.execute(
-                    """
-                    CREATE TABLE apps (
-                        id id_text PRIMARY KEY,
-                        organization_id varchar NOT NULL REFERENCES organizations(id),
-                        default_app_listing_id varchar,
-                        publicly_listed boolean NOT NULL
+                    // Every user belongs to the single organization they own. The unique constraint on
+                    // organization_id caps an organization at one member, and the composite foreign key
+                    // added to organizations below forces that member to be the organization's owner,
+                    // so the two references are always reciprocal.
+                    statement.execute(
+                        """
+                        CREATE TABLE users (
+                            id id_text PRIMARY KEY,
+                            organization_id varchar NOT NULL UNIQUE REFERENCES organizations(id),
+                            create_time timestamp with time zone NOT NULL,
+                            UNIQUE (id, organization_id)
+                        )
+                        """.trimIndent()
                     )
-                    """.trimIndent()
-                )
-                statement.execute(
-                    """
-                    CREATE TABLE app_listings (
-                        id id_text PRIMARY KEY,
-                        app_id varchar NOT NULL REFERENCES apps(id),
-                        language varchar NOT NULL CHECK (language IN ('en-US')),
-                        UNIQUE (app_id, language),
-                        UNIQUE (id, app_id)
+                    statement.execute(
+                        """
+                        ALTER TABLE organizations
+                        ADD CONSTRAINT fk_organizations_owner
+                        FOREIGN KEY (owner_user_id, id) REFERENCES users(id, organization_id)
+                        """.trimIndent()
                     )
-                    """.trimIndent()
-                )
-                statement.execute(
-                    """
-                    ALTER TABLE apps
-                    ADD CONSTRAINT fk_apps_default_listing
-                    FOREIGN KEY (id, default_app_listing_id) REFERENCES app_listings(app_id, id)
-                    """.trimIndent()
-                )
-                statement.execute(
-                    """
-                    CREATE TABLE pending_app_draft_uploads (
-                        id id_text PRIMARY KEY,
-                        app_draft_id varchar NOT NULL UNIQUE
-                            REFERENCES app_drafts(id) ON DELETE CASCADE,
-                        external_blob_id varchar NOT NULL REFERENCES external_blobs(id),
-                        object_key nonempty_can_text NOT NULL UNIQUE,
-                        create_time timestamp with time zone NOT NULL,
-                        processing_result varchar
-                            CHECK (processing_result IN (
-                                'success',
-                                'app_draft_submitted',
-                                'apk_set_invalid_format',
-                                'apk_set_io_error',
-                                'apk_set_no_modern_signature',
-                                'apk_set_signed_with_debug_cert',
-                                'apk_set_signed_with_multiple_certs',
-                                'apk_set_unverified',
-                                'apk_set_test_only',
-                                'apk_set_debuggable',
-                                'apk_set_missing_64_bit_code',
-                                'apk_set_low_target_sdk',
-                                'apk_set_duplicate_permission',
-                                'apk_set_invalid_application_id',
-                                'apk_set_multiple_application_elements',
-                                'apk_set_multiple_uses_sdk_elements',
-                                'apk_set_no_version_code',
-                                'apk_set_permission_max_sdk_out_of_range',
-                                'apk_set_permission_name_too_long',
-                                'apk_set_version_code_out_of_range',
-                                'apk_set_version_code_major_non_zero',
-                                'apk_set_version_name_too_long'
-                            ))
+                    statement.execute(
+                        """
+                        CREATE TABLE app_packages (
+                            id id_text PRIMARY KEY,
+                            external_blob_id varchar NOT NULL,
+                            blob_status varchar NOT NULL GENERATED ALWAYS AS ('committed'),
+                            upload_event_time timestamp with time zone NOT NULL,
+                            app_id nonempty_can_text NOT NULL,
+                            version_code bigint NOT NULL,
+                            version_name nonempty_can_text NOT NULL,
+                            target_sdk int NOT NULL CHECK (target_sdk > 0),
+                            signer_certificate varbinary NOT NULL,
+                            build_apks_result varbinary NOT NULL,
+                            FOREIGN KEY (external_blob_id, blob_status)
+                                REFERENCES external_blobs(id, status)
+                        )
+                        """.trimIndent()
                     )
-                    """.trimIndent()
-                )
-                statement.execute(
-                    """
-                    CREATE TABLE pending_app_draft_listing_icon_uploads (
-                        id id_text PRIMARY KEY,
-                        app_draft_listing_id varchar NOT NULL UNIQUE
-                            REFERENCES app_draft_listings(id) ON DELETE CASCADE,
-                        external_blob_id varchar NOT NULL REFERENCES external_blobs(id),
-                        object_key nonempty_can_text NOT NULL UNIQUE,
-                        create_time timestamp with time zone NOT NULL,
-                        processing_result varchar
-                            CHECK (processing_result IN (
-                                'success',
-                                'app_draft_submitted',
-                                'invalid_image',
-                                'incorrect_image_dimensions'
-                            ))
+                    statement.execute(
+                        """
+                        CREATE TABLE app_package_permissions (
+                            id id_text PRIMARY KEY,
+                            app_package_id varchar NOT NULL
+                                REFERENCES app_packages(id) ON DELETE CASCADE,
+                            name nonempty_can_text NOT NULL,
+                            max_sdk_version int,
+                            UNIQUE (app_package_id, name)
+                        )
+                        """.trimIndent()
                     )
-                    """.trimIndent()
-                )
+                    statement.execute(
+                        """
+                        CREATE TABLE app_drafts (
+                            id id_text PRIMARY KEY,
+                            organization_id varchar NOT NULL REFERENCES organizations(id),
+                            create_time timestamp with time zone NOT NULL,
+                            default_app_draft_listing_id varchar,
+                            app_package_id varchar REFERENCES app_packages(id),
+                            submit_time timestamp with time zone,
+                            CHECK (submit_time IS NULL OR app_package_id IS NOT NULL),
+                            CHECK (submit_time IS NULL OR default_app_draft_listing_id IS NOT NULL)
+                        )
+                        """.trimIndent()
+                    )
+                    statement.execute(
+                        """
+                        CREATE TABLE app_draft_listings (
+                            id id_text PRIMARY KEY,
+                            app_draft_id varchar NOT NULL
+                                REFERENCES app_drafts(id) ON DELETE CASCADE,
+                            language varchar NOT NULL
+                                CHECK (ARRAY_CONTAINS(ARRAY['en-US'], language)),
+                            name nonempty_can_text NOT NULL CHECK (code_point_length(name) <= 30),
+                            short_description nonempty_can_text NOT NULL
+                                CHECK (code_point_length(short_description) <= 80),
+                            UNIQUE (app_draft_id, language),
+                            UNIQUE (app_draft_id, id)
+                        )
+                        """.trimIndent()
+                    )
+                    statement.execute(
+                        """
+                        ALTER TABLE app_drafts
+                        ADD CONSTRAINT fk_app_drafts_default_listing
+                        FOREIGN KEY (id, default_app_draft_listing_id)
+                        REFERENCES app_draft_listings(app_draft_id, id)
+                        """.trimIndent()
+                    )
+                    // apps.default_app_listing_id should theoretically be NOT NULL. However, H2
+                    // does not have either of the features we need to enforce circular references
+                    // at the schema level, i.e., deferrable foreign key constraints or INSERT
+                    // queries in common table expressions. Thus, we must keep this column non-null
+                    // in practice through careful handling in the DataStore application code. Since
+                    // this DataStore isn't meant to be used in production, there shouldn't be any
+                    // significant consequences of this implementation.
+                    statement.execute(
+                        """
+                        CREATE TABLE apps (
+                            id id_text PRIMARY KEY,
+                            organization_id varchar NOT NULL REFERENCES organizations(id),
+                            default_app_listing_id varchar,
+                            publicly_listed boolean NOT NULL
+                        )
+                        """.trimIndent()
+                    )
+                    statement.execute(
+                        """
+                        CREATE TABLE app_listings (
+                            id id_text PRIMARY KEY,
+                            app_id varchar NOT NULL REFERENCES apps(id),
+                            language varchar NOT NULL
+                                CHECK (ARRAY_CONTAINS(ARRAY['en-US'], language)),
+                            UNIQUE (app_id, language),
+                            UNIQUE (id, app_id)
+                        )
+                        """.trimIndent()
+                    )
+                    statement.execute(
+                        """
+                        ALTER TABLE apps
+                        ADD CONSTRAINT fk_apps_default_listing
+                        FOREIGN KEY (id, default_app_listing_id) REFERENCES app_listings(app_id, id)
+                        """.trimIndent()
+                    )
+                    statement.execute(
+                        """
+                        CREATE TABLE pending_app_draft_uploads (
+                            id id_text PRIMARY KEY,
+                            app_draft_id varchar NOT NULL UNIQUE
+                                REFERENCES app_drafts(id) ON DELETE CASCADE,
+                            external_blob_id varchar NOT NULL REFERENCES external_blobs(id),
+                            object_key nonempty_can_text NOT NULL UNIQUE,
+                            create_time timestamp with time zone NOT NULL,
+                            processing_result varchar
+                                CHECK (processing_result IS NULL OR ARRAY_CONTAINS(ARRAY[
+                                    'success',
+                                    'app_draft_submitted',
+                                    'apk_set_invalid_format',
+                                    'apk_set_io_error',
+                                    'apk_set_no_modern_signature',
+                                    'apk_set_signed_with_debug_cert',
+                                    'apk_set_signed_with_multiple_certs',
+                                    'apk_set_unverified',
+                                    'apk_set_test_only',
+                                    'apk_set_debuggable',
+                                    'apk_set_missing_64_bit_code',
+                                    'apk_set_low_target_sdk',
+                                    'apk_set_duplicate_permission',
+                                    'apk_set_invalid_application_id',
+                                    'apk_set_multiple_application_elements',
+                                    'apk_set_multiple_uses_sdk_elements',
+                                    'apk_set_no_version_code',
+                                    'apk_set_permission_max_sdk_out_of_range',
+                                    'apk_set_permission_name_too_long',
+                                    'apk_set_version_code_out_of_range',
+                                    'apk_set_version_code_major_non_zero',
+                                    'apk_set_version_name_too_long'
+                                ], processing_result))
+                        )
+                        """.trimIndent()
+                    )
+                    statement.execute(
+                        """
+                        CREATE TABLE pending_app_draft_listing_icon_uploads (
+                            id id_text PRIMARY KEY,
+                            app_draft_listing_id varchar NOT NULL UNIQUE
+                                REFERENCES app_draft_listings(id) ON DELETE CASCADE,
+                            external_blob_id varchar NOT NULL REFERENCES external_blobs(id),
+                            object_key nonempty_can_text NOT NULL UNIQUE,
+                            create_time timestamp with time zone NOT NULL,
+                            processing_result varchar
+                                CHECK (processing_result IS NULL OR ARRAY_CONTAINS(ARRAY[
+                                    'success',
+                                    'app_draft_submitted',
+                                    'invalid_image',
+                                    'incorrect_image_dimensions'
+                                ], processing_result))
+                        )
+                        """.trimIndent()
+                    )
+                }
             }
             migrated = true
             Unit.right()
@@ -397,64 +393,63 @@ class InMemoryDataStore private constructor(
     override fun <T, E> runInTransaction(
         block: Raise<E>.(Transaction) -> T,
     ): DataStoreResult<Either<E, T>> = synchronized(dbLock) {
-        if (poisoned) {
-            return@synchronized DataStoreError.IllegalState.left()
-        }
-        val result = try {
-            either { block(transaction) }.right()
-        } catch (t: Throwable) {
-            t.left()
-        }
-
-        when (result) {
-            // Block threw, so attempt to roll back, poisoning the connection (which for this
-            // DataStore is equivalent to the whole database) if rollback fails since there's no
-            // reasonable way to recover. Rethrow the original throwable unconditionally so the
-            // caller can handle it.
-            is Either.Left -> {
-                try {
-                    connection.rollback()
-                } catch (e: SQLException) {
-                    poisoned = true
-                    throw result.value.apply { addSuppressed(e) }
-                }
-                throw result.value
+        try {
+            dataSource.connection.apply { autoCommit = false }
+        } catch (e: SQLException) {
+            return@synchronized e.toDataStoreError().left()
+        }.use { connection ->
+            val result = try {
+                either { block(InMemoryTransaction(connection)) }.right()
+            } catch (t: Throwable) {
+                t.left()
             }
 
-            // Block returned
-            is Either.Right -> when (val blockResult = result.value) {
-                // Block returned error, so attempt to roll back, poisoning the connection and
-                // returning a rollback error if rollback fails
+            when (result) {
+                // Block threw, so attempt to roll back, reporting a failed rollback as a suppressed
+                // exception. Rethrow the original throwable unconditionally so the caller can
+                // handle it.
                 is Either.Left -> {
                     try {
                         connection.rollback()
-                        blockResult.right()
                     } catch (e: SQLException) {
-                        poisoned = true
-                        e.toDataStoreError().left()
+                        throw result.value.apply { addSuppressed(e) }
                     }
+                    throw result.value
                 }
 
-                // Block succeeded, so attempt to commit, returning the block result if successful.
-                // If there's a commit error, attempt to roll back and return the commit error. If
-                // rollback fails, poison the connection and return both the commit error and the
-                // rollback error.
-                is Either.Right -> {
-                    try {
-                        connection.commit()
-                        blockResult.right()
-                    } catch (commitException: SQLException) {
+                // Block returned
+                is Either.Right -> when (val blockResult = result.value) {
+                    // Block returned error, so attempt to roll back, returning a rollback error if
+                    // rollback fails
+                    is Either.Left -> {
                         try {
                             connection.rollback()
-                            commitException.toDataStoreError().left()
-                        } catch (rollbackException: SQLException) {
-                            poisoned = true
-                            DataStoreError
-                                .RollbackErrorOnCommit(
-                                    rollbackError = rollbackException.toDataStoreError(),
-                                    commitError = commitException.toDataStoreError(),
-                                )
-                                .left()
+                            blockResult.right()
+                        } catch (e: SQLException) {
+                            e.toDataStoreError().left()
+                        }
+                    }
+
+                    // Block succeeded, so attempt to commit, returning the block result if
+                    // successful. If there's a commit error, attempt to roll back and return the
+                    // commit error. If rollback fails, return both the commit error and the
+                    // rollback error.
+                    is Either.Right -> {
+                        try {
+                            connection.commit()
+                            blockResult.right()
+                        } catch (commitException: SQLException) {
+                            try {
+                                connection.rollback()
+                                commitException.toDataStoreError().left()
+                            } catch (rollbackException: SQLException) {
+                                DataStoreError
+                                    .RollbackErrorOnCommit(
+                                        rollbackError = rollbackException.toDataStoreError(),
+                                        commitError = commitException.toDataStoreError(),
+                                    )
+                                    .left()
+                            }
                         }
                     }
                 }
@@ -464,21 +459,13 @@ class InMemoryDataStore private constructor(
 
     override fun close() {
         synchronized(dbLock) {
-            connection.close()
+            dataSource.connection.use { connection ->
+                connection.createStatement().use { it.execute("SHUTDOWN") }
+            }
         }
     }
 
     companion object {
-        fun create(randomSource: RandomSource): DataStoreResult<InMemoryDataStore> {
-            val connection = try {
-                DriverManager.getConnection("jdbc:h2:mem:").apply { autoCommit = false }
-            } catch (e: SQLException) {
-                return e.toDataStoreError().left()
-            }
-
-            return InMemoryDataStore(randomSource, connection).right()
-        }
-
         // Used by nonempty_can_text definition
         @Suppress("UNUSED")
         @JvmStatic
