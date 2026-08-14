@@ -682,26 +682,6 @@ abstract class DataStoreConformanceTest {
     }
 
     @Test
-    fun `appDrafts findForOrganizationAndUserByQuery returns app drafts from only requested organization`() {
-        withMigratedDataStore { dataStore ->
-            dataStore.runTxWithRetry { tx ->
-                tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
-                tx.organizations.saveWithOwner("org2", "user2", UNIX_EPOCH).bind()
-                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
-                tx.appDrafts.create("org2", "appDraft2", UNIX_EPOCH).bind()
-            }.unwrap2()
-
-            val appDrafts = dataStore
-                .runTxWithRetry { tx ->
-                    tx.appDrafts.findForOrganizationAndUserByQuery("org1", "user1", 2u, null).bind()
-                }
-                .unwrap2()
-
-            assertEquals(listOf(unsubmittedAppDraft(id = "appDraft1")), appDrafts)
-        }
-    }
-
-    @Test
     fun `appDrafts findListingById returns None when no listing with the given ID exists`() {
         withMigratedDataStore { dataStore ->
             val result = dataStore
@@ -735,63 +715,6 @@ abstract class DataStoreConformanceTest {
                 .unwrap2()
 
             assertTrue(foundUpload.isNone())
-        }
-    }
-
-    @Test
-    fun `appDrafts findForOrganizationAndUserByQuery returns only authorized app drafts`() {
-        withMigratedDataStore { dataStore ->
-            dataStore.runTxWithRetry { tx ->
-                tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
-                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
-                tx.organizations.saveWithOwner("org2", "user2", UNIX_EPOCH).bind()
-            }.unwrap2()
-
-            val appDrafts = dataStore
-                .runTxWithRetry { tx ->
-                    tx.appDrafts.findForOrganizationAndUserByQuery("org1", "user2", 1u, null).bind()
-                }
-                .unwrap2()
-
-            assertEquals(emptyList<AppDraft>(), appDrafts)
-        }
-    }
-
-    @Test
-    fun `appDrafts findForOrganizationAndUserByQuery respects maxResults`() {
-        withMigratedDataStore { dataStore ->
-            dataStore.runTxWithRetry { tx ->
-                tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
-                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
-                tx.appDrafts.create("org1", "appDraft2", UNIX_EPOCH).bind()
-            }.unwrap2()
-
-            val appDrafts = dataStore
-                .runTxWithRetry { tx ->
-                    tx.appDrafts.findForOrganizationAndUserByQuery("org1", "user1", 1u, null).bind()
-                }
-                .unwrap2()
-
-            assertEquals(1, appDrafts.size)
-        }
-    }
-
-    @Test
-    fun `appDrafts findForOrganizationAndUserByQuery returns only items after afterAppDraftId`() {
-        withMigratedDataStore { dataStore ->
-            dataStore.runTxWithRetry { tx ->
-                tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
-                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
-                tx.appDrafts.create("org1", "appDraft2", UNIX_EPOCH).bind()
-            }.unwrap2()
-
-            val appDrafts = dataStore
-                .runTxWithRetry { tx ->
-                    tx.appDrafts.findForOrganizationAndUserByQuery("org1", "user1", 2u, "appDraft1").bind()
-                }
-                .unwrap2()
-
-            assertEquals(listOf(unsubmittedAppDraft(id = "appDraft2")), appDrafts)
         }
     }
 

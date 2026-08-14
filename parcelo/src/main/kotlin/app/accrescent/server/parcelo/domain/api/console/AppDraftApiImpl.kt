@@ -8,8 +8,10 @@ import app.accrescent.parcelo.impl.v1.ListAppDraftListingsPageToken
 import app.accrescent.parcelo.impl.v1.ListAppDraftsPageToken
 import app.accrescent.parcelo.impl.v1.listAppDraftListingsPageToken
 import app.accrescent.parcelo.impl.v1.listAppDraftsPageToken
+import app.accrescent.server.parcelo.core.NonNegativeInt
 import app.accrescent.server.parcelo.core.bindMapLeft
 import app.accrescent.server.parcelo.core.toEitherBind
+import app.accrescent.server.parcelo.core.unwrap
 import app.accrescent.server.parcelo.domain.IdGenerator
 import app.accrescent.server.parcelo.domain.IdType
 import app.accrescent.server.parcelo.domain.ports.driven.blobstorage.BlobId
@@ -68,7 +70,6 @@ import app.accrescent.server.parcelo.domain.ports.driving.console.PublishAppDraf
 import app.accrescent.server.parcelo.domain.ports.driving.console.PublishAppDraftRequest
 import app.accrescent.server.parcelo.domain.ports.driving.console.PublishAppDraftResponse
 import app.accrescent.server.parcelo.domain.ports.driving.console.PublishedAppLimitExceededError
-import app.accrescent.server.parcelo.domain.ports.driving.console.ServerError
 import app.accrescent.server.parcelo.domain.ports.driving.console.SubmitAppDraftError
 import app.accrescent.server.parcelo.domain.ports.driving.console.SubmitAppDraftRequest
 import app.accrescent.server.parcelo.domain.ports.driving.console.UpdateAppDraftError
@@ -91,7 +92,6 @@ import com.google.protobuf.InvalidProtocolBufferException
 import kotlin.io.encoding.Base64
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppDraft as DataAppDraft
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppDraftListing as DataAppDraftListing
-import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppPackage as DataAppPackage
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.ListingLanguage as DataListingLanguage
 import app.accrescent.server.parcelo.domain.ports.driving.console.AppDraft as ApiAppDraft
 import app.accrescent.server.parcelo.domain.ports.driving.console.AppDraftListing as ApiAppDraftListing
@@ -168,6 +168,14 @@ class AppDraftApiImpl(
         callerUserId: String,
         request: ListAppDraftsRequest,
     ): Either<ListAppDraftsError, ListAppDraftsResponse> = either {
+        // We never need a page size beyond Int.MAX_VALUE since we limit the number of app drafts
+        // per organization well below that, so we can safely coerce the page size down for our
+        // DataStore query without changing behavior
+        val maxResults = request.pageSize
+            .coerceAtMost(Int.MAX_VALUE.toUInt())
+            .toInt()
+            .let(NonNegativeInt::new)
+            .unwrap()
         val lastAppDraftId = request.pageToken?.let {
             try {
                 val bytes = Base64.UrlSafe.decode(it)
@@ -186,17 +194,17 @@ class AppDraftApiImpl(
 
         val appDrafts = dataStore.runTxWithRetry { tx ->
             tx.appDrafts
-                .findForOrganizationAndUserByQuery(
+                .findApiViewsForOrganizationAndUserByQuery(
                     organizationId = request.organizationId,
                     userId = callerUserId,
-                    maxResults = request.pageSize,
+                    maxResults = maxResults,
                     afterAppDraftId = lastAppDraftId,
                 )
                 .bindMapLeft(::toServerError)
-                .map { appDraft -> appDraft.toApiResource(tx).bind() }
         }
             .bindMapLeft(::toServerError)
             .bind()
+            .map { it.toApiResource() }
         val nextPageToken = if (appDrafts.isNotEmpty()) {
             val token = listAppDraftsPageToken { this.lastAppDraftId = appDrafts.last().id }
             Base64.UrlSafe.encode(token.toByteArray())
@@ -699,32 +707,6 @@ class AppDraftApiImpl(
         TODO()
     }
 
-    private fun DataAppDraft.toApiResource(
-        tx: DataStore.Transaction,
-    ): Either<ServerError, ApiAppDraft> = either {
-        when (val appDraft = this@toApiResource) {
-            is DataAppDraft.Unsubmitted -> ApiAppDraft.Unsubmitted(
-                id = appDraft.id,
-                createTime = appDraft.createTime,
-                defaultAppDraftListingId = appDraft.defaultAppDraftListingId,
-                appPackage = appDraft.appPackageId.map { id ->
-                    tx.appPackages.requireById(id).bindMapLeft(::toServerError).toApiResource()
-                },
-            )
-
-            is DataAppDraft.Submitted -> ApiAppDraft.Submitted(
-                id = appDraft.id,
-                createTime = appDraft.createTime,
-                defaultAppDraftListingId = appDraft.defaultAppDraftListingId,
-                appPackage = tx.appPackages
-                    .requireById(appDraft.appPackageId)
-                    .bindMapLeft(::toServerError)
-                    .toApiResource(),
-                submitTime = appDraft.submitTime,
-            )
-        }
-    }
-
     private fun AppDraftApiView.toApiResource(): ApiAppDraft {
         return when (this) {
             is AppDraftApiView.Unsubmitted -> ApiAppDraft.Unsubmitted(
@@ -752,13 +734,6 @@ class AppDraftApiImpl(
             targetSdk = targetSdk,
         )
     }
-
-    private fun DataAppPackage.toApiResource(): ApiAppPackage = ApiAppPackage(
-        androidApplicationId = this.appId,
-        versionCode = this.versionCode,
-        versionName = this.versionName,
-        targetSdk = this.targetSdk,
-    )
 
     private fun ApiListingLanguage.toDataStoreRepresentation(): DataListingLanguage {
         return when (this) {
