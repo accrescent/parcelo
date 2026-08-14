@@ -318,6 +318,15 @@ abstract class DataStore(private val randomSource: RandomSource) {
         ): DataStoreResult<Option<PendingAppDraftUpload>>
 
         /**
+         * Determines whether an app draft has a default listing assigned.
+         *
+         * @param id the ID of the app draft to check default listing presence for.
+         * @return [DataStoreError.EntityNotFound] if the app draft does not exist, otherwise
+         * whether the app draft has a default listing assigned.
+         */
+        abstract fun hasDefaultListing(id: String): DataStoreResult<Boolean>
+
+        /**
          * Determines whether an app draft is submitted.
          *
          * @param id the ID of the app draft to check the submission status of.
