@@ -269,23 +269,6 @@ abstract class DataStore(private val randomSource: RandomSource) {
         abstract fun findById(id: String): DataStoreResult<Option<AppDraft>>
 
         /**
-         * Finds a list of app drafts in a given organization which a given user is authorized to
-         * view.
-         *
-         * @param organizationId the organization to list app drafts from.
-         * @param userId the user ID to use for authorization.
-         * @param maxResults the maximum number of app drafts to retrieve.
-         * @param afterAppDraftId the app draft ID to start listing after.
-         * @return the list of app drafts matching the query.
-         */
-        abstract fun findForOrganizationAndUserByQuery(
-            organizationId: String,
-            userId: String,
-            maxResults: UInt,
-            afterAppDraftId: String?,
-        ): DataStoreResult<List<AppDraft>>
-
-        /**
          * Finds an existing app draft listing.
          *
          * @param id the ID of the app draft listing to find.

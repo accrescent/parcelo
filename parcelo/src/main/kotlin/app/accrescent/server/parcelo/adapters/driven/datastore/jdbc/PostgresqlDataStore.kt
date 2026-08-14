@@ -471,45 +471,6 @@ private class PostgresqlAppDraftRepository(
         }
     }
 
-    override fun findForOrganizationAndUserByQuery(
-        organizationId: String,
-        userId: String,
-        maxResults: UInt,
-        afterAppDraftId: String?,
-    ): DataStoreResult<List<AppDraft>> = runCatchingSql {
-        val sql = """
-            SELECT
-                app_drafts.id,
-                app_drafts.organization_id,
-                app_drafts.create_time,
-                app_drafts.default_app_draft_listing_id,
-                app_drafts.app_package_id,
-                app_drafts.submit_time
-            FROM app_drafts
-            JOIN organizations
-            ON organizations.id = app_drafts.organization_id
-            WHERE app_drafts.organization_id = ?
-            AND organizations.owner_user_id = ?
-            AND (? IS NULL OR app_drafts.id > ?)
-            ORDER BY app_drafts.id
-            LIMIT ?
-        """.trimIndent()
-        connection.prepareStatement(sql).use { stmt ->
-            stmt.setString(1, organizationId)
-            stmt.setString(2, userId)
-            stmt.setString(3, afterAppDraftId)
-            stmt.setString(4, afterAppDraftId)
-            stmt.setLong(5, maxResults.toLong())
-            stmt.executeQuery().use { rs ->
-                val appDrafts = mutableListOf<AppDraft>()
-                while (rs.next()) {
-                    appDrafts.add(rs.readAppDraft().bind())
-                }
-                appDrafts
-            }
-        }
-    }
-
     override fun findListingById(
         id: String,
     ): DataStoreResult<Option<AppDraftListing>> = runCatchingSql {
