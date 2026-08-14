@@ -17,3 +17,12 @@ fun PreparedStatement.executeSingleUpdate(): DataStoreResult<Unit> {
         else -> Either.Left(DataStoreError.IllegalState)
     }
 }
+
+fun PreparedStatement.executeMultiUpdate(): DataStoreResult<Unit> {
+    @Suppress("DirectPreparedStatementExecuteUpdate")
+    return if (executeUpdate() >= 0) {
+        Either.Right(Unit)
+    } else {
+        Either.Left(DataStoreError.IllegalState)
+    }
+}

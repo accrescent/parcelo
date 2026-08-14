@@ -4,7 +4,6 @@
 
 package app.accrescent.server.parcelo.domain.ports.driven.datastore
 
-import arrow.core.Option
 import java.time.OffsetDateTime
 
 sealed class AppDraftListingIconUploadProcessingResult {
@@ -28,23 +27,25 @@ sealed class AppDraftListingIconUploadProcessingResult {
     }
 }
 
-/**
- * An app draft listing icon upload which is pending processing.
- *
- * @property id the unique ID of this pending app draft listing icon upload.
- * @property appDraftListingId the ID of the app draft listing this upload is for.
- * @property externalBlobId the ID of the private external blob reserved for if processing this
- * upload succeeds.
- * @property objectKey the object key of the blob this upload may come from. Doubles as a
- * correlation key between the object upload event and this pending upload.
- * @property createTime the timestamp at which this entity was created.
- * @property result the result of processing this upload, if completed.
- */
-data class PendingAppDraftListingIconUpload(
-    val id: String,
-    val appDraftListingId: String,
-    val externalBlobId: String,
-    val objectKey: String,
-    val createTime: OffsetDateTime,
-    val result: Option<AppDraftListingIconUploadProcessingResult>,
-)
+sealed class PendingAppDraftListingIconUpload {
+    abstract val id: String
+    abstract val appDraftListingId: String
+    abstract val objectKey: String
+    abstract val createTime: OffsetDateTime
+
+    data class Incomplete(
+        override val id: String,
+        override val appDraftListingId: String,
+        override val objectKey: String,
+        override val createTime: OffsetDateTime,
+        val externalBlobId: String,
+    ) : PendingAppDraftListingIconUpload()
+
+    data class Completed(
+        override val id: String,
+        override val appDraftListingId: String,
+        override val objectKey: String,
+        override val createTime: OffsetDateTime,
+        val result: AppDraftListingIconUploadProcessingResult,
+    ) : PendingAppDraftListingIconUpload()
+}

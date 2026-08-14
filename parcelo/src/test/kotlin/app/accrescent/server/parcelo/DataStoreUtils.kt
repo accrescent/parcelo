@@ -14,20 +14,19 @@ import app.accrescent.server.parcelo.domain.android.VersionCode
 import app.accrescent.server.parcelo.domain.android.VersionName
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppDraft
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppDraftListing
-import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppDraftListingIconUploadProcessingResult
-import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppDraftUploadProcessingError
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppPackage
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppPackagePermission
+import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStore
+import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStoreResult
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.ExternalBlob
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.ListingLanguage
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.Organization
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.PendingAppDraftListingIconUpload
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.PendingAppDraftUpload
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.User
-import arrow.core.Either
 import arrow.core.None
 import arrow.core.Option
-import arrow.core.Some
+import arrow.core.raise.either
 import java.time.OffsetDateTime
 
 val UNIX_EPOCH = ConstantTimestampSource().now()
@@ -50,6 +49,7 @@ fun appDraftListing(
 
 fun appPackage(
     id: String = "appPackage1",
+    appDraftId: String = "appDraft1",
     externalBlobId: String = "blob1",
     uploadEventTime: OffsetDateTime = UNIX_EPOCH,
     appId: ApplicationId = ApplicationId.fromString("com.example.app").unwrap(),
@@ -61,6 +61,7 @@ fun appPackage(
 ): AppPackage {
     return AppPackage(
         id = id,
+        appDraftId = appDraftId,
         externalBlobId = externalBlobId,
         uploadEventTime = uploadEventTime,
         appId = appId,
@@ -70,6 +71,53 @@ fun appPackage(
         signerCertificate = signingCertificate,
         buildApksResult = buildApksResult,
     )
+}
+
+/**
+ * Saves an app package for an existing app draft by way of the pending upload it must come from.
+ *
+ * An app package can only enter the data store by committing a pending app draft upload, since a
+ * committed external blob is always one an app package took over from an upload. Tests needing a
+ * package therefore have to create that upload and its blob first, which this does for them.
+ *
+ * @param tx the transaction to save the app package within.
+ * @param appPackage the app package to save.
+ * @param pendingUploadId the ID to give the pending upload the package is committed from.
+ * @param bucketName the bucket to place the package's blob in.
+ * @param objectKey the object key to give both the pending upload and the package's blob.
+ */
+fun saveAppPackageFromNewUpload(
+    tx: DataStore.Transaction,
+    appPackage: AppPackage = appPackage(),
+    pendingUploadId: String = "appDraftUpload1",
+    bucketName: String = "bucket1",
+    objectKey: String = "object1",
+): DataStoreResult<Unit> = either {
+    tx.appDrafts
+        .saveUpload(
+            incompletePendingAppDraftUpload(
+                id = pendingUploadId,
+                appDraftId = appPackage.appDraftId,
+                externalBlobId = appPackage.externalBlobId,
+                objectKey = objectKey,
+                createTime = UNIX_EPOCH,
+            ),
+            pendingExternalBlob(
+                id = appPackage.externalBlobId,
+                bucketName = bucketName,
+                objectKey = objectKey,
+                createTime = UNIX_EPOCH,
+            ),
+        )
+        .bind()
+    tx.appPackages
+        .saveFromPendingUpload(
+            pendingUploadId = pendingUploadId,
+            appPackage = appPackage,
+            blobVersion = ExternalBlob.LocalBlobVersion(1),
+            replacedBlobDeleteTime = UNIX_EPOCH,
+        )
+        .bind()
 }
 
 fun appPackagePermission(
@@ -102,26 +150,6 @@ fun committedExternalBlob(
     )
 }
 
-fun deletedExternalBlob(
-    id: String = "blob1",
-    bucketName: String = "bucket1",
-    objectKey: String = "object1",
-    createTime: OffsetDateTime = UNIX_EPOCH,
-    generation: Option<Long> = Some(1),
-    deleteTime: OffsetDateTime = UNIX_EPOCH,
-): ExternalBlob<ExternalBlob.Status.Deleted<*>> {
-    return ExternalBlob.Local(
-        id = id,
-        createTime = createTime,
-        bucketName = bucketName,
-        objectKey = objectKey,
-        status = ExternalBlob.Status.Deleted(
-            generation.map { ExternalBlob.LocalBlobVersion(it) },
-            deleteTime,
-        ),
-    )
-}
-
 fun pendingExternalBlob(
     id: String = "blob1",
     bucketName: String = "bucket1",
@@ -145,39 +173,35 @@ fun organization(
     return Organization(id, ownerUserId, createTime)
 }
 
-fun pendingAppDraftUpload(
+fun incompletePendingAppDraftUpload(
     id: String = "appDraftUpload1",
     appDraftId: String = "appDraft1",
     externalBlobId: String = "blob1",
     objectKey: String = "object1",
     createTime: OffsetDateTime = UNIX_EPOCH,
-    result: Option<Either<AppDraftUploadProcessingError, Unit>> = None,
-): PendingAppDraftUpload {
-    return PendingAppDraftUpload(
+): PendingAppDraftUpload.Incomplete {
+    return PendingAppDraftUpload.Incomplete(
         id = id,
         appDraftId = appDraftId,
-        externalBlobId = externalBlobId,
         objectKey = objectKey,
         createTime = createTime,
-        result = result,
+        externalBlobId = externalBlobId,
     )
 }
 
-fun pendingAppDraftListingIconUpload(
+fun incompletePendingAppDraftListingIconUpload(
     id: String = "adliu1",
     appDraftListingId: String = "appDraftListing1",
     externalBlobId: String = "blob1",
     objectKey: String = "object1",
     createTime: OffsetDateTime = UNIX_EPOCH,
-    result: Option<AppDraftListingIconUploadProcessingResult> = None,
-): PendingAppDraftListingIconUpload {
-    return PendingAppDraftListingIconUpload(
+): PendingAppDraftListingIconUpload.Incomplete {
+    return PendingAppDraftListingIconUpload.Incomplete(
         id = id,
         appDraftListingId = appDraftListingId,
-        externalBlobId = externalBlobId,
         objectKey = objectKey,
         createTime = createTime,
-        result = result,
+        externalBlobId = externalBlobId,
     )
 }
 

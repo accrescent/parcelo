@@ -8,11 +8,9 @@ import app.accrescent.server.parcelo.UNIX_EPOCH
 import app.accrescent.server.parcelo.appDraftListing
 import app.accrescent.server.parcelo.appPackage
 import app.accrescent.server.parcelo.appPackagePermission
-import app.accrescent.server.parcelo.committedExternalBlob
 import app.accrescent.server.parcelo.core.unwrap
 import app.accrescent.server.parcelo.core.unwrap2
 import app.accrescent.server.parcelo.core.unwrapErr
-import app.accrescent.server.parcelo.deletedExternalBlob
 import app.accrescent.server.parcelo.domain.android.AndroidManifest
 import app.accrescent.server.parcelo.domain.android.ApkParseError
 import app.accrescent.server.parcelo.domain.android.ApkSetParseError
@@ -20,15 +18,15 @@ import app.accrescent.server.parcelo.domain.android.ApplicationId
 import app.accrescent.server.parcelo.domain.android.NameAttribute
 import app.accrescent.server.parcelo.domain.android.SdkVersion
 import app.accrescent.server.parcelo.domain.android.VersionName
+import app.accrescent.server.parcelo.incompletePendingAppDraftListingIconUpload
+import app.accrescent.server.parcelo.incompletePendingAppDraftUpload
 import app.accrescent.server.parcelo.organization
-import app.accrescent.server.parcelo.pendingAppDraftListingIconUpload
-import app.accrescent.server.parcelo.pendingAppDraftUpload
 import app.accrescent.server.parcelo.pendingExternalBlob
+import app.accrescent.server.parcelo.saveAppPackageFromNewUpload
 import app.accrescent.server.parcelo.unsubmittedAppDraft
 import app.accrescent.server.parcelo.user
 import arrow.core.Either
 import arrow.core.None
-import arrow.core.Option
 import arrow.core.Some
 import arrow.core.left
 import arrow.core.raise.context.bind
@@ -201,7 +199,7 @@ abstract class DataStoreConformanceTest {
     fun `appDrafts deleteById returns EntityNotFound for non-existent app draft`() {
         withMigratedDataStore { dataStore ->
             val result = dataStore
-                .runTxWithRetry { tx -> tx.appDrafts.deleteById("appDraft1").bind() }
+                .runTxWithRetry { tx -> tx.appDrafts.deleteById("appDraft1", UNIX_EPOCH).bind() }
                 .unwrap()
 
             assertEquals(DataStoreError.EntityNotFound, result.unwrapErr())
@@ -218,7 +216,7 @@ abstract class DataStoreConformanceTest {
                 .unwrap2()
 
             dataStore
-                .runTxWithRetry { tx -> tx.appDrafts.deleteById("appDraft1").bind() }
+                .runTxWithRetry { tx -> tx.appDrafts.deleteById("appDraft1", UNIX_EPOCH).bind() }
                 .unwrap2()
             val appDraft = dataStore
                 .runTxWithRetry { tx -> tx.appDrafts.findById("appDraft1").bind() }
@@ -239,7 +237,7 @@ abstract class DataStoreConformanceTest {
                 .unwrap2()
 
             dataStore
-                .runTxWithRetry { tx -> tx.appDrafts.deleteById("appDraft1").bind() }
+                .runTxWithRetry { tx -> tx.appDrafts.deleteById("appDraft1", UNIX_EPOCH).bind() }
                 .unwrap2()
             val listingExists = dataStore
                 .runTxWithRetry { tx ->
@@ -259,13 +257,12 @@ abstract class DataStoreConformanceTest {
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
                 tx.appDrafts.save(unsubmittedAppDraft()).bind()
-                tx.externalBlobs.save(pendingExternalBlob()).bind()
-                tx.appDrafts.saveUpload(pendingAppDraftUpload()).bind()
+                tx.appDrafts.saveUpload(incompletePendingAppDraftUpload(), pendingExternalBlob()).bind()
             }
                 .unwrap2()
 
             dataStore
-                .runTxWithRetry { tx -> tx.appDrafts.deleteById("appDraft1").bind() }
+                .runTxWithRetry { tx -> tx.appDrafts.deleteById("appDraft1", UNIX_EPOCH).bind() }
                 .unwrap2()
             val pendingUpload = dataStore
                 .runTxWithRetry { tx ->
@@ -278,10 +275,35 @@ abstract class DataStoreConformanceTest {
     }
 
     @Test
+    fun `appDrafts deleteById deletes the package's permissions`() {
+        withMigratedDataStore { dataStore ->
+            dataStore
+                .runTxWithRetry { tx ->
+                    tx.organizations.saveWithOwner(organization(), user()).bind()
+                    tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                    saveAppPackageFromNewUpload(tx).bind()
+                    tx.appPackages.savePermission(appPackagePermission()).bind()
+                }
+                .unwrap2()
+
+            dataStore
+                .runTxWithRetry { tx -> tx.appDrafts.deleteById("appDraft1", UNIX_EPOCH).bind() }
+                .unwrap2()
+            val permissions = dataStore
+                .runTxWithRetry { tx ->
+                    tx.appPackages.findPermissionsForAppPackage("appPackage1").bind()
+                }
+                .unwrap2()
+
+            assertTrue(permissions.isEmpty())
+        }
+    }
+
+    @Test
     fun `appDrafts deleteListingById returns EntityNotFound for non-existent app draft listing`() {
         withMigratedDataStore { dataStore ->
             val result = dataStore
-                .runTxWithRetry { tx -> tx.appDrafts.deleteListingById("appDraftListing1").bind() }
+                .runTxWithRetry { tx -> tx.appDrafts.deleteListingById("appDraftListing1", UNIX_EPOCH).bind() }
                 .unwrap()
 
             assertEquals(DataStoreError.EntityNotFound, result.unwrapErr())
@@ -299,7 +321,7 @@ abstract class DataStoreConformanceTest {
                 .unwrap2()
 
             dataStore
-                .runTxWithRetry { tx -> tx.appDrafts.deleteListingById("appDraftListing1").bind() }
+                .runTxWithRetry { tx -> tx.appDrafts.deleteListingById("appDraftListing1", UNIX_EPOCH).bind() }
                 .unwrap2()
             val listing = dataStore
                 .runTxWithRetry { tx -> tx.appDrafts.findListingById("appDraftListing1").bind() }
@@ -314,7 +336,7 @@ abstract class DataStoreConformanceTest {
         withMigratedDataStore { dataStore ->
             val error = dataStore
                 .runTxWithRetry { tx ->
-                    tx.appDrafts.deletePendingListingIconUploadByListingId("appDraftListing1").bind()
+                    tx.appDrafts.deletePendingListingIconUploadByListingId("appDraftListing1", UNIX_EPOCH).bind()
                 }
                 .unwrap()
                 .unwrapErr()
@@ -330,13 +352,16 @@ abstract class DataStoreConformanceTest {
                 tx.organizations.saveWithOwner(organization(), user()).bind()
                 tx.appDrafts.save(unsubmittedAppDraft()).bind()
                 tx.appDrafts.saveListing(appDraftListing()).bind()
-                tx.externalBlobs.save(pendingExternalBlob()).bind()
-                tx.appDrafts.saveListingIconUpload(pendingAppDraftListingIconUpload()).bind()
+                tx.appDrafts.saveListingIconUpload(
+                    incompletePendingAppDraftListingIconUpload(),
+                    pendingExternalBlob(),
+                )
+                    .bind()
             }.unwrap2()
 
             dataStore
                 .runTxWithRetry { tx ->
-                    tx.appDrafts.deletePendingListingIconUploadByListingId("appDraftListing1").bind()
+                    tx.appDrafts.deletePendingListingIconUploadByListingId("appDraftListing1", UNIX_EPOCH).bind()
                 }
                 .unwrap2()
             val foundUpload = dataStore
@@ -354,7 +379,7 @@ abstract class DataStoreConformanceTest {
         withMigratedDataStore { dataStore ->
             val error = dataStore
                 .runTxWithRetry { tx ->
-                    tx.appDrafts.deletePendingUploadByAppDraftId("appDraft1").bind()
+                    tx.appDrafts.deletePendingUploadByAppDraftId("appDraft1", UNIX_EPOCH).bind()
                 }
                 .unwrap()
                 .unwrapErr()
@@ -369,13 +394,12 @@ abstract class DataStoreConformanceTest {
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
                 tx.appDrafts.save(unsubmittedAppDraft()).bind()
-                tx.externalBlobs.save(pendingExternalBlob()).bind()
-                tx.appDrafts.saveUpload(pendingAppDraftUpload()).bind()
+                tx.appDrafts.saveUpload(incompletePendingAppDraftUpload(), pendingExternalBlob()).bind()
             }.unwrap2()
 
             dataStore
                 .runTxWithRetry { tx ->
-                    tx.appDrafts.deletePendingUploadByAppDraftId("appDraft1").bind()
+                    tx.appDrafts.deletePendingUploadByAppDraftId("appDraft1", UNIX_EPOCH).bind()
                 }
                 .unwrap2()
             val foundUpload = dataStore
@@ -434,9 +458,8 @@ abstract class DataStoreConformanceTest {
 
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
-                tx.externalBlobs.save(committedExternalBlob()).bind()
-                tx.appPackages.save(originalAppPackage).bind()
-                tx.appDrafts.save(unsubmittedAppDraft(appPackageId = Some("appPackage1"))).bind()
+                tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                saveAppPackageFromNewUpload(tx, originalAppPackage).bind()
                 tx.appDrafts.saveListing(appDraftListing()).bind()
                 tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
                 tx.appDrafts.updateSubmitTime("appDraft1", UNIX_EPOCH).bind()
@@ -777,8 +800,11 @@ abstract class DataStoreConformanceTest {
                 tx.organizations.saveWithOwner(organization(), user()).bind()
                 tx.appDrafts.save(unsubmittedAppDraft()).bind()
                 tx.appDrafts.saveListing(appDraftListing()).bind()
-                tx.externalBlobs.save(pendingExternalBlob()).bind()
-                tx.appDrafts.saveListingIconUpload(pendingAppDraftListingIconUpload()).bind()
+                tx.appDrafts.saveListingIconUpload(
+                    incompletePendingAppDraftListingIconUpload(),
+                    pendingExternalBlob(),
+                )
+                    .bind()
             }.unwrap2()
 
             val result = dataStore
@@ -808,8 +834,7 @@ abstract class DataStoreConformanceTest {
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
                 tx.appDrafts.save(unsubmittedAppDraft()).bind()
-                tx.externalBlobs.save(pendingExternalBlob()).bind()
-                tx.appDrafts.saveUpload(pendingAppDraftUpload()).bind()
+                tx.appDrafts.saveUpload(incompletePendingAppDraftUpload(), pendingExternalBlob()).bind()
             }.unwrap2()
 
             val result = dataStore
@@ -972,22 +997,24 @@ abstract class DataStoreConformanceTest {
                 tx.appDrafts
                     .saveListing(appDraftListing(id = "appDraftListing2", appDraftId = "appDraft2"))
                     .bind()
-                tx.externalBlobs.save(pendingExternalBlob()).bind()
                 tx.appDrafts.saveListingIconUpload(
-                    pendingAppDraftListingIconUpload(
+                    incompletePendingAppDraftListingIconUpload(
                         appDraftListingId = "appDraftListing1",
                         objectKey = "object1",
-                    )
+                    ),
+                    pendingExternalBlob(),
                 ).bind()
             }.unwrap2()
 
             val result = dataStore
                 .runTxWithRetry { tx ->
                     tx.appDrafts.saveListingIconUpload(
-                        pendingAppDraftListingIconUpload(
+                        incompletePendingAppDraftListingIconUpload(
                             appDraftListingId = "appDraftListing2",
+                            externalBlobId = "blob2",
                             objectKey = "object2",
-                        )
+                        ),
+                        pendingExternalBlob(id = "blob2", objectKey = "object2"),
                     ).bind()
                 }
                 .unwrap()
@@ -1003,14 +1030,22 @@ abstract class DataStoreConformanceTest {
                 tx.organizations.saveWithOwner(organization(), user()).bind()
                 tx.appDrafts.save(unsubmittedAppDraft()).bind()
                 tx.appDrafts.saveListing(appDraftListing()).bind()
-                tx.externalBlobs.save(pendingExternalBlob()).bind()
-                tx.appDrafts.saveListingIconUpload(pendingAppDraftListingIconUpload()).bind()
+                tx.appDrafts.saveListingIconUpload(
+                    incompletePendingAppDraftListingIconUpload(),
+                    pendingExternalBlob(),
+                )
+                    .bind()
             }.unwrap2()
 
             val result = dataStore
                 .runTxWithRetry { tx ->
                     tx.appDrafts.saveListingIconUpload(
-                        pendingAppDraftListingIconUpload(id = "adliu2", objectKey = "object2")
+                        incompletePendingAppDraftListingIconUpload(
+                            id = "adliu2",
+                            externalBlobId = "blob2",
+                            objectKey = "object2",
+                        ),
+                        pendingExternalBlob(id = "blob2", objectKey = "object2"),
                     ).bind()
                 }
                 .unwrap()
@@ -1032,20 +1067,24 @@ abstract class DataStoreConformanceTest {
                 tx.appDrafts
                     .saveListing(appDraftListing(id = "appDraftListing2", appDraftId = "appDraft2"))
                     .bind()
-                tx.externalBlobs.save(pendingExternalBlob()).bind()
                 tx.appDrafts
-                    .saveListingIconUpload(pendingAppDraftListingIconUpload(objectKey = "object1"))
+                    .saveListingIconUpload(
+                        incompletePendingAppDraftListingIconUpload(objectKey = "object1"),
+                        pendingExternalBlob(),
+                    )
                     .bind()
             }.unwrap2()
 
             val result = dataStore
                 .runTxWithRetry { tx ->
                     tx.appDrafts.saveListingIconUpload(
-                        pendingAppDraftListingIconUpload(
+                        incompletePendingAppDraftListingIconUpload(
                             id = "adliu2",
                             appDraftListingId = "appDraftListing2",
+                            externalBlobId = "blob2",
                             objectKey = "object1",
-                        )
+                        ),
+                        pendingExternalBlob(id = "blob2", bucketName = "bucket2"),
                     ).bind()
                 }
                 .unwrap()
@@ -1059,8 +1098,11 @@ abstract class DataStoreConformanceTest {
         withMigratedDataStore { dataStore ->
             val result = dataStore
                 .runTxWithRetry { tx ->
-                    tx.externalBlobs.save(pendingExternalBlob()).bind()
-                    tx.appDrafts.saveListingIconUpload(pendingAppDraftListingIconUpload()).bind()
+                    tx.appDrafts.saveListingIconUpload(
+                        incompletePendingAppDraftListingIconUpload(),
+                        pendingExternalBlob(),
+                    )
+                        .bind()
                 }
                 .unwrap()
 
@@ -1071,43 +1113,19 @@ abstract class DataStoreConformanceTest {
     @Test
     fun `appDrafts saveListingIconUpload and findPendingListingIconUploadByObjectKey round-trip data`() {
         withMigratedDataStore { dataStore ->
-            val originalUpload = pendingAppDraftListingIconUpload()
+            val originalUpload = incompletePendingAppDraftListingIconUpload()
 
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
                 tx.appDrafts.save(unsubmittedAppDraft()).bind()
                 tx.appDrafts.saveListing(appDraftListing()).bind()
-                tx.externalBlobs.save(pendingExternalBlob()).bind()
-                tx.appDrafts.saveListingIconUpload(originalUpload).bind()
+                tx.appDrafts.saveListingIconUpload(originalUpload, pendingExternalBlob()).bind()
             }.unwrap2()
             val foundUpload = dataStore
                 .runTxWithRetry { tx ->
                     tx.appDrafts.findPendingListingIconUploadByObjectKey("object1").bind()
                 }
                 .unwrap2()
-
-            assertEquals(Some(originalUpload), foundUpload)
-        }
-    }
-
-    @ParameterizedTest
-    @MethodSource("appDraftListingIconUploadProcessingResults")
-    fun `appDrafts saveListingIconUpload and findPendingListingIconUploadByObjectKey round-trip processing result`(
-        result: AppDraftListingIconUploadProcessingResult,
-    ) {
-        withMigratedDataStore { dataStore ->
-            val originalUpload = pendingAppDraftListingIconUpload(result = Some(result))
-            dataStore.runTxWithRetry { tx ->
-                tx.organizations.saveWithOwner(organization(), user()).bind()
-                tx.appDrafts.save(unsubmittedAppDraft()).bind()
-                tx.appDrafts.saveListing(appDraftListing()).bind()
-                tx.externalBlobs.save(pendingExternalBlob()).bind()
-                tx.appDrafts.saveListingIconUpload(originalUpload).bind()
-            }.unwrap2()
-
-            val foundUpload = dataStore.runTxWithRetry { tx ->
-                tx.appDrafts.findPendingListingIconUploadByObjectKey("object1").bind()
-            }.unwrap2()
 
             assertEquals(Some(originalUpload), foundUpload)
         }
@@ -1120,16 +1138,26 @@ abstract class DataStoreConformanceTest {
                 tx.organizations.saveWithOwner(organization(), user()).bind()
                 tx.appDrafts.save(unsubmittedAppDraft(id = "appDraft1")).bind()
                 tx.appDrafts.save(unsubmittedAppDraft(id = "appDraft2")).bind()
-                tx.externalBlobs.save(pendingExternalBlob()).bind()
                 tx.appDrafts
-                    .saveUpload(pendingAppDraftUpload(appDraftId = "appDraft1", objectKey = "object1"))
+                    .saveUpload(
+                        incompletePendingAppDraftUpload(
+                            appDraftId = "appDraft1",
+                            objectKey = "object1",
+                        ),
+                        pendingExternalBlob(),
+                    )
                     .bind()
             }.unwrap2()
 
             val result = dataStore
                 .runTxWithRetry { tx ->
                     tx.appDrafts.saveUpload(
-                        pendingAppDraftUpload(appDraftId = "appDraft2", objectKey = "object2")
+                        incompletePendingAppDraftUpload(
+                            appDraftId = "appDraft2",
+                            externalBlobId = "blob2",
+                            objectKey = "object2",
+                        ),
+                        pendingExternalBlob(id = "blob2", objectKey = "object2"),
                     ).bind()
                 }
                 .unwrap()
@@ -1144,18 +1172,23 @@ abstract class DataStoreConformanceTest {
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
                 tx.appDrafts.save(unsubmittedAppDraft()).bind()
-                tx.externalBlobs.save(pendingExternalBlob()).bind()
-                tx.appDrafts.saveUpload(pendingAppDraftUpload(appDraftId = "appDraft1")).bind()
+                tx.appDrafts.saveUpload(
+                    incompletePendingAppDraftUpload(appDraftId = "appDraft1"),
+                    pendingExternalBlob(),
+                )
+                    .bind()
             }.unwrap2()
 
             val result = dataStore
                 .runTxWithRetry { tx ->
                     tx.appDrafts.saveUpload(
-                        pendingAppDraftUpload(
+                        incompletePendingAppDraftUpload(
                             id = "appDraftUpload2",
                             appDraftId = "appDraft1",
+                            externalBlobId = "blob2",
                             objectKey = "object2",
-                        )
+                        ),
+                        pendingExternalBlob(id = "blob2", objectKey = "object2"),
                     ).bind()
                 }
                 .unwrap()
@@ -1171,20 +1204,24 @@ abstract class DataStoreConformanceTest {
                 tx.organizations.saveWithOwner(organization(), user()).bind()
                 tx.appDrafts.save(unsubmittedAppDraft(id = "appDraft1")).bind()
                 tx.appDrafts.save(unsubmittedAppDraft(id = "appDraft2")).bind()
-                tx.externalBlobs.save(pendingExternalBlob()).bind()
                 tx.appDrafts
-                    .saveUpload(pendingAppDraftUpload(objectKey = "object1"))
+                    .saveUpload(
+                        incompletePendingAppDraftUpload(objectKey = "object1"),
+                        pendingExternalBlob(),
+                    )
                     .bind()
             }.unwrap2()
 
             val result = dataStore
                 .runTxWithRetry { tx ->
                     tx.appDrafts.saveUpload(
-                        pendingAppDraftUpload(
+                        incompletePendingAppDraftUpload(
                             id = "appDraftUpload2",
                             appDraftId = "appDraft2",
+                            externalBlobId = "blob2",
                             objectKey = "object1",
-                        )
+                        ),
+                        pendingExternalBlob(id = "blob2", bucketName = "bucket2"),
                     ).bind()
                 }
                 .unwrap()
@@ -1198,8 +1235,7 @@ abstract class DataStoreConformanceTest {
         withMigratedDataStore { dataStore ->
             val result = dataStore
                 .runTxWithRetry { tx ->
-                    tx.externalBlobs.save(pendingExternalBlob()).bind()
-                    tx.appDrafts.saveUpload(pendingAppDraftUpload()).bind()
+                    tx.appDrafts.saveUpload(incompletePendingAppDraftUpload(), pendingExternalBlob()).bind()
                 }
                 .unwrap()
 
@@ -1207,19 +1243,15 @@ abstract class DataStoreConformanceTest {
         }
     }
 
-    @ParameterizedTest
-    @MethodSource("appDraftUploadResults")
-    fun `appDrafts saveUpload and findPendingUploadByObjectKey round-trip data`(
-        result: Option<Either<AppDraftUploadProcessingError, Unit>>,
-    ) {
+    @Test
+    fun `appDrafts saveUpload and findPendingUploadByObjectKey round-trip data`() {
         withMigratedDataStore { dataStore ->
-            val originalUpload = pendingAppDraftUpload(result = result)
+            val originalUpload = incompletePendingAppDraftUpload()
 
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
                 tx.appDrafts.save(unsubmittedAppDraft()).bind()
-                tx.externalBlobs.save(pendingExternalBlob()).bind()
-                tx.appDrafts.saveUpload(originalUpload).bind()
+                tx.appDrafts.saveUpload(originalUpload, pendingExternalBlob()).bind()
             }.unwrap2()
             val foundUpload = dataStore
                 .runTxWithRetry { tx ->
@@ -1228,62 +1260,6 @@ abstract class DataStoreConformanceTest {
                 .unwrap2()
 
             assertEquals(Some(originalUpload), foundUpload)
-        }
-    }
-
-    @Test
-    fun `appDrafts updateAppPackageId returns EntityNotFound if app draft does not exist`() {
-        withMigratedDataStore { dataStore ->
-            val error = dataStore.runTxWithRetry { tx ->
-                tx.appDrafts.updateAppPackageId("appDraft1", "appPackage1").bind()
-            }
-                .unwrap()
-                .unwrapErr()
-
-            assertEquals(DataStoreError.EntityNotFound, error)
-        }
-    }
-
-    @Test
-    fun `appDrafts updateAppPackageId returns ForeignKeyViolation if app package does not exist`() {
-        withMigratedDataStore { dataStore ->
-            dataStore.runTxWithRetry { tx ->
-                tx.organizations.saveWithOwner(organization(), user()).bind()
-                tx.appDrafts.save(unsubmittedAppDraft()).bind()
-            }
-                .unwrap2()
-
-            val error = dataStore.runTxWithRetry { tx ->
-                tx.appDrafts.updateAppPackageId("appDraft1", "appPackage1").bind()
-            }
-                .unwrap()
-                .unwrapErr()
-
-            assertEquals(DataStoreError.ForeignKeyViolation, error)
-        }
-    }
-
-    @Test
-    fun `appDrafts updateAppPackageId updates app package ID for existing app draft`() {
-        withMigratedDataStore { dataStore ->
-            dataStore.runTxWithRetry { tx ->
-                tx.organizations.saveWithOwner(organization(), user()).bind()
-                tx.appDrafts.save(unsubmittedAppDraft()).bind()
-                tx.externalBlobs.save(committedExternalBlob()).bind()
-                tx.appPackages.save(appPackage()).bind()
-            }
-                .unwrap2()
-
-            dataStore.runTxWithRetry { tx ->
-                tx.appDrafts.updateAppPackageId("appDraft1", "appPackage1").bind()
-            }
-                .unwrap2()
-            val foundAppPackageId = dataStore
-                .runTxWithRetry { tx -> tx.appDrafts.requireById("appDraft1").bind() }
-                .unwrap2()
-                .optionalAppPackageId
-
-            assertEquals(Some("appPackage1"), foundAppPackageId)
         }
     }
 
@@ -1447,12 +1423,13 @@ abstract class DataStoreConformanceTest {
     }
 
     @Test
-    fun `appDrafts updatePendingListingIconUploadResult returns EntityNotFound for non-existent upload`() {
+    fun `appDrafts completePendingUpload returns EntityNotFound for non-existent upload`() {
         withMigratedDataStore { dataStore ->
             val error = dataStore.runTxWithRetry { tx ->
-                tx.appDrafts.updatePendingListingIconUploadResult(
-                    "adliu1",
-                    AppDraftListingIconUploadProcessingResult.Error.AppDraftSubmitted,
+                tx.appDrafts.completePendingUpload(
+                    "upload1",
+                    AppDraftUploadProcessingError.AppDraftSubmitted,
+                    UNIX_EPOCH,
                 ).bind()
             }
                 .unwrap()
@@ -1463,133 +1440,59 @@ abstract class DataStoreConformanceTest {
     }
 
     @Test
-    fun `appDrafts updatePendingListingIconUploadResult updates result for existing pending upload`() {
+    fun `appDrafts completePendingUpload records the result for an incomplete upload`() {
         withMigratedDataStore { dataStore ->
-            val originalUpload = pendingAppDraftListingIconUpload()
+            val originalUpload = incompletePendingAppDraftUpload()
             dataStore
                 .runTxWithRetry { tx ->
                     tx.organizations.saveWithOwner(organization(), user()).bind()
                     tx.appDrafts.save(unsubmittedAppDraft()).bind()
-                    tx.appDrafts.saveListing(appDraftListing()).bind()
-                    tx.externalBlobs.save(pendingExternalBlob()).bind()
-                    tx.appDrafts.saveListingIconUpload(originalUpload).bind()
+                    tx.appDrafts.saveUpload(originalUpload, pendingExternalBlob()).bind()
                 }
                 .unwrap2()
 
             dataStore.runTxWithRetry { tx ->
-                tx.appDrafts.updatePendingListingIconUploadResult(
-                    "adliu1",
-                    AppDraftListingIconUploadProcessingResult.Error.AppDraftSubmitted,
+                tx.appDrafts.completePendingUpload(
+                    "appDraftUpload1",
+                    AppDraftUploadProcessingError.AppDraftSubmitted,
+                    UNIX_EPOCH,
                 ).bind()
             }
                 .unwrap2()
             val foundUpload = dataStore.runTxWithRetry { tx ->
-                tx.appDrafts.findPendingListingIconUploadByObjectKey("object1").bind()
+                tx.appDrafts.findPendingUploadByObjectKey("object1").bind()
             }
                 .unwrap2()
                 .unwrap()
 
             assertEquals(
-                Some(AppDraftListingIconUploadProcessingResult.Error.AppDraftSubmitted),
-                foundUpload.result,
+                Some(AppDraftUploadProcessingError.AppDraftSubmitted.left()),
+                foundUpload.optionalResult,
             )
         }
     }
 
     @ParameterizedTest
-    @MethodSource("appDraftListingIconUploadProcessingResults")
-    fun `appDrafts updatePendingListingIconUploadResult and findPendingListingIconUploadByObjectKey round-trip processing result`(
-        result: AppDraftListingIconUploadProcessingResult,
+    @MethodSource("appDraftUploadProcessingErrors")
+    fun `appDrafts completePendingUpload and findPendingUploadByObjectKey round-trip processing result`(
+        error: AppDraftUploadProcessingError,
     ) {
         withMigratedDataStore { dataStore ->
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
                 tx.appDrafts.save(unsubmittedAppDraft()).bind()
-                tx.appDrafts.saveListing(appDraftListing()).bind()
-                tx.externalBlobs.save(pendingExternalBlob()).bind()
-                tx.appDrafts.saveListingIconUpload(pendingAppDraftListingIconUpload()).bind()
+                tx.appDrafts.saveUpload(incompletePendingAppDraftUpload(), pendingExternalBlob()).bind()
             }.unwrap2()
 
             dataStore.runTxWithRetry { tx ->
-                tx.appDrafts.updatePendingListingIconUploadResult("adliu1", result).bind()
-            }.unwrap2()
-            val foundUpload = dataStore.runTxWithRetry { tx ->
-                tx.appDrafts.findPendingListingIconUploadByObjectKey("object1").bind()
-            }.unwrap2()
-                .unwrap()
-
-            assertEquals(Some(result), foundUpload.result)
-        }
-    }
-
-    @Test
-    fun `appDrafts updatePendingUploadResult returns EntityNotFound for non-existent upload`() {
-        withMigratedDataStore { dataStore ->
-            val error = dataStore.runTxWithRetry { tx ->
-                tx.appDrafts.updatePendingUploadResult(
-                    "upload1",
-                    AppDraftUploadProcessingError.AppDraftSubmitted.left()
-                ).bind()
-            }
-                .unwrap()
-                .unwrapErr()
-
-            assertEquals(DataStoreError.EntityNotFound, error)
-        }
-    }
-
-    @Test
-    fun `appDrafts updatePendingUploadResult updates result for existing pending upload`() {
-        withMigratedDataStore { dataStore ->
-            val originalUpload = pendingAppDraftUpload()
-            dataStore
-                .runTxWithRetry { tx ->
-                    tx.organizations.saveWithOwner(organization(), user()).bind()
-                    tx.appDrafts.save(unsubmittedAppDraft()).bind()
-                    tx.externalBlobs.save(pendingExternalBlob()).bind()
-                    tx.appDrafts.saveUpload(originalUpload).bind()
-                }
-                .unwrap2()
-
-            dataStore.runTxWithRetry { tx ->
-                tx.appDrafts.updatePendingUploadResult(
-                    "appDraftUpload1",
-                    AppDraftUploadProcessingError.AppDraftSubmitted.left(),
-                ).bind()
-            }
-                .unwrap2()
-            val foundUpload = dataStore.runTxWithRetry { tx ->
-                tx.appDrafts.findPendingUploadByObjectKey("object1").bind()
-            }
-                .unwrap2()
-                .unwrap()
-
-            assertEquals(Some(AppDraftUploadProcessingError.AppDraftSubmitted.left()), foundUpload.result)
-        }
-    }
-
-    @ParameterizedTest
-    @MethodSource("appDraftUploadProcessingResults")
-    fun `appDrafts updatePendingUploadResult and findPendingUploadByObjectKey round-trip processing result`(
-        result: Either<AppDraftUploadProcessingError, Unit>,
-    ) {
-        withMigratedDataStore { dataStore ->
-            dataStore.runTxWithRetry { tx ->
-                tx.organizations.saveWithOwner(organization(), user()).bind()
-                tx.appDrafts.save(unsubmittedAppDraft()).bind()
-                tx.externalBlobs.save(pendingExternalBlob()).bind()
-                tx.appDrafts.saveUpload(pendingAppDraftUpload()).bind()
-            }.unwrap2()
-
-            dataStore.runTxWithRetry { tx ->
-                tx.appDrafts.updatePendingUploadResult("appDraftUpload1", result).bind()
+                tx.appDrafts.completePendingUpload("appDraftUpload1", error, UNIX_EPOCH).bind()
             }.unwrap2()
             val foundUpload = dataStore.runTxWithRetry { tx ->
                 tx.appDrafts.findPendingUploadByObjectKey("object1").bind()
             }.unwrap2()
                 .unwrap()
 
-            assertEquals(Some(result), foundUpload.result)
+            assertEquals(Some(error.left()), foundUpload.optionalResult)
         }
     }
 
@@ -1610,9 +1513,8 @@ abstract class DataStoreConformanceTest {
         withMigratedDataStore { dataStore ->
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
-                tx.externalBlobs.save(committedExternalBlob()).bind()
-                tx.appPackages.save(appPackage()).bind()
-                tx.appDrafts.save(unsubmittedAppDraft(appPackageId = Some("appPackage1"))).bind()
+                tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                saveAppPackageFromNewUpload(tx).bind()
                 tx.appDrafts.saveListing(appDraftListing()).bind()
                 tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
             }
@@ -1657,9 +1559,8 @@ abstract class DataStoreConformanceTest {
         withMigratedDataStore { dataStore ->
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
-                tx.externalBlobs.save(committedExternalBlob()).bind()
-                tx.appPackages.save(appPackage()).bind()
-                tx.appDrafts.save(unsubmittedAppDraft(appPackageId = Some("appPackage1"))).bind()
+                tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                saveAppPackageFromNewUpload(tx).bind()
             }
                 .unwrap2()
 
@@ -1669,87 +1570,6 @@ abstract class DataStoreConformanceTest {
                 .unwrap()
 
             assertEquals(DataStoreError.CheckConstraintViolation, result.unwrapErr())
-        }
-    }
-
-    @Test
-    fun `appPackages deleteById returns EntityNotFound for non-existent package`() {
-        withMigratedDataStore { dataStore ->
-            val result = dataStore
-                .runTxWithRetry { tx -> tx.appPackages.deleteById("appPackage1").bind() }
-                .unwrap()
-
-            assertEquals(DataStoreError.EntityNotFound, result.unwrapErr())
-        }
-    }
-
-    @Test
-    fun `appPackages deleteById returns ForeignKeyViolation when an app draft still references the package`() {
-        withMigratedDataStore { dataStore ->
-            dataStore.runTxWithRetry { tx ->
-                tx.organizations.saveWithOwner(organization(), user()).bind()
-                tx.externalBlobs.save(committedExternalBlob()).bind()
-                tx.appPackages.save(appPackage()).bind()
-                tx.appDrafts.save(unsubmittedAppDraft(appPackageId = Some("appPackage1"))).bind()
-            }
-                .unwrap2()
-
-            val result = dataStore
-                .runTxWithRetry { tx -> tx.appPackages.deleteById("appPackage1").bind() }
-                .unwrap()
-
-            assertEquals(DataStoreError.ForeignKeyViolation, result.unwrapErr())
-        }
-    }
-
-    @Test
-    fun `appPackages deleteById makes findById return None`() {
-        withMigratedDataStore { dataStore ->
-            dataStore
-                .runTxWithRetry { tx ->
-                    tx.externalBlobs.save(committedExternalBlob()).bind()
-                    tx.appPackages.save(appPackage()).bind()
-                }
-                .unwrap2()
-
-            dataStore
-                .runTxWithRetry { tx -> tx.appPackages.deleteById("appPackage1").bind() }
-                .unwrap2()
-            val appPackage = dataStore
-                .runTxWithRetry { tx -> tx.appPackages.findById("appPackage1").bind() }
-                .unwrap2()
-
-            assertTrue(appPackage.isNone())
-        }
-    }
-
-    @Test
-    fun `appPackages deleteById deletes the package's permissions`() {
-        withMigratedDataStore { dataStore ->
-            dataStore
-                .runTxWithRetry { tx ->
-                    tx.externalBlobs.save(committedExternalBlob()).bind()
-                    tx.appPackages.save(appPackage()).bind()
-                    tx.appPackages.savePermission(
-                        appPackagePermission(
-                            id = "perm1",
-                            appPackageId = "appPackage1",
-                            name = NameAttribute.fromString("android.permission.INTERNET").unwrap(),
-                        )
-                    ).bind()
-                }
-                .unwrap2()
-
-            dataStore
-                .runTxWithRetry { tx -> tx.appPackages.deleteById("appPackage1").bind() }
-                .unwrap2()
-            val permissions = dataStore
-                .runTxWithRetry { tx ->
-                    tx.appPackages.findPermissionsForAppPackage("appPackage1").bind()
-                }
-                .unwrap2()
-
-            assertTrue(permissions.isEmpty())
         }
     }
 
@@ -1792,13 +1612,21 @@ abstract class DataStoreConformanceTest {
                 ),
             )
             dataStore.runTxWithRetry { tx ->
-                tx.organizations.save(organization()).bind()
+                tx.organizations.saveWithOwner(organization(), user()).bind()
                 tx.appDrafts.save(unsubmittedAppDraft(id = "appDraft1")).bind()
                 tx.appDrafts.save(unsubmittedAppDraft(id = "appDraft2")).bind()
-                tx.externalBlobs.save(committedExternalBlob(id = "blob1", objectKey = "object1")).bind()
-                tx.externalBlobs.save(committedExternalBlob(id = "blob2", objectKey = "object2")).bind()
-                tx.appPackages.save(appPackage(id = "appPackage1", externalBlobId = "blob1")).bind()
-                tx.appPackages.save(appPackage(id = "appPackage2", externalBlobId = "blob2")).bind()
+                saveAppPackageFromNewUpload(tx).bind()
+                saveAppPackageFromNewUpload(
+                    tx,
+                    appPackage = appPackage(
+                        id = "appPackage2",
+                        appDraftId = "appDraft2",
+                        externalBlobId = "blob2",
+                    ),
+                    pendingUploadId = "appDraftUpload2",
+                    objectKey = "object2",
+                )
+                    .bind()
                 tx.appPackages.savePermission(
                     appPackagePermission(
                         id = "perm1",
@@ -1831,18 +1659,26 @@ abstract class DataStoreConformanceTest {
     }
 
     @Test
-    fun `appPackages save returns UniqueConstraintViolation for duplicate ID`() {
+    fun `appPackages saveFromPendingUpload returns UniqueConstraintViolation for duplicate ID`() {
         withMigratedDataStore { dataStore ->
             dataStore
                 .runTxWithRetry { tx ->
-                    tx.externalBlobs.save(committedExternalBlob()).bind()
-                    tx.appPackages.save(appPackage()).bind()
+                    tx.organizations.saveWithOwner(organization(), user()).bind()
+                    tx.appDrafts.save(unsubmittedAppDraft(id = "appDraft1")).bind()
+                    tx.appDrafts.save(unsubmittedAppDraft(id = "appDraft2")).bind()
+                    saveAppPackageFromNewUpload(tx).bind()
                 }
                 .unwrap2()
 
             val result = dataStore
                 .runTxWithRetry { tx ->
-                    tx.appPackages.save(appPackage()).bind()
+                    saveAppPackageFromNewUpload(
+                        tx,
+                        appPackage = appPackage(appDraftId = "appDraft2", externalBlobId = "blob2"),
+                        pendingUploadId = "appDraftUpload2",
+                        objectKey = "object2",
+                    )
+                        .bind()
                 }
                 .unwrap()
 
@@ -1851,45 +1687,142 @@ abstract class DataStoreConformanceTest {
     }
 
     @Test
-    fun `appPackages save returns ForeignKeyViolation when external blob is deleted`() {
+    fun `appPackages saveFromPendingUpload returns ForeignKeyViolation for non-existent upload`() {
         withMigratedDataStore { dataStore ->
             dataStore
-                .runTxWithRetry { tx -> tx.externalBlobs.save(deletedExternalBlob()).bind() }
+                .runTxWithRetry { tx ->
+                    tx.organizations.saveWithOwner(organization(), user()).bind()
+                    tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                }
                 .unwrap2()
 
-            val result = dataStore
-                .runTxWithRetry { tx -> tx.appPackages.save(appPackage()).bind() }
+            val error = dataStore
+                .runTxWithRetry { tx ->
+                    tx.appPackages.saveFromPendingUpload(
+                        pendingUploadId = "appDraftUpload1",
+                        appPackage = appPackage(),
+                        blobVersion = ExternalBlob.LocalBlobVersion(1),
+                        replacedBlobDeleteTime = UNIX_EPOCH,
+                    )
+                        .bind()
+                }
                 .unwrap()
+                .unwrapErr()
 
-            assertEquals(DataStoreError.ForeignKeyViolation, result.unwrapErr())
+            assertEquals(DataStoreError.ForeignKeyViolation, error)
         }
     }
 
     @Test
-    fun `appPackages save returns ForeignKeyViolation when external blob is pending`() {
+    fun `appPackages saveFromPendingUpload returns ForeignKeyViolation for an already completed upload`() {
         withMigratedDataStore { dataStore ->
             dataStore
-                .runTxWithRetry { tx -> tx.externalBlobs.save(pendingExternalBlob()).bind() }
+                .runTxWithRetry { tx ->
+                    tx.organizations.saveWithOwner(organization(), user()).bind()
+                    tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                    tx.appDrafts
+                        .saveUpload(incompletePendingAppDraftUpload(), pendingExternalBlob())
+                        .bind()
+                    tx.appDrafts
+                        .completePendingUpload(
+                            "appDraftUpload1",
+                            AppDraftUploadProcessingError.AppDraftSubmitted,
+                            UNIX_EPOCH,
+                        )
+                        .bind()
+                }
                 .unwrap2()
 
-            val result = dataStore
-                .runTxWithRetry { tx -> tx.appPackages.save(appPackage()).bind() }
+            val error = dataStore
+                .runTxWithRetry { tx ->
+                    tx.appPackages.saveFromPendingUpload(
+                        pendingUploadId = "appDraftUpload1",
+                        appPackage = appPackage(),
+                        blobVersion = ExternalBlob.LocalBlobVersion(1),
+                        replacedBlobDeleteTime = UNIX_EPOCH,
+                    )
+                        .bind()
+                }
                 .unwrap()
+                .unwrapErr()
 
-            assertEquals(DataStoreError.ForeignKeyViolation, result.unwrapErr())
+            assertEquals(DataStoreError.ForeignKeyViolation, error)
         }
     }
 
     @Test
-    fun `appPackages save and findByAppDraftId round-trip data`() {
+    fun `appPackages saveFromPendingUpload points the app draft at the new package`() {
+        withMigratedDataStore { dataStore ->
+            dataStore
+                .runTxWithRetry { tx ->
+                    tx.organizations.saveWithOwner(organization(), user()).bind()
+                    tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                    saveAppPackageFromNewUpload(tx).bind()
+                }
+                .unwrap2()
+
+            val appPackageId = dataStore
+                .runTxWithRetry { tx -> tx.appDrafts.requireById("appDraft1").bind() }
+                .unwrap2()
+                .optionalAppPackageId
+
+            assertEquals(Some("appPackage1"), appPackageId)
+        }
+    }
+
+    @Test
+    fun `appPackages saveFromPendingUpload commits the blob owned by the upload`() {
+        withMigratedDataStore { dataStore ->
+            dataStore
+                .runTxWithRetry { tx ->
+                    tx.organizations.saveWithOwner(organization(), user()).bind()
+                    tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                    saveAppPackageFromNewUpload(tx).bind()
+                }
+                .unwrap2()
+
+            val blob = dataStore
+                .runTxWithRetry { tx -> tx.externalBlobs.requireById("blob1").bind() }
+                .unwrap2()
+
+            assertEquals(
+                ExternalBlob.Status.Committed(ExternalBlob.LocalBlobVersion(1)),
+                blob.status,
+            )
+        }
+    }
+
+    @Test
+    fun `appPackages saveFromPendingUpload completes the upload it commits`() {
+        withMigratedDataStore { dataStore ->
+            dataStore
+                .runTxWithRetry { tx ->
+                    tx.organizations.saveWithOwner(organization(), user()).bind()
+                    tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                    saveAppPackageFromNewUpload(tx).bind()
+                }
+                .unwrap2()
+
+            val upload = dataStore
+                .runTxWithRetry { tx ->
+                    tx.appDrafts.findPendingUploadByObjectKey("object1").bind()
+                }
+                .unwrap2()
+                .unwrap()
+
+            assertEquals(Some(Unit.right()), upload.optionalResult)
+        }
+    }
+
+    @Test
+    fun `appPackages saveFromPendingUpload and findByAppDraftId round-trip data`() {
         withMigratedDataStore { dataStore ->
             val originalAppPackage = appPackage()
 
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
-                tx.externalBlobs.save(committedExternalBlob()).bind()
-                tx.appPackages.save(originalAppPackage).bind()
-                tx.appDrafts.save(unsubmittedAppDraft(appPackageId = Some("appPackage1"))).bind()
+                tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                saveAppPackageFromNewUpload(tx, originalAppPackage).bind()
             }
                 .unwrap2()
             val foundAppPackage = dataStore
@@ -1901,14 +1834,15 @@ abstract class DataStoreConformanceTest {
     }
 
     @Test
-    fun `appPackages save and findById round-trip data`() {
+    fun `appPackages saveFromPendingUpload and findById round-trip data`() {
         withMigratedDataStore { dataStore ->
             val originalAppPackage = appPackage()
 
             dataStore
                 .runTxWithRetry { tx ->
-                    tx.externalBlobs.save(committedExternalBlob()).bind()
-                    tx.appPackages.save(originalAppPackage).bind()
+                    tx.organizations.saveWithOwner(organization(), user()).bind()
+                    tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                    saveAppPackageFromNewUpload(tx, originalAppPackage).bind()
                 }
                 .unwrap2()
             val foundAppPackage = dataStore
@@ -1923,8 +1857,9 @@ abstract class DataStoreConformanceTest {
     fun `appPackages savePermission returns UniqueConstraintViolation for permission with duplicate ID`() {
         withMigratedDataStore { dataStore ->
             dataStore.runTxWithRetry { tx ->
-                tx.externalBlobs.save(committedExternalBlob()).bind()
-                tx.appPackages.save(appPackage()).bind()
+                tx.organizations.saveWithOwner(organization(), user()).bind()
+                tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                saveAppPackageFromNewUpload(tx).bind()
                 tx.appPackages.savePermission(appPackagePermission()).bind()
             }
                 .unwrap2()
@@ -1945,8 +1880,9 @@ abstract class DataStoreConformanceTest {
     fun `appPackages savePermission returns UniqueConstraintViolation for duplicate (appPackageId, name) pair`() {
         withMigratedDataStore { dataStore ->
             dataStore.runTxWithRetry { tx ->
-                tx.externalBlobs.save(committedExternalBlob()).bind()
-                tx.appPackages.save(appPackage()).bind()
+                tx.organizations.saveWithOwner(organization(), user()).bind()
+                tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                saveAppPackageFromNewUpload(tx).bind()
                 tx.appPackages.savePermission(appPackagePermission()).bind()
             }
                 .unwrap2()
@@ -1977,8 +1913,9 @@ abstract class DataStoreConformanceTest {
     fun `appPackages savePermission succeeds when maxSdkVersion is present`() {
         withMigratedDataStore { dataStore ->
             dataStore.runTxWithRetry { tx ->
-                tx.externalBlobs.save(committedExternalBlob()).bind()
-                tx.appPackages.save(appPackage()).bind()
+                tx.organizations.saveWithOwner(organization(), user()).bind()
+                tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                saveAppPackageFromNewUpload(tx).bind()
             }
                 .unwrap2()
 
@@ -2239,71 +2176,265 @@ abstract class DataStoreConformanceTest {
     }
 
     @Test
-    fun `externalBlobs commitPending returns EntityNotFound if blob with given ID does not exist`() {
+    fun `appPackages saveFromPendingUpload returns ForeignKeyViolation for a mismatched blob service`() {
         withMigratedDataStore { dataStore ->
-            val error = dataStore.runTxWithRetry { tx ->
-                tx.externalBlobs.commitPending("blob1", ExternalBlob.LocalBlobVersion(1)).bind()
-            }
+            dataStore
+                .runTxWithRetry { tx ->
+                    tx.organizations.saveWithOwner(organization(), user()).bind()
+                    tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                    tx.appDrafts
+                        .saveUpload(incompletePendingAppDraftUpload(), pendingExternalBlob())
+                        .bind()
+                }
+                .unwrap2()
+
+            val error = dataStore
+                .runTxWithRetry { tx ->
+                    tx.appPackages.saveFromPendingUpload(
+                        pendingUploadId = "appDraftUpload1",
+                        appPackage = appPackage(),
+                        blobVersion = ExternalBlob.GcsBlobVersion(1, 1),
+                        replacedBlobDeleteTime = UNIX_EPOCH,
+                    )
+                        .bind()
+                }
                 .unwrap()
                 .unwrapErr()
 
-            assertEquals(DataStoreError.EntityNotFound, error)
+            assertEquals(DataStoreError.ForeignKeyViolation, error)
         }
     }
 
     @Test
-    fun `externalBlobs commitPending returns EntityNotFound if blob exists but is not pending`() {
+    fun `appPackages saveFromPendingUpload marks a replaced package's blob as deleted`() {
         withMigratedDataStore { dataStore ->
             dataStore
-                .runTxWithRetry { tx -> tx.externalBlobs.save(committedExternalBlob()).bind() }
+                .runTxWithRetry { tx ->
+                    tx.organizations.saveWithOwner(organization(), user()).bind()
+                    tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                    saveAppPackageFromNewUpload(tx).bind()
+                    // A draft holds one pending upload at a time, so the committed one makes way
+                    // for the upload the replacement package comes from
+                    tx.appDrafts.deletePendingUploadByAppDraftId("appDraft1", UNIX_EPOCH).bind()
+                    saveAppPackageFromNewUpload(
+                        tx,
+                        appPackage = appPackage(id = "appPackage2", externalBlobId = "blob2"),
+                        pendingUploadId = "appDraftUpload2",
+                        objectKey = "object2",
+                    )
+                        .bind()
+                }
                 .unwrap2()
 
-            val error = dataStore.runTxWithRetry { tx ->
-                tx.externalBlobs.commitPending("blob1", ExternalBlob.LocalBlobVersion(1)).bind()
-            }
-                .unwrap()
-                .unwrapErr()
+            val replacedBlob = dataStore
+                .runTxWithRetry { tx -> tx.externalBlobs.requireById("blob1").bind() }
+                .unwrap2()
+            val replacementPackage = dataStore
+                .runTxWithRetry { tx -> tx.appPackages.findByAppDraftId("appDraft1").bind() }
+                .unwrap2()
 
-            assertEquals(DataStoreError.EntityNotFound, error)
+            assertEquals(
+                ExternalBlob.Status.Deleted(Some(ExternalBlob.LocalBlobVersion(1)), UNIX_EPOCH),
+                replacedBlob.status,
+            )
+            assertEquals(Some("appPackage2"), replacementPackage.map { it.id })
         }
     }
 
     @Test
-    fun `externalBlobs commitPending returns EntityNotFound if pending blob exists but has different service`() {
+    fun `appDrafts completePendingUpload marks the released blob as deleted without a version`() {
         withMigratedDataStore { dataStore ->
             dataStore
-                .runTxWithRetry { tx -> tx.externalBlobs.save(pendingExternalBlob()).bind() }
+                .runTxWithRetry { tx ->
+                    tx.organizations.saveWithOwner(organization(), user()).bind()
+                    tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                    tx.appDrafts
+                        .saveUpload(incompletePendingAppDraftUpload(), pendingExternalBlob())
+                        .bind()
+                }
                 .unwrap2()
 
-            val error = dataStore.runTxWithRetry { tx ->
-                tx.externalBlobs.commitPending("blob1", ExternalBlob.GcsBlobVersion(1, 1)).bind()
-            }
-                .unwrap()
-                .unwrapErr()
+            dataStore
+                .runTxWithRetry { tx ->
+                    tx.appDrafts
+                        .completePendingUpload(
+                            "appDraftUpload1",
+                            AppDraftUploadProcessingError.AppDraftSubmitted,
+                            UNIX_EPOCH,
+                        )
+                        .bind()
+                }
+                .unwrap2()
+            val foundBlob = dataStore
+                .runTxWithRetry { tx -> tx.externalBlobs.requireById("blob1").bind() }
+                .unwrap2()
 
-            assertEquals(DataStoreError.EntityNotFound, error)
+            assertEquals(ExternalBlob.Status.Deleted(None, UNIX_EPOCH), foundBlob.status)
         }
     }
 
     @Test
-    fun `externalBlobs commitPending commits pending blob`() {
+    fun `appDrafts deletePendingUploadByAppDraftId marks the released blob as deleted`() {
         withMigratedDataStore { dataStore ->
             dataStore
-                .runTxWithRetry { tx -> tx.externalBlobs.save(pendingExternalBlob()).bind() }
+                .runTxWithRetry { tx ->
+                    tx.organizations.saveWithOwner(organization(), user()).bind()
+                    tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                    tx.appDrafts
+                        .saveUpload(incompletePendingAppDraftUpload(), pendingExternalBlob())
+                        .bind()
+                }
                 .unwrap2()
 
-            dataStore.runTxWithRetry { tx ->
-                tx.externalBlobs.commitPending("blob1", ExternalBlob.LocalBlobVersion(1)).bind()
-            }
+            dataStore
+                .runTxWithRetry { tx ->
+                    tx.appDrafts.deletePendingUploadByAppDraftId("appDraft1", UNIX_EPOCH).bind()
+                }
+                .unwrap2()
+            val foundBlob = dataStore
+                .runTxWithRetry { tx -> tx.externalBlobs.requireById("blob1").bind() }
+                .unwrap2()
+
+            assertEquals(ExternalBlob.Status.Deleted(None, UNIX_EPOCH), foundBlob.status)
+        }
+    }
+
+    @Test
+    fun `appDrafts deleteById marks the app package's blob as deleted`() {
+        withMigratedDataStore { dataStore ->
+            dataStore
+                .runTxWithRetry { tx ->
+                    tx.organizations.saveWithOwner(organization(), user()).bind()
+                    tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                    saveAppPackageFromNewUpload(tx).bind()
+                }
+                .unwrap2()
+
+            dataStore
+                .runTxWithRetry { tx -> tx.appDrafts.deleteById("appDraft1", UNIX_EPOCH).bind() }
                 .unwrap2()
             val foundBlob = dataStore
                 .runTxWithRetry { tx -> tx.externalBlobs.requireById("blob1").bind() }
                 .unwrap2()
 
             assertEquals(
-                ExternalBlob.Status.Committed(ExternalBlob.LocalBlobVersion(1)),
+                ExternalBlob.Status.Deleted(Some(ExternalBlob.LocalBlobVersion(1)), UNIX_EPOCH),
                 foundBlob.status,
             )
+        }
+    }
+
+    @Test
+    fun `appDrafts deleteById marks the pending upload's blob as deleted`() {
+        withMigratedDataStore { dataStore ->
+            dataStore
+                .runTxWithRetry { tx ->
+                    tx.organizations.saveWithOwner(organization(), user()).bind()
+                    tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                    tx.appDrafts
+                        .saveUpload(incompletePendingAppDraftUpload(), pendingExternalBlob())
+                        .bind()
+                }
+                .unwrap2()
+
+            dataStore
+                .runTxWithRetry { tx -> tx.appDrafts.deleteById("appDraft1", UNIX_EPOCH).bind() }
+                .unwrap2()
+            val foundBlob = dataStore
+                .runTxWithRetry { tx -> tx.externalBlobs.requireById("blob1").bind() }
+                .unwrap2()
+
+            assertEquals(ExternalBlob.Status.Deleted(None, UNIX_EPOCH), foundBlob.status)
+        }
+    }
+
+    @Test
+    fun `appDrafts deleteById marks a listing icon upload's blob as deleted`() {
+        withMigratedDataStore { dataStore ->
+            dataStore
+                .runTxWithRetry { tx ->
+                    tx.organizations.saveWithOwner(organization(), user()).bind()
+                    tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                    tx.appDrafts.saveListing(appDraftListing()).bind()
+                    tx.appDrafts
+                        .saveListingIconUpload(
+                            incompletePendingAppDraftListingIconUpload(),
+                            pendingExternalBlob(),
+                        )
+                        .bind()
+                }
+                .unwrap2()
+
+            dataStore
+                .runTxWithRetry { tx -> tx.appDrafts.deleteById("appDraft1", UNIX_EPOCH).bind() }
+                .unwrap2()
+            val foundBlob = dataStore
+                .runTxWithRetry { tx -> tx.externalBlobs.requireById("blob1").bind() }
+                .unwrap2()
+
+            assertEquals(ExternalBlob.Status.Deleted(None, UNIX_EPOCH), foundBlob.status)
+        }
+    }
+
+    @Test
+    fun `appDrafts deletePendingListingIconUploadByListingId marks the released blob as deleted`() {
+        withMigratedDataStore { dataStore ->
+            dataStore
+                .runTxWithRetry { tx ->
+                    tx.organizations.saveWithOwner(organization(), user()).bind()
+                    tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                    tx.appDrafts.saveListing(appDraftListing()).bind()
+                    tx.appDrafts
+                        .saveListingIconUpload(
+                            incompletePendingAppDraftListingIconUpload(),
+                            pendingExternalBlob(),
+                        )
+                        .bind()
+                }
+                .unwrap2()
+
+            dataStore
+                .runTxWithRetry { tx ->
+                    tx.appDrafts
+                        .deletePendingListingIconUploadByListingId("appDraftListing1", UNIX_EPOCH)
+                        .bind()
+                }
+                .unwrap2()
+            val foundBlob = dataStore
+                .runTxWithRetry { tx -> tx.externalBlobs.requireById("blob1").bind() }
+                .unwrap2()
+
+            assertEquals(ExternalBlob.Status.Deleted(None, UNIX_EPOCH), foundBlob.status)
+        }
+    }
+
+    @Test
+    fun `appDrafts deleteListingById marks the pending icon upload's blob as deleted`() {
+        withMigratedDataStore { dataStore ->
+            dataStore
+                .runTxWithRetry { tx ->
+                    tx.organizations.saveWithOwner(organization(), user()).bind()
+                    tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                    tx.appDrafts.saveListing(appDraftListing()).bind()
+                    tx.appDrafts
+                        .saveListingIconUpload(
+                            incompletePendingAppDraftListingIconUpload(),
+                            pendingExternalBlob(),
+                        )
+                        .bind()
+                }
+                .unwrap2()
+
+            dataStore
+                .runTxWithRetry { tx ->
+                    tx.appDrafts.deleteListingById("appDraftListing1", UNIX_EPOCH).bind()
+                }
+                .unwrap2()
+            val foundBlob = dataStore
+                .runTxWithRetry { tx -> tx.externalBlobs.requireById("blob1").bind() }
+                .unwrap2()
+
+            assertEquals(ExternalBlob.Status.Deleted(None, UNIX_EPOCH), foundBlob.status)
         }
     }
 
@@ -2319,124 +2450,96 @@ abstract class DataStoreConformanceTest {
     }
 
     @Test
-    fun `externalBlobs markDeleted returns EntityNotFound if blob does not exist`() {
+    fun `externalBlobs findById round-trips a blob saved with its pending upload`() {
         withMigratedDataStore { dataStore ->
-            val error = dataStore
-                .runTxWithRetry { tx -> tx.externalBlobs.markDeleted("blob1", UNIX_EPOCH).bind() }
-                .unwrap()
-                .unwrapErr()
-
-            assertEquals(DataStoreError.EntityNotFound, error)
-        }
-    }
-
-    @Test
-    fun `externalBlobs markDeleted marks existing blob as deleted`() {
-        withMigratedDataStore { dataStore ->
-            dataStore
-                .runTxWithRetry { tx -> tx.externalBlobs.save(committedExternalBlob()).bind() }
-                .unwrap2()
+            val originalBlob = pendingExternalBlob()
 
             dataStore
-                .runTxWithRetry { tx -> tx.externalBlobs.markDeleted("blob1", UNIX_EPOCH).bind() }
+                .runTxWithRetry { tx ->
+                    tx.organizations.saveWithOwner(organization(), user()).bind()
+                    tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                    tx.appDrafts.saveUpload(incompletePendingAppDraftUpload(), originalBlob).bind()
+                }
                 .unwrap2()
-            val foundBlob = dataStore
-                .runTxWithRetry { tx -> tx.externalBlobs.requireById("blob1").bind() }
-                .unwrap2()
-
-            assertEquals(
-                ExternalBlob.Status.Deleted(Some(ExternalBlob.LocalBlobVersion(1)), UNIX_EPOCH),
-                foundBlob.status,
-            )
-        }
-    }
-
-    @Test
-    fun `externalBlobs markDeleted marks pending blob as deleted without a version`() {
-        withMigratedDataStore { dataStore ->
-            dataStore
-                .runTxWithRetry { tx -> tx.externalBlobs.save(pendingExternalBlob()).bind() }
-                .unwrap2()
-
-            dataStore
-                .runTxWithRetry { tx -> tx.externalBlobs.markDeleted("blob1", UNIX_EPOCH).bind() }
-                .unwrap2()
-            val foundBlob = dataStore
-                .runTxWithRetry { tx -> tx.externalBlobs.requireById("blob1").bind() }
-                .unwrap2()
-
-            assertEquals(ExternalBlob.Status.Deleted(None, UNIX_EPOCH), foundBlob.status)
-        }
-    }
-
-    @Test
-    fun `externalBlobs save returns UniqueConstraintViolation for duplicate ID`() {
-        withMigratedDataStore { dataStore ->
-            val blob1 = committedExternalBlob(bucketName = "bucket1", objectKey = "object1")
-            val blob2 = committedExternalBlob(bucketName = "bucket2", objectKey = "bucket2")
-            dataStore.runTxWithRetry { tx -> tx.externalBlobs.save(blob1).bind() }.unwrap2()
-
-            val error = dataStore
-                .runTxWithRetry { tx -> tx.externalBlobs.save(blob2).bind() }
-                .unwrap()
-                .unwrapErr()
-
-            assertEquals(DataStoreError.UniqueConstraintViolation, error)
-        }
-    }
-
-    @Test
-    fun `externalBlobs save returns UniqueConstraintViolation for duplicate (service, bucketName, objectKey)`() {
-        withMigratedDataStore { dataStore ->
-            dataStore
-                .runTxWithRetry { tx -> tx.externalBlobs.save(committedExternalBlob("blob1")).bind() }
-                .unwrap2()
-
-            val error = dataStore
-                .runTxWithRetry { tx -> tx.externalBlobs.save(committedExternalBlob("blob2")).bind() }
-                .unwrap()
-                .unwrapErr()
-
-            assertEquals(DataStoreError.UniqueConstraintViolation, error)
-        }
-    }
-
-    @Test
-    fun `externalBlobs save returns success for duplicate (bucketName, objectKey) with different service`() {
-        withMigratedDataStore { dataStore ->
-            val blob1 = ExternalBlob.Local(
-                id = "blob1",
-                createTime = UNIX_EPOCH,
-                bucketName = "bucket1",
-                objectKey = "object1",
-                status = ExternalBlob.Status.Committed(ExternalBlob.LocalBlobVersion(1)),
-            )
-            val blob2 = ExternalBlob.Gcs(
-                id = "blob2",
-                createTime = UNIX_EPOCH,
-                bucketName = "bucket1",
-                objectKey = "object1",
-                status = ExternalBlob.Status.Committed(ExternalBlob.GcsBlobVersion(1, 1)),
-            )
-            dataStore.runTxWithRetry { tx -> tx.externalBlobs.save(blob1).bind() }.unwrap2()
-
-            dataStore.runTxWithRetry { tx -> tx.externalBlobs.save(blob2).bind() }.unwrap2()
-        }
-    }
-
-    @Test
-    fun `externalBlobs save and findById round-trip data`() {
-        withMigratedDataStore { dataStore ->
-            val originalBlob = committedExternalBlob()
-            dataStore
-                .runTxWithRetry { tx -> tx.externalBlobs.save(originalBlob).bind() }
-                .unwrap2()
-
             val foundBlob = dataStore
                 .runTxWithRetry { tx -> tx.externalBlobs.findById(originalBlob.id).bind() }
                 .unwrap2()
 
             assertEquals(Some(originalBlob), foundBlob)
+        }
+    }
+
+    @Test
+    fun `appDrafts saveUpload returns UniqueConstraintViolation for a blob at an occupied location`() {
+        withMigratedDataStore { dataStore ->
+            dataStore
+                .runTxWithRetry { tx ->
+                    tx.organizations.saveWithOwner(organization(), user()).bind()
+                    tx.appDrafts.save(unsubmittedAppDraft(id = "appDraft1")).bind()
+                    tx.appDrafts.save(unsubmittedAppDraft(id = "appDraft2")).bind()
+                    tx.appDrafts
+                        .saveUpload(incompletePendingAppDraftUpload(), pendingExternalBlob())
+                        .bind()
+                }
+                .unwrap2()
+
+            val error = dataStore
+                .runTxWithRetry { tx ->
+                    tx.appDrafts.saveUpload(
+                        incompletePendingAppDraftUpload(
+                            id = "appDraftUpload2",
+                            appDraftId = "appDraft2",
+                            externalBlobId = "blob2",
+                            objectKey = "object2",
+                        ),
+                        pendingExternalBlob(id = "blob2", objectKey = "object1"),
+                    )
+                        .bind()
+                }
+                .unwrap()
+                .unwrapErr()
+
+            assertEquals(DataStoreError.UniqueConstraintViolation, error)
+        }
+    }
+
+    @Test
+    fun `appDrafts saveUpload allows the same location on a different service`() {
+        withMigratedDataStore { dataStore ->
+            val gcsBlob = ExternalBlob.Gcs(
+                id = "blob2",
+                createTime = UNIX_EPOCH,
+                bucketName = "bucket1",
+                objectKey = "object1",
+                status = ExternalBlob.Status.Pending,
+            )
+
+            dataStore
+                .runTxWithRetry { tx ->
+                    tx.organizations.saveWithOwner(organization(), user()).bind()
+                    tx.appDrafts.save(unsubmittedAppDraft(id = "appDraft1")).bind()
+                    tx.appDrafts.save(unsubmittedAppDraft(id = "appDraft2")).bind()
+                    tx.appDrafts
+                        .saveUpload(incompletePendingAppDraftUpload(), pendingExternalBlob())
+                        .bind()
+                    tx.appDrafts.saveUpload(
+                        incompletePendingAppDraftUpload(
+                            id = "appDraftUpload2",
+                            appDraftId = "appDraft2",
+                            externalBlobId = "blob2",
+                            objectKey = "object2",
+                        ),
+                        gcsBlob,
+                    )
+                        .bind()
+                }
+                .unwrap2()
+
+            val foundBlob = dataStore
+                .runTxWithRetry { tx -> tx.externalBlobs.findById("blob2").bind() }
+                .unwrap2()
+
+            assertEquals(Some(gcsBlob), foundBlob)
         }
     }
 
@@ -2752,14 +2855,16 @@ abstract class DataStoreConformanceTest {
             },
             TextColumnConstraintTestCase("appPackages.id") { tx, invalid ->
                 either {
-                    tx.externalBlobs.save(committedExternalBlob()).bind()
-                    tx.appPackages.save(appPackage(id = invalid)).bind()
+                    tx.organizations.saveWithOwner(organization(), user()).bind()
+                    tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                    saveAppPackageFromNewUpload(tx, appPackage(id = invalid)).bind()
                 }
             },
             TextColumnConstraintTestCase("appPackagePermissions.id") { tx, invalid ->
                 either {
-                    tx.externalBlobs.save(committedExternalBlob()).bind()
-                    tx.appPackages.save(appPackage()).bind()
+                    tx.organizations.saveWithOwner(organization(), user()).bind()
+                    tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                    saveAppPackageFromNewUpload(tx).bind()
                     tx.appPackages.savePermission(appPackagePermission(id = invalid)).bind()
                 }
             },
@@ -2780,7 +2885,10 @@ abstract class DataStoreConformanceTest {
                     tx.organizations.saveWithOwner(organization(), user()).bind()
                     tx.appDrafts.save(unsubmittedAppDraft()).bind()
                     tx.appDrafts
-                        .saveUpload(pendingAppDraftUpload(id = invalid))
+                        .saveUpload(
+                            incompletePendingAppDraftUpload(id = invalid),
+                            pendingExternalBlob(),
+                        )
                         .bind()
                 }
             },
@@ -2789,9 +2897,11 @@ abstract class DataStoreConformanceTest {
                     tx.organizations.saveWithOwner(organization(), user()).bind()
                     tx.appDrafts.save(unsubmittedAppDraft()).bind()
                     tx.appDrafts.saveListing(appDraftListing()).bind()
-                    tx.externalBlobs.save(pendingExternalBlob()).bind()
                     tx.appDrafts
-                        .saveListingIconUpload(pendingAppDraftListingIconUpload(id = invalid))
+                        .saveListingIconUpload(
+                            incompletePendingAppDraftListingIconUpload(id = invalid),
+                            pendingExternalBlob(),
+                        )
                         .bind()
                 }
             },
@@ -2854,16 +2964,20 @@ abstract class DataStoreConformanceTest {
                 },
                 TextColumnConstraintTestCase("appPackages.versionName") { tx, invalid ->
                     either {
-                        tx.externalBlobs.save(committedExternalBlob()).bind()
-                        tx.appPackages
-                            .save(appPackage(versionName = VersionName.fromString(invalid).unwrap()))
+                        tx.organizations.saveWithOwner(organization(), user()).bind()
+                        tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                        saveAppPackageFromNewUpload(
+                            tx,
+                            appPackage(versionName = VersionName.fromString(invalid).unwrap()),
+                        )
                             .bind()
                     }
                 },
                 TextColumnConstraintTestCase("appPackagePermissions.name") { tx, invalid ->
                     either {
-                        tx.externalBlobs.save(committedExternalBlob()).bind()
-                        tx.appPackages.save(appPackage()).bind()
+                        tx.organizations.saveWithOwner(organization(), user()).bind()
+                        tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                        saveAppPackageFromNewUpload(tx).bind()
                         tx.appPackages
                             .savePermission(
                                 appPackagePermission(name = NameAttribute.fromString(invalid).unwrap()),
@@ -2873,18 +2987,33 @@ abstract class DataStoreConformanceTest {
                 },
                 TextColumnConstraintTestCase("externalBlobs.bucketName") { tx, invalid ->
                     either {
-                        tx.externalBlobs.save(committedExternalBlob(bucketName = invalid)).bind()
+                        tx.organizations.saveWithOwner(organization(), user()).bind()
+                        tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                        tx.appDrafts.saveUpload(
+                            incompletePendingAppDraftUpload(),
+                            pendingExternalBlob(bucketName = invalid),
+                        )
+                            .bind()
                     }
                 },
                 TextColumnConstraintTestCase("externalBlobs.objectKey") { tx, invalid ->
                     either {
-                        tx.externalBlobs.save(committedExternalBlob(objectKey = invalid)).bind()
+                        tx.organizations.saveWithOwner(organization(), user()).bind()
+                        tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                        tx.appDrafts.saveUpload(
+                            incompletePendingAppDraftUpload(),
+                            pendingExternalBlob(objectKey = invalid),
+                        )
+                            .bind()
                     }
                 },
                 TextColumnConstraintTestCase("pendingAppDraftUploads.objectKey") { tx, invalid ->
                     either {
-                        tx.externalBlobs.save(pendingExternalBlob()).bind()
-                        tx.appDrafts.saveUpload(pendingAppDraftUpload(objectKey = invalid)).bind()
+                        tx.appDrafts.saveUpload(
+                            incompletePendingAppDraftUpload(objectKey = invalid),
+                            pendingExternalBlob(),
+                        )
+                            .bind()
                     }
                 },
             )
@@ -2895,120 +3024,106 @@ abstract class DataStoreConformanceTest {
         }
 
         @JvmStatic
-        private fun appDraftUploadProcessingResults(): List<Either<AppDraftUploadProcessingError, Unit>> = listOf(
-            Unit.right(),
-            AppDraftUploadProcessingError.AppDraftSubmitted.left(),
-            AppDraftUploadProcessingError.ApkSetParseFailed(ApkSetParseError.InvalidFormat).left(),
-            AppDraftUploadProcessingError.ApkSetParseFailed(ApkSetParseError.Io).left(),
+        private fun appDraftUploadProcessingErrors(): List<AppDraftUploadProcessingError> = listOf(
+            AppDraftUploadProcessingError.AppDraftSubmitted,
+            AppDraftUploadProcessingError.ApkSetParseFailed(ApkSetParseError.InvalidFormat),
+            AppDraftUploadProcessingError.ApkSetParseFailed(ApkSetParseError.Io),
             AppDraftUploadProcessingError.ApkSetParseFailed(
                 ApkSetParseError.Policy.Missing64BitCode,
-            ).left(),
+            ),
             AppDraftUploadProcessingError.ApkSetParseFailed(
                 ApkSetParseError.Policy.LowTargetSdk,
-            ).left(),
+            ),
             AppDraftUploadProcessingError.ApkSetParseFailed(
                 ApkSetParseError.Policy.Apk(ApkParseError.Policy.NoModernSignature),
-            ).left(),
+            ),
             AppDraftUploadProcessingError.ApkSetParseFailed(
                 ApkSetParseError.Policy.Apk(ApkParseError.Policy.SignedWithDebugCert),
-            ).left(),
+            ),
             AppDraftUploadProcessingError.ApkSetParseFailed(
                 ApkSetParseError.Policy.Apk(ApkParseError.Policy.SignedWithMultipleCerts),
-            ).left(),
+            ),
             AppDraftUploadProcessingError.ApkSetParseFailed(
                 ApkSetParseError.Policy.Apk(ApkParseError.Policy.Unverified),
-            ).left(),
+            ),
             AppDraftUploadProcessingError.ApkSetParseFailed(
                 ApkSetParseError.Policy.Apk(
                     ApkParseError.Policy.Manifest(AndroidManifest.FromXmlError.Policy.DebuggableTrue),
                 ),
-            ).left(),
+            ),
             AppDraftUploadProcessingError.ApkSetParseFailed(
                 ApkSetParseError.Policy.Apk(
                     ApkParseError.Policy.Manifest(AndroidManifest.FromXmlError.Policy.TestOnlyTrue),
                 ),
-            ).left(),
+            ),
             AppDraftUploadProcessingError.ApkSetParseFailed(
                 ApkSetParseError.Policy.Apk(
                     ApkParseError.Policy.Manifest(
                         AndroidManifest.FromXmlError.Policy.MultipleApplicationElements,
                     ),
                 ),
-            ).left(),
+            ),
             AppDraftUploadProcessingError.ApkSetParseFailed(
                 ApkSetParseError.Policy.Apk(
                     ApkParseError.Policy.Manifest(
                         AndroidManifest.FromXmlError.Policy.MultipleUsesSdkElements,
                     ),
                 ),
-            ).left(),
+            ),
             AppDraftUploadProcessingError.ApkSetParseFailed(
                 ApkSetParseError.Policy.Apk(
                     ApkParseError.Policy.Manifest(AndroidManifest.FromXmlError.Policy.NoVersionCode),
                 ),
-            ).left(),
+            ),
             AppDraftUploadProcessingError.ApkSetParseFailed(
                 ApkSetParseError.Policy.Apk(
                     ApkParseError.Policy.Manifest(
                         AndroidManifest.FromXmlError.Policy.DuplicatePermission,
                     ),
                 ),
-            ).left(),
+            ),
             AppDraftUploadProcessingError.ApkSetParseFailed(
                 ApkSetParseError.Policy.Apk(
                     ApkParseError.Policy.Manifest(
                         AndroidManifest.FromXmlError.Policy.InvalidApplicationId,
                     ),
                 ),
-            ).left(),
+            ),
             AppDraftUploadProcessingError.ApkSetParseFailed(
                 ApkSetParseError.Policy.Apk(
                     ApkParseError.Policy.Manifest(
                         AndroidManifest.FromXmlError.Policy.PermissionMaxSdkOutOfRange,
                     ),
                 ),
-            ).left(),
+            ),
             AppDraftUploadProcessingError.ApkSetParseFailed(
                 ApkSetParseError.Policy.Apk(
                     ApkParseError.Policy.Manifest(
                         AndroidManifest.FromXmlError.Policy.PermissionNameTooLong,
                     ),
                 ),
-            ).left(),
+            ),
             AppDraftUploadProcessingError.ApkSetParseFailed(
                 ApkSetParseError.Policy.Apk(
                     ApkParseError.Policy.Manifest(
                         AndroidManifest.FromXmlError.Policy.VersionCodeOutOfRange,
                     ),
                 ),
-            ).left(),
+            ),
             AppDraftUploadProcessingError.ApkSetParseFailed(
                 ApkSetParseError.Policy.Apk(
                     ApkParseError.Policy.Manifest(
                         AndroidManifest.FromXmlError.Policy.VersionCodeMajorNonZero,
                     ),
                 ),
-            ).left(),
+            ),
             AppDraftUploadProcessingError.ApkSetParseFailed(
                 ApkSetParseError.Policy.Apk(
                     ApkParseError.Policy.Manifest(
                         AndroidManifest.FromXmlError.Policy.VersionNameTooLong,
                     ),
                 ),
-            ).left(),
-        )
-
-        @JvmStatic
-        private fun appDraftUploadResults(): List<Option<Either<AppDraftUploadProcessingError, Unit>>> =
-            listOf(None) + appDraftUploadProcessingResults().map { Some(it) }
-
-        @JvmStatic
-        private fun appDraftListingIconUploadProcessingResults()
-                : List<AppDraftListingIconUploadProcessingResult> = listOf(
-            AppDraftListingIconUploadProcessingResult.Success,
-            AppDraftListingIconUploadProcessingResult.Error.AppDraftSubmitted,
-            AppDraftListingIconUploadProcessingResult.Error.InvalidImage,
-            AppDraftListingIconUploadProcessingResult.Error.IncorrectImageDimensions,
+            ),
         )
 
         data class AuthzHasPermissionReturnsTrueWithMinimalRelationships(

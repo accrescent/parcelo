@@ -12,7 +12,6 @@ import app.accrescent.server.parcelo.adapters.driven.randomsource.DeterministicR
 import app.accrescent.server.parcelo.adapters.driven.timestampsource.ConstantTimestampSource
 import app.accrescent.server.parcelo.appDraftListing
 import app.accrescent.server.parcelo.appPackage
-import app.accrescent.server.parcelo.committedExternalBlob
 import app.accrescent.server.parcelo.core.unwrap
 import app.accrescent.server.parcelo.core.unwrap2
 import app.accrescent.server.parcelo.core.unwrapErr
@@ -60,10 +59,11 @@ import app.accrescent.server.parcelo.domain.ports.driving.console.UploadAppDraft
 import app.accrescent.server.parcelo.domain.ports.driving.console.UploadAppDraftRequest
 import app.accrescent.server.parcelo.domain.ports.driving.console.UploadAppDraftResponse
 import app.accrescent.server.parcelo.domain.uri.HttpUri
+import app.accrescent.server.parcelo.incompletePendingAppDraftListingIconUpload
+import app.accrescent.server.parcelo.incompletePendingAppDraftUpload
 import app.accrescent.server.parcelo.organization
-import app.accrescent.server.parcelo.pendingAppDraftListingIconUpload
-import app.accrescent.server.parcelo.pendingAppDraftUpload
 import app.accrescent.server.parcelo.pendingExternalBlob
+import app.accrescent.server.parcelo.saveAppPackageFromNewUpload
 import app.accrescent.server.parcelo.unsubmittedAppDraft
 import app.accrescent.server.parcelo.user
 import arrow.core.Either
@@ -170,9 +170,8 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
-                tx.externalBlobs.save(committedExternalBlob()).bind()
-                tx.appPackages.save(appPackage()).bind()
-                tx.appDrafts.save(unsubmittedAppDraft(appPackageId = Some("appPackage1"))).bind()
+                tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                saveAppPackageFromNewUpload(tx).bind()
             }
                 .unwrap2()
             val blobStorage = LocalBlobStorage(randomSource)
@@ -244,9 +243,8 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
-                tx.externalBlobs.save(committedExternalBlob()).bind()
-                tx.appPackages.save(appPackage()).bind()
-                tx.appDrafts.save(unsubmittedAppDraft(appPackageId = Some("appPackage1"))).bind()
+                tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                saveAppPackageFromNewUpload(tx).bind()
                 tx.appDrafts.saveListing(appDraftListing()).bind()
                 tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
                 tx.appDrafts.updateSubmitTime("appDraft1", UNIX_EPOCH).bind()
@@ -322,9 +320,8 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
-                tx.externalBlobs.save(committedExternalBlob()).bind()
-                tx.appPackages.save(appPackage()).bind()
-                tx.appDrafts.save(unsubmittedAppDraft(appPackageId = Some("appPackage1"))).bind()
+                tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                saveAppPackageFromNewUpload(tx).bind()
                 tx.appDrafts.saveListing(appDraftListing()).bind()
                 tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
                 tx.appDrafts.updateSubmitTime("appDraft1", UNIX_EPOCH).bind()
@@ -464,9 +461,8 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
-                tx.externalBlobs.save(committedExternalBlob()).bind()
-                tx.appPackages.save(appPackage()).bind()
-                tx.appDrafts.save(unsubmittedAppDraft(appPackageId = Some("appPackage1"))).bind()
+                tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                saveAppPackageFromNewUpload(tx).bind()
                 tx.appDrafts.saveListing(appDraftListing()).bind()
                 tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
                 tx.appDrafts.updateSubmitTime("appDraft1", UNIX_EPOCH).bind()
@@ -501,9 +497,8 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
-                tx.externalBlobs.save(committedExternalBlob()).bind()
-                tx.appPackages.save(appPackage()).bind()
-                tx.appDrafts.save(unsubmittedAppDraft(appPackageId = Some("appPackage1"))).bind()
+                tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                saveAppPackageFromNewUpload(tx).bind()
             }.unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
 
@@ -524,18 +519,27 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
-                tx.externalBlobs.save(committedExternalBlob("blob1", objectKey = "object1")).bind()
-                tx.externalBlobs.save(committedExternalBlob("blob2", objectKey = "object2")).bind()
-                tx.appPackages.save(appPackage("appPackage1", externalBlobId = "blob1")).bind()
-                tx.appPackages.save(appPackage("appPackage2", externalBlobId = "blob2")).bind()
-                tx.appDrafts
-                    .save(unsubmittedAppDraft("appDraft2", appPackageId = Some("appPackage1")))
+                tx.appDrafts.save(unsubmittedAppDraft("appDraft2")).bind()
+                saveAppPackageFromNewUpload(
+                    tx,
+                    appPackage = appPackage("appPackage1", appDraftId = "appDraft2"),
+                    objectKey = "object1",
+                )
                     .bind()
                 tx.appDrafts.saveListing(appDraftListing("appDraftListing2", "appDraft2")).bind()
                 tx.appDrafts.updateDefaultListing("appDraft2", Some("appDraftListing2")).bind()
                 tx.appDrafts.updateSubmitTime("appDraft2", UNIX_EPOCH).bind()
-                tx.appDrafts
-                    .save(unsubmittedAppDraft("appDraft1", appPackageId = Some("appPackage2")))
+                tx.appDrafts.save(unsubmittedAppDraft("appDraft1")).bind()
+                saveAppPackageFromNewUpload(
+                    tx,
+                    appPackage = appPackage(
+                        "appPackage2",
+                        appDraftId = "appDraft1",
+                        externalBlobId = "blob2",
+                    ),
+                    pendingUploadId = "appDraftUpload2",
+                    objectKey = "object2",
+                )
                     .bind()
                 tx.appDrafts.saveListing(appDraftListing("appDraftListing1", "appDraft1")).bind()
                 tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
@@ -554,9 +558,8 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
-                tx.externalBlobs.save(committedExternalBlob()).bind()
-                tx.appPackages.save(appPackage()).bind()
-                tx.appDrafts.save(unsubmittedAppDraft(appPackageId = Some("appPackage1"))).bind()
+                tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                saveAppPackageFromNewUpload(tx).bind()
                 tx.appDrafts.saveListing(appDraftListing()).bind()
                 tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
                 tx.apps.saveWithDefaultListing(
@@ -578,9 +581,8 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
-                tx.externalBlobs.save(committedExternalBlob()).bind()
-                tx.appPackages.save(appPackage()).bind()
-                tx.appDrafts.save(unsubmittedAppDraft(appPackageId = Some("appPackage1"))).bind()
+                tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                saveAppPackageFromNewUpload(tx).bind()
                 tx.appDrafts.saveListing(appDraftListing()).bind()
                 tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
             }
@@ -616,9 +618,8 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
-                tx.externalBlobs.save(committedExternalBlob()).bind()
-                tx.appPackages.save(appPackage()).bind()
-                tx.appDrafts.save(unsubmittedAppDraft(appPackageId = Some("appPackage1"))).bind()
+                tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                saveAppPackageFromNewUpload(tx).bind()
                 tx.appDrafts.saveListing(appDraftListing()).bind()
                 tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
                 tx.appDrafts.updateSubmitTime("appDraft1", UNIX_EPOCH).bind()
@@ -680,9 +681,8 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
-                tx.externalBlobs.save(committedExternalBlob()).bind()
-                tx.appPackages.save(appPackage()).bind()
-                tx.appDrafts.save(unsubmittedAppDraft(appPackageId = Some("appPackage1"))).bind()
+                tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                saveAppPackageFromNewUpload(tx).bind()
                 tx.appDrafts.saveListing(appDraftListing()).bind()
                 tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
                 tx.appDrafts.updateSubmitTime("appDraft1", UNIX_EPOCH).bind()
@@ -726,8 +726,9 @@ class AppDraftApiImplTest {
                 dataStore.runTxWithRetry { tx ->
                     tx.organizations.saveWithOwner(organization(), user()).bind()
                     tx.appDrafts.save(unsubmittedAppDraft()).bind()
-                    tx.externalBlobs.save(pendingExternalBlob()).bind()
-                    tx.appDrafts.saveUpload(pendingAppDraftUpload()).bind()
+                    tx.appDrafts
+                        .saveUpload(incompletePendingAppDraftUpload(), pendingExternalBlob())
+                        .bind()
                 }.unwrap2()
                 val appDraftApi = makeAppDraftApi(dataStore, blobStorage = blobStorage)
 
@@ -742,13 +743,12 @@ class AppDraftApiImplTest {
 
                 assertEquals(
                     Some(
-                        PendingAppDraftUpload(
+                        PendingAppDraftUpload.Incomplete(
                             id = "adu_1uMy9o9BqyoxomLjIEbctU",
                             appDraftId = "appDraft1",
-                            externalBlobId = "blob_7Vg3AgHSuhCI6g3btbAESz",
                             objectKey = "obj_2wTa5P82Lwqd50UvNyQRad",
                             createTime = UNIX_EPOCH,
-                            result = None,
+                            externalBlobId = "blob_7Vg3AgHSuhCI6g3btbAESz",
                         )
                     ),
                     replacedUpload,
@@ -801,9 +801,8 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
-                tx.externalBlobs.save(committedExternalBlob()).bind()
-                tx.appPackages.save(appPackage()).bind()
-                tx.appDrafts.save(unsubmittedAppDraft(appPackageId = Some("appPackage1"))).bind()
+                tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                saveAppPackageFromNewUpload(tx).bind()
                 tx.appDrafts.saveListing(appDraftListing()).bind()
                 tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
                 tx.appDrafts.updateSubmitTime("appDraft1", UNIX_EPOCH).bind()
@@ -843,9 +842,8 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
-                tx.externalBlobs.save(committedExternalBlob()).bind()
-                tx.appPackages.save(appPackage()).bind()
-                tx.appDrafts.save(unsubmittedAppDraft(appPackageId = Some("appPackage1"))).bind()
+                tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                saveAppPackageFromNewUpload(tx).bind()
             }
                 .unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
@@ -865,9 +863,8 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
-                tx.externalBlobs.save(committedExternalBlob()).bind()
-                tx.appPackages.save(appPackage()).bind()
-                tx.appDrafts.save(unsubmittedAppDraft(appPackageId = Some("appPackage1"))).bind()
+                tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                saveAppPackageFromNewUpload(tx).bind()
             }
                 .unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
@@ -932,9 +929,8 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
-                tx.externalBlobs.save(committedExternalBlob()).bind()
-                tx.appPackages.save(appPackage()).bind()
-                tx.appDrafts.save(unsubmittedAppDraft(appPackageId = Some("appPackage1"))).bind()
+                tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                saveAppPackageFromNewUpload(tx).bind()
                 tx.appDrafts.saveListing(appDraftListing()).bind()
                 tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
                 tx.appDrafts.updateSubmitTime("appDraft1", UNIX_EPOCH).bind()
@@ -1107,9 +1103,8 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
-                tx.externalBlobs.save(committedExternalBlob()).bind()
-                tx.appPackages.save(appPackage()).bind()
-                tx.appDrafts.save(unsubmittedAppDraft(appPackageId = Some("appPackage1"))).bind()
+                tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                saveAppPackageFromNewUpload(tx).bind()
                 tx.appDrafts.saveListing(appDraftListing()).bind()
                 tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
                 tx.appDrafts.updateSubmitTime("appDraft1", UNIX_EPOCH).bind()
@@ -1180,9 +1175,8 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
-                tx.externalBlobs.save(committedExternalBlob()).bind()
-                tx.appPackages.save(appPackage()).bind()
-                tx.appDrafts.save(unsubmittedAppDraft(appPackageId = Some("appPackage1"))).bind()
+                tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                saveAppPackageFromNewUpload(tx).bind()
                 tx.appDrafts.saveListing(appDraftListing()).bind()
                 tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
                 tx.appDrafts.updateSubmitTime("appDraft1", UNIX_EPOCH).bind()
@@ -1239,8 +1233,12 @@ class AppDraftApiImplTest {
                     tx.organizations.saveWithOwner(organization(), user()).bind()
                     tx.appDrafts.save(unsubmittedAppDraft()).bind()
                     tx.appDrafts.saveListing(appDraftListing()).bind()
-                    tx.externalBlobs.save(pendingExternalBlob()).bind()
-                    tx.appDrafts.saveListingIconUpload(pendingAppDraftListingIconUpload()).bind()
+                    tx.appDrafts
+                        .saveListingIconUpload(
+                            incompletePendingAppDraftListingIconUpload(),
+                            pendingExternalBlob(),
+                        )
+                        .bind()
                 }.unwrap2()
                 val appDraftApi = makeAppDraftApi(dataStore, blobStorage = blobStorage)
 
@@ -1257,13 +1255,12 @@ class AppDraftApiImplTest {
 
                 assertEquals(
                     Some(
-                        PendingAppDraftListingIconUpload(
+                        PendingAppDraftListingIconUpload.Incomplete(
                             id = "adliu_1uMy9o9BqyoxomLjIEbctU",
                             appDraftListingId = "appDraftListing1",
-                            externalBlobId = "blob_7Vg3AgHSuhCI6g3btbAESz",
                             objectKey = "obj_2wTa5P82Lwqd50UvNyQRad",
                             createTime = UNIX_EPOCH,
-                            result = None,
+                            externalBlobId = "blob_7Vg3AgHSuhCI6g3btbAESz",
                         )
                     ),
                     replacedUpload,
@@ -1306,9 +1303,8 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
-                tx.externalBlobs.save(committedExternalBlob()).bind()
-                tx.appPackages.save(appPackage()).bind()
-                tx.appDrafts.save(unsubmittedAppDraft(appPackageId = Some("appPackage1"))).bind()
+                tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                saveAppPackageFromNewUpload(tx).bind()
                 tx.appDrafts.saveListing(appDraftListing()).bind()
                 tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
                 tx.appDrafts.updateSubmitTime("appDraft1", ConstantTimestampSource().now()).bind()

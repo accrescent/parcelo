@@ -23,6 +23,7 @@ import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppPackagePer
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStore
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStoreError
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.ExternalBlob
+import app.accrescent.server.parcelo.domain.ports.driven.datastore.PendingAppDraftUpload
 import app.accrescent.server.parcelo.domain.ports.driven.file.TempFile
 import app.accrescent.server.parcelo.domain.ports.driven.file.TempFileCloseError
 import app.accrescent.server.parcelo.domain.ports.driven.file.TempFileCreateError
@@ -33,7 +34,6 @@ import app.accrescent.server.parcelo.domain.ports.driving.async.UploadEventProce
 import app.accrescent.server.parcelo.domain.ports.driving.async.UploadProcessingError
 import arrow.core.Either
 import arrow.core.flatten
-import arrow.core.left
 import arrow.core.raise.ensure
 import java.nio.file.Path
 
@@ -57,7 +57,9 @@ class UploadEventProcessorImpl(
                 // We have no record of this upload anymore, so there's nothing to do
                 .toEitherBind { UploadProcessingError.NoPendingUpload }
             // This upload has already been processed - no need to try again
-            ensure(pendingUpload.result.isNone()) { UploadProcessingError.AlreadyProcessed }
+            ensure(pendingUpload is PendingAppDraftUpload.Incomplete) {
+                UploadProcessingError.AlreadyProcessed
+            }
 
             // App draft is guaranteed to exist since the pending upload exists
             val appDraft = tx.appDrafts
@@ -73,11 +75,13 @@ class UploadEventProcessorImpl(
             }
 
             // Submitted app drafts are immutable, so we should refuse updating their packages
+            val now = timestampSource.now()
             if (appDraft is AppDraft.Submitted) {
                 tx.appDrafts
-                    .updatePendingUploadResult(
+                    .completePendingUpload(
                         pendingUpload.id,
-                        AppDraftUploadProcessingError.AppDraftSubmitted.left(),
+                        AppDraftUploadProcessingError.AppDraftSubmitted,
+                        now,
                     )
                     .bindMapLeft(::toProcessingError)
                 return@runTxWithRetry
@@ -90,15 +94,16 @@ class UploadEventProcessorImpl(
                 .use { tempFile ->
                     blobStorage.download(blobId, tempFile.path).bindMapLeft(::toUseError)
 
-                    ApkSet.parse(tempFile.path, downloadDirectory, tempFileFactory, timestampSource.now())
+                    ApkSet.parse(tempFile.path, downloadDirectory, tempFileFactory, now)
                 }
                 .bindMapLeft(::toProcessingError)
                 .fold(
                     { error ->
                         tx.appDrafts
-                            .updatePendingUploadResult(
+                            .completePendingUpload(
                                 pendingUpload.id,
-                                AppDraftUploadProcessingError.ApkSetParseFailed(error).left(),
+                                AppDraftUploadProcessingError.ApkSetParseFailed(error),
+                                now,
                             )
                             .bindMapLeft(::toProcessingError)
                         return@runTxWithRetry
@@ -114,7 +119,9 @@ class UploadEventProcessorImpl(
                 .copy(blobId, BlobId.Location(externalBlob.bucketName, externalBlob.objectKey))
                 .bindMapLeft(::toProcessingError)
 
-            // Commit the blob now that it's written to private storage
+            // Commit the blob into a new package for the app draft now that it's written to private
+            // storage. In the process, delete any existing package, mark its blob for deletion, and
+            // mark the pending upload as successful.
             val version = when (newBlobId) {
                 is BlobId.Gcs -> ExternalBlob.GcsBlobVersion(
                     newBlobId.version.generation,
@@ -123,14 +130,13 @@ class UploadEventProcessorImpl(
 
                 is BlobId.Local -> ExternalBlob.LocalBlobVersion(newBlobId.version.generation)
             }
-            tx.externalBlobs.commitPending(externalBlob.id, version).bindMapLeft(::toProcessingError)
-
-            // Persist the new package
             val appPackageId =
                 idGenerator.generateId(IdType.APP_PACKAGE).bindMapLeft(::toProcessingError)
-            tx.appPackages.save(
-                AppPackage(
+            tx.appPackages.saveFromPendingUpload(
+                pendingUploadId = pendingUpload.id,
+                appPackage = AppPackage(
                     id = appPackageId,
+                    appDraftId = appDraft.id,
                     externalBlobId = externalBlob.id,
                     uploadEventTime = event.eventTime,
                     appId = apkSet.applicationId,
@@ -139,7 +145,9 @@ class UploadEventProcessorImpl(
                     targetSdk = apkSet.targetSdk,
                     signerCertificate = Bytes(apkSet.signerCertificate.encoded),
                     buildApksResult = Bytes(apkSet.buildApksResult.toByteArray()),
-                )
+                ),
+                blobVersion = version,
+                replacedBlobDeleteTime = now,
             )
                 .bindMapLeft(::toProcessingError)
             for ((permissionName, maxSdkVersion) in apkSet.permissions) {
@@ -156,20 +164,6 @@ class UploadEventProcessorImpl(
                     )
                     .bindMapLeft(::toProcessingError)
             }
-
-            // Point the app draft at the newly persisted package. If it replaced an existing
-            // package, delete that package and mark its now-orphaned blob for deletion.
-            tx.appDrafts
-                .updateAppPackageId(appDraft.id, appPackageId)
-                .bindMapLeft(::toProcessingError)
-            currentPackage.onSome { replacedPackage ->
-                tx.appPackages.deleteById(replacedPackage.id).bindMapLeft(::toProcessingError)
-                tx.externalBlobs
-                    .markDeleted(replacedPackage.externalBlobId, timestampSource.now())
-                    .bindMapLeft(::toProcessingError)
-            }
-
-            Unit
         }
 
         // Always acknowledge the upload event to prevent clogging the event queue. Errors will show
