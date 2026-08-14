@@ -12,8 +12,10 @@ import app.accrescent.server.parcelo.committedExternalBlob
 import app.accrescent.server.parcelo.core.unwrap
 import app.accrescent.server.parcelo.core.unwrap2
 import app.accrescent.server.parcelo.core.unwrapErr
+import app.accrescent.server.parcelo.incompletePendingAppDraftUpload
 import app.accrescent.server.parcelo.organization
 import app.accrescent.server.parcelo.pendingExternalBlob
+import app.accrescent.server.parcelo.saveAppPackageFromNewUpload
 import app.accrescent.server.parcelo.unsubmittedAppDraft
 import app.accrescent.server.parcelo.user
 import arrow.core.Either
@@ -142,14 +144,15 @@ class DataStoreTest {
     }
 
     @Test
-    fun `appPackages requireById returns app package persisted with save`() {
+    fun `appPackages requireById returns app package persisted with saveFromPendingUpload`() {
         InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             val originalPackage = appPackage()
 
             dataStore.runTxWithRetry { tx ->
-                tx.externalBlobs.save(committedExternalBlob()).bind()
-                tx.appPackages.save(originalPackage).bind()
+                tx.organizations.saveWithOwner(organization(), user()).bind()
+                tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                saveAppPackageFromNewUpload(tx, originalPackage).bind()
             }.unwrap2()
             val foundPackage = dataStore
                 .runTxWithRetry { tx -> tx.appPackages.requireById("appPackage1").bind() }
@@ -210,12 +213,16 @@ class DataStoreTest {
     }
 
     @Test
-    fun `externalBlobs requireById returns blob persisted with save`() {
+    fun `externalBlobs requireById returns blob persisted with saveUpload`() {
         InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
-            val originalBlob = committedExternalBlob()
+            val originalBlob = pendingExternalBlob()
 
-            dataStore.runTxWithRetry { tx -> tx.externalBlobs.save(originalBlob).bind() }.unwrap2()
+            dataStore.runTxWithRetry { tx ->
+                tx.organizations.saveWithOwner(organization(), user()).bind()
+                tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                tx.appDrafts.saveUpload(incompletePendingAppDraftUpload(), originalBlob).bind()
+            }.unwrap2()
             val foundBlob = dataStore
                 .runTxWithRetry { tx -> tx.externalBlobs.requireById(originalBlob.id).bind() }
                 .unwrap2()
@@ -244,7 +251,11 @@ class DataStoreTest {
             dataStore.migrateToHead().unwrap()
             val pendingBlob = pendingExternalBlob()
 
-            dataStore.runTxWithRetry { tx -> tx.externalBlobs.save(pendingBlob).bind() }.unwrap2()
+            dataStore.runTxWithRetry { tx ->
+                tx.organizations.saveWithOwner(organization(), user()).bind()
+                tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                tx.appDrafts.saveUpload(incompletePendingAppDraftUpload(), pendingBlob).bind()
+            }.unwrap2()
             val error = dataStore
                 .runTxWithRetry { tx -> tx.externalBlobs.requireCommittedById(pendingBlob.id).bind() }
                 .unwrap()
@@ -255,12 +266,16 @@ class DataStoreTest {
     }
 
     @Test
-    fun `externalBlobs requireCommittedById returns committed blob persisted with save`() {
+    fun `externalBlobs requireCommittedById returns the blob an app package committed`() {
         InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             val originalBlob = committedExternalBlob()
 
-            dataStore.runTxWithRetry { tx -> tx.externalBlobs.save(originalBlob).bind() }.unwrap2()
+            dataStore.runTxWithRetry { tx ->
+                tx.organizations.saveWithOwner(organization(), user()).bind()
+                tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                saveAppPackageFromNewUpload(tx).bind()
+            }.unwrap2()
             val foundBlob = dataStore
                 .runTxWithRetry { tx -> tx.externalBlobs.requireCommittedById(originalBlob.id).bind() }
                 .unwrap2()

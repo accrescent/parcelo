@@ -32,12 +32,36 @@ CREATE TABLE external_blobs (
     generation bigint,
     meta_generation bigint,
     delete_time timestamp with time zone,
-    UNIQUE (id, status),
+    app_package_id varchar,
+    pending_app_draft_upload_id varchar,
+    pending_app_draft_listing_icon_upload_id varchar,
     UNIQUE (service, bucket_name, object_key),
+    -- Required so each owning table can reference a blob's owner alongside its ID
+    UNIQUE (id, app_package_id),
+    UNIQUE (id, pending_app_draft_upload_id),
+    UNIQUE (id, pending_app_draft_listing_icon_upload_id),
     CHECK (status != 'pending' OR generation IS NULL),
     CHECK (status != 'committed' OR generation IS NOT NULL),
     CHECK ((service = 'gcs' AND generation IS NOT NULL) = (meta_generation IS NOT NULL)),
-    CHECK ((status = 'deleted') = (delete_time IS NOT NULL))
+    CHECK ((status = 'deleted') = (delete_time IS NOT NULL)),
+    -- A blob is owned by at most one entity. Together with the committed-blob constraint below,
+    -- this makes a deleted blob owned by nothing at all.
+    CHECK (
+        (CASE WHEN app_package_id IS NOT NULL THEN 1 ELSE 0 END)
+        + (CASE WHEN pending_app_draft_upload_id IS NOT NULL THEN 1 ELSE 0 END)
+        + (CASE WHEN pending_app_draft_listing_icon_upload_id IS NOT NULL THEN 1 ELSE 0 END)
+        <= 1
+    ),
+    -- Only a pending blob may be owned by a pending upload
+    CHECK (
+        status = 'pending'
+        OR (
+            pending_app_draft_upload_id IS NULL
+            AND pending_app_draft_listing_icon_upload_id IS NULL
+        )
+    ),
+    -- A committed blob is owned by an app package
+    CHECK ((status = 'committed') = (app_package_id IS NOT NULL))
 );
 
 -- Organizations and users
@@ -63,32 +87,8 @@ CREATE TABLE users (
     UNIQUE (id, organization_id)
 );
 ALTER TABLE organizations
-ADD CONSTRAINT fk_organizations_owner
-FOREIGN KEY (owner_user_id, id) REFERENCES users(id, organization_id);
-
--- App packages and their permissions
-CREATE TABLE app_packages (
-    id id_text PRIMARY KEY,
-    external_blob_id varchar NOT NULL,
-    blob_status varchar NOT NULL GENERATED ALWAYS AS ('committed'),
-    upload_event_time timestamp with time zone NOT NULL,
-    app_id nonempty_can_text NOT NULL,
-    version_code bigint NOT NULL,
-    version_name nonempty_can_text NOT NULL,
-    target_sdk int NOT NULL CHECK (target_sdk > 0),
-    signer_certificate varbinary NOT NULL,
-    build_apks_result varbinary NOT NULL,
-    FOREIGN KEY (external_blob_id, blob_status)
-        REFERENCES external_blobs(id, status)
-);
-CREATE TABLE app_package_permissions (
-    id id_text PRIMARY KEY,
-    app_package_id varchar NOT NULL
-        REFERENCES app_packages(id) ON DELETE CASCADE,
-    name nonempty_can_text NOT NULL,
-    max_sdk_version int,
-    UNIQUE (app_package_id, name)
-);
+    ADD CONSTRAINT fk_organizations_owner
+    FOREIGN KEY (owner_user_id, id) REFERENCES users(id, organization_id);
 
 -- App drafts and their listings
 CREATE TABLE app_drafts (
@@ -96,8 +96,10 @@ CREATE TABLE app_drafts (
     organization_id varchar NOT NULL REFERENCES organizations(id),
     create_time timestamp with time zone NOT NULL,
     default_app_draft_listing_id varchar,
-    app_package_id varchar REFERENCES app_packages(id),
+    app_package_id varchar,
     submit_time timestamp with time zone,
+    -- Required so app packages can reference their app draft alongside that draft's package ID
+    UNIQUE (id, app_package_id),
     CHECK (submit_time IS NULL OR app_package_id IS NOT NULL),
     CHECK (submit_time IS NULL OR default_app_draft_listing_id IS NOT NULL)
 );
@@ -114,9 +116,42 @@ CREATE TABLE app_draft_listings (
     UNIQUE (app_draft_id, id)
 );
 ALTER TABLE app_drafts
-ADD CONSTRAINT fk_app_drafts_default_listing
-FOREIGN KEY (id, default_app_draft_listing_id)
-REFERENCES app_draft_listings(app_draft_id, id);
+    ADD CONSTRAINT fk_app_drafts_default_listing
+    FOREIGN KEY (id, default_app_draft_listing_id)
+    REFERENCES app_draft_listings(app_draft_id, id);
+
+-- App packages and their permissions
+CREATE TABLE app_packages (
+    id id_text PRIMARY KEY,
+    app_draft_id varchar NOT NULL UNIQUE REFERENCES app_drafts(id),
+    external_blob_id varchar NOT NULL UNIQUE REFERENCES external_blobs(id),
+    upload_event_time timestamp with time zone NOT NULL,
+    app_id nonempty_can_text NOT NULL,
+    version_code bigint NOT NULL,
+    version_name nonempty_can_text NOT NULL,
+    target_sdk int NOT NULL CHECK (target_sdk > 0),
+    signer_certificate varbinary NOT NULL,
+    build_apks_result varbinary NOT NULL,
+    -- Required so app drafts can reference a package's app draft alongside its ID
+    UNIQUE (app_draft_id, id),
+    -- Required so external blobs can reference a package's blob alongside its ID
+    UNIQUE (id, external_blob_id)
+);
+ALTER TABLE app_drafts
+    ADD CONSTRAINT fk_app_drafts_app_package
+    FOREIGN KEY (id, app_package_id) REFERENCES app_packages(app_draft_id, id);
+ALTER TABLE external_blobs
+    ADD CONSTRAINT fk_external_blobs_app_package
+    FOREIGN KEY (app_package_id, id) REFERENCES app_packages(id, external_blob_id);
+
+CREATE TABLE app_package_permissions (
+    id id_text PRIMARY KEY,
+    app_package_id varchar NOT NULL
+        REFERENCES app_packages(id) ON DELETE CASCADE,
+    name nonempty_can_text NOT NULL,
+    max_sdk_version int,
+    UNIQUE (app_package_id, name)
+);
 
 -- Published apps and their listings
 --
@@ -141,15 +176,14 @@ CREATE TABLE app_listings (
     UNIQUE (id, app_id)
 );
 ALTER TABLE apps
-ADD CONSTRAINT fk_apps_default_listing
-FOREIGN KEY (id, default_app_listing_id) REFERENCES app_listings(app_id, id);
+    ADD CONSTRAINT fk_apps_default_listing
+    FOREIGN KEY (id, default_app_listing_id) REFERENCES app_listings(app_id, id);
 
 -- Pending uploads
 CREATE TABLE pending_app_draft_uploads (
     id id_text PRIMARY KEY,
-    app_draft_id varchar NOT NULL UNIQUE
-        REFERENCES app_drafts(id) ON DELETE CASCADE,
-    external_blob_id varchar NOT NULL REFERENCES external_blobs(id),
+    app_draft_id varchar NOT NULL UNIQUE REFERENCES app_drafts(id),
+    external_blob_id varchar UNIQUE REFERENCES external_blobs(id),
     object_key nonempty_can_text NOT NULL UNIQUE,
     create_time timestamp with time zone NOT NULL,
     processing_result varchar
@@ -176,13 +210,21 @@ CREATE TABLE pending_app_draft_uploads (
             'apk_set_version_code_out_of_range',
             'apk_set_version_code_major_non_zero',
             'apk_set_version_name_too_long'
-        ], processing_result))
+        ], processing_result)),
+    -- Required so external blobs can reference an upload's blob alongside its ID
+    UNIQUE (id, external_blob_id),
+    -- An upload owns exactly one external blob if and only if it has not been completed
+    CHECK ((processing_result IS NULL) = (external_blob_id IS NOT NULL))
 );
+ALTER TABLE external_blobs
+    ADD CONSTRAINT fk_external_blobs_pending_app_draft_upload
+    FOREIGN KEY (pending_app_draft_upload_id, id)
+    REFERENCES pending_app_draft_uploads(id, external_blob_id);
+
 CREATE TABLE pending_app_draft_listing_icon_uploads (
     id id_text PRIMARY KEY,
-    app_draft_listing_id varchar NOT NULL UNIQUE
-        REFERENCES app_draft_listings(id) ON DELETE CASCADE,
-    external_blob_id varchar NOT NULL REFERENCES external_blobs(id),
+    app_draft_listing_id varchar NOT NULL UNIQUE REFERENCES app_draft_listings(id),
+    external_blob_id varchar UNIQUE REFERENCES external_blobs(id),
     object_key nonempty_can_text NOT NULL UNIQUE,
     create_time timestamp with time zone NOT NULL,
     processing_result varchar
@@ -191,5 +233,13 @@ CREATE TABLE pending_app_draft_listing_icon_uploads (
             'app_draft_submitted',
             'invalid_image',
             'incorrect_image_dimensions'
-        ], processing_result))
+        ], processing_result)),
+    -- Required so external blobs can reference an upload's blob alongside its ID
+    UNIQUE (id, external_blob_id),
+    -- An upload owns exactly one external blob if and only if it has not been completed
+    CHECK ((processing_result IS NULL) = (external_blob_id IS NOT NULL))
 );
+ALTER TABLE external_blobs
+    ADD CONSTRAINT fk_external_blobs_pending_app_draft_listing_icon_upload
+    FOREIGN KEY (pending_app_draft_listing_icon_upload_id, id)
+    REFERENCES pending_app_draft_listing_icon_uploads(id, external_blob_id);

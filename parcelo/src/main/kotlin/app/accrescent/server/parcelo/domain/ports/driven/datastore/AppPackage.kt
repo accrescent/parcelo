@@ -13,6 +13,7 @@ import java.time.OffsetDateTime
 
 data class AppPackage(
     val id: String,
+    val appDraftId: String,
     val externalBlobId: String,
     val uploadEventTime: OffsetDateTime,
     val appId: ApplicationId,

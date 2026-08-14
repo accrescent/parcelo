@@ -258,29 +258,27 @@ class AppDraftApiImpl(
                     status = ExternalBlob.Status.Pending,
                 )
             }
-            tx.externalBlobs.save(blob).bindMapLeft(::toServerError)
-
             // Upsert the app draft's pending upload
             val pendingUploadExists = tx.appDrafts
                 .pendingUploadExistsByAppDraftId(appDraft.id)
                 .bindMapLeft(::toServerError)
             if (pendingUploadExists) {
                 tx.appDrafts
-                    .deletePendingUploadByAppDraftId(appDraft.id)
+                    .deletePendingUploadByAppDraftId(appDraft.id, now)
                     .bindMapLeft(::toServerError)
             }
             tx.appDrafts
                 .saveUpload(
-                    PendingAppDraftUpload(
+                    PendingAppDraftUpload.Incomplete(
                         id = idGenerator
                             .generateId(IdType.PENDING_APP_DRAFT_UPLOAD)
                             .bindMapLeft(::toServerError),
                         appDraftId = appDraft.id,
-                        externalBlobId = blob.id,
                         objectKey = objectKey,
                         createTime = now,
-                        result = None,
-                    )
+                        externalBlobId = blob.id,
+                    ),
+                    blob,
                 )
                 .bindMapLeft(::toServerError)
 
@@ -404,15 +402,9 @@ class AppDraftApiImpl(
             val appDraft = tx.appDrafts.requireById(request.appDraftId).bindMapLeft(::toServerError)
             ensure(appDraft is DataAppDraft.Unsubmitted) { AppDraftSubmittedError(request.appDraftId) }
 
-            tx.appDrafts.deleteById(appDraft.id).bindMapLeft(::toServerError)
-
-            appDraft.appPackageId.onSome { appPackageId ->
-                val appPackage = tx.appPackages.requireById(appPackageId).bindMapLeft(::toServerError)
-                tx.appPackages.deleteById(appPackage.id).bindMapLeft(::toServerError)
-                tx.externalBlobs
-                    .markDeleted(appPackage.externalBlobId, timestampSource.now())
-                    .bindMapLeft(::toServerError)
-            }
+            tx.appDrafts
+                .deleteById(appDraft.id, timestampSource.now())
+                .bindMapLeft(::toServerError)
         }
             .bindMapLeft(::toServerError)
             .bind()
@@ -631,29 +623,27 @@ class AppDraftApiImpl(
                     status = ExternalBlob.Status.Pending,
                 )
             }
-            tx.externalBlobs.save(blob).bindMapLeft(::toServerError)
-
             // Upsert the app draft listing's pending icon upload
             val pendingUploadExists = tx.appDrafts
                 .pendingListingIconUploadExistsByListingId(listing.id)
                 .bindMapLeft(::toServerError)
             if (pendingUploadExists) {
                 tx.appDrafts
-                    .deletePendingListingIconUploadByListingId(listing.id)
+                    .deletePendingListingIconUploadByListingId(listing.id, now)
                     .bindMapLeft(::toServerError)
             }
             tx.appDrafts
                 .saveListingIconUpload(
-                    PendingAppDraftListingIconUpload(
+                    PendingAppDraftListingIconUpload.Incomplete(
                         id = idGenerator
                             .generateId(IdType.PENDING_APP_DRAFT_LISTING_ICON_UPLOAD)
                             .bindMapLeft(::toServerError),
                         appDraftListingId = listing.id,
-                        externalBlobId = blob.id,
                         objectKey = objectKey,
                         createTime = now,
-                        result = None,
-                    )
+                        externalBlobId = blob.id,
+                    ),
+                    blob,
                 )
                 .bindMapLeft(::toServerError)
 
@@ -699,7 +689,9 @@ class AppDraftApiImpl(
                     .bindMapLeft(::toServerError)
             }
 
-            tx.appDrafts.deleteListingById(request.appDraftListingId).bindMapLeft(::toServerError)
+            tx.appDrafts
+                .deleteListingById(request.appDraftListingId, timestampSource.now())
+                .bindMapLeft(::toServerError)
         }
             .bindMapLeft(::toServerError)
             .bind()

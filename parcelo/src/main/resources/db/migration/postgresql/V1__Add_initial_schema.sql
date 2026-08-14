@@ -41,12 +41,35 @@ CREATE TABLE external_blobs (
     generation bigint,
     meta_generation bigint,
     delete_time timestamp with time zone,
-    UNIQUE (id, status),
+    app_package_id canon_text,
+    pending_app_draft_upload_id canon_text,
+    pending_app_draft_listing_icon_upload_id canon_text,
     UNIQUE (service, bucket_name, object_key),
+    -- Required so each owning table can reference a blob's owner alongside its ID
+    UNIQUE (id, app_package_id),
+    UNIQUE (id, pending_app_draft_upload_id),
+    UNIQUE (id, pending_app_draft_listing_icon_upload_id),
     CHECK (status != 'pending' OR generation IS NULL),
     CHECK (status != 'committed' OR generation IS NOT NULL),
     CHECK ((service = 'gcs' AND generation IS NOT NULL) = (meta_generation IS NOT NULL)),
-    CHECK ((status = 'deleted') = (delete_time IS NOT NULL))
+    CHECK ((status = 'deleted') = (delete_time IS NOT NULL)),
+    -- A blob is owned by at most one entity. Together with the two constraints below, this makes a
+    -- deleted blob owned by nothing at all, since it is neither pending nor committed.
+    CHECK (
+        (CASE WHEN app_package_id IS NOT NULL THEN 1 ELSE 0 END)
+        + (CASE WHEN pending_app_draft_upload_id IS NOT NULL THEN 1 ELSE 0 END)
+        + (CASE WHEN pending_app_draft_listing_icon_upload_id IS NOT NULL THEN 1 ELSE 0 END)
+        <= 1
+    ),
+    -- A pending blob is owned by a pending upload of exactly one kind
+    CHECK (
+        (status = 'pending') = (
+            pending_app_draft_upload_id IS NOT NULL
+            OR pending_app_draft_listing_icon_upload_id IS NOT NULL
+        )
+    ),
+    -- A committed blob is owned by an app package
+    CHECK ((status = 'committed') = (app_package_id IS NOT NULL))
 );
 
 -- Organizations and users
@@ -65,36 +88,18 @@ ALTER TABLE organizations
     ADD CONSTRAINT organizations_owner_user_fk
     FOREIGN KEY (owner_user_id, id) REFERENCES users(id, organization_id);
 
--- App packages and their permissions
-CREATE TABLE app_packages (
-    id id_text PRIMARY KEY,
-    external_blob_id canon_text NOT NULL,
-    blob_status canon_text NOT NULL GENERATED ALWAYS AS ('committed') STORED,
-    upload_event_time timestamp with time zone NOT NULL,
-    app_id canon_text NOT NULL CHECK (char_length(app_id) <= 128),
-    version_code integer NOT NULL CHECK (version_code BETWEEN 1 AND 2100000000),
-    version_name canon_text NOT NULL CHECK (char_length(version_name) <= 1024),
-    target_sdk integer NOT NULL CHECK (target_sdk > 0),
-    signer_certificate bytea NOT NULL,
-    build_apks_result bytea NOT NULL,
-    FOREIGN KEY (external_blob_id, blob_status) REFERENCES external_blobs(id, status)
-);
-CREATE TABLE app_package_permissions (
-    id id_text PRIMARY KEY,
-    app_package_id canon_text NOT NULL REFERENCES app_packages(id) ON DELETE CASCADE,
-    name canon_text NOT NULL CHECK (char_length(name) <= 1024),
-    max_sdk_version integer CHECK (max_sdk_version > 0),
-    UNIQUE (app_package_id, name)
-);
-
 -- App drafts and their listings
 CREATE TABLE app_drafts (
     id id_text PRIMARY KEY,
     organization_id canon_text NOT NULL REFERENCES organizations(id),
     create_time timestamp with time zone NOT NULL,
     default_app_draft_listing_id canon_text,
-    app_package_id canon_text REFERENCES app_packages(id),
+    app_package_id canon_text,
     submit_time timestamp with time zone,
+    -- Required so app packages can reference their app draft alongside that draft's package ID.
+    -- This is what caps an app draft at one app package: a second package for the same draft would
+    -- have to be referenced by the same single-valued column.
+    UNIQUE (id, app_package_id),
     -- A submitted app draft must have both an app package and a default listing
     CHECK (submit_time IS NULL OR app_package_id IS NOT NULL),
     CHECK (submit_time IS NULL OR default_app_draft_listing_id IS NOT NULL)
@@ -116,6 +121,43 @@ ALTER TABLE app_drafts
     ADD CONSTRAINT app_drafts_default_listing_fk
     FOREIGN KEY (id, default_app_draft_listing_id)
     REFERENCES app_draft_listings(app_draft_id, id);
+
+-- App packages and their permissions
+CREATE TABLE app_packages (
+    id id_text PRIMARY KEY,
+    app_draft_id canon_text NOT NULL,
+    external_blob_id canon_text NOT NULL,
+    upload_event_time timestamp with time zone NOT NULL,
+    app_id canon_text NOT NULL CHECK (char_length(app_id) <= 128),
+    version_code integer NOT NULL CHECK (version_code BETWEEN 1 AND 2100000000),
+    version_name canon_text NOT NULL CHECK (char_length(version_name) <= 1024),
+    target_sdk integer NOT NULL CHECK (target_sdk > 0),
+    signer_certificate bytea NOT NULL,
+    build_apks_result bytea NOT NULL,
+    -- Required so app drafts can reference a package's app draft alongside its ID
+    UNIQUE (app_draft_id, id),
+    -- Required so external blobs can reference a package's blob alongside its ID
+    UNIQUE (id, external_blob_id),
+    FOREIGN KEY (app_draft_id, id) REFERENCES app_drafts(id, app_package_id),
+    FOREIGN KEY (external_blob_id, id) REFERENCES external_blobs(id, app_package_id)
+);
+-- Ensure an app draft's package 1) points to an actual app package and 2) points to an app package
+-- _for this app draft_.
+ALTER TABLE app_drafts
+    ADD CONSTRAINT app_drafts_app_package_fk
+    FOREIGN KEY (id, app_package_id) REFERENCES app_packages(app_draft_id, id);
+-- Ensure a committed blob's owning app package 1) exists and 2) points back to this blob
+ALTER TABLE external_blobs
+    ADD CONSTRAINT external_blobs_app_package_fk
+    FOREIGN KEY (app_package_id, id) REFERENCES app_packages(id, external_blob_id);
+
+CREATE TABLE app_package_permissions (
+    id id_text PRIMARY KEY,
+    app_package_id canon_text NOT NULL REFERENCES app_packages(id) ON DELETE CASCADE,
+    name canon_text NOT NULL CHECK (char_length(name) <= 1024),
+    max_sdk_version integer CHECK (max_sdk_version > 0),
+    UNIQUE (app_package_id, name)
+);
 
 -- Published apps and their listings
 CREATE TABLE apps (
@@ -142,8 +184,8 @@ ALTER TABLE apps
 -- Pending uploads
 CREATE TABLE pending_app_draft_uploads (
     id id_text PRIMARY KEY,
-    app_draft_id canon_text NOT NULL UNIQUE REFERENCES app_drafts(id) ON DELETE CASCADE,
-    external_blob_id canon_text NOT NULL REFERENCES external_blobs(id),
+    app_draft_id canon_text NOT NULL UNIQUE REFERENCES app_drafts(id),
+    external_blob_id canon_text,
     object_key canon_text NOT NULL UNIQUE CHECK (char_length(object_key) <= 256),
     create_time timestamp with time zone NOT NULL,
     processing_result canon_text
@@ -170,13 +212,28 @@ CREATE TABLE pending_app_draft_uploads (
             'apk_set_version_code_out_of_range',
             'apk_set_version_code_major_non_zero',
             'apk_set_version_name_too_long'
-        ))
+        )),
+    -- Required so external blobs can reference an upload's blob alongside its ID
+    UNIQUE (id, external_blob_id),
+    -- A pending app draft upload owns exactly one external blob if and only if it has not been
+    -- completed. Completing an upload therefore hands its blob off to an app package or releases it
+    -- for deletion.
+    CHECK ((processing_result IS NULL) = (external_blob_id IS NOT NULL)),
+    -- The owned blob must reference this upload back. The blob's own constraints then guarantee it
+    -- is pending, since only a pending blob may be owned by a pending upload.
+    FOREIGN KEY (external_blob_id, id)
+        REFERENCES external_blobs(id, pending_app_draft_upload_id)
 );
+-- Ensure a pending blob's owning app draft upload 1) exists and 2) points back to this blob
+ALTER TABLE external_blobs
+    ADD CONSTRAINT external_blobs_pending_app_draft_upload_fk
+    FOREIGN KEY (pending_app_draft_upload_id, id)
+    REFERENCES pending_app_draft_uploads(id, external_blob_id);
+
 CREATE TABLE pending_app_draft_listing_icon_uploads (
     id id_text PRIMARY KEY,
-    app_draft_listing_id canon_text NOT NULL UNIQUE
-        REFERENCES app_draft_listings(id) ON DELETE CASCADE,
-    external_blob_id canon_text NOT NULL REFERENCES external_blobs(id),
+    app_draft_listing_id canon_text NOT NULL UNIQUE REFERENCES app_draft_listings(id),
+    external_blob_id canon_text,
     object_key canon_text NOT NULL UNIQUE CHECK (char_length(object_key) <= 256),
     create_time timestamp with time zone NOT NULL,
     processing_result canon_text
@@ -185,5 +242,20 @@ CREATE TABLE pending_app_draft_listing_icon_uploads (
             'app_draft_submitted',
             'invalid_image',
             'incorrect_image_dimensions'
-        ))
+        )),
+    -- Required so external blobs can reference an upload's blob alongside its ID
+    UNIQUE (id, external_blob_id),
+    -- A pending app draft listing icon upload owns exactly one external blob if and only if it has
+    -- not been completed
+    CHECK ((processing_result IS NULL) = (external_blob_id IS NOT NULL)),
+    -- The owned blob must reference this upload back. The blob's own constraints then guarantee it
+    -- is pending, since only a pending blob may be owned by a pending upload.
+    FOREIGN KEY (external_blob_id, id)
+        REFERENCES external_blobs(id, pending_app_draft_listing_icon_upload_id)
 );
+-- Ensure a pending blob's owning app draft listing icon upload 1) exists and 2) points back to this
+-- blob
+ALTER TABLE external_blobs
+    ADD CONSTRAINT external_blobs_pending_app_draft_listing_icon_upload_fk
+    FOREIGN KEY (pending_app_draft_listing_icon_upload_id, id)
+    REFERENCES pending_app_draft_listing_icon_uploads(id, external_blob_id);

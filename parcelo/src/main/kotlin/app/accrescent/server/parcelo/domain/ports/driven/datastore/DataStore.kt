@@ -129,6 +129,22 @@ abstract class DataStore(private val randomSource: RandomSource) {
 
     abstract class AppDraftRepository {
         /**
+         * Marks a pending app draft upload as completed with an error.
+         *
+         * In the process, unlinks this upload's blob and marks it for deletion.
+         *
+         * @param pendingUploadId the ID of the pending app draft upload to complete.
+         * @param error the error that occurred while processing the upload.
+         * @param blobDeleteTime the time at which the released blob is marked as deleted.
+         * @return [DataStoreError.EntityNotFound] if no incomplete upload exists with the given ID.
+         */
+        abstract fun completePendingUpload(
+            pendingUploadId: String,
+            error: AppDraftUploadProcessingError,
+            blobDeleteTime: OffsetDateTime,
+        ): DataStoreResult<Unit>
+
+        /**
          * Counts the active app drafts in a given organization.
          *
          * An app draft is always considered active.
@@ -139,41 +155,62 @@ abstract class DataStore(private val randomSource: RandomSource) {
         abstract fun countActiveInOrganization(organizationId: String): DataStoreResult<ULong>
 
         /**
-         * Deletes an app draft and its associated listings and pending uploads.
+         * Deletes an app draft along with its associated data.
+         *
+         * Because they are part of the app draft, this draft's listings, package, and pending
+         * upload are deleted as well. All blobs owned by these entities are marked as deleted.
          *
          * @param id the ID of the app draft to delete.
+         * @param blobDeleteTime the time at which the released blobs are marked as deleted.
          * @return [DataStoreError.EntityNotFound] if the app draft does not exist.
          */
-        abstract fun deleteById(id: String): DataStoreResult<Unit>
+        abstract fun deleteById(id: String, blobDeleteTime: OffsetDateTime): DataStoreResult<Unit>
 
         /**
          * Deletes an app draft listing.
          *
+         * Because it is part of the listing, also deletes this listing's pending icon upload if it
+         * exists, marking its blob for deletion.
+         *
          * @param id the ID of the app draft listing to delete.
+         * @param blobDeleteTime the time at which the released blob is marked as deleted.
          * @return [DataStoreError.EntityNotFound] if the listing does not exist.
          */
-        abstract fun deleteListingById(id: String): DataStoreResult<Unit>
+        abstract fun deleteListingById(
+            id: String,
+            blobDeleteTime: OffsetDateTime,
+        ): DataStoreResult<Unit>
 
         /**
          * Deletes a pending app draft listing icon upload for a given app draft listing.
          *
+         * In the process, marks the blob owned by the upload for deletion.
+         *
          * @param appDraftListingId the app draft listing ID whose pending icon upload should be
          * deleted.
+         * @param blobDeleteTime the time at which the released blob is marked as deleted.
          * @return [DataStoreError.EntityNotFound] if no pending icon upload exists for the given app
          * draft listing, including if no app draft listing exists with the given ID.
          */
         abstract fun deletePendingListingIconUploadByListingId(
             appDraftListingId: String,
+            blobDeleteTime: OffsetDateTime,
         ): DataStoreResult<Unit>
 
         /**
          * Deletes a pending app draft upload for a given app draft.
          *
+         * In the process, marks the blob owned by the upload for deletion.
+         *
          * @param appDraftId the app draft ID whose pending upload should be deleted.
+         * @param blobDeleteTime the time at which the released blob is marked as deleted.
          * @return [DataStoreError.EntityNotFound] if no pending upload exists for the given app
          * draft, including if no app draft exists with the given ID.
          */
-        abstract fun deletePendingUploadByAppDraftId(appDraftId: String): DataStoreResult<Unit>
+        abstract fun deletePendingUploadByAppDraftId(
+            appDraftId: String,
+            blobDeleteTime: OffsetDateTime,
+        ): DataStoreResult<Unit>
 
         /**
          * Determines whether an app draft exists.
@@ -340,8 +377,8 @@ abstract class DataStore(private val randomSource: RandomSource) {
          *
          * @param appDraft the app draft to save.
          * @return [DataStoreError.UniqueConstraintViolation] if an app draft with the same ID
-         * already exists, or [DataStoreError.ForeignKeyViolation] if the organization or the
-         * referenced app package does not exist.
+         * already exists, or [DataStoreError.ForeignKeyViolation] if the organization does not
+         * exist or the app draft names an app package or default listing.
          */
         abstract fun save(appDraft: AppDraft): DataStoreResult<Unit>
 
@@ -356,38 +393,35 @@ abstract class DataStore(private val randomSource: RandomSource) {
         abstract fun saveListing(listing: AppDraftListing): DataStoreResult<Unit>
 
         /**
-         * Saves a new pending app draft listing icon upload.
+         * Saves a new pending app draft listing icon upload along with the blob it owns.
          *
          * @param upload the pending app draft listing icon upload to save.
+         * @param blob the pending external blob the upload owns.
          * @return [DataStoreError.UniqueConstraintViolation] if a pending icon upload for the same
-         * app draft listing or the same object key already exists, or
-         * [DataStoreError.ForeignKeyViolation] if the app draft listing does not exist.
+         * app draft listing or the same object key already exists or a blob already exists for the
+         * blob's ([ExternalBlob.bucketName], [ExternalBlob.objectKey]) pair, or
+         * [DataStoreError.ForeignKeyViolation] if the app draft listing does not exist or the
+         * blob's ID does not match the upload's external blob ID.
          */
         abstract fun saveListingIconUpload(
-            upload: PendingAppDraftListingIconUpload,
+            upload: PendingAppDraftListingIconUpload.Incomplete,
+            blob: ExternalBlob<ExternalBlob.Status.Pending>,
         ): DataStoreResult<Unit>
 
         /**
-         * Saves a new pending app draft upload.
+         * Saves a new pending app draft upload along with the pending external blob it owns.
          *
          * @param upload the pending app draft upload to save.
+         * @param blob the pending external blob the upload owns.
          * @return [DataStoreError.UniqueConstraintViolation] if a pending upload for the same app
-         * draft or the same object key already exists, or [DataStoreError.ForeignKeyViolation] if
-         * the app draft does not exist.
+         * draft or the same object key already exists or a blob already exists for the blob's
+         * ([ExternalBlob.bucketName], [ExternalBlob.objectKey]) pair, or
+         * [DataStoreError.ForeignKeyViolation] if the app draft does not exist or the blob's ID
+         * does not match the upload's external blob ID.
          */
-        abstract fun saveUpload(upload: PendingAppDraftUpload): DataStoreResult<Unit>
-
-        /**
-         * Updates the app package associated with an app draft.
-         *
-         * @param appDraftId the ID of the app draft to update.
-         * @param appPackageId the ID of the app package to associate with the app draft.
-         * @return [DataStoreError.EntityNotFound] if the app draft does not exist, or
-         * [DataStoreError.ForeignKeyViolation] if an app package with the given ID does not exist.
-         */
-        abstract fun updateAppPackageId(
-            appDraftId: String,
-            appPackageId: String,
+        abstract fun saveUpload(
+            upload: PendingAppDraftUpload.Incomplete,
+            blob: ExternalBlob<ExternalBlob.Status.Pending>,
         ): DataStoreResult<Unit>
 
         /**
@@ -421,30 +455,6 @@ abstract class DataStore(private val randomSource: RandomSource) {
         ): DataStoreResult<Unit>
 
         /**
-         * Updates the result of a pending app draft listing icon upload.
-         *
-         * @param pendingUploadId the ID of the pending app draft listing icon upload to update.
-         * @param result the new result for the pending app draft listing icon upload.
-         * @return [DataStoreError.EntityNotFound] if the upload does not exist.
-         */
-        abstract fun updatePendingListingIconUploadResult(
-            pendingUploadId: String,
-            result: AppDraftListingIconUploadProcessingResult,
-        ): DataStoreResult<Unit>
-
-        /**
-         * Updates the result of a pending app draft upload.
-         *
-         * @param pendingUploadId the ID of the pending app draft upload to update.
-         * @param result the new result for the pending app draft upload.
-         * @return [DataStoreError.EntityNotFound] if the upload does not exist.
-         */
-        abstract fun updatePendingUploadResult(
-            pendingUploadId: String,
-            result: Either<AppDraftUploadProcessingError, Unit>,
-        ): DataStoreResult<Unit>
-
-        /**
          * Updates the submit time of an app draft.
          *
          * @param appDraftId the ID of the app draft to update.
@@ -460,15 +470,6 @@ abstract class DataStore(private val randomSource: RandomSource) {
     }
 
     abstract class AppPackageRepository {
-        /**
-         * Deletes an app package.
-         *
-         * @param id the ID of the app package to delete.
-         * @return [DataStoreError.EntityNotFound] if the app package does not exist, or
-         * [DataStoreError.ForeignKeyViolation] if an app draft still references this package.
-         */
-        abstract fun deleteById(id: String): DataStoreResult<Unit>
-
         /**
          * Finds an app package by its ID.
          *
@@ -508,14 +509,29 @@ abstract class DataStore(private val randomSource: RandomSource) {
         }
 
         /**
-         * Saves new app package.
+         * Saves a new app package by completing a pending app draft upload.
          *
+         * In the process, commits the upload's pending blob, moves the blob's ownership to the new
+         * package, associates the app draft with the new package, marks the upload as succeeded,
+         * and deletes the existing app draft's package if one exists, marking said package's blob
+         * for deletion.
+         *
+         * @param pendingUploadId the ID of the incomplete pending app draft upload to commit.
          * @param appPackage the app package to save.
+         * @param blobVersion the version assigned to the blob by the blob storage service.
+         * @param replacedBlobDeleteTime the time at which a replaced package's blob is marked as
+         * deleted.
          * @return [DataStoreError.UniqueConstraintViolation] if a package with the same ID already
-         * exists, or [DataStoreError.ForeignKeyViolation] if the external blob does not exist or is
-         * not committed.
+         * exists, or [DataStoreError.ForeignKeyViolation] if the app draft does not exist, no
+         * incomplete upload exists with the given ID, the package does not describe that upload's
+         * blob and app draft, or the provided version type doesn't match the blob's service.
          */
-        abstract fun save(appPackage: AppPackage): DataStoreResult<Unit>
+        abstract fun saveFromPendingUpload(
+            pendingUploadId: String,
+            appPackage: AppPackage,
+            blobVersion: ExternalBlob.BlobVersion,
+            replacedBlobDeleteTime: OffsetDateTime,
+        ): DataStoreResult<Unit>
 
         /**
          * Saves a new app package permission.
@@ -615,37 +631,12 @@ abstract class DataStore(private val randomSource: RandomSource) {
 
     abstract class ExternalBlobRepository {
         /**
-         * Commits an existing pending external blob, marking it available in blob storage.
-         *
-         * @param id the ID of the external blob to commit.
-         * @param version the version assigned to the blob by the blob storage service.
-         * @return [DataStoreError.EntityNotFound] if a blob with the given ID doesn't exist, the
-         * blob is not pending, or the provided version type doesn't match the blob's service.
-         */
-        abstract fun commitPending(
-            id: String,
-            version: ExternalBlob.BlobVersion,
-        ): DataStoreResult<Unit>
-
-        /**
          * Finds an existing external blob.
          *
          * @param id the ID of the external blob to find.
          * @return the blob with the given ID, or [None] if it doesn't exist.
          */
         abstract fun findById(id: String): DataStoreResult<Option<ExternalBlob<*>>>
-
-        /**
-         * Marks an existing external blob as deleted so it may later be removed from blob storage.
-         *
-         * @param id the ID of the external blob to mark as deleted.
-         * @param deleteTime the time at which the blob is marked as deleted.
-         * @return [DataStoreError.EntityNotFound] if no blob exists with the given ID.
-         */
-        abstract fun markDeleted(
-            id: String,
-            deleteTime: OffsetDateTime,
-        ): DataStoreResult<Unit>
 
         /**
          * Finds an existing external blob.
@@ -696,15 +687,6 @@ abstract class DataStore(private val randomSource: RandomSource) {
                 }
             }
         }
-
-        /**
-         * Saves a new external blob.
-         *
-         * @param blob the external blob to save.
-         * @return [DataStoreError.UniqueConstraintViolation] if a blob already exists for the
-         * blob's ([ExternalBlob.bucketName], [ExternalBlob.objectKey]) pair.
-         */
-        abstract fun save(blob: ExternalBlob<*>): DataStoreResult<Unit>
     }
 
     abstract class OrganizationRepository {

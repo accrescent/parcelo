@@ -14,7 +14,6 @@ import app.accrescent.server.parcelo.adapters.driven.randomsource.DeterministicR
 import app.accrescent.server.parcelo.adapters.driven.timestampsource.ConstantTimestampSource
 import app.accrescent.server.parcelo.appDraftListing
 import app.accrescent.server.parcelo.appPackage
-import app.accrescent.server.parcelo.committedExternalBlob
 import app.accrescent.server.parcelo.core.Bytes
 import app.accrescent.server.parcelo.core.unwrap
 import app.accrescent.server.parcelo.core.unwrap2
@@ -34,9 +33,10 @@ import app.accrescent.server.parcelo.domain.ports.driven.randomsource.RandomSour
 import app.accrescent.server.parcelo.domain.ports.driven.timestampsource.TimestampSource
 import app.accrescent.server.parcelo.domain.ports.driving.async.UploadEvent
 import app.accrescent.server.parcelo.domain.ports.driving.async.UploadProcessingError
+import app.accrescent.server.parcelo.incompletePendingAppDraftUpload
 import app.accrescent.server.parcelo.organization
-import app.accrescent.server.parcelo.pendingAppDraftUpload
 import app.accrescent.server.parcelo.pendingExternalBlob
+import app.accrescent.server.parcelo.saveAppPackageFromNewUpload
 import app.accrescent.server.parcelo.unsubmittedAppDraft
 import app.accrescent.server.parcelo.user
 import arrow.core.Some
@@ -101,10 +101,11 @@ private fun seedSuccessfulUpload(
     dataStore.runTxWithRetry { tx ->
         tx.organizations.saveWithOwner(organization(), user()).bind()
         tx.appDrafts.save(unsubmittedAppDraft()).bind()
-        tx.externalBlobs
-            .save(pendingExternalBlob(bucketName = "private", objectKey = "reserved1"))
+        tx.appDrafts.saveUpload(
+            incompletePendingAppDraftUpload(objectKey = "upload1"),
+            pendingExternalBlob(bucketName = "private", objectKey = "reserved1"),
+        )
             .bind()
-        tx.appDrafts.saveUpload(pendingAppDraftUpload(objectKey = "upload1")).bind()
     }
         .unwrap2()
     return blobId.toUploadEvent()
@@ -142,12 +143,16 @@ class UploadEventProcessorImplTest {
                 dataStore.runTxWithRetry { tx ->
                     tx.organizations.saveWithOwner(organization(), user()).bind()
                     tx.appDrafts.save(unsubmittedAppDraft()).bind()
-                    tx.externalBlobs.save(pendingExternalBlob()).bind()
-                    tx.appDrafts.saveUpload(
-                        pendingAppDraftUpload(
-                            result = Some(AppDraftUploadProcessingError.AppDraftSubmitted.left()),
+                    tx.appDrafts
+                        .saveUpload(incompletePendingAppDraftUpload(), pendingExternalBlob())
+                        .bind()
+                    tx.appDrafts
+                        .completePendingUpload(
+                            "appDraftUpload1",
+                            AppDraftUploadProcessingError.AppDraftSubmitted,
+                            UNIX_EPOCH,
                         )
-                    ).bind()
+                        .bind()
                 }
                     .unwrap2()
                 val processor = uploadEventProcessor(dataStore, blobStorage, randomSource, downloadDir)
@@ -172,10 +177,19 @@ class UploadEventProcessorImplTest {
                 dataStore.migrateToHead().unwrap()
                 dataStore.runTxWithRetry { tx ->
                     tx.organizations.saveWithOwner(organization(), user()).bind()
-                    tx.externalBlobs.save(committedExternalBlob()).bind()
-                    tx.appPackages.save(appPackage(uploadEventTime = UNIX_EPOCH.plusSeconds(1))).bind()
-                    tx.appDrafts.save(unsubmittedAppDraft(appPackageId = Some("appPackage1"))).bind()
-                    tx.appDrafts.saveUpload(pendingAppDraftUpload()).bind()
+                    tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                    saveAppPackageFromNewUpload(
+                        tx,
+                        appPackage = appPackage(uploadEventTime = UNIX_EPOCH.plusSeconds(1)),
+                        objectKey = "staleUpload1",
+                    )
+                        .bind()
+                    tx.appDrafts.deletePendingUploadByAppDraftId("appDraft1", UNIX_EPOCH).bind()
+                    tx.appDrafts.saveUpload(
+                        incompletePendingAppDraftUpload(externalBlobId = "blob2"),
+                        pendingExternalBlob(id = "blob2"),
+                    )
+                        .bind()
                 }
                     .unwrap2()
                 val processor = uploadEventProcessor(dataStore, blobStorage, randomSource, downloadDir)
@@ -200,13 +214,19 @@ class UploadEventProcessorImplTest {
                 dataStore.migrateToHead().unwrap()
                 dataStore.runTxWithRetry { tx ->
                     tx.organizations.saveWithOwner(organization(), user()).bind()
-                    tx.externalBlobs.save(committedExternalBlob()).bind()
-                    tx.appPackages.save(appPackage()).bind()
-                    tx.appDrafts.save(unsubmittedAppDraft(appPackageId = Some("appPackage1"))).bind()
+                    tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                    saveAppPackageFromNewUpload(tx).bind()
                     tx.appDrafts.saveListing(appDraftListing()).bind()
                     tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
                     tx.appDrafts.updateSubmitTime("appDraft1", UNIX_EPOCH).bind()
-                    tx.appDrafts.saveUpload(pendingAppDraftUpload()).bind()
+                    tx.appDrafts.deletePendingUploadByAppDraftId("appDraft1", UNIX_EPOCH).bind()
+                    // The released blob keeps its storage location, so the replacement upload
+                    // reserves a different one
+                    tx.appDrafts.saveUpload(
+                        incompletePendingAppDraftUpload(externalBlobId = "blob2"),
+                        pendingExternalBlob(id = "blob2", objectKey = "object2"),
+                    )
+                        .bind()
                 }
                     .unwrap2()
                 val processor = uploadEventProcessor(dataStore, blobStorage, randomSource, downloadDir)
@@ -222,7 +242,7 @@ class UploadEventProcessorImplTest {
                     .unwrap()
 
                 assertTrue(acked)
-                assertEquals(Some(AppDraftUploadProcessingError.AppDraftSubmitted.left()), upload.result)
+                assertEquals(Some(AppDraftUploadProcessingError.AppDraftSubmitted.left()), upload.optionalResult)
             }
         }
     }
@@ -240,8 +260,9 @@ class UploadEventProcessorImplTest {
                 dataStore.runTxWithRetry { tx ->
                     tx.organizations.saveWithOwner(organization(), user()).bind()
                     tx.appDrafts.save(unsubmittedAppDraft()).bind()
-                    tx.externalBlobs.save(pendingExternalBlob()).bind()
-                    tx.appDrafts.saveUpload(pendingAppDraftUpload()).bind()
+                    tx.appDrafts
+                        .saveUpload(incompletePendingAppDraftUpload(), pendingExternalBlob())
+                        .bind()
                 }
                     .unwrap2()
                 val processor = uploadEventProcessor(dataStore, blobStorage, randomSource, downloadDir)
@@ -276,10 +297,12 @@ class UploadEventProcessorImplTest {
                 dataStore.runTxWithRetry { tx ->
                     tx.organizations.saveWithOwner(organization(), user()).bind()
                     tx.appDrafts.save(unsubmittedAppDraft()).bind()
-                    tx.externalBlobs.save(pendingExternalBlob()).bind()
-                    tx.appDrafts.saveUpload(
-                        pendingAppDraftUpload(objectKey = "o1")
-                    ).bind()
+                    tx.appDrafts
+                        .saveUpload(
+                            incompletePendingAppDraftUpload(objectKey = "o1"),
+                            pendingExternalBlob(),
+                        )
+                        .bind()
                 }
                     .unwrap2()
                 val processor = uploadEventProcessor(
@@ -310,7 +333,7 @@ class UploadEventProcessorImplTest {
                             ApkSetParseError.Policy.LowTargetSdk,
                         ).left(),
                     ),
-                    upload.result,
+                    upload.optionalResult,
                 )
             }
         }
@@ -357,6 +380,7 @@ class UploadEventProcessorImplTest {
                 assertEquals(
                     AppPackage(
                         id = appPackage.id,
+                        appDraftId = "appDraft1",
                         externalBlobId = "blob1",
                         uploadEventTime = UNIX_EPOCH,
                         appId = ApplicationId.fromString("com.example.app").unwrap(),
@@ -480,16 +504,29 @@ class UploadEventProcessorImplTest {
                     .unwrap()
                 dataStore.runTxWithRetry { tx ->
                     tx.organizations.saveWithOwner(organization(), user()).bind()
-                    tx.externalBlobs
-                        .save(committedExternalBlob(id = "oldBlob", bucketName = "private", objectKey = "old1"))
+                    tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                    saveAppPackageFromNewUpload(
+                        tx,
+                        appPackage = appPackage(id = "oldPackage", externalBlobId = "oldBlob"),
+                        bucketName = "private",
+                        objectKey = "old1",
+                    )
                         .bind()
-                    tx.appPackages.save(appPackage(id = "oldPackage", externalBlobId = "oldBlob")).bind()
-                    tx.appDrafts.save(unsubmittedAppDraft(appPackageId = Some("oldPackage"))).bind()
-                    tx.externalBlobs
-                        .save(pendingExternalBlob(id = "newBlob", bucketName = "private", objectKey = "new1"))
-                        .bind()
+                    // An app draft holds one pending upload at a time, so the committed one makes
+                    // way for the upload that replaces the package
+                    tx.appDrafts.deletePendingUploadByAppDraftId("appDraft1", UNIX_EPOCH).bind()
                     tx.appDrafts
-                        .saveUpload(pendingAppDraftUpload(externalBlobId = "newBlob", objectKey = "upload1"))
+                        .saveUpload(
+                            incompletePendingAppDraftUpload(
+                                externalBlobId = "newBlob",
+                                objectKey = "upload1",
+                            ),
+                            pendingExternalBlob(
+                                id = "newBlob",
+                                bucketName = "private",
+                                objectKey = "new1",
+                            ),
+                        )
                         .bind()
                 }
                     .unwrap2()

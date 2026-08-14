@@ -6,7 +6,9 @@ package app.accrescent.server.parcelo.domain.ports.driven.datastore
 
 import app.accrescent.server.parcelo.domain.android.ApkSetParseError
 import arrow.core.Either
+import arrow.core.None
 import arrow.core.Option
+import arrow.core.Some
 import java.time.OffsetDateTime
 
 sealed class AppDraftUploadProcessingError {
@@ -23,23 +25,31 @@ sealed class AppDraftUploadProcessingError {
     data class ApkSetParseFailed(val error: ApkSetParseError) : AppDraftUploadProcessingError()
 }
 
-/**
- * An app draft upload which is pending processing.
- *
- * @property id the unique ID of this pending app draft upload.
- * @property appDraftId the ID of the app draft this upload is for.
- * @property externalBlobId the ID of the private external blob reserved for if processing this
- * upload succeeds.
- * @property objectKey the object key of the blob this upload may come from. Doubles as a
- * correlation key between the object upload event and this pending upload.
- * @property createTime the timestamp at which this entity was created.
- * @property result the result of processing this upload, if completed.
- */
-data class PendingAppDraftUpload(
-    val id: String,
-    val appDraftId: String,
-    val externalBlobId: String,
-    val objectKey: String,
-    val createTime: OffsetDateTime,
-    val result: Option<Either<AppDraftUploadProcessingError, Unit>>,
-)
+sealed class PendingAppDraftUpload {
+    abstract val id: String
+    abstract val appDraftId: String
+    abstract val objectKey: String
+    abstract val createTime: OffsetDateTime
+
+    data class Incomplete(
+        override val id: String,
+        override val appDraftId: String,
+        override val objectKey: String,
+        override val createTime: OffsetDateTime,
+        val externalBlobId: String,
+    ) : PendingAppDraftUpload()
+
+    data class Completed(
+        override val id: String,
+        override val appDraftId: String,
+        override val objectKey: String,
+        override val createTime: OffsetDateTime,
+        val result: Either<AppDraftUploadProcessingError, Unit>,
+    ) : PendingAppDraftUpload()
+
+    val optionalResult: Option<Either<AppDraftUploadProcessingError, Unit>>
+        get() = when (this) {
+            is Incomplete -> None
+            is Completed -> Some(result)
+        }
+}
