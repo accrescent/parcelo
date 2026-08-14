@@ -20,7 +20,6 @@ import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStore
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStoreResult
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.ExternalBlob
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.ListingLanguage
-import app.accrescent.server.parcelo.domain.ports.driven.datastore.Organization
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.PendingAppDraftListingIconUpload
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.PendingAppDraftUpload
 import arrow.core.None
@@ -162,14 +161,6 @@ fun pendingExternalBlob(
         objectKey = objectKey,
         status = ExternalBlob.Status.Pending,
     )
-}
-
-fun organization(
-    id: String = "org1",
-    ownerUserId: String = "user1",
-    createTime: OffsetDateTime = UNIX_EPOCH,
-): Organization {
-    return Organization(id, ownerUserId, createTime)
 }
 
 fun incompletePendingAppDraftUpload(
