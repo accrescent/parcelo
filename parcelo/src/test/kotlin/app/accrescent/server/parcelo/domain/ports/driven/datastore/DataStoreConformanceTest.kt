@@ -20,7 +20,6 @@ import app.accrescent.server.parcelo.domain.android.SdkVersion
 import app.accrescent.server.parcelo.domain.android.VersionName
 import app.accrescent.server.parcelo.incompletePendingAppDraftListingIconUpload
 import app.accrescent.server.parcelo.incompletePendingAppDraftUpload
-import app.accrescent.server.parcelo.organization
 import app.accrescent.server.parcelo.pendingExternalBlob
 import app.accrescent.server.parcelo.saveAppPackageFromNewUpload
 import app.accrescent.server.parcelo.unsubmittedAppDraft
@@ -121,11 +120,15 @@ abstract class DataStoreConformanceTest {
                 }.unwrap2()
             }
 
-            val foundOrganization = dataStore
-                .runTxWithRetry { tx -> tx.organizations.findById("org1").bind() }
-                .unwrap2()
+            // Saving this data again can succeed only if the previous query rolled back since user
+            // IDs and organization IDs must be unique
+            val result = dataStore
+                .runTxWithRetry { tx ->
+                    tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
+                }
+                .unwrap()
 
-            assertTrue(foundOrganization.isNone())
+            assertEquals(Unit.right(), result)
         }
     }
 
@@ -138,11 +141,15 @@ abstract class DataStoreConformanceTest {
             }.unwrap()
 
             assertEquals(DataStoreError.IllegalState.left(), result)
-            val foundOrganization = dataStore
-                .runTxWithRetry { tx -> tx.organizations.findById("org1").bind() }
-                .unwrap2()
+            // Saving this data again can succeed only if the previous query rolled back since user
+            // IDs and organization IDs must be unique
+            val secondSaveResult = dataStore
+                .runTxWithRetry { tx ->
+                    tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
+                }
+                .unwrap()
 
-            assertTrue(foundOrganization.isNone())
+            assertEquals(Unit.right(), secondSaveResult)
         }
     }
 
@@ -2442,31 +2449,6 @@ abstract class DataStoreConformanceTest {
                 .unwrap2()
 
             assertEquals(Some(gcsBlob), foundBlob)
-        }
-    }
-
-    @Test
-    fun `organizations findById returns None when no org with the given ID exists`() {
-        withMigratedDataStore { dataStore ->
-            val foundOrg = dataStore
-                .runTxWithRetry { tx -> tx.organizations.findById("org1").bind() }
-                .unwrap2()
-
-            assertTrue(foundOrg.isNone())
-        }
-    }
-
-    @Test
-    fun `organizations saveWithOwner and findById round-trip data`() {
-        withMigratedDataStore { dataStore ->
-            dataStore
-                .runTxWithRetry { tx -> tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind() }
-                .unwrap2()
-            val foundOrg = dataStore
-                .runTxWithRetry { tx -> tx.organizations.findById("org1").bind() }
-                .unwrap2()
-
-            assertEquals(Some(organization()), foundOrg)
         }
     }
 

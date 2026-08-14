@@ -35,7 +35,6 @@ import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStoreResu
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.ExternalBlob
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.HasPermissionRequest
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.ListingLanguage
-import app.accrescent.server.parcelo.domain.ports.driven.datastore.Organization
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.PendingAppDraftListingIconUpload
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.PendingAppDraftUpload
 import app.accrescent.server.parcelo.domain.ports.driven.randomsource.RandomSource
@@ -1345,23 +1344,6 @@ private fun releaseListingIconBlob(
 private class InMemoryOrganizationRepository(
     private val connection: Connection,
 ) : OrganizationRepository() {
-    override fun findById(id: String): DataStoreResult<Option<Organization>> = runCatchingSql {
-        val sql = "SELECT id, owner_user_id, create_time FROM organizations WHERE id = ?"
-        connection.prepareStatement(sql).use { stmt ->
-            stmt.setString(1, id)
-            stmt.executeQuery().use { rs ->
-                if (!rs.next()) return@use None
-
-                Organization(
-                    id = rs.requireString("id").bind(),
-                    ownerUserId = rs.requireString("owner_user_id").bind(),
-                    createTime = rs.requireObject<OffsetDateTime>("create_time").bind(),
-                )
-                    .some()
-            }
-        }
-    }
-
     override fun saveWithOwner(
         organizationId: String,
         userId: String,
