@@ -38,7 +38,6 @@ import app.accrescent.server.parcelo.domain.ports.driven.datastore.ListingLangua
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.Organization
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.PendingAppDraftListingIconUpload
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.PendingAppDraftUpload
-import app.accrescent.server.parcelo.domain.ports.driven.datastore.User
 import app.accrescent.server.parcelo.domain.ports.driven.randomsource.RandomSource
 import arrow.core.Either
 import arrow.core.None
@@ -1364,13 +1363,10 @@ private class InMemoryOrganizationRepository(
     }
 
     override fun saveWithOwner(
-        organization: Organization,
-        owner: User,
+        organizationId: String,
+        userId: String,
+        createTime: OffsetDateTime,
     ): DataStoreResult<Unit> = runCatchingSql {
-        if (organization.ownerUserId != owner.id || owner.organizationId != organization.id) {
-            raise(DataStoreError.ConsistencyViolation)
-        }
-
         val organizationInsertSql =
             "INSERT INTO organizations (id, owner_user_id, create_time) VALUES (?, ?, ?)"
         val userInsertSql =
@@ -1378,20 +1374,20 @@ private class InMemoryOrganizationRepository(
         val organizationUpdateSql = "UPDATE organizations SET owner_user_id = ? WHERE id = ?"
 
         connection.prepareStatement(organizationInsertSql).use { stmt ->
-            stmt.setString(1, organization.id)
+            stmt.setString(1, organizationId)
             stmt.setNull(2, Types.VARCHAR)
-            stmt.setObject(3, organization.createTime)
+            stmt.setObject(3, createTime)
             stmt.executeSingleUpdate().bind()
         }
         connection.prepareStatement(userInsertSql).use { stmt ->
-            stmt.setString(1, owner.id)
-            stmt.setString(2, owner.organizationId)
-            stmt.setObject(3, owner.createTime)
+            stmt.setString(1, userId)
+            stmt.setString(2, organizationId)
+            stmt.setObject(3, createTime)
             stmt.executeSingleUpdate().bind()
         }
         connection.prepareStatement(organizationUpdateSql).use { stmt ->
-            stmt.setString(1, organization.ownerUserId)
-            stmt.setString(2, organization.id)
+            stmt.setString(1, userId)
+            stmt.setString(2, organizationId)
             stmt.executeSingleUpdate().bind()
         }
     }

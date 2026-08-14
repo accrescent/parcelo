@@ -31,7 +31,6 @@ import app.accrescent.server.parcelo.domain.ports.driven.datastore.ListingLangua
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.Organization
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.PendingAppDraftListingIconUpload
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.PendingAppDraftUpload
-import app.accrescent.server.parcelo.domain.ports.driven.datastore.User
 import app.accrescent.server.parcelo.domain.ports.driven.randomsource.RandomSource
 import arrow.core.Either
 import arrow.core.None
@@ -1240,8 +1239,9 @@ private class PostgresqlOrganizationRepository(
     }
 
     override fun saveWithOwner(
-        organization: Organization,
-        owner: User,
+        organizationId: String,
+        userId: String,
+        createTime: OffsetDateTime,
     ): DataStoreResult<Unit> = runCatchingSql {
         val sql = """
             WITH new_organization AS (
@@ -1250,12 +1250,12 @@ private class PostgresqlOrganizationRepository(
             INSERT INTO users (id, organization_id, create_time) VALUES (?, ?, ?)
         """.trimIndent()
         connection.prepareStatement(sql).use { stmt ->
-            stmt.setString(1, organization.id)
-            stmt.setString(2, organization.ownerUserId)
-            stmt.setObject(3, organization.createTime)
-            stmt.setString(4, owner.id)
-            stmt.setString(5, owner.organizationId)
-            stmt.setObject(6, owner.createTime)
+            stmt.setString(1, organizationId)
+            stmt.setString(2, userId)
+            stmt.setObject(3, createTime)
+            stmt.setString(4, userId)
+            stmt.setString(5, organizationId)
+            stmt.setObject(6, createTime)
             stmt.executeSingleUpdate().bind()
         }
     }

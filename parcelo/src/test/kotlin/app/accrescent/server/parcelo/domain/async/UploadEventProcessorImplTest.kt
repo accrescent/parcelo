@@ -34,11 +34,9 @@ import app.accrescent.server.parcelo.domain.ports.driven.timestampsource.Timesta
 import app.accrescent.server.parcelo.domain.ports.driving.async.UploadEvent
 import app.accrescent.server.parcelo.domain.ports.driving.async.UploadProcessingError
 import app.accrescent.server.parcelo.incompletePendingAppDraftUpload
-import app.accrescent.server.parcelo.organization
 import app.accrescent.server.parcelo.pendingExternalBlob
 import app.accrescent.server.parcelo.saveAppPackageFromNewUpload
 import app.accrescent.server.parcelo.unsubmittedAppDraft
-import app.accrescent.server.parcelo.user
 import arrow.core.Some
 import arrow.core.left
 import arrow.core.right
@@ -99,7 +97,7 @@ private fun seedSuccessfulUpload(
         .upload(validApkSetPath(), BlobId.Location("uploads", "upload1"))
         .unwrap()
     dataStore.runTxWithRetry { tx ->
-        tx.organizations.saveWithOwner(organization(), user()).bind()
+        tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
         tx.appDrafts.save(unsubmittedAppDraft()).bind()
         tx.appDrafts.saveUpload(
             incompletePendingAppDraftUpload(objectKey = "upload1"),
@@ -141,7 +139,7 @@ class UploadEventProcessorImplTest {
             InMemoryDataStore(randomSource).use { dataStore ->
                 dataStore.migrateToHead().unwrap()
                 dataStore.runTxWithRetry { tx ->
-                    tx.organizations.saveWithOwner(organization(), user()).bind()
+                    tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
                     tx.appDrafts.save(unsubmittedAppDraft()).bind()
                     tx.appDrafts
                         .saveUpload(incompletePendingAppDraftUpload(), pendingExternalBlob())
@@ -176,7 +174,7 @@ class UploadEventProcessorImplTest {
             InMemoryDataStore(randomSource).use { dataStore ->
                 dataStore.migrateToHead().unwrap()
                 dataStore.runTxWithRetry { tx ->
-                    tx.organizations.saveWithOwner(organization(), user()).bind()
+                    tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
                     tx.appDrafts.save(unsubmittedAppDraft()).bind()
                     saveAppPackageFromNewUpload(
                         tx,
@@ -213,7 +211,7 @@ class UploadEventProcessorImplTest {
             InMemoryDataStore(randomSource).use { dataStore ->
                 dataStore.migrateToHead().unwrap()
                 dataStore.runTxWithRetry { tx ->
-                    tx.organizations.saveWithOwner(organization(), user()).bind()
+                    tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
                     tx.appDrafts.save(unsubmittedAppDraft()).bind()
                     saveAppPackageFromNewUpload(tx).bind()
                     tx.appDrafts.saveListing(appDraftListing()).bind()
@@ -258,7 +256,7 @@ class UploadEventProcessorImplTest {
                 // A pending upload exists for the blob, but the object blob was never actually
                 // uploaded to blob storage
                 dataStore.runTxWithRetry { tx ->
-                    tx.organizations.saveWithOwner(organization(), user()).bind()
+                    tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
                     tx.appDrafts.save(unsubmittedAppDraft()).bind()
                     tx.appDrafts
                         .saveUpload(incompletePendingAppDraftUpload(), pendingExternalBlob())
@@ -295,7 +293,7 @@ class UploadEventProcessorImplTest {
                     .upload(apkSetPath, BlobId.Location("b1", "o1"))
                     .unwrap()
                 dataStore.runTxWithRetry { tx ->
-                    tx.organizations.saveWithOwner(organization(), user()).bind()
+                    tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
                     tx.appDrafts.save(unsubmittedAppDraft()).bind()
                     tx.appDrafts
                         .saveUpload(
@@ -503,7 +501,7 @@ class UploadEventProcessorImplTest {
                     .upload(validApkSetPath(), BlobId.Location("uploads", "upload1"))
                     .unwrap()
                 dataStore.runTxWithRetry { tx ->
-                    tx.organizations.saveWithOwner(organization(), user()).bind()
+                    tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
                     tx.appDrafts.save(unsubmittedAppDraft()).bind()
                     saveAppPackageFromNewUpload(
                         tx,

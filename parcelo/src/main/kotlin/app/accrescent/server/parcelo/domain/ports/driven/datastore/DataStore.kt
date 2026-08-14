@@ -678,17 +678,20 @@ abstract class DataStore(private val randomSource: RandomSource) {
         abstract fun findById(id: String): DataStoreResult<Option<Organization>>
 
         /**
-         * Saves a new organization along with the user owning it.
+         * Saves a new organization along with its owning user.
          *
-         * @param organization the organization to save.
-         * @param owner the user owning the organization to save.
+         * @param organizationId the ID of the organization to save.
+         * @param userId the ID of the new user to save who will own the organization represented by
+         * [organizationId].
+         * @param createTime the creation timestamp to set for the new organization and user.
+         *
          * @return [DataStoreError.ConsistencyViolation] if an organization or user with the
-         * same ID already exists, the organization's owner user ID doesn't match the owner's ID,
-         * or the owner's organization ID doesn't match the organization's ID.
+         * respective provided ID already exists.
          */
         abstract fun saveWithOwner(
-            organization: Organization,
-            owner: User,
+            organizationId: String,
+            userId: String,
+            createTime: OffsetDateTime,
         ): DataStoreResult<Unit>
     }
 }

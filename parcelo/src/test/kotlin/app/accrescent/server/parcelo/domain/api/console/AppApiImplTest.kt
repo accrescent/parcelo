@@ -4,6 +4,7 @@
 
 package app.accrescent.server.parcelo.domain.api.console
 
+import app.accrescent.server.parcelo.UNIX_EPOCH
 import app.accrescent.server.parcelo.adapters.driven.datastore.jdbc.InMemoryDataStore
 import app.accrescent.server.parcelo.adapters.driven.randomsource.DeterministicRandomSource
 import app.accrescent.server.parcelo.core.unwrap
@@ -15,8 +16,6 @@ import app.accrescent.server.parcelo.domain.ports.driving.console.GetAppRequest
 import app.accrescent.server.parcelo.domain.ports.driving.console.GetAppResponse
 import app.accrescent.server.parcelo.domain.ports.driving.console.InsufficientPermissionError
 import app.accrescent.server.parcelo.domain.ports.driving.console.UpdateAppRequest
-import app.accrescent.server.parcelo.organization
-import app.accrescent.server.parcelo.user
 import arrow.core.right
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -43,7 +42,7 @@ class AppApiImplTest {
             dataStore.migrateToHead().unwrap()
             val originalApp = makeApp()
             dataStore.runTxWithRetry { tx ->
-                tx.organizations.saveWithOwner(organization(), user()).bind()
+                tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
                 tx.apps.saveWithDefaultListing(
                     originalApp,
                     AppListing("appListing1", "app1", ListingLanguage.EN_US)
@@ -84,7 +83,7 @@ class AppApiImplTest {
         InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
-                tx.organizations.saveWithOwner(organization(), user()).bind()
+                tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
                 tx.apps.saveWithDefaultListing(
                     makeApp(),
                     AppListing("appListing1", "app1", ListingLanguage.EN_US)
@@ -103,7 +102,7 @@ class AppApiImplTest {
         InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
-                tx.organizations.saveWithOwner(organization(), user()).bind()
+                tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
                 tx.apps.saveWithDefaultListing(
                     makeApp(),
                     AppListing("appListing1", "app1", ListingLanguage.EN_US)
