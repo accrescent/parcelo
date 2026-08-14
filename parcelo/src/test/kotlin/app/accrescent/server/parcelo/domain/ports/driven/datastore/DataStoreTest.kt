@@ -4,6 +4,7 @@
 
 package app.accrescent.server.parcelo.domain.ports.driven.datastore
 
+import app.accrescent.server.parcelo.UNIX_EPOCH
 import app.accrescent.server.parcelo.adapters.driven.datastore.jdbc.InMemoryDataStore
 import app.accrescent.server.parcelo.adapters.driven.randomsource.DeterministicRandomSource
 import app.accrescent.server.parcelo.appDraftListing
@@ -13,11 +14,9 @@ import app.accrescent.server.parcelo.core.unwrap
 import app.accrescent.server.parcelo.core.unwrap2
 import app.accrescent.server.parcelo.core.unwrapErr
 import app.accrescent.server.parcelo.incompletePendingAppDraftUpload
-import app.accrescent.server.parcelo.organization
 import app.accrescent.server.parcelo.pendingExternalBlob
 import app.accrescent.server.parcelo.saveAppPackageFromNewUpload
 import app.accrescent.server.parcelo.unsubmittedAppDraft
-import app.accrescent.server.parcelo.user
 import arrow.core.Either
 import arrow.core.left
 import arrow.core.raise.Raise
@@ -81,7 +80,7 @@ class DataStoreTest {
         InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore
-                .runTxWithRetry { tx -> tx.organizations.saveWithOwner(organization(), user()).bind() }
+                .runTxWithRetry { tx -> tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind() }
                 .unwrap2()
             val originalAppDraft = unsubmittedAppDraft()
 
@@ -114,7 +113,7 @@ class DataStoreTest {
             dataStore.migrateToHead().unwrap()
             dataStore
                 .runTxWithRetry { tx ->
-                    tx.organizations.saveWithOwner(organization(), user()).bind()
+                    tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
                     tx.appDrafts.save(unsubmittedAppDraft()).bind()
                 }
                 .unwrap2()
@@ -150,7 +149,7 @@ class DataStoreTest {
             val originalPackage = appPackage()
 
             dataStore.runTxWithRetry { tx ->
-                tx.organizations.saveWithOwner(organization(), user()).bind()
+                tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
                 tx.appDrafts.save(unsubmittedAppDraft()).bind()
                 saveAppPackageFromNewUpload(tx, originalPackage).bind()
             }.unwrap2()
@@ -182,7 +181,7 @@ class DataStoreTest {
             dataStore.migrateToHead().unwrap()
             val originalApp = App("app1", "org1", "appListing1", false)
             dataStore
-                .runTxWithRetry { tx -> tx.organizations.saveWithOwner(organization(), user()).bind() }
+                .runTxWithRetry { tx -> tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind() }
                 .unwrap2()
 
             val defaultListing = AppListing("appListing1", "app1", ListingLanguage.EN_US)
@@ -219,7 +218,7 @@ class DataStoreTest {
             val originalBlob = pendingExternalBlob()
 
             dataStore.runTxWithRetry { tx ->
-                tx.organizations.saveWithOwner(organization(), user()).bind()
+                tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
                 tx.appDrafts.save(unsubmittedAppDraft()).bind()
                 tx.appDrafts.saveUpload(incompletePendingAppDraftUpload(), originalBlob).bind()
             }.unwrap2()
@@ -252,7 +251,7 @@ class DataStoreTest {
             val pendingBlob = pendingExternalBlob()
 
             dataStore.runTxWithRetry { tx ->
-                tx.organizations.saveWithOwner(organization(), user()).bind()
+                tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
                 tx.appDrafts.save(unsubmittedAppDraft()).bind()
                 tx.appDrafts.saveUpload(incompletePendingAppDraftUpload(), pendingBlob).bind()
             }.unwrap2()
@@ -272,7 +271,7 @@ class DataStoreTest {
             val originalBlob = committedExternalBlob()
 
             dataStore.runTxWithRetry { tx ->
-                tx.organizations.saveWithOwner(organization(), user()).bind()
+                tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
                 tx.appDrafts.save(unsubmittedAppDraft()).bind()
                 saveAppPackageFromNewUpload(tx).bind()
             }.unwrap2()

@@ -23,7 +23,6 @@ import app.accrescent.server.parcelo.domain.ports.driven.datastore.ListingLangua
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.Organization
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.PendingAppDraftListingIconUpload
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.PendingAppDraftUpload
-import app.accrescent.server.parcelo.domain.ports.driven.datastore.User
 import arrow.core.None
 import arrow.core.Option
 import arrow.core.raise.either
@@ -218,12 +217,4 @@ fun unsubmittedAppDraft(
         defaultAppDraftListingId = defaultAppDraftListingId,
         appPackageId = appPackageId,
     )
-}
-
-fun user(
-    id: String = "user1",
-    organizationId: String = "org1",
-    createTime: OffsetDateTime = UNIX_EPOCH,
-): User {
-    return User(id, organizationId, createTime)
 }
