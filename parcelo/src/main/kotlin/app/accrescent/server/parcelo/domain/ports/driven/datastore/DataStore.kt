@@ -310,6 +310,15 @@ abstract class DataStore(private val randomSource: RandomSource) {
         ): DataStoreResult<Option<PendingAppDraftUpload>>
 
         /**
+         * Determines whether an app draft is submitted.
+         *
+         * @param id the ID of the app draft to check the submission status of.
+         * @return [DataStoreError.EntityNotFound] if the app draft does not exist, otherwise
+         * whether the app draft is submitted.
+         */
+        abstract fun isSubmitted(id: String): DataStoreResult<Boolean>
+
+        /**
          * Determines whether an app draft listing exists.
          *
          * @param listingId the ID of the app draft listing to check the existence of.
