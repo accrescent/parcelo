@@ -13,8 +13,10 @@ import app.accrescent.server.parcelo.domain.android.SdkVersion
 import app.accrescent.server.parcelo.domain.android.VersionCode
 import app.accrescent.server.parcelo.domain.android.VersionName
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppDraft
+import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppDraftApiView
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppDraftListing
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppPackage
+import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppPackageApiView
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppPackagePermission
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStore
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStoreResult
@@ -207,5 +209,18 @@ fun unsubmittedAppDraft(
         createTime = UNIX_EPOCH,
         defaultAppDraftListingId = defaultAppDraftListingId,
         appPackageId = appPackageId,
+    )
+}
+
+fun unsubmittedAppDraftApiView(
+    id: String = "appDraft1",
+    defaultAppDraftListingId: Option<String> = None,
+    appPackage: Option<AppPackageApiView> = None,
+): AppDraftApiView.Unsubmitted {
+    return AppDraftApiView.Unsubmitted(
+        id = id,
+        createTime = UNIX_EPOCH,
+        defaultAppDraftListingId = defaultAppDraftListingId,
+        appPackage = appPackage,
     )
 }
