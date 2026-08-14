@@ -81,11 +81,11 @@ private inline fun <T> runCatchingSql(block: Raise<DataStoreError>.() -> T): Dat
 
 private fun SQLException.toDataStoreError(): DataStoreError {
     return when (sqlState) {
-        ErrorCode.CHECK_CONSTRAINT_VIOLATED_1.toString() -> DataStoreError.CheckConstraintViolation
-        ErrorCode.DUPLICATE_KEY_1.toString() -> DataStoreError.UniqueConstraintViolation
+        ErrorCode.CHECK_CONSTRAINT_VIOLATED_1.toString(),
+        ErrorCode.DUPLICATE_KEY_1.toString(),
         ErrorCode.REFERENTIAL_INTEGRITY_VIOLATED_CHILD_EXISTS_1.toString(),
         ErrorCode.REFERENTIAL_INTEGRITY_VIOLATED_PARENT_MISSING_1.toString() ->
-            DataStoreError.ForeignKeyViolation
+            DataStoreError.ConsistencyViolation
 
         ErrorCode.DEADLOCK_1.toString() -> DataStoreError.SerializationFailure
         else -> DataStoreError.Unknown
@@ -995,7 +995,7 @@ private class InMemoryAppPackageRepository(
             stmt.setString(3, appPackage.id)
             stmt.setString(4, appPackage.externalBlobId)
             stmt.setString(5, service)
-            stmt.executeSingleUpdate().mapLeft { DataStoreError.ForeignKeyViolation }.bind()
+            stmt.executeSingleUpdate().mapLeft { DataStoreError.ConsistencyViolation }.bind()
         }
 
         val completeSql = """
@@ -1075,7 +1075,7 @@ private class InMemoryAppRepository(private val connection: Connection) : AppRep
         defaultListing: AppListing,
     ): DataStoreResult<Unit> = runCatchingSql {
         if (defaultListing.appId != app.id) {
-            raise(DataStoreError.ForeignKeyViolation)
+            raise(DataStoreError.ConsistencyViolation)
         }
 
         val appInsertSql = """
@@ -1368,7 +1368,7 @@ private class InMemoryOrganizationRepository(
         owner: User,
     ): DataStoreResult<Unit> = runCatchingSql {
         if (organization.ownerUserId != owner.id || owner.organizationId != organization.id) {
-            raise(DataStoreError.ForeignKeyViolation)
+            raise(DataStoreError.ConsistencyViolation)
         }
 
         val organizationInsertSql =
