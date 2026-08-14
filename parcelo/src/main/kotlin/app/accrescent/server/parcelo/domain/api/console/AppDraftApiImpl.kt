@@ -128,14 +128,10 @@ class AppDraftApiImpl(
 
             val appDraftId = idGenerator.generateId(IdType.APP_DRAFT).bindMapLeft(::toServerError)
             tx.appDrafts
-                .save(
-                    DataAppDraft.Unsubmitted(
-                        id = appDraftId,
-                        organizationId = request.organizationId,
-                        createTime = timestampSource.now(),
-                        defaultAppDraftListingId = None,
-                        appPackageId = None,
-                    )
+                .create(
+                    organizationId = request.organizationId,
+                    appDraftId = appDraftId,
+                    createTime = timestampSource.now(),
                 )
                 .bindMapLeft(::toServerError)
             appDraftId

@@ -273,6 +273,23 @@ private class InMemoryAppDraftRepository(
         }
     }
 
+    override fun create(
+        organizationId: String,
+        appDraftId: String,
+        createTime: OffsetDateTime,
+    ): DataStoreResult<Unit> = runCatchingSql {
+        val sql = """
+            INSERT INTO app_drafts (id, organization_id, create_time)
+            VALUES (?, ?, ?)
+        """.trimIndent()
+        connection.prepareStatement(sql).use { stmt ->
+            stmt.setString(1, appDraftId)
+            stmt.setString(2, organizationId)
+            stmt.setObject(3, createTime)
+            stmt.executeSingleUpdate().bind()
+        }
+    }
+
     override fun deleteById(
         id: String,
         blobDeleteTime: OffsetDateTime,
@@ -676,29 +693,6 @@ private class InMemoryAppDraftRepository(
         connection.prepareStatement(sql).use { stmt ->
             stmt.setString(1, appDraftId)
             stmt.executeQuery().use { rs -> rs.getSelectExistsResult().bind() }
-        }
-    }
-
-    override fun save(appDraft: AppDraft): DataStoreResult<Unit> = runCatchingSql {
-        val sql = """
-            INSERT INTO app_drafts (
-                id,
-                organization_id,
-                create_time,
-                default_app_draft_listing_id,
-                app_package_id,
-                submit_time
-            )
-            VALUES (?, ?, ?, ?, ?, ?)
-        """.trimIndent()
-        connection.prepareStatement(sql).use { stmt ->
-            stmt.setString(1, appDraft.id)
-            stmt.setString(2, appDraft.organizationId)
-            stmt.setObject(3, appDraft.createTime)
-            stmt.setString(4, appDraft.optionalDefaultAppDraftListingId.getOrNull())
-            stmt.setString(5, appDraft.optionalAppPackageId.getOrNull())
-            stmt.setObject(6, (appDraft as? AppDraft.Submitted)?.submitTime)
-            stmt.executeSingleUpdate().bind()
         }
     }
 

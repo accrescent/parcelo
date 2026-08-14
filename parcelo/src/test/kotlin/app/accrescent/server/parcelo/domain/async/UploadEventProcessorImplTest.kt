@@ -36,7 +36,6 @@ import app.accrescent.server.parcelo.domain.ports.driving.async.UploadProcessing
 import app.accrescent.server.parcelo.incompletePendingAppDraftUpload
 import app.accrescent.server.parcelo.pendingExternalBlob
 import app.accrescent.server.parcelo.saveAppPackageFromNewUpload
-import app.accrescent.server.parcelo.unsubmittedAppDraft
 import arrow.core.Some
 import arrow.core.left
 import arrow.core.right
@@ -98,7 +97,7 @@ private fun seedSuccessfulUpload(
         .unwrap()
     dataStore.runTxWithRetry { tx ->
         tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
-        tx.appDrafts.save(unsubmittedAppDraft()).bind()
+        tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
         tx.appDrafts.saveUpload(
             incompletePendingAppDraftUpload(objectKey = "upload1"),
             pendingExternalBlob(bucketName = "private", objectKey = "reserved1"),
@@ -140,7 +139,7 @@ class UploadEventProcessorImplTest {
                 dataStore.migrateToHead().unwrap()
                 dataStore.runTxWithRetry { tx ->
                     tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
-                    tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                    tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
                     tx.appDrafts
                         .saveUpload(incompletePendingAppDraftUpload(), pendingExternalBlob())
                         .bind()
@@ -175,7 +174,7 @@ class UploadEventProcessorImplTest {
                 dataStore.migrateToHead().unwrap()
                 dataStore.runTxWithRetry { tx ->
                     tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
-                    tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                    tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
                     saveAppPackageFromNewUpload(
                         tx,
                         appPackage = appPackage(uploadEventTime = UNIX_EPOCH.plusSeconds(1)),
@@ -212,7 +211,7 @@ class UploadEventProcessorImplTest {
                 dataStore.migrateToHead().unwrap()
                 dataStore.runTxWithRetry { tx ->
                     tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
-                    tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                    tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
                     saveAppPackageFromNewUpload(tx).bind()
                     tx.appDrafts.saveListing(appDraftListing()).bind()
                     tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
@@ -257,7 +256,7 @@ class UploadEventProcessorImplTest {
                 // uploaded to blob storage
                 dataStore.runTxWithRetry { tx ->
                     tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
-                    tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                    tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
                     tx.appDrafts
                         .saveUpload(incompletePendingAppDraftUpload(), pendingExternalBlob())
                         .bind()
@@ -294,7 +293,7 @@ class UploadEventProcessorImplTest {
                     .unwrap()
                 dataStore.runTxWithRetry { tx ->
                     tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
-                    tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                    tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
                     tx.appDrafts
                         .saveUpload(
                             incompletePendingAppDraftUpload(objectKey = "o1"),
@@ -502,7 +501,7 @@ class UploadEventProcessorImplTest {
                     .unwrap()
                 dataStore.runTxWithRetry { tx ->
                     tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
-                    tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                    tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
                     saveAppPackageFromNewUpload(
                         tx,
                         appPackage = appPackage(id = "oldPackage", externalBlobId = "oldBlob"),
