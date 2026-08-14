@@ -5,6 +5,7 @@
 package app.accrescent.server.parcelo.adapters.driven.datastore.jdbc
 
 import app.accrescent.server.parcelo.core.Bytes
+import app.accrescent.server.parcelo.core.NonNegativeInt
 import app.accrescent.server.parcelo.core.toEitherBind
 import app.accrescent.server.parcelo.domain.android.AndroidManifest
 import app.accrescent.server.parcelo.domain.android.ApkParseError
@@ -460,42 +461,50 @@ private class InMemoryAppDraftRepository(
             stmt.executeQuery().use { rs ->
                 if (!rs.next()) return@use None
 
-                val appDraftId = rs.requireString("id").bind()
-                val createTime = rs.requireObject<OffsetDateTime>("create_time").bind()
-                val defaultAppDraftListingId = rs.getSafeString("default_app_draft_listing_id")
-                val appPackage = rs.getSafeString("app_id").map { appId ->
-                    AppPackageApiView(
-                        androidApplicationId = ApplicationId.fromString(appId)
-                            .toEitherBind { DataStoreError.IllegalState },
-                        versionCode = VersionCode.fromInt(rs.requireInt("version_code").bind())
-                            .toEitherBind { DataStoreError.IllegalState },
-                        versionName = VersionName
-                            .fromString(rs.requireString("version_name").bind())
-                            .toEitherBind { DataStoreError.IllegalState },
-                        targetSdk = SdkVersion.fromInt(rs.requireInt("target_sdk").bind())
-                            .toEitherBind { DataStoreError.IllegalState },
-                    )
+                Some(rs.readAppDraftApiView().bind())
+            }
+        }
+    }
+
+    override fun findApiViewsForOrganizationAndUserByQuery(
+        organizationId: String,
+        userId: String,
+        maxResults: NonNegativeInt,
+        afterAppDraftId: String?,
+    ): DataStoreResult<List<AppDraftApiView>> = runCatchingSql {
+        val sql = """
+            SELECT
+                app_drafts.id,
+                app_drafts.create_time,
+                app_drafts.default_app_draft_listing_id,
+                app_drafts.submit_time,
+                app_packages.app_id,
+                app_packages.version_code,
+                app_packages.version_name,
+                app_packages.target_sdk
+            FROM app_drafts
+            JOIN organizations
+            ON organizations.id = app_drafts.organization_id
+            LEFT JOIN app_packages
+            ON app_packages.id = app_drafts.app_package_id
+            WHERE app_drafts.organization_id = ?
+            AND organizations.owner_user_id = ?
+            AND (? IS NULL OR app_drafts.id > ?)
+            ORDER BY app_drafts.id
+            LIMIT ?
+        """.trimIndent()
+        connection.prepareStatement(sql).use { stmt ->
+            stmt.setString(1, organizationId)
+            stmt.setString(2, userId)
+            stmt.setString(3, afterAppDraftId)
+            stmt.setString(4, afterAppDraftId)
+            stmt.setInt(5, maxResults.value)
+            stmt.executeQuery().use { rs ->
+                val appDrafts = mutableListOf<AppDraftApiView>()
+                while (rs.next()) {
+                    appDrafts.add(rs.readAppDraftApiView().bind())
                 }
-
-                Some(
-                    when (val submitTime = rs.getSafeObject<OffsetDateTime>("submit_time")) {
-                        None -> AppDraftApiView.Unsubmitted(
-                            id = appDraftId,
-                            createTime = createTime,
-                            defaultAppDraftListingId = defaultAppDraftListingId,
-                            appPackage = appPackage,
-                        )
-
-                        is Some -> AppDraftApiView.Submitted(
-                            id = appDraftId,
-                            createTime = createTime,
-                            defaultAppDraftListingId = defaultAppDraftListingId
-                                .toEitherBind { DataStoreError.IllegalState },
-                            appPackage = appPackage.toEitherBind { DataStoreError.IllegalState },
-                            submitTime = submitTime.value,
-                        )
-                    }
-                )
+                appDrafts
             }
         }
     }
@@ -1455,6 +1464,46 @@ private class InMemoryOrganizationRepository(
             stmt.setString(2, organizationId)
             stmt.executeSingleUpdate().bind()
         }
+    }
+}
+
+/**
+ * Reads an [AppDraftApiView] from the current row.
+ */
+private fun ResultSet.readAppDraftApiView(): DataStoreResult<AppDraftApiView> = either {
+    val appDraftId = requireString("id").bind()
+    val createTime = requireObject<OffsetDateTime>("create_time").bind()
+    val defaultAppDraftListingId = getSafeString("default_app_draft_listing_id")
+    val appPackage = getSafeString("app_id").map { appId ->
+        AppPackageApiView(
+            androidApplicationId = ApplicationId.fromString(appId)
+                .toEitherBind { DataStoreError.IllegalState },
+            versionCode = VersionCode.fromInt(requireInt("version_code").bind())
+                .toEitherBind { DataStoreError.IllegalState },
+            versionName = VersionName
+                .fromString(requireString("version_name").bind())
+                .toEitherBind { DataStoreError.IllegalState },
+            targetSdk = SdkVersion.fromInt(requireInt("target_sdk").bind())
+                .toEitherBind { DataStoreError.IllegalState },
+        )
+    }
+
+    when (val submitTime = getSafeObject<OffsetDateTime>("submit_time")) {
+        None -> AppDraftApiView.Unsubmitted(
+            id = appDraftId,
+            createTime = createTime,
+            defaultAppDraftListingId = defaultAppDraftListingId,
+            appPackage = appPackage,
+        )
+
+        is Some -> AppDraftApiView.Submitted(
+            id = appDraftId,
+            createTime = createTime,
+            defaultAppDraftListingId = defaultAppDraftListingId
+                .toEitherBind { DataStoreError.IllegalState },
+            appPackage = appPackage.toEitherBind { DataStoreError.IllegalState },
+            submitTime = submitTime.value,
+        )
     }
 }
 

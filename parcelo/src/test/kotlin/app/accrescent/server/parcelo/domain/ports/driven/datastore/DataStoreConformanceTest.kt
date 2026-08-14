@@ -8,6 +8,7 @@ import app.accrescent.server.parcelo.UNIX_EPOCH
 import app.accrescent.server.parcelo.appDraftListing
 import app.accrescent.server.parcelo.appPackage
 import app.accrescent.server.parcelo.appPackagePermission
+import app.accrescent.server.parcelo.core.NonNegativeInt
 import app.accrescent.server.parcelo.core.unwrap
 import app.accrescent.server.parcelo.core.unwrap2
 import app.accrescent.server.parcelo.core.unwrapErr
@@ -23,6 +24,7 @@ import app.accrescent.server.parcelo.incompletePendingAppDraftUpload
 import app.accrescent.server.parcelo.pendingExternalBlob
 import app.accrescent.server.parcelo.saveAppPackageFromNewUpload
 import app.accrescent.server.parcelo.unsubmittedAppDraft
+import app.accrescent.server.parcelo.unsubmittedAppDraftApiView
 import arrow.core.Either
 import arrow.core.None
 import arrow.core.Some
@@ -559,6 +561,111 @@ abstract class DataStoreConformanceTest {
                 ),
                 foundAppDraft,
             )
+        }
+    }
+
+    @Test
+    fun `appDrafts findApiViewsForOrganizationAndUserByQuery returns app draft API views from only requested organization`() {
+        withMigratedDataStore { dataStore ->
+            dataStore.runTxWithRetry { tx ->
+                tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
+                tx.organizations.saveWithOwner("org2", "user2", UNIX_EPOCH).bind()
+                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
+                tx.appDrafts.create("org2", "appDraft2", UNIX_EPOCH).bind()
+            }.unwrap2()
+
+            val appDrafts = dataStore
+                .runTxWithRetry { tx ->
+                    tx.appDrafts
+                        .findApiViewsForOrganizationAndUserByQuery(
+                            "org1",
+                            "user1",
+                            NonNegativeInt.new(2).unwrap(),
+                            null,
+                        )
+                        .bind()
+                }
+                .unwrap2()
+
+            assertEquals(listOf(unsubmittedAppDraftApiView(id = "appDraft1")), appDrafts)
+        }
+    }
+
+    @Test
+    fun `appDrafts findApiViewsForOrganizationAndUserByQuery returns only authorized app draft API views`() {
+        withMigratedDataStore { dataStore ->
+            dataStore.runTxWithRetry { tx ->
+                tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
+                tx.organizations.saveWithOwner("org2", "user2", UNIX_EPOCH).bind()
+                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
+            }.unwrap2()
+
+            val appDrafts = dataStore
+                .runTxWithRetry { tx ->
+                    tx.appDrafts
+                        .findApiViewsForOrganizationAndUserByQuery(
+                            "org1",
+                            "user2",
+                            NonNegativeInt.new(1).unwrap(),
+                            null,
+                        )
+                        .bind()
+                }
+                .unwrap2()
+
+            assertTrue(appDrafts.isEmpty())
+        }
+    }
+
+    @Test
+    fun `appDrafts findApiViewsForOrganizationAndUserByQuery respects maxResults`() {
+        withMigratedDataStore { dataStore ->
+            dataStore.runTxWithRetry { tx ->
+                tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
+                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
+                tx.appDrafts.create("org1", "appDraft2", UNIX_EPOCH).bind()
+            }.unwrap2()
+
+            val appDrafts = dataStore
+                .runTxWithRetry { tx ->
+                    tx.appDrafts
+                        .findApiViewsForOrganizationAndUserByQuery(
+                            "org1",
+                            "user1",
+                            NonNegativeInt.new(1).unwrap(),
+                            null,
+                        )
+                        .bind()
+                }
+                .unwrap2()
+
+            assertEquals(1, appDrafts.size)
+        }
+    }
+
+    @Test
+    fun `appDrafts findApiViewsForOrganizationAndUserByQuery returns only items after afterAppDraftId`() {
+        withMigratedDataStore { dataStore ->
+            dataStore.runTxWithRetry { tx ->
+                tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
+                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
+                tx.appDrafts.create("org1", "appDraft2", UNIX_EPOCH).bind()
+            }.unwrap2()
+
+            val appDrafts = dataStore
+                .runTxWithRetry { tx ->
+                    tx.appDrafts
+                        .findApiViewsForOrganizationAndUserByQuery(
+                            "org1",
+                            "user1",
+                            NonNegativeInt.new(2).unwrap(),
+                            "appDraft1",
+                        )
+                        .bind()
+                }
+                .unwrap2()
+
+            assertEquals(listOf(unsubmittedAppDraftApiView(id = "appDraft2")), appDrafts)
         }
     }
 

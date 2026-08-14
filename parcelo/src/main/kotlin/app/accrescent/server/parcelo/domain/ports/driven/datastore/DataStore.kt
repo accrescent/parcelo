@@ -4,6 +4,7 @@
 
 package app.accrescent.server.parcelo.domain.ports.driven.datastore
 
+import app.accrescent.server.parcelo.core.NonNegativeInt
 import app.accrescent.server.parcelo.core.PositiveLong
 import app.accrescent.server.parcelo.core.bindMapLeft
 import app.accrescent.server.parcelo.core.unwrap
@@ -242,6 +243,22 @@ abstract class DataStore(private val randomSource: RandomSource) {
          * @return the API view of the app draft with the given ID, or [None] if it doesn't exist.
          */
         abstract fun findApiViewById(id: String): DataStoreResult<Option<AppDraftApiView>>
+
+        /**
+         * Finds the API views for a list of app drafts in a given organization which the given user
+         * is authorized to view.
+         *
+         * @param organizationId the organization to list app drafts from.
+         * @param userId the user ID to use for authorization.
+         * @param afterAppDraftId the app draft ID to start listing after.
+         * @return the list of app draft API views matching the query.
+         */
+        abstract fun findApiViewsForOrganizationAndUserByQuery(
+            organizationId: String,
+            userId: String,
+            maxResults: NonNegativeInt,
+            afterAppDraftId: String?,
+        ): DataStoreResult<List<AppDraftApiView>>
 
         /**
          * Finds an existing app draft.
