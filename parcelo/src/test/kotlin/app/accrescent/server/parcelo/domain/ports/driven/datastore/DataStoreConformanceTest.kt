@@ -666,6 +666,54 @@ abstract class DataStoreConformanceTest {
     }
 
     @Test
+    fun `appDrafts isSubmitted returns EntityNotFound when no app draft with the given ID exists`() {
+        withMigratedDataStore { dataStore ->
+            val error = dataStore
+                .runTxWithRetry { tx -> tx.appDrafts.isSubmitted("appDraft1").bind() }
+                .unwrap()
+                .unwrapErr()
+
+            assertEquals(DataStoreError.EntityNotFound, error)
+        }
+    }
+
+    @Test
+    fun `appDrafts isSubmitted returns false when app draft is not submitted`() {
+        withMigratedDataStore { dataStore ->
+            dataStore.runTxWithRetry { tx ->
+                tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
+                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
+            }.unwrap2()
+
+            val isSubmitted = dataStore
+                .runTxWithRetry { tx -> tx.appDrafts.isSubmitted("appDraft1").bind() }
+                .unwrap2()
+
+            assertFalse(isSubmitted)
+        }
+    }
+
+    @Test
+    fun `appDrafts isSubmitted returns true when app draft is submitted`() {
+        withMigratedDataStore { dataStore ->
+            dataStore.runTxWithRetry { tx ->
+                tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
+                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
+                saveAppPackageFromNewUpload(tx, appPackage()).bind()
+                tx.appDrafts.saveListing(appDraftListing()).bind()
+                tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
+                tx.appDrafts.updateSubmitTime("appDraft1", UNIX_EPOCH).bind()
+            }.unwrap2()
+
+            val isSubmitted = dataStore
+                .runTxWithRetry { tx -> tx.appDrafts.isSubmitted("appDraft1").bind() }
+                .unwrap2()
+
+            assertTrue(isSubmitted)
+        }
+    }
+
+    @Test
     fun `appDrafts listingExistsByIdForAppDraft returns false when no listing with the given ID exists`() {
         withMigratedDataStore { dataStore ->
             val exists = dataStore

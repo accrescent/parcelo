@@ -90,6 +90,10 @@ fun ResultSet.getSafeString(columnLabel: String): Option<String> {
     return getString(columnLabel).toOption()
 }
 
+fun ResultSet.requireBoolean(columnIndex: Int): DataStoreResult<Boolean> {
+    return getSafeBoolean(columnIndex).toEither { DataStoreError.IllegalState }
+}
+
 fun ResultSet.requireBoolean(columnLabel: String): DataStoreResult<Boolean> {
     return getSafeBoolean(columnLabel).toEither { DataStoreError.IllegalState }
 }

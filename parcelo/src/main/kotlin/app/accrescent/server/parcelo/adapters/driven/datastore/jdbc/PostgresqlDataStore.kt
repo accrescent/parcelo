@@ -584,6 +584,18 @@ private class PostgresqlAppDraftRepository(
         }
     }
 
+    override fun isSubmitted(id: String): DataStoreResult<Boolean> = runCatchingSql {
+        val sql = "SELECT submit_time IS NOT NULL FROM app_drafts WHERE id = ?"
+        connection.prepareStatement(sql).use { stmt ->
+            stmt.setString(1, id)
+            stmt.executeQuery().use { rs ->
+                if (!rs.next()) raise(DataStoreError.EntityNotFound)
+
+                rs.requireBoolean(1).bind()
+            }
+        }
+    }
+
     override fun listingExistsByIdForAppDraft(
         listingId: String,
         appDraftId: String,
