@@ -16,6 +16,8 @@ import app.accrescent.server.parcelo.domain.ports.driven.blobstorage.BlobId
 import app.accrescent.server.parcelo.domain.ports.driven.blobstorage.BlobStorage
 import app.accrescent.server.parcelo.domain.ports.driven.blobstorage.BlobStorageBackend
 import app.accrescent.server.parcelo.domain.ports.driven.blobstorage.UploadType
+import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppDraftApiView
+import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppPackageApiView
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStore
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.ExternalBlob
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.HasPermissionRequest
@@ -153,14 +155,11 @@ class AppDraftApiImpl(
             ensure(hasPermission) { InsufficientPermissionError }
 
             // App draft is guaranteed to exist since permission is granted
-            tx.appDrafts
-                .requireById(request.appDraftId)
-                .bindMapLeft(::toServerError)
-                .toApiResource(tx)
-                .bind()
+            tx.appDrafts.requireApiViewById(request.appDraftId).bindMapLeft(::toServerError)
         }
             .bindMapLeft(::toServerError)
             .bind()
+            .toApiResource()
 
         GetAppDraftResponse(appDraft)
     }
@@ -724,6 +723,34 @@ class AppDraftApiImpl(
                 submitTime = appDraft.submitTime,
             )
         }
+    }
+
+    private fun AppDraftApiView.toApiResource(): ApiAppDraft {
+        return when (this) {
+            is AppDraftApiView.Unsubmitted -> ApiAppDraft.Unsubmitted(
+                id = id,
+                createTime = createTime,
+                defaultAppDraftListingId = defaultAppDraftListingId,
+                appPackage = appPackage.map { it.toApiResource() },
+            )
+
+            is AppDraftApiView.Submitted -> ApiAppDraft.Submitted(
+                id = id,
+                createTime = createTime,
+                defaultAppDraftListingId = defaultAppDraftListingId,
+                appPackage = appPackage.toApiResource(),
+                submitTime = submitTime,
+            )
+        }
+    }
+
+    private fun AppPackageApiView.toApiResource(): ApiAppPackage {
+        return ApiAppPackage(
+            androidApplicationId = androidApplicationId,
+            versionCode = versionCode,
+            versionName = versionName,
+            targetSdk = targetSdk,
+        )
     }
 
     private fun DataAppPackage.toApiResource(): ApiAppPackage = ApiAppPackage(
