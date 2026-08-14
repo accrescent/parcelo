@@ -213,14 +213,6 @@ abstract class DataStore(private val randomSource: RandomSource) {
         ): DataStoreResult<Unit>
 
         /**
-         * Determines whether an app draft exists.
-         *
-         * @param id the ID of the app draft to check existence of.
-         * @return whether an app draft with the given ID exists.
-         */
-        abstract fun existsById(id: String): DataStoreResult<Boolean>
-
-        /**
          * Determines whether a submitted app draft exists with an app package whose app ID
          * matches the given app ID.
          *
@@ -552,14 +544,6 @@ abstract class DataStore(private val randomSource: RandomSource) {
          * @return the number of apps for the given organization.
          */
         abstract fun countInOrganization(organizationId: String): DataStoreResult<ULong>
-
-        /**
-         * Determines whether an app exists.
-         *
-         * @param id the ID of the app to check existence of.
-         * @return whether the app with the given ID exists.
-         */
-        abstract fun existsById(id: String): DataStoreResult<Boolean>
 
         /**
          * Finds an existing app.

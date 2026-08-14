@@ -402,14 +402,6 @@ private class InMemoryAppDraftRepository(
         }
     }
 
-    override fun existsById(id: String): DataStoreResult<Boolean> = runCatchingSql {
-        val sql = "SELECT EXISTS(SELECT 1 FROM app_drafts WHERE id = ?)"
-        connection.prepareStatement(sql).use { stmt ->
-            stmt.setString(1, id)
-            stmt.executeQuery().use { rs -> rs.getSelectExistsResult().bind() }
-        }
-    }
-
     override fun existsSubmittedForAppId(appId: ApplicationId): DataStoreResult<Boolean> =
         runCatchingSql {
             val sql = """
@@ -1055,14 +1047,6 @@ private class InMemoryAppRepository(private val connection: Connection) : AppRep
                 stmt.executeQuery().use { rs -> rs.getSelectCountResult().bind() }
             }
         }
-
-    override fun existsById(id: String): DataStoreResult<Boolean> = runCatchingSql {
-        val sql = "SELECT EXISTS(SELECT 1 FROM apps WHERE id = ?)"
-        connection.prepareStatement(sql).use { stmt ->
-            stmt.setString(1, id)
-            stmt.executeQuery().use { rs -> rs.getSelectExistsResult().bind() }
-        }
-    }
 
     override fun findById(id: String): DataStoreResult<Option<App>> = runCatchingSql {
         val sql = """

@@ -413,32 +413,6 @@ abstract class DataStoreConformanceTest {
     }
 
     @Test
-    fun `appDrafts existsById returns false when no app draft with the given ID exists`() {
-        withMigratedDataStore { dataStore ->
-
-            val exists = dataStore
-                .runTxWithRetry { tx -> tx.appDrafts.existsById("appDraft1").bind() }
-                .unwrap2()
-
-            assertFalse(exists)
-        }
-    }
-
-    @Test
-    fun `appDrafts existsById returns true when app draft with given ID exists`() {
-        withMigratedDataStore { dataStore ->
-            dataStore.runTxWithRetry { tx ->
-                tx.organizations.saveWithOwner(organization(), user()).bind()
-                tx.appDrafts.save(unsubmittedAppDraft()).bind()
-            }.unwrap2()
-
-            val exists = dataStore.runTxWithRetry { tx -> tx.appDrafts.existsById("appDraft1").bind() }.unwrap2()
-
-            assertTrue(exists)
-        }
-    }
-
-    @Test
     fun `appDrafts existsSubmittedForAppId returns false when no app draft exists for given app ID`() {
         withMigratedDataStore { dataStore ->
             val appId = ApplicationId.fromString("com.example.app").unwrap()
@@ -1964,37 +1938,6 @@ abstract class DataStoreConformanceTest {
                 .unwrap2()
 
             assertEquals(2uL, count)
-        }
-    }
-
-    @Test
-    fun `apps existsById returns false when no app with the given ID exists`() {
-        withMigratedDataStore { dataStore ->
-
-            val exists = dataStore
-                .runTxWithRetry { tx -> tx.apps.existsById("app1").bind() }
-                .unwrap2()
-
-            assertFalse(exists)
-        }
-    }
-
-    @Test
-    fun `apps existsById returns true when app with given ID exists`() {
-        withMigratedDataStore { dataStore ->
-            dataStore.runTxWithRetry { tx ->
-                tx.organizations.saveWithOwner(organization(), user()).bind()
-                tx.apps.saveWithDefaultListing(
-                    App("app1", "org1", "appListing1", false),
-                    AppListing("appListing1", "app1", ListingLanguage.EN_US),
-                ).bind()
-            }.unwrap2()
-
-            val exists = dataStore
-                .runTxWithRetry { tx -> tx.apps.existsById("app1").bind() }
-                .unwrap2()
-
-            assertTrue(exists)
         }
     }
 
