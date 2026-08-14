@@ -236,6 +236,14 @@ abstract class DataStore(private val randomSource: RandomSource) {
         abstract fun existsSubmittedForAppId(appId: ApplicationId): DataStoreResult<Boolean>
 
         /**
+         * Finds the API view of an existing app draft.
+         *
+         * @param id the ID of the app draft to find.
+         * @return the API view of the app draft with the given ID, or [None] if it doesn't exist.
+         */
+        abstract fun findApiViewById(id: String): DataStoreResult<Option<AppDraftApiView>>
+
+        /**
          * Finds an existing app draft.
          *
          * @param id the ID of the app draft to find.
@@ -363,6 +371,17 @@ abstract class DataStore(private val randomSource: RandomSource) {
          * @return whether a pending app draft upload for the given app draft ID exists.
          */
         abstract fun pendingUploadExistsByAppDraftId(appDraftId: String): DataStoreResult<Boolean>
+
+        /**
+         * Finds the API view of an existing app draft.
+         *
+         * @param id the ID of the app draft to find.
+         * @return the API view of the app draft with the given ID, or
+         * [DataStoreError.EntityNotFound] if it doesn't exist.
+         */
+        fun requireApiViewById(id: String): DataStoreResult<AppDraftApiView> {
+            return findApiViewById(id).flatMap { it.toEither { DataStoreError.EntityNotFound } }
+        }
 
         /**
          * Finds an existing app draft.
