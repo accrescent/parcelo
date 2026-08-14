@@ -153,6 +153,21 @@ abstract class DataStore(private val randomSource: RandomSource) {
         abstract fun countActiveInOrganization(organizationId: String): DataStoreResult<ULong>
 
         /**
+         * Creates a new, empty app draft.
+         *
+         * @param organizationId the ID of the organization to create this app draft in.
+         * @param appDraftId the ID of app draft to create.
+         * @param createTime the creation timestamp to set for the new app draft.
+         * @return [DataStoreError.ConsistencyViolation] if the organization does not exist or an
+         * app draft with the provided ID already exists.
+         */
+        abstract fun create(
+            organizationId: String,
+            appDraftId: String,
+            createTime: OffsetDateTime,
+        ): DataStoreResult<Unit>
+
+        /**
          * Deletes an app draft along with its associated data.
          *
          * Because they are part of the app draft, this draft's listings, package, and pending
@@ -361,16 +376,6 @@ abstract class DataStore(private val randomSource: RandomSource) {
         fun requireListingById(id: String): DataStoreResult<AppDraftListing> {
             return findListingById(id).flatMap { it.toEither { DataStoreError.EntityNotFound } }
         }
-
-        /**
-         * Saves a new app draft.
-         *
-         * @param appDraft the app draft to save.
-         * @return [DataStoreError.ConsistencyViolation] if an app draft with the same ID
-         * already exists, the organization does not exist, or the app draft names an app package
-         * or default listing.
-         */
-        abstract fun save(appDraft: AppDraft): DataStoreResult<Unit>
 
         /**
          * Saves a new app draft listing.

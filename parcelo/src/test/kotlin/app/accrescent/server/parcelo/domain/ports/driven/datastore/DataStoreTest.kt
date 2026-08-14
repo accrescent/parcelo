@@ -76,20 +76,21 @@ class DataStoreTest {
     }
 
     @Test
-    fun `appDrafts requireById returns app draft persisted with save`() {
+    fun `appDrafts requireById returns app draft persisted with create`() {
         InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore
                 .runTxWithRetry { tx -> tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind() }
                 .unwrap2()
-            val originalAppDraft = unsubmittedAppDraft()
 
-            dataStore.runTxWithRetry { tx -> tx.appDrafts.save(originalAppDraft).bind() }.unwrap2()
+            dataStore
+                .runTxWithRetry { tx -> tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind() }
+                .unwrap2()
             val foundAppDraft = dataStore
                 .runTxWithRetry { tx -> tx.appDrafts.requireById("appDraft1").bind() }
                 .unwrap2()
 
-            assertEquals(originalAppDraft, foundAppDraft)
+            assertEquals(unsubmittedAppDraft(), foundAppDraft)
         }
     }
 
@@ -114,7 +115,7 @@ class DataStoreTest {
             dataStore
                 .runTxWithRetry { tx ->
                     tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
-                    tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                    tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
                 }
                 .unwrap2()
             val originalListing = appDraftListing()
@@ -150,7 +151,7 @@ class DataStoreTest {
 
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
-                tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
                 saveAppPackageFromNewUpload(tx, originalPackage).bind()
             }.unwrap2()
             val foundPackage = dataStore
@@ -219,7 +220,7 @@ class DataStoreTest {
 
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
-                tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
                 tx.appDrafts.saveUpload(incompletePendingAppDraftUpload(), originalBlob).bind()
             }.unwrap2()
             val foundBlob = dataStore
@@ -252,7 +253,7 @@ class DataStoreTest {
 
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
-                tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
                 tx.appDrafts.saveUpload(incompletePendingAppDraftUpload(), pendingBlob).bind()
             }.unwrap2()
             val error = dataStore
@@ -272,7 +273,7 @@ class DataStoreTest {
 
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
-                tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
                 saveAppPackageFromNewUpload(tx).bind()
             }.unwrap2()
             val foundBlob = dataStore

@@ -63,7 +63,6 @@ import app.accrescent.server.parcelo.incompletePendingAppDraftListingIconUpload
 import app.accrescent.server.parcelo.incompletePendingAppDraftUpload
 import app.accrescent.server.parcelo.pendingExternalBlob
 import app.accrescent.server.parcelo.saveAppPackageFromNewUpload
-import app.accrescent.server.parcelo.unsubmittedAppDraft
 import arrow.core.Either
 import arrow.core.None
 import arrow.core.Some
@@ -120,9 +119,9 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
-                tx.appDrafts.save(unsubmittedAppDraft("appDraft1")).bind()
-                tx.appDrafts.save(unsubmittedAppDraft("appDraft2")).bind()
-                tx.appDrafts.save(unsubmittedAppDraft("appDraft3")).bind()
+                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
+                tx.appDrafts.create("org1", "appDraft2", UNIX_EPOCH).bind()
+                tx.appDrafts.create("org1", "appDraft3", UNIX_EPOCH).bind()
             }.unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
 
@@ -150,7 +149,7 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
-                tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
             }
                 .unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
@@ -168,7 +167,7 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
-                tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
                 saveAppPackageFromNewUpload(tx).bind()
             }
                 .unwrap2()
@@ -241,7 +240,7 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
-                tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
                 saveAppPackageFromNewUpload(tx).bind()
                 tx.appDrafts.saveListing(appDraftListing()).bind()
                 tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
@@ -280,8 +279,8 @@ class AppDraftApiImplTest {
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
                 tx.organizations.saveWithOwner("org2", "user2", UNIX_EPOCH).bind()
-                tx.appDrafts.save(unsubmittedAppDraft("appDraft1", "org1")).bind()
-                tx.appDrafts.save(unsubmittedAppDraft("appDraft2", "org2")).bind()
+                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
+                tx.appDrafts.create("org2", "appDraft2", UNIX_EPOCH).bind()
             }.unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
 
@@ -309,7 +308,7 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
-                tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
                 saveAppPackageFromNewUpload(tx).bind()
                 tx.appDrafts.saveListing(appDraftListing()).bind()
                 tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
@@ -348,7 +347,7 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
-                tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
                 tx.organizations.saveWithOwner("org2", "user2", UNIX_EPOCH).bind()
             }.unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
@@ -367,8 +366,8 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
-                tx.appDrafts.save(unsubmittedAppDraft("appDraft1")).bind()
-                tx.appDrafts.save(unsubmittedAppDraft("appDraft2")).bind()
+                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
+                tx.appDrafts.create("org1", "appDraft2", UNIX_EPOCH).bind()
             }.unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
 
@@ -385,8 +384,8 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
-                tx.appDrafts.save(unsubmittedAppDraft("appDraft1")).bind()
-                tx.appDrafts.save(unsubmittedAppDraft("appDraft2")).bind()
+                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
+                tx.appDrafts.create("org1", "appDraft2", UNIX_EPOCH).bind()
             }.unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
 
@@ -410,8 +409,8 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
-                tx.appDrafts.save(unsubmittedAppDraft("appDraft1")).bind()
-                tx.appDrafts.save(unsubmittedAppDraft("appDraft2")).bind()
+                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
+                tx.appDrafts.create("org1", "appDraft2", UNIX_EPOCH).bind()
             }.unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
 
@@ -440,7 +439,7 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
-                tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
                 saveAppPackageFromNewUpload(tx).bind()
                 tx.appDrafts.saveListing(appDraftListing()).bind()
                 tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
@@ -460,7 +459,7 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
-                tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
             }.unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
 
@@ -476,7 +475,7 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
-                tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
                 saveAppPackageFromNewUpload(tx).bind()
             }.unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
@@ -498,7 +497,7 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
-                tx.appDrafts.save(unsubmittedAppDraft("appDraft2")).bind()
+                tx.appDrafts.create("org1", "appDraft2", UNIX_EPOCH).bind()
                 saveAppPackageFromNewUpload(
                     tx,
                     appPackage = appPackage("appPackage1", appDraftId = "appDraft2"),
@@ -508,7 +507,7 @@ class AppDraftApiImplTest {
                 tx.appDrafts.saveListing(appDraftListing("appDraftListing2", "appDraft2")).bind()
                 tx.appDrafts.updateDefaultListing("appDraft2", Some("appDraftListing2")).bind()
                 tx.appDrafts.updateSubmitTime("appDraft2", UNIX_EPOCH).bind()
-                tx.appDrafts.save(unsubmittedAppDraft("appDraft1")).bind()
+                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
                 saveAppPackageFromNewUpload(
                     tx,
                     appPackage = appPackage(
@@ -537,7 +536,7 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
-                tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
                 saveAppPackageFromNewUpload(tx).bind()
                 tx.appDrafts.saveListing(appDraftListing()).bind()
                 tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
@@ -560,7 +559,7 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
-                tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
                 saveAppPackageFromNewUpload(tx).bind()
                 tx.appDrafts.saveListing(appDraftListing()).bind()
                 tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
@@ -597,7 +596,7 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
-                tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
                 saveAppPackageFromNewUpload(tx).bind()
                 tx.appDrafts.saveListing(appDraftListing()).bind()
                 tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
@@ -620,7 +619,7 @@ class AppDraftApiImplTest {
                 dataStore.migrateToHead().unwrap()
                 dataStore.runTxWithRetry { tx ->
                     tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
-                    tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                    tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
                 }.unwrap2()
                 val appDraftApi = makeAppDraftApi(dataStore, blobStorage = blobStorage)
 
@@ -660,7 +659,7 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
-                tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
                 saveAppPackageFromNewUpload(tx).bind()
                 tx.appDrafts.saveListing(appDraftListing()).bind()
                 tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
@@ -682,7 +681,7 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
-                tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
             }
                 .unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
@@ -704,7 +703,7 @@ class AppDraftApiImplTest {
                 dataStore.migrateToHead().unwrap()
                 dataStore.runTxWithRetry { tx ->
                     tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
-                    tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                    tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
                     tx.appDrafts
                         .saveUpload(incompletePendingAppDraftUpload(), pendingExternalBlob())
                         .bind()
@@ -742,7 +741,7 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
-                tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
                 tx.appDrafts.saveListing(appDraftListing()).bind()
             }
                 .unwrap2()
@@ -780,7 +779,7 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
-                tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
                 saveAppPackageFromNewUpload(tx).bind()
                 tx.appDrafts.saveListing(appDraftListing()).bind()
                 tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
@@ -801,7 +800,7 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
-                tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
             }
                 .unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
@@ -821,7 +820,7 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
-                tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
                 saveAppPackageFromNewUpload(tx).bind()
             }
                 .unwrap2()
@@ -842,7 +841,7 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
-                tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
                 saveAppPackageFromNewUpload(tx).bind()
             }
                 .unwrap2()
@@ -881,7 +880,7 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
-                tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
                 tx.appDrafts.saveListing(appDraftListing()).bind()
             }
                 .unwrap2()
@@ -908,7 +907,7 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
-                tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
                 saveAppPackageFromNewUpload(tx).bind()
                 tx.appDrafts.saveListing(appDraftListing()).bind()
                 tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
@@ -935,7 +934,7 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
-                tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
             }
                 .unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
@@ -975,7 +974,7 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
-                tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
             }
                 .unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
@@ -1007,8 +1006,8 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
-                tx.appDrafts.save(unsubmittedAppDraft("appDraft1")).bind()
-                tx.appDrafts.save(unsubmittedAppDraft("appDraft2")).bind()
+                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
+                tx.appDrafts.create("org1", "appDraft2", UNIX_EPOCH).bind()
                 tx.appDrafts.saveListing(appDraftListing("appDraftListing1", "appDraft1")).bind()
                 tx.appDrafts.saveListing(appDraftListing("appDraftListing2", "appDraft2")).bind()
             }.unwrap2()
@@ -1039,7 +1038,7 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
-                tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
                 tx.appDrafts.saveListing(appDraftListing()).bind()
                 tx.organizations.saveWithOwner("org2", "user2", UNIX_EPOCH).bind()
             }.unwrap2()
@@ -1072,7 +1071,7 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
-                tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
                 saveAppPackageFromNewUpload(tx).bind()
                 tx.appDrafts.saveListing(appDraftListing()).bind()
                 tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
@@ -1094,7 +1093,7 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
-                tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
                 tx.appDrafts.saveListing(appDraftListing()).bind()
             }
                 .unwrap2()
@@ -1144,7 +1143,7 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
-                tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
                 saveAppPackageFromNewUpload(tx).bind()
                 tx.appDrafts.saveListing(appDraftListing()).bind()
                 tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
@@ -1168,7 +1167,7 @@ class AppDraftApiImplTest {
                 dataStore.migrateToHead().unwrap()
                 dataStore.runTxWithRetry { tx ->
                     tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
-                    tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                    tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
                     tx.appDrafts.saveListing(appDraftListing()).bind()
                 }.unwrap2()
                 val appDraftApi = makeAppDraftApi(dataStore, blobStorage = blobStorage)
@@ -1200,7 +1199,7 @@ class AppDraftApiImplTest {
                 dataStore.migrateToHead().unwrap()
                 dataStore.runTxWithRetry { tx ->
                     tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
-                    tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                    tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
                     tx.appDrafts.saveListing(appDraftListing()).bind()
                     tx.appDrafts
                         .saveListingIconUpload(
@@ -1272,7 +1271,7 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
-                tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
                 saveAppPackageFromNewUpload(tx).bind()
                 tx.appDrafts.saveListing(appDraftListing()).bind()
                 tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
@@ -1294,7 +1293,7 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
-                tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
                 tx.appDrafts.saveListing(appDraftListing()).bind()
                 tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
             }
@@ -1318,7 +1317,7 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
-                tx.appDrafts.save(unsubmittedAppDraft()).bind()
+                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
                 tx.appDrafts.saveListing(appDraftListing()).bind()
             }
                 .unwrap2()
