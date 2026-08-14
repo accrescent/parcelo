@@ -488,6 +488,81 @@ abstract class DataStoreConformanceTest {
     }
 
     @Test
+    fun `appDrafts findApiViewById returns None when no app draft with the given ID exists`() {
+        withMigratedDataStore { dataStore ->
+            val foundAppDraft = dataStore
+                .runTxWithRetry { tx -> tx.appDrafts.findApiViewById("appDraft1").bind() }
+                .unwrap2()
+
+            assertTrue(foundAppDraft.isNone())
+        }
+    }
+
+    @Test
+    fun `appDrafts findApiViewById returns an unsubmitted view for an unsubmitted app draft`() {
+        withMigratedDataStore { dataStore ->
+            dataStore.runTxWithRetry { tx ->
+                tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
+                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
+            }.unwrap2()
+
+            val foundAppDraft = dataStore
+                .runTxWithRetry { tx -> tx.appDrafts.findApiViewById("appDraft1").bind() }
+                .unwrap2()
+
+            assertEquals(
+                Some(
+                    AppDraftApiView.Unsubmitted(
+                        id = "appDraft1",
+                        createTime = UNIX_EPOCH,
+                        defaultAppDraftListingId = None,
+                        appPackage = None,
+                    )
+                ),
+                foundAppDraft,
+            )
+        }
+    }
+
+    @Test
+    fun `appDrafts findApiViewById returns a submitted view for a submitted app draft`() {
+        withMigratedDataStore { dataStore ->
+            val originalAppPackage = appPackage()
+
+            dataStore.runTxWithRetry { tx ->
+                tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
+                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
+                saveAppPackageFromNewUpload(tx, originalAppPackage).bind()
+                tx.appDrafts.saveListing(appDraftListing()).bind()
+                tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
+                tx.appDrafts.updateSubmitTime("appDraft1", UNIX_EPOCH).bind()
+            }.unwrap2()
+
+            val foundAppDraft = dataStore
+                .runTxWithRetry { tx -> tx.appDrafts.findApiViewById("appDraft1").bind() }
+                .unwrap2()
+
+            assertEquals(
+                Some(
+                    AppDraftApiView.Submitted(
+                        id = "appDraft1",
+                        createTime = UNIX_EPOCH,
+                        defaultAppDraftListingId = "appDraftListing1",
+                        appPackage = AppPackageApiView(
+                            androidApplicationId = originalAppPackage.appId,
+                            versionCode = originalAppPackage.versionCode,
+                            versionName = originalAppPackage.versionName,
+                            targetSdk = originalAppPackage.targetSdk,
+                        ),
+                        submitTime = UNIX_EPOCH,
+                    )
+                ),
+                foundAppDraft,
+            )
+        }
+    }
+
+    @Test
     fun `appDrafts findById returns None when no app draft with the given ID exists`() {
         withMigratedDataStore { dataStore ->
 

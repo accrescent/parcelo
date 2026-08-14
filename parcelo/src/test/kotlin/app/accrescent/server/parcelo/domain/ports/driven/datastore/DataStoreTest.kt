@@ -62,6 +62,20 @@ class DataStoreTest {
     }
 
     @Test
+    fun `appDrafts requireApiViewById returns EntityNotFound if app draft does not exist`() {
+        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
+            dataStore.migrateToHead().unwrap()
+
+            val error = dataStore
+                .runTxWithRetry { tx -> tx.appDrafts.requireApiViewById("appDraft1").bind() }
+                .unwrap()
+                .unwrapErr()
+
+            assertEquals(DataStoreError.EntityNotFound, error)
+        }
+    }
+
+    @Test
     fun `appDrafts requireById returns EntityNotFound if app draft does not exist`() {
         InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
