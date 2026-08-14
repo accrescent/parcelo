@@ -112,12 +112,10 @@ data object ServiceUnavailableError : ServerError
 @JvmName("dataStoreToServerError")
 fun toServerError(error: DataStoreError): ServerError {
     return when (error) {
-        is DataStoreError.CheckConstraintViolation,
+        is DataStoreError.ConsistencyViolation,
         is DataStoreError.EntityNotFound,
-        is DataStoreError.ForeignKeyViolation,
         is DataStoreError.IllegalState,
         is DataStoreError.RollbackErrorOnCommit,
-        is DataStoreError.UniqueConstraintViolation,
             // Because we value correctness, we choose to take the conservative approach here of
             // assuming that unknown errors may be critical ones so that we prioritize them.
         is DataStoreError.Unknown -> InternalServerError

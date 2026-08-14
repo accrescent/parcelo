@@ -838,7 +838,7 @@ abstract class DataStoreConformanceTest {
     }
 
     @Test
-    fun `appDrafts save returns UniqueConstraintViolation for duplicate ID`() {
+    fun `appDrafts save returns ConsistencyViolationError for duplicate ID`() {
         withMigratedDataStore { dataStore ->
             val appDraft = unsubmittedAppDraft(id = "draft1")
             dataStore.runTxWithRetry { tx ->
@@ -850,12 +850,12 @@ abstract class DataStoreConformanceTest {
                 .runTxWithRetry { tx -> tx.appDrafts.save(appDraft).bind() }
                 .unwrap()
 
-            assertEquals(DataStoreError.UniqueConstraintViolation, result.unwrapErr())
+            assertEquals(DataStoreError.ConsistencyViolation, result.unwrapErr())
         }
     }
 
     @Test
-    fun `appDrafts save returns ForeignKeyViolation when organization does not exist`() {
+    fun `appDrafts save returns ConsistencyViolationError when organization does not exist`() {
         withMigratedDataStore { dataStore ->
             val result = dataStore
                 .runTxWithRetry { tx ->
@@ -863,12 +863,12 @@ abstract class DataStoreConformanceTest {
                 }
                 .unwrap()
 
-            assertEquals(DataStoreError.ForeignKeyViolation, result.unwrapErr())
+            assertEquals(DataStoreError.ConsistencyViolation, result.unwrapErr())
         }
     }
 
     @Test
-    fun `appDrafts save returns ForeignKeyViolation when app package does not exist`() {
+    fun `appDrafts save returns ConsistencyViolationError when app package does not exist`() {
         withMigratedDataStore { dataStore ->
             dataStore
                 .runTxWithRetry { tx -> tx.organizations.saveWithOwner(organization(), user()).bind() }
@@ -880,12 +880,12 @@ abstract class DataStoreConformanceTest {
                 }
                 .unwrap()
 
-            assertEquals(DataStoreError.ForeignKeyViolation, result.unwrapErr())
+            assertEquals(DataStoreError.ConsistencyViolation, result.unwrapErr())
         }
     }
 
     @Test
-    fun `appDrafts saveListing returns UniqueConstraintViolation for duplicate ID`() {
+    fun `appDrafts saveListing returns ConsistencyViolationError for duplicate ID`() {
         withMigratedDataStore { dataStore ->
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
@@ -898,12 +898,12 @@ abstract class DataStoreConformanceTest {
                 .runTxWithRetry { tx -> tx.appDrafts.saveListing(appDraftListing()).bind() }
                 .unwrap()
 
-            assertEquals(DataStoreError.UniqueConstraintViolation, result.unwrapErr())
+            assertEquals(DataStoreError.ConsistencyViolation, result.unwrapErr())
         }
     }
 
     @Test
-    fun `appDrafts saveListing returns UniqueConstraintViolation for duplicate (appDraftId, language) pair`() {
+    fun `appDrafts saveListing returns ConsistencyViolationError for duplicate (appDraftId, language) pair`() {
         withMigratedDataStore { dataStore ->
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
@@ -921,19 +921,19 @@ abstract class DataStoreConformanceTest {
             }
                 .unwrap()
 
-            assertEquals(DataStoreError.UniqueConstraintViolation, result.unwrapErr())
+            assertEquals(DataStoreError.ConsistencyViolation, result.unwrapErr())
         }
     }
 
     @Test
-    fun `appDrafts saveListing returns ForeignKeyViolation when app draft does not exist`() {
+    fun `appDrafts saveListing returns ConsistencyViolationError when app draft does not exist`() {
         withMigratedDataStore { dataStore ->
 
             val result = dataStore
                 .runTxWithRetry { tx -> tx.appDrafts.saveListing(appDraftListing()).bind() }
                 .unwrap()
 
-            assertEquals(DataStoreError.ForeignKeyViolation, result.unwrapErr())
+            assertEquals(DataStoreError.ConsistencyViolation, result.unwrapErr())
         }
     }
 
@@ -959,7 +959,7 @@ abstract class DataStoreConformanceTest {
     }
 
     @Test
-    fun `appDrafts saveListingIconUpload returns UniqueConstraintViolation for duplicate ID`() {
+    fun `appDrafts saveListingIconUpload returns ConsistencyViolationError for duplicate ID`() {
         withMigratedDataStore { dataStore ->
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
@@ -993,12 +993,12 @@ abstract class DataStoreConformanceTest {
                 }
                 .unwrap()
 
-            assertEquals(DataStoreError.UniqueConstraintViolation, result.unwrapErr())
+            assertEquals(DataStoreError.ConsistencyViolation, result.unwrapErr())
         }
     }
 
     @Test
-    fun `appDrafts saveListingIconUpload returns UniqueConstraintViolation for duplicate app draft listing ID`() {
+    fun `appDrafts saveListingIconUpload returns ConsistencyViolationError for duplicate app draft listing ID`() {
         withMigratedDataStore { dataStore ->
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
@@ -1024,12 +1024,12 @@ abstract class DataStoreConformanceTest {
                 }
                 .unwrap()
 
-            assertEquals(DataStoreError.UniqueConstraintViolation, result.unwrapErr())
+            assertEquals(DataStoreError.ConsistencyViolation, result.unwrapErr())
         }
     }
 
     @Test
-    fun `appDrafts saveListingIconUpload returns UniqueConstraintViolation for duplicate object key`() {
+    fun `appDrafts saveListingIconUpload returns ConsistencyViolationError for duplicate object key`() {
         withMigratedDataStore { dataStore ->
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
@@ -1063,12 +1063,12 @@ abstract class DataStoreConformanceTest {
                 }
                 .unwrap()
 
-            assertEquals(DataStoreError.UniqueConstraintViolation, result.unwrapErr())
+            assertEquals(DataStoreError.ConsistencyViolation, result.unwrapErr())
         }
     }
 
     @Test
-    fun `appDrafts saveListingIconUpload returns ForeignKeyViolation when app draft listing does not exist`() {
+    fun `appDrafts saveListingIconUpload returns ConsistencyViolationError when app draft listing does not exist`() {
         withMigratedDataStore { dataStore ->
             val result = dataStore
                 .runTxWithRetry { tx ->
@@ -1080,7 +1080,7 @@ abstract class DataStoreConformanceTest {
                 }
                 .unwrap()
 
-            assertEquals(DataStoreError.ForeignKeyViolation, result.unwrapErr())
+            assertEquals(DataStoreError.ConsistencyViolation, result.unwrapErr())
         }
     }
 
@@ -1106,7 +1106,7 @@ abstract class DataStoreConformanceTest {
     }
 
     @Test
-    fun `appDrafts saveUpload returns UniqueConstraintViolation for duplicate ID`() {
+    fun `appDrafts saveUpload returns ConsistencyViolationError for duplicate ID`() {
         withMigratedDataStore { dataStore ->
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
@@ -1136,12 +1136,12 @@ abstract class DataStoreConformanceTest {
                 }
                 .unwrap()
 
-            assertEquals(DataStoreError.UniqueConstraintViolation, result.unwrapErr())
+            assertEquals(DataStoreError.ConsistencyViolation, result.unwrapErr())
         }
     }
 
     @Test
-    fun `appDrafts saveUpload returns UniqueConstraintViolation for duplicate app draft ID`() {
+    fun `appDrafts saveUpload returns ConsistencyViolationError for duplicate app draft ID`() {
         withMigratedDataStore { dataStore ->
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
@@ -1167,12 +1167,12 @@ abstract class DataStoreConformanceTest {
                 }
                 .unwrap()
 
-            assertEquals(DataStoreError.UniqueConstraintViolation, result.unwrapErr())
+            assertEquals(DataStoreError.ConsistencyViolation, result.unwrapErr())
         }
     }
 
     @Test
-    fun `appDrafts saveUpload returns UniqueConstraintViolation for duplicate object key`() {
+    fun `appDrafts saveUpload returns ConsistencyViolationError for duplicate object key`() {
         withMigratedDataStore { dataStore ->
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
@@ -1200,12 +1200,12 @@ abstract class DataStoreConformanceTest {
                 }
                 .unwrap()
 
-            assertEquals(DataStoreError.UniqueConstraintViolation, result.unwrapErr())
+            assertEquals(DataStoreError.ConsistencyViolation, result.unwrapErr())
         }
     }
 
     @Test
-    fun `appDrafts saveUpload returns ForeignKeyViolation when app draft does not exist`() {
+    fun `appDrafts saveUpload returns ConsistencyViolationError when app draft does not exist`() {
         withMigratedDataStore { dataStore ->
             val result = dataStore
                 .runTxWithRetry { tx ->
@@ -1213,7 +1213,7 @@ abstract class DataStoreConformanceTest {
                 }
                 .unwrap()
 
-            assertEquals(DataStoreError.ForeignKeyViolation, result.unwrapErr())
+            assertEquals(DataStoreError.ConsistencyViolation, result.unwrapErr())
         }
     }
 
@@ -1238,7 +1238,7 @@ abstract class DataStoreConformanceTest {
     }
 
     @Test
-    fun `appDrafts updateDefaultListing returns ForeignKeyViolation if listing does not exist`() {
+    fun `appDrafts updateDefaultListing returns ConsistencyViolationError if listing does not exist`() {
         withMigratedDataStore { dataStore ->
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
@@ -1251,12 +1251,12 @@ abstract class DataStoreConformanceTest {
             }
                 .unwrap()
 
-            assertEquals(DataStoreError.ForeignKeyViolation, result.unwrapErr())
+            assertEquals(DataStoreError.ConsistencyViolation, result.unwrapErr())
         }
     }
 
     @Test
-    fun `appDrafts updateDefaultListing returns ForeignKeyViolation if listing belongs to different app draft`() {
+    fun `appDrafts updateDefaultListing returns ConsistencyViolationError if listing belongs to different app draft`() {
         withMigratedDataStore { dataStore ->
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
@@ -1271,7 +1271,7 @@ abstract class DataStoreConformanceTest {
             }
                 .unwrap()
 
-            assertEquals(DataStoreError.ForeignKeyViolation, result.unwrapErr())
+            assertEquals(DataStoreError.ConsistencyViolation, result.unwrapErr())
         }
     }
 
@@ -1509,7 +1509,7 @@ abstract class DataStoreConformanceTest {
     }
 
     @Test
-    fun `appDrafts updateSubmitTime returns CheckConstraintViolation if app draft does not have package`() {
+    fun `appDrafts updateSubmitTime returns ConsistencyViolationError if app draft does not have package`() {
         withMigratedDataStore { dataStore ->
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
@@ -1524,12 +1524,12 @@ abstract class DataStoreConformanceTest {
             }
                 .unwrap()
 
-            assertEquals(DataStoreError.CheckConstraintViolation, result.unwrapErr())
+            assertEquals(DataStoreError.ConsistencyViolation, result.unwrapErr())
         }
     }
 
     @Test
-    fun `appDrafts updateSubmitTime returns CheckConstraintViolation if app draft does not have default listing`() {
+    fun `appDrafts updateSubmitTime returns ConsistencyViolationError if app draft does not have default listing`() {
         withMigratedDataStore { dataStore ->
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
@@ -1543,7 +1543,7 @@ abstract class DataStoreConformanceTest {
             }
                 .unwrap()
 
-            assertEquals(DataStoreError.CheckConstraintViolation, result.unwrapErr())
+            assertEquals(DataStoreError.ConsistencyViolation, result.unwrapErr())
         }
     }
 
@@ -1633,7 +1633,7 @@ abstract class DataStoreConformanceTest {
     }
 
     @Test
-    fun `appPackages saveFromPendingUpload returns UniqueConstraintViolation for duplicate ID`() {
+    fun `appPackages saveFromPendingUpload returns ConsistencyViolation for duplicate ID`() {
         withMigratedDataStore { dataStore ->
             dataStore
                 .runTxWithRetry { tx ->
@@ -1656,12 +1656,12 @@ abstract class DataStoreConformanceTest {
                 }
                 .unwrap()
 
-            assertEquals(DataStoreError.UniqueConstraintViolation, result.unwrapErr())
+            assertEquals(DataStoreError.ConsistencyViolation, result.unwrapErr())
         }
     }
 
     @Test
-    fun `appPackages saveFromPendingUpload returns ForeignKeyViolation for non-existent upload`() {
+    fun `appPackages saveFromPendingUpload returns ConsistencyViolationError for non-existent upload`() {
         withMigratedDataStore { dataStore ->
             dataStore
                 .runTxWithRetry { tx ->
@@ -1683,12 +1683,12 @@ abstract class DataStoreConformanceTest {
                 .unwrap()
                 .unwrapErr()
 
-            assertEquals(DataStoreError.ForeignKeyViolation, error)
+            assertEquals(DataStoreError.ConsistencyViolation, error)
         }
     }
 
     @Test
-    fun `appPackages saveFromPendingUpload returns ForeignKeyViolation for an already completed upload`() {
+    fun `appPackages saveFromPendingUpload returns ConsistencyViolationError for an already completed upload`() {
         withMigratedDataStore { dataStore ->
             dataStore
                 .runTxWithRetry { tx ->
@@ -1720,7 +1720,7 @@ abstract class DataStoreConformanceTest {
                 .unwrap()
                 .unwrapErr()
 
-            assertEquals(DataStoreError.ForeignKeyViolation, error)
+            assertEquals(DataStoreError.ConsistencyViolation, error)
         }
     }
 
@@ -1828,7 +1828,7 @@ abstract class DataStoreConformanceTest {
     }
 
     @Test
-    fun `appPackages savePermission returns UniqueConstraintViolation for permission with duplicate ID`() {
+    fun `appPackages savePermission returns ConsistencyViolationError for permission with duplicate ID`() {
         withMigratedDataStore { dataStore ->
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
@@ -1846,12 +1846,12 @@ abstract class DataStoreConformanceTest {
                 .unwrap()
                 .unwrapErr()
 
-            assertEquals(DataStoreError.UniqueConstraintViolation, error)
+            assertEquals(DataStoreError.ConsistencyViolation, error)
         }
     }
 
     @Test
-    fun `appPackages savePermission returns UniqueConstraintViolation for duplicate (appPackageId, name) pair`() {
+    fun `appPackages savePermission returns ConsistencyViolationError for duplicate (appPackageId, name) pair`() {
         withMigratedDataStore { dataStore ->
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
@@ -1867,19 +1867,19 @@ abstract class DataStoreConformanceTest {
                 .unwrap()
                 .unwrapErr()
 
-            assertEquals(DataStoreError.UniqueConstraintViolation, error)
+            assertEquals(DataStoreError.ConsistencyViolation, error)
         }
     }
 
     @Test
-    fun `appPackages savePermission returns ForeignKeyViolation when app package does not exist`() {
+    fun `appPackages savePermission returns ConsistencyViolationError when app package does not exist`() {
         withMigratedDataStore { dataStore ->
             val error = dataStore
                 .runTxWithRetry { tx -> tx.appPackages.savePermission(appPackagePermission()).bind() }
                 .unwrap()
                 .unwrapErr()
 
-            assertEquals(DataStoreError.ForeignKeyViolation, error)
+            assertEquals(DataStoreError.ConsistencyViolation, error)
         }
     }
 
@@ -1982,7 +1982,7 @@ abstract class DataStoreConformanceTest {
     }
 
     @Test
-    fun `apps saveWithDefaultListing returns UniqueConstraintViolation for duplicate app ID`() {
+    fun `apps saveWithDefaultListing returns ConsistencyViolationError for duplicate app ID`() {
         withMigratedDataStore { dataStore ->
             val app = App("app1", "org1", "appListing1", false)
             val listing = AppListing("appListing1", "app1", ListingLanguage.EN_US)
@@ -2000,12 +2000,12 @@ abstract class DataStoreConformanceTest {
                 }
                 .unwrap()
 
-            assertEquals(DataStoreError.UniqueConstraintViolation, result.unwrapErr())
+            assertEquals(DataStoreError.ConsistencyViolation, result.unwrapErr())
         }
     }
 
     @Test
-    fun `apps saveWithDefaultListing returns ForeignKeyViolation when organization does not exist`() {
+    fun `apps saveWithDefaultListing returns ConsistencyViolationError when organization does not exist`() {
         withMigratedDataStore { dataStore ->
             val result = dataStore
                 .runTxWithRetry { tx ->
@@ -2016,12 +2016,12 @@ abstract class DataStoreConformanceTest {
                 }
                 .unwrap()
 
-            assertEquals(DataStoreError.ForeignKeyViolation, result.unwrapErr())
+            assertEquals(DataStoreError.ConsistencyViolation, result.unwrapErr())
         }
     }
 
     @Test
-    fun `apps saveWithDefaultListing returns ForeignKeyViolation when app default listing ID does not match listing ID`() {
+    fun `apps saveWithDefaultListing returns ConsistencyViolationError when app default listing ID does not match listing ID`() {
         withMigratedDataStore { dataStore ->
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
@@ -2039,12 +2039,12 @@ abstract class DataStoreConformanceTest {
             }
                 .unwrap()
 
-            assertEquals(DataStoreError.ForeignKeyViolation, result.unwrapErr())
+            assertEquals(DataStoreError.ConsistencyViolation, result.unwrapErr())
         }
     }
 
     @Test
-    fun `apps saveWithDefaultListing returns ForeignKeyViolation when listing app ID does not match app ID`() {
+    fun `apps saveWithDefaultListing returns ConsistencyViolationError when listing app ID does not match app ID`() {
         withMigratedDataStore { dataStore ->
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner(organization(), user()).bind()
@@ -2062,7 +2062,7 @@ abstract class DataStoreConformanceTest {
             }
                 .unwrap()
 
-            assertEquals(DataStoreError.ForeignKeyViolation, result.unwrapErr())
+            assertEquals(DataStoreError.ConsistencyViolation, result.unwrapErr())
         }
     }
 
@@ -2119,7 +2119,7 @@ abstract class DataStoreConformanceTest {
     }
 
     @Test
-    fun `appPackages saveFromPendingUpload returns ForeignKeyViolation for a mismatched blob service`() {
+    fun `appPackages saveFromPendingUpload returns ConsistencyViolationError for a mismatched blob service`() {
         withMigratedDataStore { dataStore ->
             dataStore
                 .runTxWithRetry { tx ->
@@ -2144,7 +2144,7 @@ abstract class DataStoreConformanceTest {
                 .unwrap()
                 .unwrapErr()
 
-            assertEquals(DataStoreError.ForeignKeyViolation, error)
+            assertEquals(DataStoreError.ConsistencyViolation, error)
         }
     }
 
@@ -2413,7 +2413,7 @@ abstract class DataStoreConformanceTest {
     }
 
     @Test
-    fun `appDrafts saveUpload returns UniqueConstraintViolation for a blob at an occupied location`() {
+    fun `appDrafts saveUpload returns ConsistencyViolationError for a blob at an occupied location`() {
         withMigratedDataStore { dataStore ->
             dataStore
                 .runTxWithRetry { tx ->
@@ -2442,7 +2442,7 @@ abstract class DataStoreConformanceTest {
                 .unwrap()
                 .unwrapErr()
 
-            assertEquals(DataStoreError.UniqueConstraintViolation, error)
+            assertEquals(DataStoreError.ConsistencyViolation, error)
         }
     }
 
@@ -2514,7 +2514,7 @@ abstract class DataStoreConformanceTest {
     }
 
     @Test
-    fun `organizations saveWithOwner returns UniqueConstraintViolation for duplicate organization ID`() {
+    fun `organizations saveWithOwner returns ConsistencyViolationError for duplicate organization ID`() {
         withMigratedDataStore { dataStore ->
             dataStore
                 .runTxWithRetry { tx -> tx.organizations.saveWithOwner(organization(), user()).bind() }
@@ -2531,12 +2531,12 @@ abstract class DataStoreConformanceTest {
                 }
                 .unwrap()
 
-            assertEquals(DataStoreError.UniqueConstraintViolation, result.unwrapErr())
+            assertEquals(DataStoreError.ConsistencyViolation, result.unwrapErr())
         }
     }
 
     @Test
-    fun `organizations saveWithOwner returns UniqueConstraintViolation for duplicate user ID`() {
+    fun `organizations saveWithOwner returns ConsistencyViolationError for duplicate user ID`() {
         withMigratedDataStore { dataStore ->
             dataStore
                 .runTxWithRetry { tx -> tx.organizations.saveWithOwner(organization(), user()).bind() }
@@ -2553,12 +2553,12 @@ abstract class DataStoreConformanceTest {
                 }
                 .unwrap()
 
-            assertEquals(DataStoreError.UniqueConstraintViolation, result.unwrapErr())
+            assertEquals(DataStoreError.ConsistencyViolation, result.unwrapErr())
         }
     }
 
     @Test
-    fun `organizations saveWithOwner returns ForeignKeyViolation when owner user ID does not match owner`() {
+    fun `organizations saveWithOwner returns ConsistencyViolationError when owner user ID does not match owner`() {
         withMigratedDataStore { dataStore ->
             val result = dataStore
                 .runTxWithRetry { tx ->
@@ -2568,12 +2568,12 @@ abstract class DataStoreConformanceTest {
                 }
                 .unwrap()
 
-            assertEquals(DataStoreError.ForeignKeyViolation, result.unwrapErr())
+            assertEquals(DataStoreError.ConsistencyViolation, result.unwrapErr())
         }
     }
 
     @Test
-    fun `organizations saveWithOwner returns ForeignKeyViolation when owner organization ID does not match organization`() {
+    fun `organizations saveWithOwner returns ConsistencyViolationError when owner organization ID does not match organization`() {
         withMigratedDataStore { dataStore ->
             val result = dataStore
                 .runTxWithRetry { tx ->
@@ -2586,13 +2586,13 @@ abstract class DataStoreConformanceTest {
                 }
                 .unwrap()
 
-            assertEquals(DataStoreError.ForeignKeyViolation, result.unwrapErr())
+            assertEquals(DataStoreError.ConsistencyViolation, result.unwrapErr())
         }
     }
 
-    @ParameterizedTest(name = "{0} save returns CheckConstraintViolation for {1}")
+    @ParameterizedTest(name = "{0} save returns ConsistencyViolation for {1}")
     @MethodSource("textColumnConstraintTestCases")
-    fun `save returns CheckConstraintViolation for invalid text column`(
+    fun `save returns ConsistencyViolationError for invalid text column`(
         case: TextColumnConstraintTestCase,
         invalidInput: InvalidCanonicalText,
     ) {
@@ -2601,13 +2601,13 @@ abstract class DataStoreConformanceTest {
                 .runTxWithRetry { tx -> case.save(tx, invalidInput.value).bind() }
                 .unwrap()
 
-            assertEquals(DataStoreError.CheckConstraintViolation, result.unwrapErr())
+            assertEquals(DataStoreError.ConsistencyViolation, result.unwrapErr())
         }
     }
 
-    @ParameterizedTest(name = "{0} save returns CheckConstraintViolation for an ID longer than 64 characters")
+    @ParameterizedTest(name = "{0} save returns ConsistencyViolation for an ID longer than 64 characters")
     @MethodSource("idColumnConstraintTestCases")
-    fun `save returns CheckConstraintViolation for ID longer than 64 characters`(
+    fun `save returns ConsistencyViolationError for ID longer than 64 characters`(
         case: TextColumnConstraintTestCase,
     ) {
         withMigratedDataStore { dataStore ->
@@ -2617,13 +2617,13 @@ abstract class DataStoreConformanceTest {
                 .runTxWithRetry { tx -> case.save(tx, tooLongId).bind() }
                 .unwrap()
 
-            assertEquals(DataStoreError.CheckConstraintViolation, result.unwrapErr())
+            assertEquals(DataStoreError.ConsistencyViolation, result.unwrapErr())
         }
     }
 
-    @ParameterizedTest(name = "{0} save returns CheckConstraintViolation for an ID with a disallowed character")
+    @ParameterizedTest(name = "{0} save returns ConsistencyViolation for an ID with a disallowed character")
     @MethodSource("idColumnConstraintTestCases")
-    fun `save returns CheckConstraintViolation for ID with disallowed character`(
+    fun `save returns ConsistencyViolationError for ID with disallowed character`(
         case: TextColumnConstraintTestCase,
     ) {
         withMigratedDataStore { dataStore ->
@@ -2635,13 +2635,13 @@ abstract class DataStoreConformanceTest {
                 .runTxWithRetry { tx -> case.save(tx, disallowedId).bind() }
                 .unwrap()
 
-            assertEquals(DataStoreError.CheckConstraintViolation, result.unwrapErr())
+            assertEquals(DataStoreError.ConsistencyViolation, result.unwrapErr())
         }
     }
 
-    @ParameterizedTest(name = "{0} save returns CheckConstraintViolation for text longer than its maximum length")
+    @ParameterizedTest(name = "{0} save returns ConsistencyViolation for text longer than its maximum length")
     @MethodSource("textLengthConstraintTestCases")
-    fun `save returns CheckConstraintViolation for text longer than maximum length`(
+    fun `save returns ConsistencyViolationError for text longer than maximum length`(
         case: TextLengthConstraintTestCase,
     ) {
         withMigratedDataStore { dataStore ->
@@ -2651,7 +2651,7 @@ abstract class DataStoreConformanceTest {
                 .runTxWithRetry { tx -> case.save(tx, tooLongText).bind() }
                 .unwrap()
 
-            assertEquals(DataStoreError.CheckConstraintViolation, result.unwrapErr())
+            assertEquals(DataStoreError.ConsistencyViolation, result.unwrapErr())
         }
     }
 

@@ -77,9 +77,10 @@ private inline fun <T> runCatchingSql(block: Raise<DataStoreError>.() -> T): Dat
  */
 private fun SQLException.toDataStoreError(): DataStoreError {
     return when (sqlState) {
-        PSQLState.CHECK_VIOLATION.state -> DataStoreError.CheckConstraintViolation
-        PSQLState.FOREIGN_KEY_VIOLATION.state -> DataStoreError.ForeignKeyViolation
-        PSQLState.UNIQUE_VIOLATION.state -> DataStoreError.UniqueConstraintViolation
+        PSQLState.CHECK_VIOLATION.state,
+        PSQLState.FOREIGN_KEY_VIOLATION.state,
+        PSQLState.UNIQUE_VIOLATION.state -> DataStoreError.ConsistencyViolation
+
         PSQLState.DEADLOCK_DETECTED.state,
         PSQLState.SERIALIZATION_FAILURE.state -> DataStoreError.SerializationFailure
 

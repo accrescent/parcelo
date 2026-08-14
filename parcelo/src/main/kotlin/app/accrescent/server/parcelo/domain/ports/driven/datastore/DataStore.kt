@@ -18,10 +18,9 @@ import arrow.core.raise.either
 import java.time.OffsetDateTime
 
 sealed class DataStoreError {
-    data object CheckConstraintViolation : DataStoreError()
+    data object ConsistencyViolation : DataStoreError()
 
     data object EntityNotFound : DataStoreError()
-    data object ForeignKeyViolation : DataStoreError()
     data object IllegalState : DataStoreError()
     data class RollbackErrorOnCommit(
         val rollbackError: DataStoreError,
@@ -29,7 +28,6 @@ sealed class DataStoreError {
     ) : DataStoreError()
 
     data object SerializationFailure : DataStoreError()
-    data object UniqueConstraintViolation : DataStoreError()
 
     data object Unknown : DataStoreError()
 }
@@ -368,9 +366,9 @@ abstract class DataStore(private val randomSource: RandomSource) {
          * Saves a new app draft.
          *
          * @param appDraft the app draft to save.
-         * @return [DataStoreError.UniqueConstraintViolation] if an app draft with the same ID
-         * already exists, or [DataStoreError.ForeignKeyViolation] if the organization does not
-         * exist or the app draft names an app package or default listing.
+         * @return [DataStoreError.ConsistencyViolation] if an app draft with the same ID
+         * already exists, the organization does not exist, or the app draft names an app package
+         * or default listing.
          */
         abstract fun save(appDraft: AppDraft): DataStoreResult<Unit>
 
@@ -378,9 +376,8 @@ abstract class DataStore(private val randomSource: RandomSource) {
          * Saves a new app draft listing.
          *
          * @param listing the app draft listing to save.
-         * @return [DataStoreError.UniqueConstraintViolation] if a listing with the same ID or
-         * (appDraftId, language) pair already exists or [DataStoreError.ForeignKeyViolation] if the
-         * referenced app draft does not exist.
+         * @return [DataStoreError.ConsistencyViolation] if a listing with the same ID or
+         * (appDraftId, language) pair already exists or the referenced app draft does not exist.
          */
         abstract fun saveListing(listing: AppDraftListing): DataStoreResult<Unit>
 
@@ -389,11 +386,10 @@ abstract class DataStore(private val randomSource: RandomSource) {
          *
          * @param upload the pending app draft listing icon upload to save.
          * @param blob the pending external blob the upload owns.
-         * @return [DataStoreError.UniqueConstraintViolation] if a pending icon upload for the same
-         * app draft listing or the same object key already exists or a blob already exists for the
-         * blob's ([ExternalBlob.bucketName], [ExternalBlob.objectKey]) pair, or
-         * [DataStoreError.ForeignKeyViolation] if the app draft listing does not exist or the
-         * blob's ID does not match the upload's external blob ID.
+         * @return [DataStoreError.ConsistencyViolation] if a pending icon upload for the same
+         * app draft listing or the same object key already exists, a blob already exists for the
+         * blob's ([ExternalBlob.bucketName], [ExternalBlob.objectKey]) pair, the app draft listing
+         * does not exist, or the blob's ID does not match the upload's external blob ID.
          */
         abstract fun saveListingIconUpload(
             upload: PendingAppDraftListingIconUpload.Incomplete,
@@ -405,11 +401,10 @@ abstract class DataStore(private val randomSource: RandomSource) {
          *
          * @param upload the pending app draft upload to save.
          * @param blob the pending external blob the upload owns.
-         * @return [DataStoreError.UniqueConstraintViolation] if a pending upload for the same app
-         * draft or the same object key already exists or a blob already exists for the blob's
-         * ([ExternalBlob.bucketName], [ExternalBlob.objectKey]) pair, or
-         * [DataStoreError.ForeignKeyViolation] if the app draft does not exist or the blob's ID
-         * does not match the upload's external blob ID.
+         * @return [DataStoreError.ConsistencyViolation] if a pending upload for the same app
+         * draft or the same object key already exists, a blob already exists for the blob's
+         * ([ExternalBlob.bucketName], [ExternalBlob.objectKey]) pair, the app draft does not
+         * exist, or the blob's ID does not match the upload's external blob ID.
          */
         abstract fun saveUpload(
             upload: PendingAppDraftUpload.Incomplete,
@@ -423,8 +418,9 @@ abstract class DataStore(private val randomSource: RandomSource) {
          * @param defaultAppDraftListingId the ID of app draft listing to set as the default, or
          * [None] to unset the app draft's default listing.
          * @return [DataStoreError.EntityNotFound] if the app draft does not exist, or
-         * [DataStoreError.ForeignKeyViolation] if an app draft listing with the given ID does not
-         * exist or if the referenced app draft listing is not associated with the given app draft.
+         * [DataStoreError.ConsistencyViolation] if an app draft listing with the given ID
+         * does not exist or if the referenced app draft listing is not associated with the given
+         * app draft.
          */
         abstract fun updateDefaultListing(
             appDraftId: String,
@@ -452,8 +448,8 @@ abstract class DataStore(private val randomSource: RandomSource) {
          * @param appDraftId the ID of the app draft to update.
          * @param submitTime the submit time to set for the app draft.
          * @return [DataStoreError.EntityNotFound] if the app draft does not exist, or
-         * [DataStoreError.CheckConstraintViolation] if the app draft doesn't have an associated app
-         * package and default listing.
+         * [DataStoreError.ConsistencyViolation] if the app draft doesn't have an associated
+         * app package and default listing.
          */
         abstract fun updateSubmitTime(
             appDraftId: String,
@@ -513,10 +509,10 @@ abstract class DataStore(private val randomSource: RandomSource) {
          * @param blobVersion the version assigned to the blob by the blob storage service.
          * @param replacedBlobDeleteTime the time at which a replaced package's blob is marked as
          * deleted.
-         * @return [DataStoreError.UniqueConstraintViolation] if a package with the same ID already
-         * exists, or [DataStoreError.ForeignKeyViolation] if the app draft does not exist, no
-         * incomplete upload exists with the given ID, the package does not describe that upload's
-         * blob and app draft, or the provided version type doesn't match the blob's service.
+         * @return [DataStoreError.ConsistencyViolation] if a package with the same ID already
+         * exists, the app draft does not exist, no incomplete upload exists with the given ID, the
+         * package does not describe that upload's blob and app draft, or the provided version type
+         * doesn't match the blob's service.
          */
         abstract fun saveFromPendingUpload(
             pendingUploadId: String,
@@ -529,9 +525,9 @@ abstract class DataStore(private val randomSource: RandomSource) {
          * Saves a new app package permission.
          *
          * @param permission the app package permission to save.
-         * @return [DataStoreError.UniqueConstraintViolation] if a permission with the same ID or
-         * (appPackageId, name) pair already exists, or [DataStoreError.ForeignKeyViolation] if an
-         * app package with the given app package ID does not exist.
+         * @return [DataStoreError.ConsistencyViolation] if a permission with the same ID or
+         * (appPackageId, name) pair already exists, or an app package with the given app package
+         * ID does not exist.
          */
         abstract fun savePermission(permission: AppPackagePermission): DataStoreResult<Unit>
     }
@@ -569,10 +565,9 @@ abstract class DataStore(private val randomSource: RandomSource) {
          *
          * @param app the app to save.
          * @param defaultListing the listing to save as this app's default.
-         * @return [DataStoreError.UniqueConstraintViolation] if an app with the same ID already
-         * exists, or [DataStoreError.ForeignKeyViolation] if the organization does not exist, the
-         * app's default app listing ID doesn't match the app listing's ID, or the app listing's app
-         * ID doesn't match the app's ID.
+         * @return [DataStoreError.ConsistencyViolation] if an app with the same ID already
+         * exists, the organization does not exist, the app's default app listing ID doesn't match
+         * the app listing's ID, or the app listing's app ID doesn't match the app's ID.
          */
         abstract fun saveWithDefaultListing(
             app: App,
@@ -687,10 +682,9 @@ abstract class DataStore(private val randomSource: RandomSource) {
          *
          * @param organization the organization to save.
          * @param owner the user owning the organization to save.
-         * @return [DataStoreError.UniqueConstraintViolation] if an organization or user with the
-         * same ID already exists, or [DataStoreError.ForeignKeyViolation] if the organization's
-         * owner user ID doesn't match the owner's ID or the owner's organization ID doesn't match
-         * the organization's ID.
+         * @return [DataStoreError.ConsistencyViolation] if an organization or user with the
+         * same ID already exists, the organization's owner user ID doesn't match the owner's ID,
+         * or the owner's organization ID doesn't match the organization's ID.
          */
         abstract fun saveWithOwner(
             organization: Organization,
