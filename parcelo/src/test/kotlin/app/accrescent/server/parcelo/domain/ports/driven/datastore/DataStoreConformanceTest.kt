@@ -2055,6 +2055,46 @@ abstract class DataStoreConformanceTest {
     }
 
     @Test
+    fun `apps countInAppDraftOrganization returns count of only apps in app draft's organization`() {
+        withMigratedDataStore { dataStore ->
+            dataStore.runTxWithRetry { tx ->
+                tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
+                tx.organizations.saveWithOwner("org2", "user2", UNIX_EPOCH).bind()
+                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
+                tx.apps.saveWithDefaultListing(
+                    App("app1", "org1", "appListing1", false),
+                    AppListing("appListing1", "app1", ListingLanguage.EN_US),
+                ).bind()
+                tx.apps.saveWithDefaultListing(
+                    App("app2", "org1", "appListing2", false),
+                    AppListing("appListing2", "app2", ListingLanguage.EN_US),
+                ).bind()
+                tx.apps.saveWithDefaultListing(
+                    App("app3", "org2", "appListing3", false),
+                    AppListing("appListing3", "app3", ListingLanguage.EN_US),
+                ).bind()
+            }.unwrap2()
+
+            val count = dataStore
+                .runTxWithRetry { tx -> tx.apps.countInAppDraftOrganization("appDraft1").bind() }
+                .unwrap2()
+
+            assertEquals(2uL, count)
+        }
+    }
+
+    @Test
+    fun `apps countInAppDraftOrganization returns zero for nonexistent app draft`() {
+        withMigratedDataStore { dataStore ->
+            val count = dataStore
+                .runTxWithRetry { tx -> tx.apps.countInAppDraftOrganization("appDraft1").bind() }
+                .unwrap2()
+
+            assertEquals(0uL, count)
+        }
+    }
+
+    @Test
     fun `apps countInOrganization returns accurate count`() {
         withMigratedDataStore { dataStore ->
             dataStore.runTxWithRetry { tx ->
