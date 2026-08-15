@@ -876,6 +876,24 @@ private class InMemoryAppDraftRepository(
 private class InMemoryAppPackageRepository(
     private val connection: Connection,
 ) : AppPackageRepository() {
+    override fun findAppIdByAppDraftId(
+        appDraftId: String,
+    ): DataStoreResult<Option<ApplicationId>> = runCatchingSql {
+        val sql = "SELECT app_id FROM app_packages WHERE app_draft_id = ?"
+        connection.prepareStatement(sql).use { stmt ->
+            stmt.setString(1, appDraftId)
+            stmt.executeQuery().use { rs ->
+                if (!rs.next()) return@use None
+
+                val appId = ApplicationId
+                    .fromString(rs.requireString("app_id").bind())
+                    .toEitherBind { DataStoreError.IllegalState }
+
+                Some(appId)
+            }
+        }
+    }
+
     override fun findById(id: String): DataStoreResult<Option<AppPackage>> = runCatchingSql {
         val sql = """
             SELECT

@@ -1699,6 +1699,38 @@ abstract class DataStoreConformanceTest {
     }
 
     @Test
+    fun `appPackages findAppIdByAppDraftId returns None when no package exists for app draft`() {
+        withMigratedDataStore { dataStore ->
+            val appId = dataStore
+                .runTxWithRetry { tx -> tx.appPackages.findAppIdByAppDraftId("appDraft1").bind() }
+                .unwrap2()
+
+            assertTrue(appId.isNone())
+        }
+    }
+
+    @Test
+    fun `appPackages findAppIdByAppDraftId returns app ID of the app draft's package`() {
+        withMigratedDataStore { dataStore ->
+            val savedAppPackage = appPackage()
+
+            dataStore.runTxWithRetry { tx ->
+                tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
+                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
+                saveAppPackageFromNewUpload(tx, savedAppPackage).bind()
+            }
+                .unwrap2()
+
+            val appId = dataStore
+                .runTxWithRetry { tx -> tx.appPackages.findAppIdByAppDraftId("appDraft1").bind() }
+                .unwrap2()
+                .unwrap()
+
+            assertEquals(savedAppPackage.appId, appId)
+        }
+    }
+
+    @Test
     fun `appPackages findByAppDraftId returns None when no package exists for app draft`() {
         withMigratedDataStore { dataStore ->
             val appPackage = dataStore
