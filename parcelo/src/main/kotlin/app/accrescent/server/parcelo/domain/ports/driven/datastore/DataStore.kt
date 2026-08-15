@@ -501,6 +501,17 @@ abstract class DataStore(private val randomSource: RandomSource) {
 
     abstract class AppPackageRepository {
         /**
+         * Finds the app ID of an app package by the ID of its corresponding app draft.
+         *
+         * @param appDraftId the app draft to find a package's app ID for.
+         * @return the app ID of the app package for the app draft with the given ID, or [None] if
+         * no such package exists.
+         */
+        abstract fun findAppIdByAppDraftId(
+            appDraftId: String,
+        ): DataStoreResult<Option<ApplicationId>>
+
+        /**
          * Finds an app package by its ID.
          *
          * @param id the ID of the app package to find.
