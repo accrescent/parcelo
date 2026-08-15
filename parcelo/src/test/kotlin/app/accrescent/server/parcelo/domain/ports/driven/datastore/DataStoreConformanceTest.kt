@@ -971,6 +971,52 @@ abstract class DataStoreConformanceTest {
     }
 
     @Test
+    fun `appDrafts listingIsDefault returns false when no listing with the given ID exists`() {
+        withMigratedDataStore { dataStore ->
+            val isDefault = dataStore
+                .runTxWithRetry { tx -> tx.appDrafts.listingIsDefault("appDraftListing1").bind() }
+                .unwrap2()
+
+            assertFalse(isDefault)
+        }
+    }
+
+    @Test
+    fun `appDrafts listingIsDefault returns false when listing is not its app draft default listing`() {
+        withMigratedDataStore { dataStore ->
+            dataStore.runTxWithRetry { tx ->
+                tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
+                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
+                tx.appDrafts.saveListing(appDraftListing()).bind()
+            }.unwrap2()
+
+            val isDefault = dataStore
+                .runTxWithRetry { tx -> tx.appDrafts.listingIsDefault("appDraftListing1").bind() }
+                .unwrap2()
+
+            assertFalse(isDefault)
+        }
+    }
+
+    @Test
+    fun `appDrafts listingIsDefault returns true when listing is its app draft default listing`() {
+        withMigratedDataStore { dataStore ->
+            dataStore.runTxWithRetry { tx ->
+                tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
+                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
+                tx.appDrafts.saveListing(appDraftListing()).bind()
+                tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
+            }.unwrap2()
+
+            val isDefault = dataStore
+                .runTxWithRetry { tx -> tx.appDrafts.listingIsDefault("appDraftListing1").bind() }
+                .unwrap2()
+
+            assertTrue(isDefault)
+        }
+    }
+
+    @Test
     fun `appDrafts pendingListingIconUploadExistsByListingId returns false when no pending icon upload exists`() {
         withMigratedDataStore { dataStore ->
             val result = dataStore
