@@ -361,6 +361,15 @@ abstract class DataStore(private val randomSource: RandomSource) {
         ): DataStoreResult<Boolean>
 
         /**
+         * Determines whether an app draft listing is the default listing of its app draft.
+         *
+         * @param listingId the ID of the app draft listing to check the default status of.
+         * @return true if an app draft listing with the given ID exists and is its app draft's
+         * default listing, false otherwise.
+         */
+        abstract fun listingIsDefault(listingId: String): DataStoreResult<Boolean>
+
+        /**
          * Determines whether a pending app draft listing icon upload exists for a given app draft
          * listing.
          *

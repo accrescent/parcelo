@@ -731,6 +731,14 @@ private class InMemoryAppDraftRepository(
         }
     }
 
+    override fun listingIsDefault(listingId: String): DataStoreResult<Boolean> = runCatchingSql {
+        val sql = "SELECT EXISTS(SELECT 1 FROM app_drafts WHERE default_app_draft_listing_id = ?)"
+        connection.prepareStatement(sql).use { stmt ->
+            stmt.setString(1, listingId)
+            stmt.executeQuery().use { rs -> rs.getSelectExistsResult().bind() }
+        }
+    }
+
     override fun pendingListingIconUploadExistsByListingId(
         appDraftListingId: String,
     ): DataStoreResult<Boolean> = runCatchingSql {
