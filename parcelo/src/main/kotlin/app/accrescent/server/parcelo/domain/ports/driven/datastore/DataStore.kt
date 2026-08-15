@@ -576,6 +576,14 @@ abstract class DataStore(private val randomSource: RandomSource) {
 
     abstract class AppRepository {
         /**
+         * Counts the apps in a given app draft's organization.
+         *
+         * @param appDraftId the ID of the app draft whose organization apps should be counted in.
+         * @return the number of apps for the app draft's organization.
+         */
+        abstract fun countInAppDraftOrganization(appDraftId: String): DataStoreResult<ULong>
+
+        /**
          * Counts the apps in a given organization.
          *
          * @param organizationId the organization to count apps in.

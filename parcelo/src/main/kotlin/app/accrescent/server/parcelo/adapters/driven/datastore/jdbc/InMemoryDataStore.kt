@@ -1090,6 +1090,20 @@ private class InMemoryAppPackageRepository(
 }
 
 private class InMemoryAppRepository(private val connection: Connection) : AppRepository() {
+    override fun countInAppDraftOrganization(appDraftId: String): DataStoreResult<ULong> =
+        runCatchingSql {
+            val sql = """
+                SELECT COUNT(1)
+                FROM app_drafts
+                JOIN apps ON apps.organization_id = app_drafts.organization_id
+                WHERE app_drafts.id = ?
+            """.trimIndent()
+            connection.prepareStatement(sql).use { stmt ->
+                stmt.setString(1, appDraftId)
+                stmt.executeQuery().use { rs -> rs.getSelectCountResult().bind() }
+            }
+        }
+
     override fun countInOrganization(organizationId: String): DataStoreResult<ULong> =
         runCatchingSql {
             val sql = "SELECT COUNT(1) FROM apps WHERE apps.organization_id = ?"
