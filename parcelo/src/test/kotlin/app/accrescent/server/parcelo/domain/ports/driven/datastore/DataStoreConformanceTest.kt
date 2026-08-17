@@ -23,7 +23,6 @@ import app.accrescent.server.parcelo.incompletePendingAppDraftListingIconUpload
 import app.accrescent.server.parcelo.incompletePendingAppDraftUpload
 import app.accrescent.server.parcelo.pendingExternalBlob
 import app.accrescent.server.parcelo.saveAppPackageFromNewUpload
-import app.accrescent.server.parcelo.unsubmittedAppDraft
 import app.accrescent.server.parcelo.unsubmittedAppDraftApiView
 import arrow.core.Either
 import arrow.core.None
@@ -160,13 +159,18 @@ abstract class DataStoreConformanceTest {
         withMigratedDataStore { dataStore ->
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
-                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
             }.unwrap2()
-            val foundAppDraft = dataStore
-                .runTxWithRetry { tx -> tx.appDrafts.findById("appDraft1").bind() }
-                .unwrap2()
 
-            assertEquals(Some(unsubmittedAppDraft()), foundAppDraft)
+            // Saving this data again will error with a consistency violation only if the previous
+            // query committed since user IDs and organization IDs must be unique
+            val error = dataStore
+                .runTxWithRetry { tx ->
+                    tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
+                }
+                .unwrap()
+                .unwrapErr()
+
+            assertEquals(DataStoreError.ConsistencyViolation, error)
         }
     }
 
@@ -188,22 +192,6 @@ abstract class DataStoreConformanceTest {
                 .unwrap2()
 
             assertEquals(4uL, count)
-        }
-    }
-
-    @Test
-    fun `appDrafts create and findById round-trip data`() {
-        withMigratedDataStore { dataStore ->
-            dataStore.runTxWithRetry { tx ->
-                tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
-                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
-            }
-                .unwrap2()
-            val foundAppDraft = dataStore
-                .runTxWithRetry { tx -> tx.appDrafts.findById("appDraft1").bind() }
-                .unwrap2()
-
-            assertEquals(Some(unsubmittedAppDraft()), foundAppDraft)
         }
     }
 
@@ -246,7 +234,7 @@ abstract class DataStoreConformanceTest {
     }
 
     @Test
-    fun `appDrafts deleteById makes findById return None`() {
+    fun `appDrafts deleteById makes findApiViewById return None`() {
         withMigratedDataStore { dataStore ->
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
@@ -257,11 +245,11 @@ abstract class DataStoreConformanceTest {
             dataStore
                 .runTxWithRetry { tx -> tx.appDrafts.deleteById("appDraft1", UNIX_EPOCH).bind() }
                 .unwrap2()
-            val appDraft = dataStore
-                .runTxWithRetry { tx -> tx.appDrafts.findById("appDraft1").bind() }
+            val appDraftApiView = dataStore
+                .runTxWithRetry { tx -> tx.appDrafts.findApiViewById("appDraft1").bind() }
                 .unwrap2()
 
-            assertTrue(appDraft.isNone())
+            assertTrue(appDraftApiView.isNone())
         }
     }
 
@@ -666,18 +654,6 @@ abstract class DataStoreConformanceTest {
                 .unwrap2()
 
             assertEquals(listOf(unsubmittedAppDraftApiView(id = "appDraft2")), appDrafts)
-        }
-    }
-
-    @Test
-    fun `appDrafts findById returns None when no app draft with the given ID exists`() {
-        withMigratedDataStore { dataStore ->
-
-            val foundAppDraft = dataStore
-                .runTxWithRetry { tx -> tx.appDrafts.findById("appDraft1").bind() }
-                .unwrap2()
-
-            assertTrue(foundAppDraft.isNone())
         }
     }
 
@@ -1499,12 +1475,14 @@ abstract class DataStoreConformanceTest {
                 tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
             }
                 .unwrap2()
-            val appDraft = dataStore
-                .runTxWithRetry { tx -> tx.appDrafts.findById("appDraft1").bind() }
+            val appDraftApiView = dataStore
+                .runTxWithRetry { tx -> tx.appDrafts.requireApiViewById("appDraft1").bind() }
                 .unwrap2()
-                .unwrap()
 
-            assertEquals(Some("appDraftListing1"), appDraft.optionalDefaultAppDraftListingId)
+            assertEquals(
+                Some("appDraftListing1"),
+                (appDraftApiView as AppDraftApiView.Unsubmitted).defaultAppDraftListingId,
+            )
         }
     }
 
@@ -1523,12 +1501,14 @@ abstract class DataStoreConformanceTest {
                 tx.appDrafts.updateDefaultListing("appDraft1", None).bind()
             }
                 .unwrap2()
-            val appDraft = dataStore
-                .runTxWithRetry { tx -> tx.appDrafts.findById("appDraft1").bind() }
+            val appDraftApiView = dataStore
+                .runTxWithRetry { tx -> tx.appDrafts.requireApiViewById("appDraft1").bind() }
                 .unwrap2()
-                .unwrap()
 
-            assertEquals(None, appDraft.optionalDefaultAppDraftListingId)
+            assertEquals(
+                None,
+                (appDraftApiView as AppDraftApiView.Unsubmitted).defaultAppDraftListingId,
+            )
         }
     }
 
@@ -1695,13 +1675,12 @@ abstract class DataStoreConformanceTest {
                 tx.appDrafts.updateSubmitTime("appDraft1", UNIX_EPOCH).bind()
             }
                 .unwrap2()
-            val appDraft = dataStore
-                .runTxWithRetry { tx -> tx.appDrafts.findById("appDraft1").bind() }
+            val appDraftApiView = dataStore
+                .runTxWithRetry { tx -> tx.appDrafts.requireApiViewById("appDraft1").bind() }
                 .unwrap2()
-                .unwrap()
 
-            assertInstanceOf<AppDraft.Submitted>(appDraft)
-            assertEquals(UNIX_EPOCH, appDraft.submitTime)
+            assertInstanceOf<AppDraftApiView.Submitted>(appDraftApiView)
+            assertEquals(UNIX_EPOCH, appDraftApiView.submitTime)
         }
     }
 
@@ -1781,17 +1760,6 @@ abstract class DataStoreConformanceTest {
         withMigratedDataStore { dataStore ->
             val appPackage = dataStore
                 .runTxWithRetry { tx -> tx.appPackages.findByAppDraftId("appDraft1").bind() }
-                .unwrap2()
-
-            assertTrue(appPackage.isNone())
-        }
-    }
-
-    @Test
-    fun `appPackages findById returns None when no package with the given ID exists`() {
-        withMigratedDataStore { dataStore ->
-            val appPackage = dataStore
-                .runTxWithRetry { tx -> tx.appPackages.findById("appPackage1").bind() }
                 .unwrap2()
 
             assertTrue(appPackage.isNone())
@@ -1956,20 +1924,31 @@ abstract class DataStoreConformanceTest {
     @Test
     fun `appPackages saveFromPendingUpload points the app draft at the new package`() {
         withMigratedDataStore { dataStore ->
+            val savedAppPackage = appPackage()
+
             dataStore
                 .runTxWithRetry { tx ->
                     tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
                     tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
-                    saveAppPackageFromNewUpload(tx).bind()
+                    saveAppPackageFromNewUpload(tx, savedAppPackage).bind()
                 }
                 .unwrap2()
 
-            val appPackageId = dataStore
-                .runTxWithRetry { tx -> tx.appDrafts.requireById("appDraft1").bind() }
+            val appDraftApiView = dataStore
+                .runTxWithRetry { tx -> tx.appDrafts.requireApiViewById("appDraft1").bind() }
                 .unwrap2()
-                .optionalAppPackageId
 
-            assertEquals(Some("appPackage1"), appPackageId)
+            assertEquals(
+                Some(
+                    AppPackageApiView(
+                        androidApplicationId = savedAppPackage.appId,
+                        versionCode = savedAppPackage.versionCode,
+                        versionName = savedAppPackage.versionName,
+                        targetSdk = savedAppPackage.targetSdk,
+                    )
+                ),
+                (appDraftApiView as AppDraftApiView.Unsubmitted).appPackage,
+            )
         }
     }
 
@@ -2030,26 +2009,6 @@ abstract class DataStoreConformanceTest {
                 .unwrap2()
             val foundAppPackage = dataStore
                 .runTxWithRetry { tx -> tx.appPackages.findByAppDraftId("appDraft1").bind() }
-                .unwrap2()
-
-            assertEquals(Some(originalAppPackage), foundAppPackage)
-        }
-    }
-
-    @Test
-    fun `appPackages saveFromPendingUpload and findById round-trip data`() {
-        withMigratedDataStore { dataStore ->
-            val originalAppPackage = appPackage()
-
-            dataStore
-                .runTxWithRetry { tx ->
-                    tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
-                    tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
-                    saveAppPackageFromNewUpload(tx, originalAppPackage).bind()
-                }
-                .unwrap2()
-            val foundAppPackage = dataStore
-                .runTxWithRetry { tx -> tx.appPackages.findById("appPackage1").bind() }
                 .unwrap2()
 
             assertEquals(Some(originalAppPackage), foundAppPackage)
@@ -2169,34 +2128,6 @@ abstract class DataStoreConformanceTest {
                 .unwrap2()
 
             assertEquals(0uL, count)
-        }
-    }
-
-    @Test
-    fun `apps countInOrganization returns accurate count`() {
-        withMigratedDataStore { dataStore ->
-            dataStore.runTxWithRetry { tx ->
-                tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
-                tx.organizations.saveWithOwner("org2", "user2", UNIX_EPOCH).bind()
-                tx.apps.saveWithDefaultListing(
-                    App("app1", "org1", "appListing1", false),
-                    AppListing("appListing1", "app1", ListingLanguage.EN_US),
-                ).bind()
-                tx.apps.saveWithDefaultListing(
-                    App("app2", "org1", "appListing2", false),
-                    AppListing("appListing2", "app2", ListingLanguage.EN_US),
-                ).bind()
-                tx.apps.saveWithDefaultListing(
-                    App("app3", "org2", "appListing3", false),
-                    AppListing("appListing3", "app3", ListingLanguage.EN_US),
-                ).bind()
-            }.unwrap2()
-
-            val count = dataStore
-                .runTxWithRetry { tx -> tx.apps.countInOrganization("org1").bind() }
-                .unwrap2()
-
-            assertEquals(2uL, count)
         }
     }
 

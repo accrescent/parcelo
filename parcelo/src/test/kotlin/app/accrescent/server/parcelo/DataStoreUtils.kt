@@ -12,7 +12,6 @@ import app.accrescent.server.parcelo.domain.android.NameAttribute
 import app.accrescent.server.parcelo.domain.android.SdkVersion
 import app.accrescent.server.parcelo.domain.android.VersionCode
 import app.accrescent.server.parcelo.domain.android.VersionName
-import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppDraft
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppDraftApiView
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppDraftListing
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppPackage
@@ -194,21 +193,6 @@ fun incompletePendingAppDraftListingIconUpload(
         objectKey = objectKey,
         createTime = createTime,
         externalBlobId = externalBlobId,
-    )
-}
-
-fun unsubmittedAppDraft(
-    id: String = "appDraft1",
-    organizationId: String = "org1",
-    defaultAppDraftListingId: Option<String> = None,
-    appPackageId: Option<String> = None,
-): AppDraft {
-    return AppDraft.Unsubmitted(
-        id = id,
-        organizationId = organizationId,
-        createTime = UNIX_EPOCH,
-        defaultAppDraftListingId = defaultAppDraftListingId,
-        appPackageId = appPackageId,
     )
 }
 

@@ -8,7 +8,6 @@ import app.accrescent.server.parcelo.UNIX_EPOCH
 import app.accrescent.server.parcelo.adapters.driven.datastore.jdbc.InMemoryDataStore
 import app.accrescent.server.parcelo.adapters.driven.randomsource.DeterministicRandomSource
 import app.accrescent.server.parcelo.appDraftListing
-import app.accrescent.server.parcelo.appPackage
 import app.accrescent.server.parcelo.committedExternalBlob
 import app.accrescent.server.parcelo.core.unwrap
 import app.accrescent.server.parcelo.core.unwrap2
@@ -16,7 +15,6 @@ import app.accrescent.server.parcelo.core.unwrapErr
 import app.accrescent.server.parcelo.incompletePendingAppDraftUpload
 import app.accrescent.server.parcelo.pendingExternalBlob
 import app.accrescent.server.parcelo.saveAppPackageFromNewUpload
-import app.accrescent.server.parcelo.unsubmittedAppDraft
 import arrow.core.Either
 import arrow.core.left
 import arrow.core.raise.Raise
@@ -76,39 +74,6 @@ class DataStoreTest {
     }
 
     @Test
-    fun `appDrafts requireById returns EntityNotFound if app draft does not exist`() {
-        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
-            dataStore.migrateToHead().unwrap()
-
-            val error = dataStore
-                .runTxWithRetry { tx -> tx.appDrafts.requireById("appDraft1").bind() }
-                .unwrap()
-                .unwrapErr()
-
-            assertEquals(DataStoreError.EntityNotFound, error)
-        }
-    }
-
-    @Test
-    fun `appDrafts requireById returns app draft persisted with create`() {
-        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
-            dataStore.migrateToHead().unwrap()
-            dataStore
-                .runTxWithRetry { tx -> tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind() }
-                .unwrap2()
-
-            dataStore
-                .runTxWithRetry { tx -> tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind() }
-                .unwrap2()
-            val foundAppDraft = dataStore
-                .runTxWithRetry { tx -> tx.appDrafts.requireById("appDraft1").bind() }
-                .unwrap2()
-
-            assertEquals(unsubmittedAppDraft(), foundAppDraft)
-        }
-    }
-
-    @Test
     fun `appDrafts requireListingById returns EntityNotFound if listing does not exist`() {
         InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
@@ -140,39 +105,6 @@ class DataStoreTest {
                 .unwrap2()
 
             assertEquals(originalListing, foundListing)
-        }
-    }
-
-    @Test
-    fun `appPackages requireById returns EntityNotFound if app package does not exist`() {
-        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
-            dataStore.migrateToHead().unwrap()
-
-            val error = dataStore
-                .runTxWithRetry { tx -> tx.appPackages.requireById("appPackage1").bind() }
-                .unwrap()
-                .unwrapErr()
-
-            assertEquals(DataStoreError.EntityNotFound, error)
-        }
-    }
-
-    @Test
-    fun `appPackages requireById returns app package persisted with saveFromPendingUpload`() {
-        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
-            dataStore.migrateToHead().unwrap()
-            val originalPackage = appPackage()
-
-            dataStore.runTxWithRetry { tx ->
-                tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
-                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
-                saveAppPackageFromNewUpload(tx, originalPackage).bind()
-            }.unwrap2()
-            val foundPackage = dataStore
-                .runTxWithRetry { tx -> tx.appPackages.requireById("appPackage1").bind() }
-                .unwrap2()
-
-            assertEquals(originalPackage, foundPackage)
         }
     }
 

@@ -16,7 +16,6 @@ import app.accrescent.server.parcelo.domain.android.SdkVersion
 import app.accrescent.server.parcelo.domain.android.VersionCode
 import app.accrescent.server.parcelo.domain.android.VersionName
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.App
-import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppDraft
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppDraftApiView
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppDraftListing
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppDraftListingIconUploadProcessingResult
@@ -509,28 +508,6 @@ private class InMemoryAppDraftRepository(
         }
     }
 
-    override fun findById(id: String): DataStoreResult<Option<AppDraft>> = runCatchingSql {
-        val sql = """
-            SELECT
-                id,
-                organization_id,
-                create_time,
-                default_app_draft_listing_id,
-                app_package_id,
-                submit_time
-            FROM app_drafts
-            WHERE id = ?
-        """.trimIndent()
-        connection.prepareStatement(sql).use { stmt ->
-            stmt.setString(1, id)
-            stmt.executeQuery().use { rs ->
-                if (!rs.next()) return@use None
-
-                Some(rs.readAppDraft().bind())
-            }
-        }
-    }
-
     override fun findListingById(
         id: String,
     ): DataStoreResult<Option<AppDraftListing>> = runCatchingSql {
@@ -902,32 +879,6 @@ private class InMemoryAppPackageRepository(
         }
     }
 
-    override fun findById(id: String): DataStoreResult<Option<AppPackage>> = runCatchingSql {
-        val sql = """
-            SELECT
-                id,
-                app_draft_id,
-                external_blob_id,
-                upload_event_time,
-                app_id,
-                version_code,
-                version_name,
-                target_sdk,
-                signer_certificate,
-                build_apks_result
-            FROM app_packages
-            WHERE id = ?
-        """.trimIndent()
-        connection.prepareStatement(sql).use { stmt ->
-            stmt.setString(1, id)
-            stmt.executeQuery().use { rs ->
-                if (!rs.next()) return@use None
-
-                Some(rs.readAppPackage().bind())
-            }
-        }
-    }
-
     override fun findByAppDraftId(
         appDraftId: String,
     ): DataStoreResult<Option<AppPackage>> = runCatchingSql {
@@ -1126,15 +1077,6 @@ private class InMemoryAppRepository(private val connection: Connection) : AppRep
             """.trimIndent()
             connection.prepareStatement(sql).use { stmt ->
                 stmt.setString(1, appDraftId)
-                stmt.executeQuery().use { rs -> rs.getSelectCountResult().bind() }
-            }
-        }
-
-    override fun countInOrganization(organizationId: String): DataStoreResult<ULong> =
-        runCatchingSql {
-            val sql = "SELECT COUNT(1) FROM apps WHERE apps.organization_id = ?"
-            connection.prepareStatement(sql).use { stmt ->
-                stmt.setString(1, organizationId)
                 stmt.executeQuery().use { rs -> rs.getSelectCountResult().bind() }
             }
         }
@@ -1504,37 +1446,6 @@ private fun ResultSet.readAppDraftApiView(): DataStoreResult<AppDraftApiView> = 
                 .toEitherBind { DataStoreError.IllegalState },
             appPackage = appPackage.toEitherBind { DataStoreError.IllegalState },
             submitTime = submitTime.value,
-        )
-    }
-}
-
-/**
- * Reads an [AppDraft] from the current row, which must expose every `app_drafts` column selected by
- * this repository.
- */
-private fun ResultSet.readAppDraft(): DataStoreResult<AppDraft> = either {
-    val id = requireString("id").bind()
-    val organizationId = requireString("organization_id").bind()
-    val createTime = requireObject<OffsetDateTime>("create_time").bind()
-    val defaultAppDraftListingId = getSafeString("default_app_draft_listing_id")
-    val appPackageId = getSafeString("app_package_id")
-
-    when (val submitTime = getSafeObject<OffsetDateTime>("submit_time")) {
-        None -> AppDraft.Unsubmitted(
-            id,
-            organizationId,
-            createTime,
-            defaultAppDraftListingId,
-            appPackageId,
-        )
-
-        is Some -> AppDraft.Submitted(
-            id,
-            organizationId,
-            createTime,
-            defaultAppDraftListingId.toEitherBind { DataStoreError.IllegalState },
-            appPackageId.toEitherBind { DataStoreError.IllegalState },
-            submitTime.value,
         )
     }
 }

@@ -261,14 +261,6 @@ abstract class DataStore(private val randomSource: RandomSource) {
         ): DataStoreResult<List<AppDraftApiView>>
 
         /**
-         * Finds an existing app draft.
-         *
-         * @param id the ID of the app draft to find.
-         * @return the app draft with the given ID, or [None] if it doesn't exist.
-         */
-        abstract fun findById(id: String): DataStoreResult<Option<AppDraft>>
-
-        /**
          * Finds an existing app draft listing.
          *
          * @param id the ID of the app draft listing to find.
@@ -402,17 +394,6 @@ abstract class DataStore(private val randomSource: RandomSource) {
         }
 
         /**
-         * Finds an existing app draft.
-         *
-         * @param id the ID of the app draft to find.
-         * @return the app draft with the given ID, or [DataStoreError.EntityNotFound] if it
-         * doesn't exist.
-         */
-        fun requireById(id: String): DataStoreResult<AppDraft> {
-            return findById(id).flatMap { it.toEither { DataStoreError.EntityNotFound } }
-        }
-
-        /**
          * Finds an existing app draft listing.
          *
          * @param id the ID of the app draft listing to find.
@@ -521,14 +502,6 @@ abstract class DataStore(private val randomSource: RandomSource) {
         ): DataStoreResult<Option<ApplicationId>>
 
         /**
-         * Finds an app package by its ID.
-         *
-         * @param id the ID of the app package to find.
-         * @return the app package with the given ID, or [None] if it doesn't exist.
-         */
-        abstract fun findById(id: String): DataStoreResult<Option<AppPackage>>
-
-        /**
          * Finds an app package by the ID of its corresponding app draft.
          *
          * @param appDraftId the app draft to find a package for.
@@ -546,17 +519,6 @@ abstract class DataStore(private val randomSource: RandomSource) {
         abstract fun findPermissionsForAppPackage(
             appPackageId: String,
         ): DataStoreResult<List<AppPackagePermission>>
-
-        /**
-         * Finds an app package by its ID.
-         *
-         * @param id the ID of the app package to find.
-         * @return the app package with the given ID, or [DataStoreError.EntityNotFound] if it
-         * doesn't exist.
-         */
-        fun requireById(id: String): DataStoreResult<AppPackage> {
-            return findById(id).flatMap { it.toEither { DataStoreError.EntityNotFound } }
-        }
 
         /**
          * Saves a new app package by completing a pending app draft upload.
@@ -602,14 +564,6 @@ abstract class DataStore(private val randomSource: RandomSource) {
          * @return the number of apps for the app draft's organization.
          */
         abstract fun countInAppDraftOrganization(appDraftId: String): DataStoreResult<ULong>
-
-        /**
-         * Counts the apps in a given organization.
-         *
-         * @param organizationId the organization to count apps in.
-         * @return the number of apps for the given organization.
-         */
-        abstract fun countInOrganization(organizationId: String): DataStoreResult<ULong>
 
         /**
          * Finds an existing app.
