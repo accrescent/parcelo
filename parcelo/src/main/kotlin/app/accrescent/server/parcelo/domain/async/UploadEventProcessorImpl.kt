@@ -16,7 +16,6 @@ import app.accrescent.server.parcelo.domain.android.ApkSet
 import app.accrescent.server.parcelo.domain.ports.driven.blobstorage.BlobId
 import app.accrescent.server.parcelo.domain.ports.driven.blobstorage.BlobStorage
 import app.accrescent.server.parcelo.domain.ports.driven.blobstorage.BlobStorageError
-import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppDraft
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppDraftUploadProcessingError
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppPackage
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppPackagePermission
@@ -62,8 +61,8 @@ class UploadEventProcessorImpl(
             }
 
             // App draft is guaranteed to exist since the pending upload exists
-            val appDraft = tx.appDrafts
-                .requireById(pendingUpload.appDraftId)
+            val isSubmitted = tx.appDrafts
+                .isSubmitted(pendingUpload.appDraftId)
                 .bindMapLeft(::toProcessingError)
             val currentPackage = tx.appPackages
                 .findByAppDraftId(pendingUpload.appDraftId)
@@ -76,7 +75,7 @@ class UploadEventProcessorImpl(
 
             // Submitted app drafts are immutable, so we should refuse updating their packages
             val now = timestampSource.now()
-            if (appDraft is AppDraft.Submitted) {
+            if (isSubmitted) {
                 tx.appDrafts
                     .completePendingUpload(
                         pendingUpload.id,
@@ -136,7 +135,7 @@ class UploadEventProcessorImpl(
                 pendingUploadId = pendingUpload.id,
                 appPackage = AppPackage(
                     id = appPackageId,
-                    appDraftId = appDraft.id,
+                    appDraftId = pendingUpload.appDraftId,
                     externalBlobId = externalBlob.id,
                     uploadEventTime = event.eventTime,
                     appId = apkSet.applicationId,

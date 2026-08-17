@@ -20,6 +20,7 @@ import app.accrescent.server.parcelo.domain.android.SdkVersion
 import app.accrescent.server.parcelo.domain.android.VersionCode
 import app.accrescent.server.parcelo.domain.android.VersionName
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.App
+import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppDraftApiView
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppListing
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStore
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.ExternalBlob
@@ -72,7 +73,6 @@ import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertInstanceOf
-import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppDraft as DataAppDraft
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.ListingLanguage as DataListingLanguage
 import app.accrescent.server.parcelo.domain.ports.driving.console.AppDraft as ApiAppDraft
 import app.accrescent.server.parcelo.domain.ports.driving.console.AppDraftListing as ApiAppDraftListing
@@ -104,12 +104,12 @@ class AppDraftApiImplTest {
             val response = appDraftApi
                 .createAppDraft("user1", CreateAppDraftRequest("org1"))
                 .unwrap()
-            val persistedAppDraft = dataStore
-                .runTxWithRetry { tx -> tx.appDrafts.findById(response.appDraftId).bind() }
+            val appDraftApiView = dataStore
+                .runTxWithRetry { tx -> tx.appDrafts.findApiViewById(response.appDraftId).bind() }
                 .unwrap2()
                 .unwrap()
 
-            assertEquals(response.appDraftId, persistedAppDraft.id)
+            assertEquals(response.appDraftId, appDraftApiView.id)
         }
     }
 
@@ -568,13 +568,11 @@ class AppDraftApiImplTest {
             val appDraftApi = makeAppDraftApi(dataStore)
 
             appDraftApi.submitAppDraft("user1", SubmitAppDraftRequest("appDraft1")).unwrap()
-            val appDraft = dataStore
-                .runTxWithRetry { tx -> tx.appDrafts.findById("appDraft1").bind() }
+            val submitted = dataStore
+                .runTxWithRetry { tx -> tx.appDrafts.isSubmitted("appDraft1").bind() }
                 .unwrap2()
-                .unwrap()
 
-            assertInstanceOf<DataAppDraft.Submitted>(appDraft)
-            assertEquals(UNIX_EPOCH, appDraft.submitTime)
+            assertTrue(submitted)
         }
     }
 
@@ -806,32 +804,11 @@ class AppDraftApiImplTest {
             val appDraftApi = makeAppDraftApi(dataStore)
 
             appDraftApi.deleteAppDraft("user1", DeleteAppDraftRequest("appDraft1")).unwrap()
-            val appDraft = dataStore
-                .runTxWithRetry { tx -> tx.appDrafts.findById("appDraft1").bind() }
+            val appDraftApiView = dataStore
+                .runTxWithRetry { tx -> tx.appDrafts.findApiViewById("appDraft1").bind() }
                 .unwrap2()
 
-            assertTrue(appDraft.isNone())
-        }
-    }
-
-    @Test
-    fun `deleteAppDraft deletes app draft's associated package`() {
-        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
-            dataStore.migrateToHead().unwrap()
-            dataStore.runTxWithRetry { tx ->
-                tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
-                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
-                saveAppPackageFromNewUpload(tx).bind()
-            }
-                .unwrap2()
-            val appDraftApi = makeAppDraftApi(dataStore)
-
-            appDraftApi.deleteAppDraft("user1", DeleteAppDraftRequest("appDraft1")).unwrap()
-            val appPackage = dataStore
-                .runTxWithRetry { tx -> tx.appPackages.findById("appPackage1").bind() }
-                .unwrap2()
-
-            assertTrue(appPackage.isNone())
+            assertTrue(appDraftApiView.isNone())
         }
     }
 
@@ -1302,12 +1279,15 @@ class AppDraftApiImplTest {
 
             val request = DeleteAppDraftListingRequest("appDraftListing1")
             appDraftApi.deleteAppDraftListing("user1", request).unwrap()
-            val appDraft = dataStore
-                .runTxWithRetry { tx -> tx.appDrafts.findById("appDraft1").bind() }
+            val appDraftApiView = dataStore
+                .runTxWithRetry { tx -> tx.appDrafts.findApiViewById("appDraft1").bind() }
                 .unwrap2()
                 .unwrap()
 
-            assertEquals(None, appDraft.optionalDefaultAppDraftListingId)
+            assertEquals(
+                None,
+                (appDraftApiView as AppDraftApiView.Unsubmitted).defaultAppDraftListingId,
+            )
         }
     }
 

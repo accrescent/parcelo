@@ -90,7 +90,6 @@ import arrow.core.raise.either
 import arrow.core.raise.ensure
 import com.google.protobuf.InvalidProtocolBufferException
 import kotlin.io.encoding.Base64
-import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppDraft as DataAppDraft
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppDraftListing as DataAppDraftListing
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.ListingLanguage as DataListingLanguage
 import app.accrescent.server.parcelo.domain.ports.driving.console.AppDraft as ApiAppDraft
@@ -228,10 +227,9 @@ class AppDraftApiImpl(
             ensure(hasPermission) { InsufficientPermissionError }
 
             // App draft is guaranteed to exist since permission is granted
-            val appDraft = tx.appDrafts
-                .requireById(request.appDraftId)
-                .bindMapLeft(::toServerError)
-            ensure(appDraft !is DataAppDraft.Submitted) { AppDraftSubmittedError(request.appDraftId) }
+            val isSubmitted =
+                tx.appDrafts.isSubmitted(request.appDraftId).bindMapLeft(::toServerError)
+            ensure(!isSubmitted) { AppDraftSubmittedError(request.appDraftId) }
 
             // Generate a signed URI for upload
             val objectKey =
@@ -263,11 +261,11 @@ class AppDraftApiImpl(
             }
             // Upsert the app draft's pending upload
             val pendingUploadExists = tx.appDrafts
-                .pendingUploadExistsByAppDraftId(appDraft.id)
+                .pendingUploadExistsByAppDraftId(request.appDraftId)
                 .bindMapLeft(::toServerError)
             if (pendingUploadExists) {
                 tx.appDrafts
-                    .deletePendingUploadByAppDraftId(appDraft.id, now)
+                    .deletePendingUploadByAppDraftId(request.appDraftId, now)
                     .bindMapLeft(::toServerError)
             }
             tx.appDrafts
@@ -276,7 +274,7 @@ class AppDraftApiImpl(
                         id = idGenerator
                             .generateId(IdType.PENDING_APP_DRAFT_UPLOAD)
                             .bindMapLeft(::toServerError),
-                        appDraftId = appDraft.id,
+                        appDraftId = request.appDraftId,
                         objectKey = objectKey,
                         createTime = now,
                         externalBlobId = blob.id,
@@ -333,8 +331,9 @@ class AppDraftApiImpl(
             ensure(hasPermission) { InsufficientPermissionError }
 
             // App draft is guaranteed to exist since permission is granted
-            val appDraft = tx.appDrafts.requireById(request.appDraftId).bindMapLeft(::toServerError)
-            ensure(appDraft !is DataAppDraft.Submitted) { AppDraftSubmittedError(request.appDraftId) }
+            val isSubmitted =
+                tx.appDrafts.isSubmitted(request.appDraftId).bindMapLeft(::toServerError)
+            ensure(!isSubmitted) { AppDraftSubmittedError(request.appDraftId) }
 
             val listingExists = tx.appDrafts
                 .listingExistsByIdForAppDraft(request.defaultAppDraftListingId, request.appDraftId)
@@ -360,24 +359,30 @@ class AppDraftApiImpl(
             ensure(hasPermission) { InsufficientPermissionError }
 
             // App draft is guaranteed to exist since permission is granted
-            val appDraft = tx.appDrafts.requireById(request.appDraftId).bindMapLeft(::toServerError)
-            ensure(appDraft is DataAppDraft.Unsubmitted) { AppDraftSubmittedError(request.appDraftId) }
-            val appPackageId = appDraft.appPackageId
-                .toEitherBind { AppDraftHasNoPackageError(request.appDraftId) }
-            ensure(appDraft.defaultAppDraftListingId.isSome()) {
-                AppDraftHasNoDefaultListingError(request.appDraftId)
-            }
+            val isSubmitted =
+                tx.appDrafts.isSubmitted(request.appDraftId).bindMapLeft(::toServerError)
+            ensure(!isSubmitted) { AppDraftSubmittedError(request.appDraftId) }
 
-            val appPackage = tx.appPackages.requireById(appPackageId).bindMapLeft(::toServerError)
+            // The app draft is known to exist, so a missing app ID means a missing package
+            val appId = tx.appPackages
+                .findAppIdByAppDraftId(request.appDraftId)
+                .bindMapLeft(::toServerError)
+                .toEitherBind { AppDraftHasNoPackageError(request.appDraftId) }
+
+            val hasDefaultListing = tx.appDrafts
+                .hasDefaultListing(request.appDraftId)
+                .bindMapLeft(::toServerError)
+            ensure(hasDefaultListing) { AppDraftHasNoDefaultListingError(request.appDraftId) }
+
             val appDraftSubmittedForAppId = tx.appDrafts
-                .existsSubmittedForAppId(appPackage.appId)
+                .existsSubmittedForAppId(appId)
                 .bindMapLeft(::toServerError)
             ensure(!appDraftSubmittedForAppId) {
-                AppDraftSubmittedForAppIdError(appPackage.appId.intoInner())
+                AppDraftSubmittedForAppIdError(appId.intoInner())
             }
 
             val publishedAppCount = tx.apps
-                .countInOrganization(appDraft.organizationId)
+                .countInAppDraftOrganization(request.appDraftId)
                 .bindMapLeft(::toServerError)
             ensure(publishedAppCount < PUBLISHED_APP_LIMIT) {
                 PublishedAppLimitExceededError(PUBLISHED_APP_LIMIT)
@@ -402,11 +407,12 @@ class AppDraftApiImpl(
             ensure(hasPermission) { InsufficientPermissionError }
 
             // App draft is guaranteed to exist since permission is granted
-            val appDraft = tx.appDrafts.requireById(request.appDraftId).bindMapLeft(::toServerError)
-            ensure(appDraft is DataAppDraft.Unsubmitted) { AppDraftSubmittedError(request.appDraftId) }
+            val isSubmitted =
+                tx.appDrafts.isSubmitted(request.appDraftId).bindMapLeft(::toServerError)
+            ensure(!isSubmitted) { AppDraftSubmittedError(request.appDraftId) }
 
             tx.appDrafts
-                .deleteById(appDraft.id, timestampSource.now())
+                .deleteById(request.appDraftId, timestampSource.now())
                 .bindMapLeft(::toServerError)
         }
             .bindMapLeft(::toServerError)
@@ -426,8 +432,9 @@ class AppDraftApiImpl(
             ensure(hasPermission) { InsufficientPermissionError }
 
             // App draft is guaranteed to exist since permission is granted
-            val appDraft = tx.appDrafts.requireById(request.appDraftId).bindMapLeft(::toServerError)
-            ensure(appDraft !is DataAppDraft.Submitted) { AppDraftSubmittedError(request.appDraftId) }
+            val isSubmitted =
+                tx.appDrafts.isSubmitted(request.appDraftId).bindMapLeft(::toServerError)
+            ensure(!isSubmitted) { AppDraftSubmittedError(request.appDraftId) }
 
             val dataStoreLanguage = request.language.toDataStoreRepresentation()
             val listingExists = tx.appDrafts
@@ -559,8 +566,9 @@ class AppDraftApiImpl(
                 .bindMapLeft(::toServerError)
 
             // App draft is guaranteed to exist since permission is granted
-            val appDraft = tx.appDrafts.requireById(listing.appDraftId).bindMapLeft(::toServerError)
-            ensure(appDraft !is DataAppDraft.Submitted) { AppDraftSubmittedError(listing.appDraftId) }
+            val isSubmitted =
+                tx.appDrafts.isSubmitted(listing.appDraftId).bindMapLeft(::toServerError)
+            ensure(!isSubmitted) { AppDraftSubmittedError(listing.appDraftId) }
 
             tx.appDrafts
                 .updateListing(
@@ -595,8 +603,9 @@ class AppDraftApiImpl(
                 .bindMapLeft(::toServerError)
 
             // App draft is guaranteed to exist since permission is granted
-            val appDraft = tx.appDrafts.requireById(listing.appDraftId).bindMapLeft(::toServerError)
-            ensure(appDraft !is DataAppDraft.Submitted) { AppDraftSubmittedError(listing.appDraftId) }
+            val isSubmitted =
+                tx.appDrafts.isSubmitted(listing.appDraftId).bindMapLeft(::toServerError)
+            ensure(!isSubmitted) { AppDraftSubmittedError(listing.appDraftId) }
 
             // Generate a signed URI for upload
             val objectKey =
@@ -681,11 +690,13 @@ class AppDraftApiImpl(
                 .bindMapLeft(::toServerError)
 
             // App draft is guaranteed to exist since permission is granted
-            val appDraft = tx.appDrafts.requireById(listing.appDraftId).bindMapLeft(::toServerError)
-            ensure(appDraft !is DataAppDraft.Submitted) { AppDraftSubmittedError(listing.appDraftId) }
+            val isSubmitted =
+                tx.appDrafts.isSubmitted(listing.appDraftId).bindMapLeft(::toServerError)
+            ensure(!isSubmitted) { AppDraftSubmittedError(listing.appDraftId) }
 
-            val isDefaultListing = appDraft.optionalDefaultAppDraftListingId
-                .isSome { it == request.appDraftListingId }
+            val isDefaultListing = tx.appDrafts
+                .listingIsDefault(request.appDraftListingId)
+                .bindMapLeft(::toServerError)
             if (isDefaultListing) {
                 tx.appDrafts
                     .updateDefaultListing(listing.appDraftId, None)

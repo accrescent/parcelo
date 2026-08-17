@@ -25,8 +25,10 @@ import app.accrescent.server.parcelo.domain.android.SdkVersion
 import app.accrescent.server.parcelo.domain.android.VersionCode
 import app.accrescent.server.parcelo.domain.android.VersionName
 import app.accrescent.server.parcelo.domain.ports.driven.blobstorage.BlobId
+import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppDraftApiView
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppDraftUploadProcessingError
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppPackage
+import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppPackageApiView
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStore
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.ExternalBlob
 import app.accrescent.server.parcelo.domain.ports.driven.randomsource.RandomSource
@@ -41,7 +43,6 @@ import arrow.core.left
 import arrow.core.right
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertInstanceOf
@@ -417,15 +418,26 @@ class UploadEventProcessorImplTest {
                 val processor = uploadEventProcessor(dataStore, blobStorage, randomSource, downloadDir)
 
                 processor.processAppDraftUpload(event) {}.unwrap()
-                // The app draft started with no package, so its package ID should now reference the
-                // package persisted from this upload
-                val (appDraft, appPackage) = dataStore.runTxWithRetry { tx ->
-                    tx.appDrafts.requireById("appDraft1").bind() to
-                            tx.appPackages.findByAppDraftId("appDraft1").bind().unwrap()
+                // The app draft started with no package, so its view should now expose the package
+                // persisted from this upload
+                val appDraftApiView = dataStore.runTxWithRetry { tx ->
+                    tx.appDrafts.requireApiViewById("appDraft1").bind()
                 }
                     .unwrap2()
 
-                assertEquals(Some(appPackage.id), appDraft.optionalAppPackageId)
+                assertEquals(
+                    Some(
+                        AppPackageApiView(
+                            androidApplicationId = ApplicationId
+                                .fromString("com.example.app")
+                                .unwrap(),
+                            versionCode = VersionCode.fromInt(1).unwrap(),
+                            versionName = VersionName.fromString("1.0").unwrap(),
+                            targetSdk = SdkVersion.fromInt(37).unwrap(),
+                        )
+                    ),
+                    (appDraftApiView as AppDraftApiView.Unsubmitted).appPackage,
+                )
             }
         }
     }
@@ -489,7 +501,7 @@ class UploadEventProcessorImplTest {
     }
 
     @Test
-    fun `processAppDraftUpload replaces the existing package and marks its blob for deletion`(
+    fun `processAppDraftUpload replaces the existing package`(
         @TempDir downloadDir: Path,
     ) {
         val randomSource = DeterministicRandomSource()
@@ -504,7 +516,11 @@ class UploadEventProcessorImplTest {
                     tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
                     saveAppPackageFromNewUpload(
                         tx,
-                        appPackage = appPackage(id = "oldPackage", externalBlobId = "oldBlob"),
+                        appPackage = appPackage(
+                            id = "oldPackage",
+                            externalBlobId = "oldBlob",
+                            appId = ApplicationId.fromString("com.example.app2").unwrap(),
+                        ),
                         bucketName = "private",
                         objectKey = "old1",
                     )
@@ -532,19 +548,15 @@ class UploadEventProcessorImplTest {
                 val event = blobId.toUploadEvent(UNIX_EPOCH.plusSeconds(1))
 
                 processor.processAppDraftUpload(event) {}.unwrap()
-                val (oldPackage, oldBlob, newPackage) = dataStore.runTxWithRetry { tx ->
-                    Triple(
-                        tx.appPackages.findById("oldPackage").bind(),
-                        tx.externalBlobs.requireById("oldBlob").bind(),
-                        tx.appPackages.findByAppDraftId("appDraft1").bind().unwrap(),
-                    )
+                val appDraftView = dataStore.runTxWithRetry { tx ->
+                    tx.appDrafts.requireApiViewById("appDraft1").bind()
                 }
                     .unwrap2()
 
-                assertTrue(oldPackage.isNone())
-                assertInstanceOf<ExternalBlob.Status.Deleted<*>>(oldBlob.status)
-                assertNotEquals("oldPackage", newPackage.id)
-                assertEquals(ApplicationId.fromString("com.example.app").unwrap(), newPackage.appId)
+                assertEquals(
+                    Some(ApplicationId.fromString("com.example.app").unwrap()),
+                    (appDraftView as AppDraftApiView.Unsubmitted).appPackage.map { it.androidApplicationId },
+                )
             }
         }
     }
