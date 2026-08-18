@@ -13,6 +13,7 @@ import app.accrescent.server.parcelo.core.unwrapErr
 import app.accrescent.server.parcelo.domain.authn.ExternalUserId
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppListing
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.ListingLanguage
+import app.accrescent.server.parcelo.domain.ports.driving.console.CallContext
 import app.accrescent.server.parcelo.domain.ports.driving.console.GetAppRequest
 import app.accrescent.server.parcelo.domain.ports.driving.console.GetAppResponse
 import app.accrescent.server.parcelo.domain.ports.driving.console.InsufficientPermissionError
@@ -31,7 +32,7 @@ class AppApiImplTest {
             dataStore.migrateToHead().unwrap()
             val appApi = AppApiImpl(dataStore)
 
-            val response = appApi.getApp("user1", GetAppRequest("app1"))
+            val response = appApi.getApp(CallContext("user1"), GetAppRequest("app1"))
 
             assertEquals(InsufficientPermissionError, response.unwrapErr())
         }
@@ -51,7 +52,7 @@ class AppApiImplTest {
             }.unwrap2()
             val appApi = AppApiImpl(dataStore)
 
-            val response = appApi.getApp("user1", GetAppRequest("app1"))
+            val response = appApi.getApp(CallContext("user1"), GetAppRequest("app1"))
 
             assertEquals(
                 GetAppResponse(
@@ -73,7 +74,7 @@ class AppApiImplTest {
             dataStore.migrateToHead().unwrap()
             val appApi = AppApiImpl(dataStore)
 
-            val response = appApi.updateApp("user1", UpdateAppRequest("app1", false))
+            val response = appApi.updateApp(CallContext("user1"), UpdateAppRequest("app1", false))
 
             assertEquals(InsufficientPermissionError, response.unwrapErr())
         }
@@ -92,7 +93,7 @@ class AppApiImplTest {
             }.unwrap2()
             val appApi = AppApiImpl(dataStore)
 
-            val response = appApi.updateApp("user1", UpdateAppRequest("app1", false))
+            val response = appApi.updateApp(CallContext("user1"), UpdateAppRequest("app1", false))
 
             assertEquals(Unit.right(), response)
         }
@@ -113,7 +114,7 @@ class AppApiImplTest {
             val appApi = AppApiImpl(dataStore)
 
             appApi.updateApp(
-                "user1",
+                CallContext("user1"),
                 UpdateAppRequest(appId = "app1", publiclyListed = true),
             ).unwrap()
             val dataStoreApp = dataStore

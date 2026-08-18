@@ -38,6 +38,7 @@ import app.accrescent.server.parcelo.domain.ports.driving.console.AppDraftListin
 import app.accrescent.server.parcelo.domain.ports.driving.console.AppDraftPackageNotFoundError
 import app.accrescent.server.parcelo.domain.ports.driving.console.AppDraftSubmittedError
 import app.accrescent.server.parcelo.domain.ports.driving.console.AppDraftSubmittedForAppIdError
+import app.accrescent.server.parcelo.domain.ports.driving.console.CallContext
 import app.accrescent.server.parcelo.domain.ports.driving.console.CreateAppDraftListingRequest
 import app.accrescent.server.parcelo.domain.ports.driving.console.CreateAppDraftRequest
 import app.accrescent.server.parcelo.domain.ports.driving.console.DeleteAppDraftListingRequest
@@ -87,7 +88,7 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             val appDraftApi = makeAppDraftApi(dataStore)
 
-            val response = appDraftApi.createAppDraft("user1", CreateAppDraftRequest("org1"))
+            val response = appDraftApi.createAppDraft(CallContext("user1"), CreateAppDraftRequest("org1"))
 
             assertEquals(InsufficientPermissionError, response.unwrapErr())
         }
@@ -103,7 +104,7 @@ class AppDraftApiImplTest {
             val appDraftApi = makeAppDraftApi(dataStore)
 
             val response = appDraftApi
-                .createAppDraft("user1", CreateAppDraftRequest("org1"))
+                .createAppDraft(CallContext("user1"), CreateAppDraftRequest("org1"))
                 .unwrap()
             val appDraftApiView = dataStore
                 .runTxWithRetry { tx -> tx.appDrafts.findApiViewById(response.appDraftId).bind() }
@@ -126,7 +127,7 @@ class AppDraftApiImplTest {
             }.unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
 
-            val response = appDraftApi.createAppDraft("user1", CreateAppDraftRequest("org1"))
+            val response = appDraftApi.createAppDraft(CallContext("user1"), CreateAppDraftRequest("org1"))
 
             assertEquals(ActiveAppDraftLimitExceededError(3uL), response.unwrapErr())
         }
@@ -138,7 +139,8 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             val appDraftApi = makeAppDraftApi(dataStore)
 
-            val response = appDraftApi.downloadAppDraft("user1", DownloadAppDraftRequest("appDraft1"))
+            val response =
+                appDraftApi.downloadAppDraft(CallContext("user1"), DownloadAppDraftRequest("appDraft1"))
 
             assertEquals(InsufficientPermissionError, response.unwrapErr())
         }
@@ -155,7 +157,8 @@ class AppDraftApiImplTest {
                 .unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
 
-            val response = appDraftApi.downloadAppDraft("user1", DownloadAppDraftRequest("appDraft1"))
+            val response =
+                appDraftApi.downloadAppDraft(CallContext("user1"), DownloadAppDraftRequest("appDraft1"))
 
             assertEquals(AppDraftPackageNotFoundError("appDraft1"), response.unwrapErr())
         }
@@ -175,7 +178,8 @@ class AppDraftApiImplTest {
             val blobStorage = LocalBlobStorage(randomSource)
             val appDraftApi = makeAppDraftApi(dataStore, blobStorage = blobStorage)
 
-            val response = appDraftApi.downloadAppDraft("user1", DownloadAppDraftRequest("appDraft1"))
+            val response =
+                appDraftApi.downloadAppDraft(CallContext("user1"), DownloadAppDraftRequest("appDraft1"))
 
             assertEquals(
                 DownloadAppDraftResponse(
@@ -198,7 +202,8 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             val appDraftApi = makeAppDraftApi(dataStore)
 
-            val response = appDraftApi.getAppDraft("user1", GetAppDraftRequest("appDraft1"))
+            val response =
+                appDraftApi.getAppDraft(CallContext("user1"), GetAppDraftRequest("appDraft1"))
 
             assertEquals(InsufficientPermissionError, response.unwrapErr())
         }
@@ -215,9 +220,9 @@ class AppDraftApiImplTest {
             val appDraftApi = makeAppDraftApi(dataStore)
 
             val createResponse =
-                appDraftApi.createAppDraft("user1", CreateAppDraftRequest("org1")).unwrap()
+                appDraftApi.createAppDraft(CallContext("user1"), CreateAppDraftRequest("org1")).unwrap()
             val getResponse = appDraftApi.getAppDraft(
-                "user1",
+                CallContext("user1"),
                 GetAppDraftRequest(createResponse.appDraftId),
             )
 
@@ -250,7 +255,7 @@ class AppDraftApiImplTest {
                 .unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
 
-            val response = appDraftApi.getAppDraft("user1", GetAppDraftRequest("appDraft1"))
+            val response = appDraftApi.getAppDraft(CallContext("user1"), GetAppDraftRequest("appDraft1"))
 
             assertEquals(
                 GetAppDraftResponse(
@@ -286,7 +291,7 @@ class AppDraftApiImplTest {
             val appDraftApi = makeAppDraftApi(dataStore)
 
             val response = appDraftApi
-                .listAppDrafts("user1", ListAppDraftsRequest("org1", 2u, null))
+                .listAppDrafts(CallContext("user1"), ListAppDraftsRequest("org1", 2u, null))
                 .map { it.appDrafts }
 
             assertEquals(
@@ -319,7 +324,7 @@ class AppDraftApiImplTest {
             val appDraftApi = makeAppDraftApi(dataStore)
 
             val response = appDraftApi
-                .listAppDrafts("user1", ListAppDraftsRequest("org1", 1u, null))
+                .listAppDrafts(CallContext("user1"), ListAppDraftsRequest("org1", 1u, null))
                 .map { it.appDrafts }
 
             assertEquals(
@@ -354,7 +359,7 @@ class AppDraftApiImplTest {
             val appDraftApi = makeAppDraftApi(dataStore)
 
             val response = appDraftApi
-                .listAppDrafts("user2", ListAppDraftsRequest("org1", 1u, null))
+                .listAppDrafts(CallContext("user2"), ListAppDraftsRequest("org1", 1u, null))
                 .map { it.appDrafts }
 
             assertEquals(emptyList<ApiAppDraft>().right(), response)
@@ -372,7 +377,8 @@ class AppDraftApiImplTest {
             }.unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
 
-            val response = appDraftApi.listAppDrafts("user1", ListAppDraftsRequest("org1", 1u, null))
+            val response = appDraftApi
+                .listAppDrafts(CallContext("user1"), ListAppDraftsRequest("org1", 1u, null))
 
             assertInstanceOf<Either.Right<ListAppDraftsResponse>>(response)
             assertEquals(1, response.value.appDrafts.size)
@@ -394,7 +400,7 @@ class AppDraftApiImplTest {
             var pageToken: String? = null
             do {
                 val response = appDraftApi
-                    .listAppDrafts("user1", ListAppDraftsRequest("org1", 1u, pageToken))
+                    .listAppDrafts(CallContext("user1"), ListAppDraftsRequest("org1", 1u, pageToken))
                     .unwrap()
                 allDrafts.addAll(response.appDrafts)
                 pageToken = response.nextPageToken
@@ -415,7 +421,8 @@ class AppDraftApiImplTest {
             }.unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
 
-            val response = appDraftApi.listAppDrafts("user1", ListAppDraftsRequest("org1", 1u, null))
+            val response = appDraftApi
+                .listAppDrafts(CallContext("user1"), ListAppDraftsRequest("org1", 1u, null))
 
             assertInstanceOf<Either.Right<ListAppDraftsResponse>>(response)
             assertNotNull(response.value.nextPageToken)
@@ -428,7 +435,8 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             val appDraftApi = makeAppDraftApi(dataStore)
 
-            val response = appDraftApi.submitAppDraft("user1", SubmitAppDraftRequest("appDraft1"))
+            val response =
+                appDraftApi.submitAppDraft(CallContext("user1"), SubmitAppDraftRequest("appDraft1"))
 
             assertEquals(InsufficientPermissionError, response.unwrapErr())
         }
@@ -448,7 +456,8 @@ class AppDraftApiImplTest {
             }.unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
 
-            val response = appDraftApi.submitAppDraft("user1", SubmitAppDraftRequest("appDraft1"))
+            val response =
+                appDraftApi.submitAppDraft(CallContext("user1"), SubmitAppDraftRequest("appDraft1"))
 
             assertEquals(AppDraftSubmittedError("appDraft1"), response.unwrapErr())
         }
@@ -464,7 +473,8 @@ class AppDraftApiImplTest {
             }.unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
 
-            val response = appDraftApi.submitAppDraft("user1", SubmitAppDraftRequest("appDraft1"))
+            val response =
+                appDraftApi.submitAppDraft(CallContext("user1"), SubmitAppDraftRequest("appDraft1"))
 
             assertEquals(AppDraftHasNoPackageError("appDraft1"), response.unwrapErr())
         }
@@ -481,7 +491,8 @@ class AppDraftApiImplTest {
             }.unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
 
-            val response = appDraftApi.submitAppDraft("user1", SubmitAppDraftRequest("appDraft1"))
+            val response =
+                appDraftApi.submitAppDraft(CallContext("user1"), SubmitAppDraftRequest("appDraft1"))
 
             assertEquals(AppDraftHasNoDefaultListingError("appDraft1"), response.unwrapErr())
         }
@@ -525,7 +536,8 @@ class AppDraftApiImplTest {
             }.unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
 
-            val response = appDraftApi.submitAppDraft("user1", SubmitAppDraftRequest("appDraft1"))
+            val response =
+                appDraftApi.submitAppDraft(CallContext("user1"), SubmitAppDraftRequest("appDraft1"))
 
             assertEquals(AppDraftSubmittedForAppIdError("com.example.app"), response.unwrapErr())
         }
@@ -548,7 +560,8 @@ class AppDraftApiImplTest {
             }.unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
 
-            val response = appDraftApi.submitAppDraft("user1", SubmitAppDraftRequest("appDraft1"))
+            val response =
+                appDraftApi.submitAppDraft(CallContext("user1"), SubmitAppDraftRequest("appDraft1"))
 
             assertEquals(PublishedAppLimitExceededError(1uL), response.unwrapErr())
         }
@@ -568,7 +581,7 @@ class AppDraftApiImplTest {
                 .unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
 
-            appDraftApi.submitAppDraft("user1", SubmitAppDraftRequest("appDraft1")).unwrap()
+            appDraftApi.submitAppDraft(CallContext("user1"), SubmitAppDraftRequest("appDraft1")).unwrap()
             val submitted = dataStore
                 .runTxWithRetry { tx -> tx.appDrafts.isSubmitted("appDraft1").bind() }
                 .unwrap2()
@@ -583,7 +596,8 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             val appDraftApi = makeAppDraftApi(dataStore)
 
-            val response = appDraftApi.uploadAppDraft("user1", UploadAppDraftRequest("appDraft1"))
+            val response =
+                appDraftApi.uploadAppDraft(CallContext("user1"), UploadAppDraftRequest("appDraft1"))
 
             assertEquals(InsufficientPermissionError, response.unwrapErr())
         }
@@ -604,7 +618,8 @@ class AppDraftApiImplTest {
                 .unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
 
-            val response = appDraftApi.uploadAppDraft("user1", UploadAppDraftRequest("appDraft1"))
+            val response =
+                appDraftApi.uploadAppDraft(CallContext("user1"), UploadAppDraftRequest("appDraft1"))
 
             assertEquals(AppDraftSubmittedError("appDraft1"), response.unwrapErr())
         }
@@ -622,7 +637,8 @@ class AppDraftApiImplTest {
                 }.unwrap2()
                 val appDraftApi = makeAppDraftApi(dataStore, blobStorage = blobStorage)
 
-                val response = appDraftApi.uploadAppDraft("user1", UploadAppDraftRequest("appDraft1"))
+                val response = appDraftApi
+                    .uploadAppDraft(CallContext("user1"), UploadAppDraftRequest("appDraft1"))
 
                 assertEquals(
                     UploadAppDraftResponse(
@@ -646,7 +662,10 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             val appDraftApi = makeAppDraftApi(dataStore)
 
-            val response = appDraftApi.updateAppDraft("user1", UpdateAppDraftRequest("appDraft1", "appDraftListing1"))
+            val response = appDraftApi.updateAppDraft(
+                CallContext("user1"),
+                UpdateAppDraftRequest("appDraft1", "appDraftListing1"),
+            )
 
             assertEquals(InsufficientPermissionError, response.unwrapErr())
         }
@@ -668,7 +687,7 @@ class AppDraftApiImplTest {
             val appDraftApi = makeAppDraftApi(dataStore)
 
             val response = appDraftApi
-                .updateAppDraft("user1", UpdateAppDraftRequest("appDraft1", "appDraftListing1"))
+                .updateAppDraft(CallContext("user1"), UpdateAppDraftRequest("appDraft1", "appDraftListing1"))
 
             assertEquals(AppDraftSubmittedError("appDraft1"), response.unwrapErr())
         }
@@ -686,7 +705,7 @@ class AppDraftApiImplTest {
             val appDraftApi = makeAppDraftApi(dataStore)
 
             val response = appDraftApi.updateAppDraft(
-                "user1",
+                CallContext("user1"),
                 UpdateAppDraftRequest("appDraft1", "appDraftListing1"),
             )
 
@@ -709,7 +728,9 @@ class AppDraftApiImplTest {
                 }.unwrap2()
                 val appDraftApi = makeAppDraftApi(dataStore, blobStorage = blobStorage)
 
-                appDraftApi.uploadAppDraft("user1", UploadAppDraftRequest("appDraft1")).unwrap()
+                appDraftApi
+                    .uploadAppDraft(CallContext("user1"), UploadAppDraftRequest("appDraft1"))
+                    .unwrap()
                 val replacedUpload = dataStore
                     .runTxWithRetry { tx ->
                         tx.appDrafts
@@ -747,11 +768,13 @@ class AppDraftApiImplTest {
             val appDraftApi = makeAppDraftApi(dataStore)
 
             appDraftApi.updateAppDraft(
-                "user1",
+                CallContext("user1"),
                 UpdateAppDraftRequest("appDraft1", "appDraftListing1"),
             )
                 .unwrap()
-            val response = appDraftApi.getAppDraft("user1", GetAppDraftRequest("appDraft1")).unwrap()
+            val response = appDraftApi
+                .getAppDraft(CallContext("user1"), GetAppDraftRequest("appDraft1"))
+                .unwrap()
 
             assertEquals(
                 Some("appDraftListing1"),
@@ -766,7 +789,8 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             val appDraftApi = makeAppDraftApi(dataStore)
 
-            val response = appDraftApi.deleteAppDraft("user1", DeleteAppDraftRequest("appDraft1"))
+            val response =
+                appDraftApi.deleteAppDraft(CallContext("user1"), DeleteAppDraftRequest("appDraft1"))
 
             assertEquals(InsufficientPermissionError, response.unwrapErr())
         }
@@ -787,7 +811,8 @@ class AppDraftApiImplTest {
                 .unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
 
-            val response = appDraftApi.deleteAppDraft("user1", DeleteAppDraftRequest("appDraft1"))
+            val response =
+                appDraftApi.deleteAppDraft(CallContext("user1"), DeleteAppDraftRequest("appDraft1"))
 
             assertEquals(AppDraftSubmittedError("appDraft1"), response.unwrapErr())
         }
@@ -804,7 +829,9 @@ class AppDraftApiImplTest {
                 .unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
 
-            appDraftApi.deleteAppDraft("user1", DeleteAppDraftRequest("appDraft1")).unwrap()
+            appDraftApi
+                .deleteAppDraft(CallContext("user1"), DeleteAppDraftRequest("appDraft1"))
+                .unwrap()
             val appDraftApiView = dataStore
                 .runTxWithRetry { tx -> tx.appDrafts.findApiViewById("appDraft1").bind() }
                 .unwrap2()
@@ -825,7 +852,7 @@ class AppDraftApiImplTest {
                 .unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
 
-            appDraftApi.deleteAppDraft("user1", DeleteAppDraftRequest("appDraft1")).unwrap()
+            appDraftApi.deleteAppDraft(CallContext("user1"), DeleteAppDraftRequest("appDraft1")).unwrap()
             val externalBlob = dataStore
                 .runTxWithRetry { tx -> tx.externalBlobs.requireById("blob1").bind() }
                 .unwrap2()
@@ -846,7 +873,7 @@ class AppDraftApiImplTest {
                 name = "App Name",
                 shortDescription = "App Short Description",
             )
-            val response = appDraftApi.createAppDraftListing("user1", request)
+            val response = appDraftApi.createAppDraftListing(CallContext("user1"), request)
 
             assertEquals(InsufficientPermissionError, response.unwrapErr())
         }
@@ -870,7 +897,7 @@ class AppDraftApiImplTest {
                 name = "App Name",
                 shortDescription = "App Short Description",
             )
-            val response = appDraftApi.createAppDraftListing("user1", request)
+            val response = appDraftApi.createAppDraftListing(CallContext("user1"), request)
 
             assertEquals(
                 AppDraftListingAlreadyExistsError("appDraft1", "en-US"),
@@ -900,7 +927,7 @@ class AppDraftApiImplTest {
                 name = "App Name",
                 shortDescription = "App Short Description",
             )
-            val response = appDraftApi.createAppDraftListing("user1", request)
+            val response = appDraftApi.createAppDraftListing(CallContext("user1"), request)
 
             assertEquals(AppDraftSubmittedError("appDraft1"), response.unwrapErr())
         }
@@ -923,7 +950,7 @@ class AppDraftApiImplTest {
                 name = "App Name",
                 shortDescription = "App Short Description",
             )
-            val response = appDraftApi.createAppDraftListing("user1", request).unwrap()
+            val response = appDraftApi.createAppDraftListing(CallContext("user1"), request).unwrap()
             val persistedAppDraftListing = dataStore
                 .runTxWithRetry { tx -> tx.appDrafts.findListingById(response.appDraftListingId).bind() }
                 .unwrap2()
@@ -940,7 +967,7 @@ class AppDraftApiImplTest {
             val appDraftApi = makeAppDraftApi(dataStore)
 
             val response = appDraftApi
-                .getAppDraftListing("user1", GetAppDraftListingRequest("appDraftListing1"))
+                .getAppDraftListing(CallContext("user1"), GetAppDraftListingRequest("appDraftListing1"))
 
             assertEquals(InsufficientPermissionError, response.unwrapErr())
         }
@@ -958,9 +985,12 @@ class AppDraftApiImplTest {
             val appDraftApi = makeAppDraftApi(dataStore)
 
             val createRequest = CreateAppDraftListingRequest("appDraft1", ApiListingLanguage.EN_US, "name", "desc")
-            val createResponse = appDraftApi.createAppDraftListing("user1", createRequest).unwrap()
-            val getResponse = appDraftApi
-                .getAppDraftListing("user1", GetAppDraftListingRequest(createResponse.appDraftListingId))
+            val createResponse =
+                appDraftApi.createAppDraftListing(CallContext("user1"), createRequest).unwrap()
+            val getResponse = appDraftApi.getAppDraftListing(
+                CallContext("user1"),
+                GetAppDraftListingRequest(createResponse.appDraftListingId),
+            )
                 .unwrap()
 
             assertEquals(
@@ -991,8 +1021,10 @@ class AppDraftApiImplTest {
             }.unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
 
-            val response = appDraftApi
-                .listAppDraftListings("user1", ListAppDraftListingsRequest("appDraft1", 2u, null))
+            val response = appDraftApi.listAppDraftListings(
+                CallContext("user1"),
+                ListAppDraftListingsRequest("appDraft1", 2u, null),
+            )
                 .map { it.appDraftListings }
 
             assertEquals(
@@ -1022,8 +1054,10 @@ class AppDraftApiImplTest {
             }.unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
 
-            val response = appDraftApi
-                .listAppDraftListings("user2", ListAppDraftListingsRequest("appDraft1", 1u, null))
+            val response = appDraftApi.listAppDraftListings(
+                CallContext("user2"),
+                ListAppDraftListingsRequest("appDraft1", 1u, null),
+            )
                 .map { it.appDraftListings }
 
             assertEquals(emptyList<ApiAppDraftListing>().right(), response)
@@ -1037,7 +1071,7 @@ class AppDraftApiImplTest {
             val appDraftApi = makeAppDraftApi(dataStore)
 
             val request = UpdateAppDraftListingRequest("appDraftListing1", null, null)
-            val response = appDraftApi.updateAppDraftListing("user1", request)
+            val response = appDraftApi.updateAppDraftListing(CallContext("user1"), request)
 
             assertEquals(InsufficientPermissionError, response.unwrapErr())
         }
@@ -1059,7 +1093,7 @@ class AppDraftApiImplTest {
             val appDraftApi = makeAppDraftApi(dataStore)
 
             val request = UpdateAppDraftListingRequest("appDraftListing1", null, null)
-            val response = appDraftApi.updateAppDraftListing("user1", request)
+            val response = appDraftApi.updateAppDraftListing(CallContext("user1"), request)
 
             assertEquals(AppDraftSubmittedError("appDraft1"), response.unwrapErr())
         }
@@ -1082,9 +1116,9 @@ class AppDraftApiImplTest {
                 name = "App Name",
                 shortDescription = "App Short Description",
             )
-            appDraftApi.updateAppDraftListing("user1", request).unwrap()
+            appDraftApi.updateAppDraftListing(CallContext("user1"), request).unwrap()
             val getResponse = appDraftApi
-                .getAppDraftListing("user1", GetAppDraftListingRequest("appDraftListing1"))
+                .getAppDraftListing(CallContext("user1"), GetAppDraftListingRequest("appDraftListing1"))
                 .unwrap()
 
             assertEquals(
@@ -1108,8 +1142,10 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             val appDraftApi = makeAppDraftApi(dataStore)
 
-            val response = appDraftApi
-                .uploadAppDraftListingIcon("user1", UploadAppDraftListingIconRequest("appDraftListing1"))
+            val response = appDraftApi.uploadAppDraftListingIcon(
+                CallContext("user1"),
+                UploadAppDraftListingIconRequest("appDraftListing1"),
+            )
 
             assertEquals(InsufficientPermissionError, response.unwrapErr())
         }
@@ -1130,8 +1166,10 @@ class AppDraftApiImplTest {
                 .unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
 
-            val response = appDraftApi
-                .uploadAppDraftListingIcon("user1", UploadAppDraftListingIconRequest("appDraftListing1"))
+            val response = appDraftApi.uploadAppDraftListingIcon(
+                CallContext("user1"),
+                UploadAppDraftListingIconRequest("appDraftListing1"),
+            )
 
             assertEquals(AppDraftSubmittedError("appDraft1"), response.unwrapErr())
         }
@@ -1150,8 +1188,10 @@ class AppDraftApiImplTest {
                 }.unwrap2()
                 val appDraftApi = makeAppDraftApi(dataStore, blobStorage = blobStorage)
 
-                val response = appDraftApi
-                    .uploadAppDraftListingIcon("user1", UploadAppDraftListingIconRequest("appDraftListing1"))
+                val response = appDraftApi.uploadAppDraftListingIcon(
+                    CallContext("user1"),
+                    UploadAppDraftListingIconRequest("appDraftListing1")
+                )
 
                 assertEquals(
                     UploadAppDraftListingIconResponse(
@@ -1189,7 +1229,10 @@ class AppDraftApiImplTest {
                 val appDraftApi = makeAppDraftApi(dataStore, blobStorage = blobStorage)
 
                 appDraftApi
-                    .uploadAppDraftListingIcon("user1", UploadAppDraftListingIconRequest("appDraftListing1"))
+                    .uploadAppDraftListingIcon(
+                        CallContext("user1"),
+                        UploadAppDraftListingIconRequest("appDraftListing1")
+                    )
                     .unwrap()
                 val replacedUpload = dataStore
                     .runTxWithRetry { tx ->
@@ -1237,7 +1280,7 @@ class AppDraftApiImplTest {
             val appDraftApi = makeAppDraftApi(dataStore)
 
             val request = DeleteAppDraftListingRequest("appDraftListing1")
-            val response = appDraftApi.deleteAppDraftListing("user1", request)
+            val response = appDraftApi.deleteAppDraftListing(CallContext("user1"), request)
 
             assertEquals(InsufficientPermissionError, response.unwrapErr())
         }
@@ -1259,7 +1302,7 @@ class AppDraftApiImplTest {
             val appDraftApi = makeAppDraftApi(dataStore)
 
             val request = DeleteAppDraftListingRequest("appDraftListing1")
-            val response = appDraftApi.deleteAppDraftListing("user1", request)
+            val response = appDraftApi.deleteAppDraftListing(CallContext("user1"), request)
 
             assertEquals(AppDraftSubmittedError("appDraft1"), response.unwrapErr())
         }
@@ -1279,7 +1322,7 @@ class AppDraftApiImplTest {
             val appDraftApi = makeAppDraftApi(dataStore)
 
             val request = DeleteAppDraftListingRequest("appDraftListing1")
-            appDraftApi.deleteAppDraftListing("user1", request).unwrap()
+            appDraftApi.deleteAppDraftListing(CallContext("user1"), request).unwrap()
             val appDraftApiView = dataStore
                 .runTxWithRetry { tx -> tx.appDrafts.findApiViewById("appDraft1").bind() }
                 .unwrap2()
@@ -1305,7 +1348,7 @@ class AppDraftApiImplTest {
             val appDraftApi = makeAppDraftApi(dataStore)
 
             val request = DeleteAppDraftListingRequest("appDraftListing1")
-            appDraftApi.deleteAppDraftListing("user1", request).unwrap()
+            appDraftApi.deleteAppDraftListing(CallContext("user1"), request).unwrap()
             val foundListing = dataStore
                 .runTxWithRetry { tx -> tx.appDrafts.findListingById("appDraftListing1").bind() }
                 .unwrap2()

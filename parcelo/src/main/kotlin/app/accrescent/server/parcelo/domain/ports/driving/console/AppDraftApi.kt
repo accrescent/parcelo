@@ -8,52 +8,52 @@ import arrow.core.Either
 
 interface AppDraftApi {
     fun createAppDraft(
-        callerUserId: String,
+        context: CallContext,
         request: CreateAppDraftRequest,
     ): Either<CreateAppDraftError, CreateAppDraftResponse>
 
     fun getAppDraft(
-        callerUserId: String,
+        context: CallContext,
         request: GetAppDraftRequest,
     ): Either<GetAppDraftError, GetAppDraftResponse>
 
     fun listAppDrafts(
-        callerUserId: String,
+        context: CallContext,
         request: ListAppDraftsRequest,
     ): Either<ListAppDraftsError, ListAppDraftsResponse>
 
     fun uploadAppDraft(
-        callerUserId: String,
+        context: CallContext,
         request: UploadAppDraftRequest,
     ): Either<UploadAppDraftError, UploadAppDraftResponse>
 
     fun downloadAppDraft(
-        callerUserId: String,
+        context: CallContext,
         request: DownloadAppDraftRequest,
     ): Either<DownloadAppDraftError, DownloadAppDraftResponse>
 
     fun updateAppDraft(
-        callerUserId: String,
+        context: CallContext,
         request: UpdateAppDraftRequest,
     ): Either<UpdateAppDraftError, Unit>
 
     fun submitAppDraft(
-        callerUserId: String,
+        context: CallContext,
         request: SubmitAppDraftRequest,
     ): Either<SubmitAppDraftError, Unit>
 
     fun deleteAppDraft(
-        callerUserId: String,
+        context: CallContext,
         request: DeleteAppDraftRequest,
     ): Either<DeleteAppDraftError, Unit>
 
     fun createAppDraftListing(
-        callerUserId: String,
+        context: CallContext,
         request: CreateAppDraftListingRequest,
     ): Either<CreateAppDraftListingError, CreateAppDraftListingResponse>
 
     fun getAppDraftListing(
-        callerUserId: String,
+        context: CallContext,
         request: GetAppDraftListingRequest,
     ): Either<GetAppDraftListingError, GetAppDraftListingResponse>
 
@@ -63,12 +63,12 @@ interface AppDraftApi {
      * Returned listings are sorted alphabetically by their language's BCP-47 code.
      */
     fun listAppDraftListings(
-        callerUserId: String,
+        context: CallContext,
         request: ListAppDraftListingsRequest,
     ): Either<ListAppDraftListingsError, ListAppDraftListingsResponse>
 
     fun updateAppDraftListing(
-        callerUserId: String,
+        context: CallContext,
         request: UpdateAppDraftListingRequest,
     ): Either<UpdateAppDraftListingError, Unit>
 
@@ -76,7 +76,7 @@ interface AppDraftApi {
      * Requests an upload for an app draft listing's icon.
      */
     fun uploadAppDraftListingIcon(
-        callerUserId: String,
+        context: CallContext,
         request: UploadAppDraftListingIconRequest,
     ): Either<UploadAppDraftListingIconError, UploadAppDraftListingIconResponse>
 
@@ -84,7 +84,7 @@ interface AppDraftApi {
      * Requests a download for an app draft listing's icon.
      */
     fun downloadAppDraftListingIcon(
-        callerUserId: String,
+        context: CallContext,
         request: DownloadAppDraftListingIconRequest,
     ): Either<DownloadAppDraftListingIconError, DownloadAppDraftListingIconResponse>
 
@@ -94,7 +94,7 @@ interface AppDraftApi {
      * If the listing is its app draft's default, the app draft's default listing is unset.
      */
     fun deleteAppDraftListing(
-        callerUserId: String,
+        context: CallContext,
         request: DeleteAppDraftListingRequest,
     ): Either<DeleteAppDraftListingError, Unit>
 
@@ -102,7 +102,7 @@ interface AppDraftApi {
      * Publishes a given app draft.
      */
     fun publishAppDraft(
-        callerUserId: String,
+        context: CallContext,
         request: PublishAppDraftRequest,
     ): Either<PublishAppDraftError, PublishAppDraftResponse>
 }

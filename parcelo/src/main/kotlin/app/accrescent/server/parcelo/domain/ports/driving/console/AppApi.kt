@@ -7,6 +7,6 @@ package app.accrescent.server.parcelo.domain.ports.driving.console
 import arrow.core.Either
 
 interface AppApi {
-    fun getApp(callerUserId: String, request: GetAppRequest): Either<GetAppError, GetAppResponse>
-    fun updateApp(callerUserId: String, request: UpdateAppRequest): Either<UpdateAppError, Unit>
+    fun getApp(context: CallContext, request: GetAppRequest): Either<GetAppError, GetAppResponse>
+    fun updateApp(context: CallContext, request: UpdateAppRequest): Either<UpdateAppError, Unit>
 }
