@@ -179,6 +179,7 @@ private class PostgresqlTransaction(connection: Connection) : DataStore.Transact
     override val externalBlobs = PostgresqlExternalBlobRepository(connection)
     override val organizations = PostgresqlOrganizationRepository(connection)
     override val sessions = PostgresqlSessionRepository(connection)
+    override val users = PostgresqlUserRepository(connection)
 }
 
 private class PostgresqlAppDraftRepository(
@@ -1304,6 +1305,28 @@ private class PostgresqlSessionRepository(
             stmt.setObject(3, createTime)
             stmt.setObject(4, expireTime)
             stmt.executeSingleUpdate().bind()
+        }
+    }
+}
+
+private class PostgresqlUserRepository(
+    private val connection: Connection,
+) : DataStore.UserRepository() {
+    override fun findIdByExternalUserId(
+        externalUserId: ExternalUserId,
+    ): DataStoreResult<Option<String>> = runCatchingSql {
+        val githubUserId = when (externalUserId) {
+            is ExternalUserId.Github -> externalUserId.userId
+        }
+
+        val sql = "SELECT id FROM users WHERE github_user_id = ?"
+        connection.prepareStatement(sql).use { stmt ->
+            stmt.setLong(1, githubUserId)
+            stmt.executeQuery().use { rs ->
+                if (!rs.next()) return@use None
+
+                Some(rs.requireString("id").bind())
+            }
         }
     }
 }

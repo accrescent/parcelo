@@ -127,6 +127,7 @@ abstract class DataStore(private val randomSource: RandomSource) {
         val externalBlobs: ExternalBlobRepository
         val organizations: OrganizationRepository
         val sessions: SessionRepository
+        val users: UserRepository
     }
 
     abstract class AppDraftRepository {
@@ -734,5 +735,17 @@ abstract class DataStore(private val randomSource: RandomSource) {
             createTime: OffsetDateTime,
             expireTime: OffsetDateTime,
         ): DataStoreResult<Unit>
+    }
+
+    abstract class UserRepository {
+        /**
+         * Finds the ID of a user with a given external identity.
+         *
+         * @param externalUserId the external user ID of the user to find the ID of.
+         * @return the ID of the user with the given external identity, or [None] if none exists.
+         */
+        abstract fun findIdByExternalUserId(
+            externalUserId: ExternalUserId,
+        ): DataStoreResult<Option<String>>
     }
 }
