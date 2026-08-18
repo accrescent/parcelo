@@ -10,6 +10,7 @@ import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStoreErro
 
 sealed interface CreateAppDraftError
 sealed interface CreateAppDraftListingError
+sealed interface CreateSessionError
 sealed interface DeleteAppDraftError
 sealed interface DeleteAppDraftListingError
 sealed interface DownloadAppDraftError
@@ -88,6 +89,7 @@ data object InvalidPageTokenError : ListAppDraftListingsError, ListAppDraftsErro
 sealed interface ServerError :
     CreateAppDraftError,
     CreateAppDraftListingError,
+    CreateSessionError,
     DeleteAppDraftError,
     DeleteAppDraftListingError,
     DownloadAppDraftError,
