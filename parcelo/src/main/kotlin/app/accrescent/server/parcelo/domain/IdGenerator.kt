@@ -43,6 +43,7 @@ class IdGenerator(private val randomSource: RandomSource) {
             IdType.PENDING_APP_DRAFT_UPLOAD -> "adu"
             IdType.PENDING_APP_DRAFT_LISTING_ICON_UPLOAD -> "adliu"
             IdType.SESSION -> "s"
+            IdType.USER -> "u"
         }
 
         return Either.Right("${prefix}_$encodedBytes")

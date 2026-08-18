@@ -44,6 +44,7 @@ class IdGeneratorTest {
                     "adliu",
                 ),
                 GenerateIdGeneratesIdsWithCorrectPrefixTestCase(IdType.SESSION, "s"),
+                GenerateIdGeneratesIdsWithCorrectPrefixTestCase(IdType.USER, "u"),
             )
         }
 
