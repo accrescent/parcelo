@@ -36,6 +36,7 @@ import app.accrescent.server.parcelo.domain.ports.driving.console.AppDraftListin
 import app.accrescent.server.parcelo.domain.ports.driving.console.AppDraftPackageNotFoundError
 import app.accrescent.server.parcelo.domain.ports.driving.console.AppDraftSubmittedError
 import app.accrescent.server.parcelo.domain.ports.driving.console.AppDraftSubmittedForAppIdError
+import app.accrescent.server.parcelo.domain.ports.driving.console.CallContext
 import app.accrescent.server.parcelo.domain.ports.driving.console.CreateAppDraftError
 import app.accrescent.server.parcelo.domain.ports.driving.console.CreateAppDraftListingError
 import app.accrescent.server.parcelo.domain.ports.driving.console.CreateAppDraftListingRequest
@@ -111,12 +112,12 @@ class AppDraftApiImpl(
     private val idGenerator = IdGenerator(randomSource)
 
     override fun createAppDraft(
-        callerUserId: String,
+        context: CallContext,
         request: CreateAppDraftRequest,
     ): Either<CreateAppDraftError, CreateAppDraftResponse> = either {
         val appDraftId = dataStore.runTxWithRetry { tx ->
             val hasPermission = tx.authz
-                .hasPermission(HasPermissionRequest.CreateAppDraft(request.organizationId, callerUserId))
+                .hasPermission(HasPermissionRequest.CreateAppDraft(request.organizationId, context.userId))
                 .bindMapLeft(::toServerError)
             ensure(hasPermission) { InsufficientPermissionError }
 
@@ -144,12 +145,12 @@ class AppDraftApiImpl(
     }
 
     override fun getAppDraft(
-        callerUserId: String,
+        context: CallContext,
         request: GetAppDraftRequest,
     ): Either<GetAppDraftError, GetAppDraftResponse> = either {
         val appDraft = dataStore.runTxWithRetry { tx ->
             val hasPermission = tx.authz
-                .hasPermission(HasPermissionRequest.ViewAppDraft(request.appDraftId, callerUserId))
+                .hasPermission(HasPermissionRequest.ViewAppDraft(request.appDraftId, context.userId))
                 .bindMapLeft(::toServerError)
             ensure(hasPermission) { InsufficientPermissionError }
 
@@ -164,7 +165,7 @@ class AppDraftApiImpl(
     }
 
     override fun listAppDrafts(
-        callerUserId: String,
+        context: CallContext,
         request: ListAppDraftsRequest,
     ): Either<ListAppDraftsError, ListAppDraftsResponse> = either {
         // We never need a page size beyond Int.MAX_VALUE since we limit the number of app drafts
@@ -195,7 +196,7 @@ class AppDraftApiImpl(
             tx.appDrafts
                 .findApiViewsForOrganizationAndUserByQuery(
                     organizationId = request.organizationId,
-                    userId = callerUserId,
+                    userId = context.userId,
                     maxResults = maxResults,
                     afterAppDraftId = lastAppDraftId,
                 )
@@ -215,13 +216,13 @@ class AppDraftApiImpl(
     }
 
     override fun uploadAppDraft(
-        callerUserId: String,
+        context: CallContext,
         request: UploadAppDraftRequest,
     ): Either<UploadAppDraftError, UploadAppDraftResponse> = either {
         dataStore.runTxWithRetry { tx ->
             val hasPermission = tx.authz
                 .hasPermission(
-                    HasPermissionRequest.ReplaceAppDraftPackage(request.appDraftId, callerUserId)
+                    HasPermissionRequest.ReplaceAppDraftPackage(request.appDraftId, context.userId)
                 )
                 .bindMapLeft(::toServerError)
             ensure(hasPermission) { InsufficientPermissionError }
@@ -290,12 +291,12 @@ class AppDraftApiImpl(
     }
 
     override fun downloadAppDraft(
-        callerUserId: String,
+        context: CallContext,
         request: DownloadAppDraftRequest
     ): Either<DownloadAppDraftError, DownloadAppDraftResponse> = either {
         val blob = dataStore.runTxWithRetry { tx ->
             val hasPermission = tx.authz
-                .hasPermission(HasPermissionRequest.DownloadAppDraft(request.appDraftId, callerUserId))
+                .hasPermission(HasPermissionRequest.DownloadAppDraft(request.appDraftId, context.userId))
                 .bindMapLeft(::toServerError)
             ensure(hasPermission) { InsufficientPermissionError }
 
@@ -321,12 +322,12 @@ class AppDraftApiImpl(
     }
 
     override fun updateAppDraft(
-        callerUserId: String,
+        context: CallContext,
         request: UpdateAppDraftRequest
     ): Either<UpdateAppDraftError, Unit> = either {
         dataStore.runTxWithRetry { tx ->
             val hasPermission = tx.authz
-                .hasPermission(HasPermissionRequest.UpdateAppDraft(request.appDraftId, callerUserId))
+                .hasPermission(HasPermissionRequest.UpdateAppDraft(request.appDraftId, context.userId))
                 .bindMapLeft(::toServerError)
             ensure(hasPermission) { InsufficientPermissionError }
 
@@ -349,12 +350,12 @@ class AppDraftApiImpl(
     }
 
     override fun submitAppDraft(
-        callerUserId: String,
+        context: CallContext,
         request: SubmitAppDraftRequest
     ): Either<SubmitAppDraftError, Unit> = either {
         dataStore.runTxWithRetry { tx ->
             val hasPermission = tx.authz
-                .hasPermission(HasPermissionRequest.SubmitAppDraft(request.appDraftId, callerUserId))
+                .hasPermission(HasPermissionRequest.SubmitAppDraft(request.appDraftId, context.userId))
                 .bindMapLeft(::toServerError)
             ensure(hasPermission) { InsufficientPermissionError }
 
@@ -397,12 +398,12 @@ class AppDraftApiImpl(
     }
 
     override fun deleteAppDraft(
-        callerUserId: String,
+        context: CallContext,
         request: DeleteAppDraftRequest,
     ): Either<DeleteAppDraftError, Unit> = either {
         dataStore.runTxWithRetry { tx ->
             val hasPermission = tx.authz
-                .hasPermission(HasPermissionRequest.DeleteAppDraft(request.appDraftId, callerUserId))
+                .hasPermission(HasPermissionRequest.DeleteAppDraft(request.appDraftId, context.userId))
                 .bindMapLeft(::toServerError)
             ensure(hasPermission) { InsufficientPermissionError }
 
@@ -420,13 +421,13 @@ class AppDraftApiImpl(
     }
 
     override fun createAppDraftListing(
-        callerUserId: String,
+        context: CallContext,
         request: CreateAppDraftListingRequest,
     ): Either<CreateAppDraftListingError, CreateAppDraftListingResponse> = either {
         val listingId = dataStore.runTxWithRetry { tx ->
             val hasPermission = tx.authz
                 .hasPermission(
-                    HasPermissionRequest.CreateAppDraftListing(request.appDraftId, callerUserId)
+                    HasPermissionRequest.CreateAppDraftListing(request.appDraftId, context.userId)
                 )
                 .bindMapLeft(::toServerError)
             ensure(hasPermission) { InsufficientPermissionError }
@@ -468,13 +469,13 @@ class AppDraftApiImpl(
     }
 
     override fun getAppDraftListing(
-        callerUserId: String,
+        context: CallContext,
         request: GetAppDraftListingRequest,
     ): Either<GetAppDraftListingError, GetAppDraftListingResponse> = either {
         val listing = dataStore.runTxWithRetry { tx ->
             val hasPermission = tx.authz
                 .hasPermission(
-                    HasPermissionRequest.ViewAppDraftListing(request.appDraftListingId, callerUserId)
+                    HasPermissionRequest.ViewAppDraftListing(request.appDraftListingId, context.userId)
                 )
                 .bindMapLeft(::toServerError)
             ensure(hasPermission) { InsufficientPermissionError }
@@ -497,7 +498,7 @@ class AppDraftApiImpl(
     }
 
     override fun listAppDraftListings(
-        callerUserId: String,
+        context: CallContext,
         request: ListAppDraftListingsRequest,
     ): Either<ListAppDraftListingsError, ListAppDraftListingsResponse> = either {
         val lastLanguage = request.nextPageToken?.let {
@@ -521,7 +522,7 @@ class AppDraftApiImpl(
             tx.appDrafts
                 .findListingsForAppDraftAndUserByQuery(
                     appDraftId = request.appDraftId,
-                    userId = callerUserId,
+                    userId = context.userId,
                     maxResults = request.pageSize,
                     afterLanguage = lastLanguage,
                 )
@@ -549,13 +550,13 @@ class AppDraftApiImpl(
     }
 
     override fun updateAppDraftListing(
-        callerUserId: String,
+        context: CallContext,
         request: UpdateAppDraftListingRequest,
     ): Either<UpdateAppDraftListingError, Unit> = either {
         dataStore.runTxWithRetry { tx ->
             val hasPermission = tx.authz
                 .hasPermission(
-                    HasPermissionRequest.UpdateAppDraftListing(request.appDraftListingId, callerUserId)
+                    HasPermissionRequest.UpdateAppDraftListing(request.appDraftListingId, context.userId)
                 )
                 .bindMapLeft(::toServerError)
             ensure(hasPermission) { InsufficientPermissionError }
@@ -583,7 +584,7 @@ class AppDraftApiImpl(
     }
 
     override fun uploadAppDraftListingIcon(
-        callerUserId: String,
+        context: CallContext,
         request: UploadAppDraftListingIconRequest,
     ): Either<UploadAppDraftListingIconError, UploadAppDraftListingIconResponse> = either {
         dataStore.runTxWithRetry { tx ->
@@ -591,7 +592,7 @@ class AppDraftApiImpl(
                 .hasPermission(
                     HasPermissionRequest.UploadAppDraftListingIcon(
                         request.appDraftListingId,
-                        callerUserId,
+                        context.userId,
                     )
                 )
                 .bindMapLeft(::toServerError)
@@ -666,20 +667,20 @@ class AppDraftApiImpl(
     }
 
     override fun downloadAppDraftListingIcon(
-        callerUserId: String,
+        context: CallContext,
         request: DownloadAppDraftListingIconRequest
     ): Either<DownloadAppDraftListingIconError, DownloadAppDraftListingIconResponse> {
         TODO()
     }
 
     override fun deleteAppDraftListing(
-        callerUserId: String,
+        context: CallContext,
         request: DeleteAppDraftListingRequest
     ): Either<DeleteAppDraftListingError, Unit> = either {
         dataStore.runTxWithRetry { tx ->
             val hasPermission = tx.authz
                 .hasPermission(
-                    HasPermissionRequest.DeleteAppDraftListing(request.appDraftListingId, callerUserId)
+                    HasPermissionRequest.DeleteAppDraftListing(request.appDraftListingId, context.userId)
                 )
                 .bindMapLeft(::toServerError)
             ensure(hasPermission) { InsufficientPermissionError }
@@ -712,7 +713,7 @@ class AppDraftApiImpl(
     }
 
     override fun publishAppDraft(
-        callerUserId: String,
+        context: CallContext,
         request: PublishAppDraftRequest
     ): Either<PublishAppDraftError, PublishAppDraftResponse> {
         TODO()

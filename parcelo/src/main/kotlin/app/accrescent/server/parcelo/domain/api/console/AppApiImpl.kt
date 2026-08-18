@@ -9,6 +9,7 @@ import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStore
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.HasPermissionRequest
 import app.accrescent.server.parcelo.domain.ports.driving.console.App
 import app.accrescent.server.parcelo.domain.ports.driving.console.AppApi
+import app.accrescent.server.parcelo.domain.ports.driving.console.CallContext
 import app.accrescent.server.parcelo.domain.ports.driving.console.GetAppError
 import app.accrescent.server.parcelo.domain.ports.driving.console.GetAppRequest
 import app.accrescent.server.parcelo.domain.ports.driving.console.GetAppResponse
@@ -22,12 +23,12 @@ import arrow.core.raise.ensure
 
 class AppApiImpl(private val dataStore: DataStore) : AppApi {
     override fun getApp(
-        callerUserId: String,
+        context: CallContext,
         request: GetAppRequest,
     ): Either<GetAppError, GetAppResponse> = either {
         val app = dataStore.runTxWithRetry { tx ->
             val permitted = tx.authz
-                .hasPermission(HasPermissionRequest.ViewApp(request.appId, callerUserId))
+                .hasPermission(HasPermissionRequest.ViewApp(request.appId, context.userId))
                 .bindMapLeft(::toServerError)
             ensure(permitted) { InsufficientPermissionError }
 
@@ -47,12 +48,12 @@ class AppApiImpl(private val dataStore: DataStore) : AppApi {
     }
 
     override fun updateApp(
-        callerUserId: String,
+        context: CallContext,
         request: UpdateAppRequest,
     ): Either<UpdateAppError, Unit> = either {
         dataStore.runTxWithRetry { tx ->
             val permitted = tx.authz
-                .hasPermission(HasPermissionRequest.UpdateApp(request.appId, callerUserId))
+                .hasPermission(HasPermissionRequest.UpdateApp(request.appId, context.userId))
                 .bindMapLeft(::toServerError)
             ensure(permitted) { InsufficientPermissionError }
 
