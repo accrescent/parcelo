@@ -35,6 +35,7 @@ import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStore.Ext
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStore.OrganizationRepository
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStore.SessionRepository
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStore.Transaction
+import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStore.UserRepository
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStoreError
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStoreResult
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.ExternalBlob
@@ -235,6 +236,7 @@ private class InMemoryTransaction(connection: Connection) : Transaction {
     override val externalBlobs = InMemoryExternalBlobRepository(connection)
     override val organizations = InMemoryOrganizationRepository(connection)
     override val sessions = InMemorySessionRepository(connection)
+    override val users = InMemoryUserRepository(connection)
 }
 
 private class InMemoryAppDraftRepository(
@@ -1438,6 +1440,28 @@ private class InMemorySessionRepository(
             stmt.setObject(3, createTime)
             stmt.setObject(4, expireTime)
             stmt.executeSingleUpdate().bind()
+        }
+    }
+}
+
+private class InMemoryUserRepository(
+    private val connection: Connection,
+) : UserRepository() {
+    override fun findIdByExternalUserId(
+        externalUserId: ExternalUserId,
+    ): DataStoreResult<Option<String>> = runCatchingSql {
+        val githubUserId = when (externalUserId) {
+            is ExternalUserId.Github -> externalUserId.userId
+        }
+
+        val sql = "SELECT id FROM users WHERE github_user_id = ?"
+        connection.prepareStatement(sql).use { stmt ->
+            stmt.setLong(1, githubUserId)
+            stmt.executeQuery().use { rs ->
+                if (!rs.next()) return@use None
+
+                Some(rs.requireString("id").bind())
+            }
         }
     }
 }

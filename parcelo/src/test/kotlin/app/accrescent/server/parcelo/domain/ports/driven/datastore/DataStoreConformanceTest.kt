@@ -2817,6 +2817,37 @@ abstract class DataStoreConformanceTest {
         }
     }
 
+    @Test
+    fun `users findIdByExternalUserId returns ID of user associated with given external user ID`() {
+        withMigratedDataStore { dataStore ->
+            dataStore
+                .runTxWithRetry { tx ->
+                    tx.organizations
+                        .saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH)
+                        .bind()
+                }
+                .unwrap2()
+
+            val userId = dataStore
+                .runTxWithRetry { tx -> tx.users.findIdByExternalUserId(ExternalUserId.Github(1)).bind() }
+                .unwrap2()
+                .unwrap()
+
+            assertEquals("user1", userId)
+        }
+    }
+
+    @Test
+    fun `users findIdByExternalUserId returns None for non-existent user`() {
+        withMigratedDataStore { dataStore ->
+            val userId = dataStore
+                .runTxWithRetry { tx -> tx.users.findIdByExternalUserId(ExternalUserId.Github(1)).bind() }
+                .unwrap2()
+
+            assertTrue(userId.isNone())
+        }
+    }
+
     @ParameterizedTest(name = "{0} save returns ConsistencyViolation for {1}")
     @MethodSource("textColumnConstraintTestCases")
     fun `save returns ConsistencyViolationError for invalid text column`(
