@@ -9,6 +9,7 @@ import app.accrescent.server.parcelo.core.PositiveLong
 import app.accrescent.server.parcelo.core.bindMapLeft
 import app.accrescent.server.parcelo.core.unwrap
 import app.accrescent.server.parcelo.domain.android.ApplicationId
+import app.accrescent.server.parcelo.domain.authn.ExternalUserId
 import app.accrescent.server.parcelo.domain.ports.driven.randomsource.RandomSource
 import arrow.core.Either
 import arrow.core.None
@@ -699,14 +700,16 @@ abstract class DataStore(private val randomSource: RandomSource) {
          * @param organizationId the ID of the organization to save.
          * @param userId the ID of the new user to save who will own the organization represented by
          * [organizationId].
+         * @param externalUserId the external identity of the user.
          * @param createTime the creation timestamp to set for the new organization and user.
          *
          * @return [DataStoreError.ConsistencyViolation] if an organization or user with the
-         * respective provided ID already exists.
+         * respective provided ID already exists or if a user with the external ID already exists.
          */
         abstract fun saveWithOwner(
             organizationId: String,
             userId: String,
+            externalUserId: ExternalUserId,
             createTime: OffsetDateTime,
         ): DataStoreResult<Unit>
     }

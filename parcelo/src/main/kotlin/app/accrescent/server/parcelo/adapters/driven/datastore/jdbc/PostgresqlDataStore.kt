@@ -15,6 +15,7 @@ import app.accrescent.server.parcelo.domain.android.NameAttribute
 import app.accrescent.server.parcelo.domain.android.SdkVersion
 import app.accrescent.server.parcelo.domain.android.VersionCode
 import app.accrescent.server.parcelo.domain.android.VersionName
+import app.accrescent.server.parcelo.domain.authn.ExternalUserId
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.App
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppDraftApiView
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppDraftListing
@@ -1257,13 +1258,18 @@ private class PostgresqlOrganizationRepository(
     override fun saveWithOwner(
         organizationId: String,
         userId: String,
+        externalUserId: ExternalUserId,
         createTime: OffsetDateTime,
     ): DataStoreResult<Unit> = runCatchingSql {
+        val githubUserId = when (externalUserId) {
+            is ExternalUserId.Github -> externalUserId.userId
+        }
+
         val sql = """
             WITH new_organization AS (
                 INSERT INTO organizations (id, owner_user_id, create_time) VALUES (?, ?, ?)
             )
-            INSERT INTO users (id, organization_id, create_time) VALUES (?, ?, ?)
+            INSERT INTO users (id, organization_id, create_time, github_user_id) VALUES (?, ?, ?, ?)
         """.trimIndent()
         connection.prepareStatement(sql).use { stmt ->
             stmt.setString(1, organizationId)
@@ -1272,6 +1278,7 @@ private class PostgresqlOrganizationRepository(
             stmt.setString(4, userId)
             stmt.setString(5, organizationId)
             stmt.setObject(6, createTime)
+            stmt.setLong(7, githubUserId)
             stmt.executeSingleUpdate().bind()
         }
     }

@@ -10,6 +10,7 @@ import app.accrescent.server.parcelo.adapters.driven.randomsource.DeterministicR
 import app.accrescent.server.parcelo.core.unwrap
 import app.accrescent.server.parcelo.core.unwrap2
 import app.accrescent.server.parcelo.core.unwrapErr
+import app.accrescent.server.parcelo.domain.authn.ExternalUserId
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppListing
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.ListingLanguage
 import app.accrescent.server.parcelo.domain.ports.driving.console.GetAppRequest
@@ -42,7 +43,7 @@ class AppApiImplTest {
             dataStore.migrateToHead().unwrap()
             val originalApp = makeApp()
             dataStore.runTxWithRetry { tx ->
-                tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
+                tx.organizations.saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH).bind()
                 tx.apps.saveWithDefaultListing(
                     originalApp,
                     AppListing("appListing1", "app1", ListingLanguage.EN_US)
@@ -83,7 +84,7 @@ class AppApiImplTest {
         InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
-                tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
+                tx.organizations.saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH).bind()
                 tx.apps.saveWithDefaultListing(
                     makeApp(),
                     AppListing("appListing1", "app1", ListingLanguage.EN_US)
@@ -102,7 +103,7 @@ class AppApiImplTest {
         InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
-                tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
+                tx.organizations.saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH).bind()
                 tx.apps.saveWithDefaultListing(
                     makeApp(),
                     AppListing("appListing1", "app1", ListingLanguage.EN_US)

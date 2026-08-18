@@ -12,6 +12,7 @@ import app.accrescent.server.parcelo.committedExternalBlob
 import app.accrescent.server.parcelo.core.unwrap
 import app.accrescent.server.parcelo.core.unwrap2
 import app.accrescent.server.parcelo.core.unwrapErr
+import app.accrescent.server.parcelo.domain.authn.ExternalUserId
 import app.accrescent.server.parcelo.incompletePendingAppDraftUpload
 import app.accrescent.server.parcelo.pendingExternalBlob
 import app.accrescent.server.parcelo.saveAppPackageFromNewUpload
@@ -93,7 +94,7 @@ class DataStoreTest {
             dataStore.migrateToHead().unwrap()
             dataStore
                 .runTxWithRetry { tx ->
-                    tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
+                    tx.organizations.saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH).bind()
                     tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
                 }
                 .unwrap2()
@@ -128,7 +129,11 @@ class DataStoreTest {
             dataStore.migrateToHead().unwrap()
             val originalApp = App("app1", "org1", "appListing1", false)
             dataStore
-                .runTxWithRetry { tx -> tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind() }
+                .runTxWithRetry { tx ->
+                    tx.organizations
+                        .saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH)
+                        .bind()
+                }
                 .unwrap2()
 
             val defaultListing = AppListing("appListing1", "app1", ListingLanguage.EN_US)
@@ -165,7 +170,7 @@ class DataStoreTest {
             val originalBlob = pendingExternalBlob()
 
             dataStore.runTxWithRetry { tx ->
-                tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
+                tx.organizations.saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH).bind()
                 tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
                 tx.appDrafts.saveUpload(incompletePendingAppDraftUpload(), originalBlob).bind()
             }.unwrap2()
@@ -198,7 +203,7 @@ class DataStoreTest {
             val pendingBlob = pendingExternalBlob()
 
             dataStore.runTxWithRetry { tx ->
-                tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
+                tx.organizations.saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH).bind()
                 tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
                 tx.appDrafts.saveUpload(incompletePendingAppDraftUpload(), pendingBlob).bind()
             }.unwrap2()
@@ -218,7 +223,7 @@ class DataStoreTest {
             val originalBlob = committedExternalBlob()
 
             dataStore.runTxWithRetry { tx ->
-                tx.organizations.saveWithOwner("org1", "user1", UNIX_EPOCH).bind()
+                tx.organizations.saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH).bind()
                 tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
                 saveAppPackageFromNewUpload(tx).bind()
             }.unwrap2()
