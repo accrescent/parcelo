@@ -16,6 +16,7 @@ import app.accrescent.server.parcelo.domain.android.SdkVersion
 import app.accrescent.server.parcelo.domain.android.VersionCode
 import app.accrescent.server.parcelo.domain.android.VersionName
 import app.accrescent.server.parcelo.domain.authn.ExternalUserId
+import app.accrescent.server.parcelo.domain.crypto.Sha256Hash
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.App
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppDraftApiView
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppDraftListing
@@ -32,6 +33,7 @@ import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStore.App
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStore.AuthorizationRepository
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStore.ExternalBlobRepository
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStore.OrganizationRepository
+import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStore.SessionRepository
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStore.Transaction
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStoreError
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStoreResult
@@ -232,6 +234,7 @@ private class InMemoryTransaction(connection: Connection) : Transaction {
     override val authz = InMemoryAuthorizationRepository(connection)
     override val externalBlobs = InMemoryExternalBlobRepository(connection)
     override val organizations = InMemoryOrganizationRepository(connection)
+    override val sessions = InMemorySessionRepository(connection)
 }
 
 private class InMemoryAppDraftRepository(
@@ -1412,6 +1415,28 @@ private class InMemoryOrganizationRepository(
         connection.prepareStatement(organizationUpdateSql).use { stmt ->
             stmt.setString(1, userId)
             stmt.setString(2, organizationId)
+            stmt.executeSingleUpdate().bind()
+        }
+    }
+}
+
+private class InMemorySessionRepository(
+    private val connection: Connection,
+) : SessionRepository() {
+    override fun create(
+        idHash: Sha256Hash,
+        userId: String,
+        createTime: OffsetDateTime,
+        expireTime: OffsetDateTime,
+    ): DataStoreResult<Unit> = runCatchingSql {
+        val sql = """
+            INSERT INTO sessions (id_hash, user_id, create_time, expire_time) VALUES (?, ?, ?, ?)
+        """.trimIndent()
+        connection.prepareStatement(sql).use { stmt ->
+            stmt.setBytes(1, idHash.digest().value)
+            stmt.setString(2, userId)
+            stmt.setObject(3, createTime)
+            stmt.setObject(4, expireTime)
             stmt.executeSingleUpdate().bind()
         }
     }

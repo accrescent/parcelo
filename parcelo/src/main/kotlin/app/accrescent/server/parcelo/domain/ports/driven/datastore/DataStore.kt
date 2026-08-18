@@ -10,6 +10,7 @@ import app.accrescent.server.parcelo.core.bindMapLeft
 import app.accrescent.server.parcelo.core.unwrap
 import app.accrescent.server.parcelo.domain.android.ApplicationId
 import app.accrescent.server.parcelo.domain.authn.ExternalUserId
+import app.accrescent.server.parcelo.domain.crypto.Sha256Hash
 import app.accrescent.server.parcelo.domain.ports.driven.randomsource.RandomSource
 import arrow.core.Either
 import arrow.core.None
@@ -125,6 +126,7 @@ abstract class DataStore(private val randomSource: RandomSource) {
         val authz: AuthorizationRepository
         val externalBlobs: ExternalBlobRepository
         val organizations: OrganizationRepository
+        val sessions: SessionRepository
     }
 
     abstract class AppDraftRepository {
@@ -711,6 +713,26 @@ abstract class DataStore(private val randomSource: RandomSource) {
             userId: String,
             externalUserId: ExternalUserId,
             createTime: OffsetDateTime,
+        ): DataStoreResult<Unit>
+    }
+
+    abstract class SessionRepository {
+        /**
+         * Creates a new session for a given user.
+         *
+         * @param idHash the SHA-256 hash of the session ID to store.
+         * @param userId the user to associate the session with.
+         * @param createTime the creation timestamp to set for the new session.
+         * @param expireTime the expiration timestamp to set for the new session after which it will
+         * no longer be valid.
+         * @return [DataStoreError.ConsistencyViolation] if a session with the same ID hash already
+         * exists, the user does not exist, or [expireTime] is not later than [createTime].
+         */
+        abstract fun create(
+            idHash: Sha256Hash,
+            userId: String,
+            createTime: OffsetDateTime,
+            expireTime: OffsetDateTime,
         ): DataStoreResult<Unit>
     }
 }

@@ -244,3 +244,12 @@ ALTER TABLE external_blobs
     ADD CONSTRAINT fk_external_blobs_pending_app_draft_listing_icon_upload
     FOREIGN KEY (pending_app_draft_listing_icon_upload_id, id)
     REFERENCES pending_app_draft_listing_icon_uploads(id, external_blob_id);
+
+-- Sessions
+CREATE TABLE sessions (
+    id_hash varbinary PRIMARY KEY CHECK (octet_length(id_hash) = 32),
+    user_id varchar NOT NULL REFERENCES users(id),
+    create_time timestamp with time zone NOT NULL,
+    expire_time timestamp with time zone NOT NULL,
+    CHECK (expire_time > create_time)
+);

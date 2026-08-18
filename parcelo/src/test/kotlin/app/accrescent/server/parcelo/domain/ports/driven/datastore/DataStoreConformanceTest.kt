@@ -20,6 +20,7 @@ import app.accrescent.server.parcelo.domain.android.NameAttribute
 import app.accrescent.server.parcelo.domain.android.SdkVersion
 import app.accrescent.server.parcelo.domain.android.VersionName
 import app.accrescent.server.parcelo.domain.authn.ExternalUserId
+import app.accrescent.server.parcelo.domain.crypto.Sha256Hash
 import app.accrescent.server.parcelo.incompletePendingAppDraftListingIconUpload
 import app.accrescent.server.parcelo.incompletePendingAppDraftUpload
 import app.accrescent.server.parcelo.pendingExternalBlob
@@ -2737,6 +2738,76 @@ abstract class DataStoreConformanceTest {
                 .runTxWithRetry { tx ->
                     tx.organizations
                         .saveWithOwner("org2", "user2", ExternalUserId.Github(1), UNIX_EPOCH)
+                        .bind()
+                }
+                .unwrap()
+                .unwrapErr()
+
+            assertEquals(DataStoreError.ConsistencyViolation, error)
+        }
+    }
+
+    @Test
+    fun `sessions create returns ConsistencyViolation if session with same ID hash already exists`() {
+        withMigratedDataStore { dataStore ->
+            val idHash = Sha256Hash.hash("session1".toByteArray())
+
+            dataStore
+                .runTxWithRetry { tx ->
+                    tx.organizations
+                        .saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH)
+                        .bind()
+                    tx.sessions.create(idHash, "user1", UNIX_EPOCH, UNIX_EPOCH.plusDays(1)).bind()
+                }
+                .unwrap2()
+
+            val error = dataStore
+                .runTxWithRetry { tx ->
+                    tx.sessions.create(idHash, "user1", UNIX_EPOCH, UNIX_EPOCH.plusDays(1)).bind()
+                }
+                .unwrap()
+                .unwrapErr()
+
+            assertEquals(DataStoreError.ConsistencyViolation, error)
+        }
+    }
+
+    @Test
+    fun `sessions create returns ConsistencyViolation if user does not exist`() {
+        withMigratedDataStore { dataStore ->
+            val error = dataStore
+                .runTxWithRetry { tx ->
+                    tx.sessions
+                        .create(
+                            Sha256Hash.hash("session1".toByteArray()),
+                            "user1",
+                            UNIX_EPOCH,
+                            UNIX_EPOCH.plusDays(1),
+                        )
+                        .bind()
+                }
+                .unwrap()
+                .unwrapErr()
+
+            assertEquals(DataStoreError.ConsistencyViolation, error)
+        }
+    }
+
+    @Test
+    fun `sessions create returns ConsistencyViolation if expireTime is not later than createTime`() {
+        withMigratedDataStore { dataStore ->
+            dataStore
+                .runTxWithRetry { tx ->
+                    tx.organizations
+                        .saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH)
+                        .bind()
+                }
+                .unwrap2()
+
+            val error = dataStore
+                .runTxWithRetry { tx ->
+                    tx.sessions
+                        .create(Sha256Hash.hash("session1".toByteArray()), "user1", UNIX_EPOCH, UNIX_EPOCH)
                         .bind()
                 }
                 .unwrap()
