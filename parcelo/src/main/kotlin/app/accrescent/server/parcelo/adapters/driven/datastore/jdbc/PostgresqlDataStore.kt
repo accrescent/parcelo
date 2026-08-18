@@ -16,6 +16,7 @@ import app.accrescent.server.parcelo.domain.android.SdkVersion
 import app.accrescent.server.parcelo.domain.android.VersionCode
 import app.accrescent.server.parcelo.domain.android.VersionName
 import app.accrescent.server.parcelo.domain.authn.ExternalUserId
+import app.accrescent.server.parcelo.domain.crypto.Sha256Hash
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.App
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppDraftApiView
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppDraftListing
@@ -177,6 +178,7 @@ private class PostgresqlTransaction(connection: Connection) : DataStore.Transact
     override val authz = PostgresqlAuthorizationRepository(connection)
     override val externalBlobs = PostgresqlExternalBlobRepository(connection)
     override val organizations = PostgresqlOrganizationRepository(connection)
+    override val sessions = PostgresqlSessionRepository(connection)
 }
 
 private class PostgresqlAppDraftRepository(
@@ -1279,6 +1281,28 @@ private class PostgresqlOrganizationRepository(
             stmt.setString(5, organizationId)
             stmt.setObject(6, createTime)
             stmt.setLong(7, githubUserId)
+            stmt.executeSingleUpdate().bind()
+        }
+    }
+}
+
+private class PostgresqlSessionRepository(
+    private val connection: Connection,
+) : DataStore.SessionRepository() {
+    override fun create(
+        idHash: Sha256Hash,
+        userId: String,
+        createTime: OffsetDateTime,
+        expireTime: OffsetDateTime,
+    ): DataStoreResult<Unit> = runCatchingSql {
+        val sql = """
+            INSERT INTO sessions (id_hash, user_id, create_time, expire_time) VALUES (?, ?, ?, ?)
+        """.trimIndent()
+        connection.prepareStatement(sql).use { stmt ->
+            stmt.setBytes(1, idHash.digest().value)
+            stmt.setString(2, userId)
+            stmt.setObject(3, createTime)
+            stmt.setObject(4, expireTime)
             stmt.executeSingleUpdate().bind()
         }
     }
