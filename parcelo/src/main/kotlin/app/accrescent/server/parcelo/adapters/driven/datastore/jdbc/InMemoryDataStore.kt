@@ -1464,6 +1464,22 @@ private class InMemoryUserRepository(
             }
         }
     }
+
+    override fun findIdBySessionIdHash(
+        sessionIdHash: Sha256Hash,
+        currentTime: OffsetDateTime,
+    ): DataStoreResult<Option<String>> = runCatchingSql {
+        val sql = "SELECT user_id FROM sessions WHERE id_hash = ? AND expire_time > ?"
+        connection.prepareStatement(sql).use { stmt ->
+            stmt.setBytes(1, sessionIdHash.digest().value)
+            stmt.setObject(2, currentTime)
+            stmt.executeQuery().use { rs ->
+                if (!rs.next()) return@use None
+
+                Some(rs.requireString("user_id").bind())
+            }
+        }
+    }
 }
 
 /**
