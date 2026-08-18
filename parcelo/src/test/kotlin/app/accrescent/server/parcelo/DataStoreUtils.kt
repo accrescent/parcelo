@@ -12,6 +12,8 @@ import app.accrescent.server.parcelo.domain.android.NameAttribute
 import app.accrescent.server.parcelo.domain.android.SdkVersion
 import app.accrescent.server.parcelo.domain.android.VersionCode
 import app.accrescent.server.parcelo.domain.android.VersionName
+import app.accrescent.server.parcelo.domain.authn.ExternalUserId
+import app.accrescent.server.parcelo.domain.crypto.Sha256Hash
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppDraftApiView
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppDraftListing
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppPackage
@@ -44,6 +46,29 @@ fun appDraftListing(
         name = name,
         shortDescription = shortDescription,
     )
+}
+
+fun signInNewUser(
+    tx: DataStore.Transaction,
+    userId: String = "user1",
+    organizationId: String = "org1",
+    externalUserId: ExternalUserId = ExternalUserId.Github(1),
+    sessionId: String = "session1",
+): DataStoreResult<Unit> = either {
+    tx.organizations.saveWithOwner(organizationId, userId, externalUserId, UNIX_EPOCH).bind()
+    tx.sessions
+        .create(Sha256Hash.hash(sessionId.toByteArray()), userId, UNIX_EPOCH, UNIX_EPOCH.plusDays(1))
+        .bind()
+}
+
+fun saveExpiredSession(
+    tx: DataStore.Transaction,
+    userId: String = "user1",
+    sessionId: String = "expiredSession1",
+): DataStoreResult<Unit> {
+    val idHash = Sha256Hash.hash(sessionId.toByteArray())
+
+    return tx.sessions.create(idHash, userId, UNIX_EPOCH.minusDays(1), UNIX_EPOCH)
 }
 
 fun appPackage(

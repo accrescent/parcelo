@@ -116,8 +116,10 @@ class AppDraftApiImpl(
         request: CreateAppDraftRequest,
     ): Either<CreateAppDraftError, CreateAppDraftResponse> = either {
         val appDraftId = dataStore.runTxWithRetry { tx ->
+            val userId = authenticateCaller(tx, context.sessionId, timestampSource.now()).bind()
+
             val hasPermission = tx.authz
-                .hasPermission(HasPermissionRequest.CreateAppDraft(request.organizationId, context.userId))
+                .hasPermission(HasPermissionRequest.CreateAppDraft(request.organizationId, userId))
                 .bindMapLeft(::toServerError)
             ensure(hasPermission) { InsufficientPermissionError }
 
@@ -149,8 +151,10 @@ class AppDraftApiImpl(
         request: GetAppDraftRequest,
     ): Either<GetAppDraftError, GetAppDraftResponse> = either {
         val appDraft = dataStore.runTxWithRetry { tx ->
+            val userId = authenticateCaller(tx, context.sessionId, timestampSource.now()).bind()
+
             val hasPermission = tx.authz
-                .hasPermission(HasPermissionRequest.ViewAppDraft(request.appDraftId, context.userId))
+                .hasPermission(HasPermissionRequest.ViewAppDraft(request.appDraftId, userId))
                 .bindMapLeft(::toServerError)
             ensure(hasPermission) { InsufficientPermissionError }
 
@@ -193,10 +197,12 @@ class AppDraftApiImpl(
         }
 
         val appDrafts = dataStore.runTxWithRetry { tx ->
+            val userId = authenticateCaller(tx, context.sessionId, timestampSource.now()).bind()
+
             tx.appDrafts
                 .findApiViewsForOrganizationAndUserByQuery(
                     organizationId = request.organizationId,
-                    userId = context.userId,
+                    userId = userId,
                     maxResults = maxResults,
                     afterAppDraftId = lastAppDraftId,
                 )
@@ -220,9 +226,11 @@ class AppDraftApiImpl(
         request: UploadAppDraftRequest,
     ): Either<UploadAppDraftError, UploadAppDraftResponse> = either {
         dataStore.runTxWithRetry { tx ->
+            val userId = authenticateCaller(tx, context.sessionId, timestampSource.now()).bind()
+
             val hasPermission = tx.authz
                 .hasPermission(
-                    HasPermissionRequest.ReplaceAppDraftPackage(request.appDraftId, context.userId)
+                    HasPermissionRequest.ReplaceAppDraftPackage(request.appDraftId, userId)
                 )
                 .bindMapLeft(::toServerError)
             ensure(hasPermission) { InsufficientPermissionError }
@@ -295,8 +303,10 @@ class AppDraftApiImpl(
         request: DownloadAppDraftRequest
     ): Either<DownloadAppDraftError, DownloadAppDraftResponse> = either {
         val blob = dataStore.runTxWithRetry { tx ->
+            val userId = authenticateCaller(tx, context.sessionId, timestampSource.now()).bind()
+
             val hasPermission = tx.authz
-                .hasPermission(HasPermissionRequest.DownloadAppDraft(request.appDraftId, context.userId))
+                .hasPermission(HasPermissionRequest.DownloadAppDraft(request.appDraftId, userId))
                 .bindMapLeft(::toServerError)
             ensure(hasPermission) { InsufficientPermissionError }
 
@@ -326,8 +336,10 @@ class AppDraftApiImpl(
         request: UpdateAppDraftRequest
     ): Either<UpdateAppDraftError, Unit> = either {
         dataStore.runTxWithRetry { tx ->
+            val userId = authenticateCaller(tx, context.sessionId, timestampSource.now()).bind()
+
             val hasPermission = tx.authz
-                .hasPermission(HasPermissionRequest.UpdateAppDraft(request.appDraftId, context.userId))
+                .hasPermission(HasPermissionRequest.UpdateAppDraft(request.appDraftId, userId))
                 .bindMapLeft(::toServerError)
             ensure(hasPermission) { InsufficientPermissionError }
 
@@ -354,8 +366,10 @@ class AppDraftApiImpl(
         request: SubmitAppDraftRequest
     ): Either<SubmitAppDraftError, Unit> = either {
         dataStore.runTxWithRetry { tx ->
+            val userId = authenticateCaller(tx, context.sessionId, timestampSource.now()).bind()
+
             val hasPermission = tx.authz
-                .hasPermission(HasPermissionRequest.SubmitAppDraft(request.appDraftId, context.userId))
+                .hasPermission(HasPermissionRequest.SubmitAppDraft(request.appDraftId, userId))
                 .bindMapLeft(::toServerError)
             ensure(hasPermission) { InsufficientPermissionError }
 
@@ -402,8 +416,10 @@ class AppDraftApiImpl(
         request: DeleteAppDraftRequest,
     ): Either<DeleteAppDraftError, Unit> = either {
         dataStore.runTxWithRetry { tx ->
+            val userId = authenticateCaller(tx, context.sessionId, timestampSource.now()).bind()
+
             val hasPermission = tx.authz
-                .hasPermission(HasPermissionRequest.DeleteAppDraft(request.appDraftId, context.userId))
+                .hasPermission(HasPermissionRequest.DeleteAppDraft(request.appDraftId, userId))
                 .bindMapLeft(::toServerError)
             ensure(hasPermission) { InsufficientPermissionError }
 
@@ -425,9 +441,11 @@ class AppDraftApiImpl(
         request: CreateAppDraftListingRequest,
     ): Either<CreateAppDraftListingError, CreateAppDraftListingResponse> = either {
         val listingId = dataStore.runTxWithRetry { tx ->
+            val userId = authenticateCaller(tx, context.sessionId, timestampSource.now()).bind()
+
             val hasPermission = tx.authz
                 .hasPermission(
-                    HasPermissionRequest.CreateAppDraftListing(request.appDraftId, context.userId)
+                    HasPermissionRequest.CreateAppDraftListing(request.appDraftId, userId)
                 )
                 .bindMapLeft(::toServerError)
             ensure(hasPermission) { InsufficientPermissionError }
@@ -473,9 +491,11 @@ class AppDraftApiImpl(
         request: GetAppDraftListingRequest,
     ): Either<GetAppDraftListingError, GetAppDraftListingResponse> = either {
         val listing = dataStore.runTxWithRetry { tx ->
+            val userId = authenticateCaller(tx, context.sessionId, timestampSource.now()).bind()
+
             val hasPermission = tx.authz
                 .hasPermission(
-                    HasPermissionRequest.ViewAppDraftListing(request.appDraftListingId, context.userId)
+                    HasPermissionRequest.ViewAppDraftListing(request.appDraftListingId, userId)
                 )
                 .bindMapLeft(::toServerError)
             ensure(hasPermission) { InsufficientPermissionError }
@@ -519,10 +539,12 @@ class AppDraftApiImpl(
         }
 
         val listings = dataStore.runTxWithRetry { tx ->
+            val userId = authenticateCaller(tx, context.sessionId, timestampSource.now()).bind()
+
             tx.appDrafts
                 .findListingsForAppDraftAndUserByQuery(
                     appDraftId = request.appDraftId,
-                    userId = context.userId,
+                    userId = userId,
                     maxResults = request.pageSize,
                     afterLanguage = lastLanguage,
                 )
@@ -554,9 +576,11 @@ class AppDraftApiImpl(
         request: UpdateAppDraftListingRequest,
     ): Either<UpdateAppDraftListingError, Unit> = either {
         dataStore.runTxWithRetry { tx ->
+            val userId = authenticateCaller(tx, context.sessionId, timestampSource.now()).bind()
+
             val hasPermission = tx.authz
                 .hasPermission(
-                    HasPermissionRequest.UpdateAppDraftListing(request.appDraftListingId, context.userId)
+                    HasPermissionRequest.UpdateAppDraftListing(request.appDraftListingId, userId)
                 )
                 .bindMapLeft(::toServerError)
             ensure(hasPermission) { InsufficientPermissionError }
@@ -588,11 +612,13 @@ class AppDraftApiImpl(
         request: UploadAppDraftListingIconRequest,
     ): Either<UploadAppDraftListingIconError, UploadAppDraftListingIconResponse> = either {
         dataStore.runTxWithRetry { tx ->
+            val userId = authenticateCaller(tx, context.sessionId, timestampSource.now()).bind()
+
             val hasPermission = tx.authz
                 .hasPermission(
                     HasPermissionRequest.UploadAppDraftListingIcon(
                         request.appDraftListingId,
-                        context.userId,
+                        userId,
                     )
                 )
                 .bindMapLeft(::toServerError)
@@ -678,9 +704,11 @@ class AppDraftApiImpl(
         request: DeleteAppDraftListingRequest
     ): Either<DeleteAppDraftListingError, Unit> = either {
         dataStore.runTxWithRetry { tx ->
+            val userId = authenticateCaller(tx, context.sessionId, timestampSource.now()).bind()
+
             val hasPermission = tx.authz
                 .hasPermission(
-                    HasPermissionRequest.DeleteAppDraftListing(request.appDraftListingId, context.userId)
+                    HasPermissionRequest.DeleteAppDraftListing(request.appDraftListingId, userId)
                 )
                 .bindMapLeft(::toServerError)
             ensure(hasPermission) { InsufficientPermissionError }
