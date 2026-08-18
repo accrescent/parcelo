@@ -43,6 +43,7 @@ class IdGeneratorTest {
                     IdType.PENDING_APP_DRAFT_LISTING_ICON_UPLOAD,
                     "adliu",
                 ),
+                GenerateIdGeneratesIdsWithCorrectPrefixTestCase(IdType.SESSION, "s"),
             )
         }
 
