@@ -7,6 +7,7 @@ package app.accrescent.server.parcelo.domain.api.console
 import app.accrescent.server.parcelo.core.bindMapLeft
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStore
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.HasPermissionRequest
+import app.accrescent.server.parcelo.domain.ports.driven.timestampsource.TimestampSource
 import app.accrescent.server.parcelo.domain.ports.driving.console.App
 import app.accrescent.server.parcelo.domain.ports.driving.console.AppApi
 import app.accrescent.server.parcelo.domain.ports.driving.console.CallContext
@@ -21,14 +22,19 @@ import arrow.core.Either
 import arrow.core.raise.either
 import arrow.core.raise.ensure
 
-class AppApiImpl(private val dataStore: DataStore) : AppApi {
+class AppApiImpl(
+    private val dataStore: DataStore,
+    private val timestampSource: TimestampSource,
+) : AppApi {
     override fun getApp(
         context: CallContext,
         request: GetAppRequest,
     ): Either<GetAppError, GetAppResponse> = either {
         val app = dataStore.runTxWithRetry { tx ->
+            val userId = authenticateCaller(tx, context.sessionId, timestampSource.now()).bind()
+
             val permitted = tx.authz
-                .hasPermission(HasPermissionRequest.ViewApp(request.appId, context.userId))
+                .hasPermission(HasPermissionRequest.ViewApp(request.appId, userId))
                 .bindMapLeft(::toServerError)
             ensure(permitted) { InsufficientPermissionError }
 
@@ -52,8 +58,10 @@ class AppApiImpl(private val dataStore: DataStore) : AppApi {
         request: UpdateAppRequest,
     ): Either<UpdateAppError, Unit> = either {
         dataStore.runTxWithRetry { tx ->
+            val userId = authenticateCaller(tx, context.sessionId, timestampSource.now()).bind()
+
             val permitted = tx.authz
-                .hasPermission(HasPermissionRequest.UpdateApp(request.appId, context.userId))
+                .hasPermission(HasPermissionRequest.UpdateApp(request.appId, userId))
                 .bindMapLeft(::toServerError)
             ensure(permitted) { InsufficientPermissionError }
 

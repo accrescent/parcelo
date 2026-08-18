@@ -86,6 +86,26 @@ data object InsufficientPermissionError :
 
 data object InvalidPageTokenError : ListAppDraftListingsError, ListAppDraftsError
 
+data object UnauthenticatedError :
+    CreateAppDraftError,
+    CreateAppDraftListingError,
+    DeleteAppDraftError,
+    DeleteAppDraftListingError,
+    DownloadAppDraftError,
+    DownloadAppDraftListingIconError,
+    GetAppDraftError,
+    GetAppDraftListingError,
+    GetAppError,
+    ListAppDraftListingsError,
+    ListAppDraftsError,
+    PublishAppDraftError,
+    SubmitAppDraftError,
+    UpdateAppDraftError,
+    UpdateAppDraftListingError,
+    UpdateAppError,
+    UploadAppDraftError,
+    UploadAppDraftListingIconError
+
 sealed interface ServerError :
     CreateAppDraftError,
     CreateAppDraftListingError,
