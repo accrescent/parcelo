@@ -84,6 +84,7 @@ CREATE TABLE users (
     id id_text PRIMARY KEY,
     organization_id varchar NOT NULL UNIQUE REFERENCES organizations(id),
     create_time timestamp with time zone NOT NULL,
+    github_user_id bigint NOT NULL UNIQUE,
     UNIQUE (id, organization_id)
 );
 ALTER TABLE organizations

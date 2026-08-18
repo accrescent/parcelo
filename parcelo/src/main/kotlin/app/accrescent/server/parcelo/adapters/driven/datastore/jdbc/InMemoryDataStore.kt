@@ -15,6 +15,7 @@ import app.accrescent.server.parcelo.domain.android.NameAttribute
 import app.accrescent.server.parcelo.domain.android.SdkVersion
 import app.accrescent.server.parcelo.domain.android.VersionCode
 import app.accrescent.server.parcelo.domain.android.VersionName
+import app.accrescent.server.parcelo.domain.authn.ExternalUserId
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.App
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppDraftApiView
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppDraftListing
@@ -1382,12 +1383,17 @@ private class InMemoryOrganizationRepository(
     override fun saveWithOwner(
         organizationId: String,
         userId: String,
+        externalUserId: ExternalUserId,
         createTime: OffsetDateTime,
     ): DataStoreResult<Unit> = runCatchingSql {
+        val githubUserId = when (externalUserId) {
+            is ExternalUserId.Github -> externalUserId.userId
+        }
+
         val organizationInsertSql =
             "INSERT INTO organizations (id, owner_user_id, create_time) VALUES (?, ?, ?)"
         val userInsertSql =
-            "INSERT INTO users (id, organization_id, create_time) VALUES (?, ?, ?)"
+            "INSERT INTO users (id, organization_id, create_time, github_user_id) VALUES (?, ?, ?, ?)"
         val organizationUpdateSql = "UPDATE organizations SET owner_user_id = ? WHERE id = ?"
 
         connection.prepareStatement(organizationInsertSql).use { stmt ->
@@ -1400,6 +1406,7 @@ private class InMemoryOrganizationRepository(
             stmt.setString(1, userId)
             stmt.setString(2, organizationId)
             stmt.setObject(3, createTime)
+            stmt.setLong(4, githubUserId)
             stmt.executeSingleUpdate().bind()
         }
         connection.prepareStatement(organizationUpdateSql).use { stmt ->
