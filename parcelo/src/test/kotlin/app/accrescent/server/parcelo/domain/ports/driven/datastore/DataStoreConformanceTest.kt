@@ -2848,6 +2848,70 @@ abstract class DataStoreConformanceTest {
         }
     }
 
+    @Test
+    fun `users findIdBySessionIdHash returns ID of user associated with given session ID hash`() {
+        withMigratedDataStore { dataStore ->
+            val idHash = Sha256Hash.hash("session1".toByteArray())
+
+            dataStore
+                .runTxWithRetry { tx ->
+                    tx.organizations
+                        .saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH)
+                        .bind()
+                    tx.sessions.create(idHash, "user1", UNIX_EPOCH, UNIX_EPOCH.plusDays(1)).bind()
+                }
+                .unwrap2()
+
+            val userId = dataStore
+                .runTxWithRetry { tx ->
+                    tx.users.findIdBySessionIdHash(idHash, UNIX_EPOCH).bind()
+                }
+                .unwrap2()
+                .unwrap()
+
+            assertEquals("user1", userId)
+        }
+    }
+
+    @Test
+    fun `users findIdBySessionIdHash returns None for non-existent session`() {
+        withMigratedDataStore { dataStore ->
+            val userId = dataStore
+                .runTxWithRetry { tx ->
+                    tx.users
+                        .findIdBySessionIdHash(Sha256Hash.hash("session1".toByteArray()), UNIX_EPOCH)
+                        .bind()
+                }
+                .unwrap2()
+
+            assertTrue(userId.isNone())
+        }
+    }
+
+    @Test
+    fun `users findIdBySessionIdHash returns None for expired session`() {
+        withMigratedDataStore { dataStore ->
+            val idHash = Sha256Hash.hash("session1".toByteArray())
+
+            dataStore
+                .runTxWithRetry { tx ->
+                    tx.organizations
+                        .saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH)
+                        .bind()
+                    tx.sessions.create(idHash, "user1", UNIX_EPOCH, UNIX_EPOCH.plusDays(1)).bind()
+                }
+                .unwrap2()
+
+            val userId = dataStore
+                .runTxWithRetry { tx ->
+                    tx.users.findIdBySessionIdHash(idHash, UNIX_EPOCH.plusDays(1)).bind()
+                }
+                .unwrap2()
+
+            assertTrue(userId.isNone())
+        }
+    }
+
     @ParameterizedTest(name = "{0} save returns ConsistencyViolation for {1}")
     @MethodSource("textColumnConstraintTestCases")
     fun `save returns ConsistencyViolationError for invalid text column`(

@@ -747,5 +747,18 @@ abstract class DataStore(private val randomSource: RandomSource) {
         abstract fun findIdByExternalUserId(
             externalUserId: ExternalUserId,
         ): DataStoreResult<Option<String>>
+
+        /**
+         * Finds the ID of a user an active session belongs to.
+         *
+         * @param sessionIdHash the SHA-256 hash of the session ID.
+         * @param currentTime the current timestamp to be used for checking session expiration.
+         * @return the ID of the user the session belongs to, or [None] if no such session exists or
+         * the session is expired.
+         */
+        abstract fun findIdBySessionIdHash(
+            sessionIdHash: Sha256Hash,
+            currentTime: OffsetDateTime,
+        ): DataStoreResult<Option<String>>
     }
 }
