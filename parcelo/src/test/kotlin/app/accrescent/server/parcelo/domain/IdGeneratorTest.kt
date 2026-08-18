@@ -38,6 +38,7 @@ class IdGeneratorTest {
                 GenerateIdGeneratesIdsWithCorrectPrefixTestCase(IdType.APP_PACKAGE_PERMISSION, "perm"),
                 GenerateIdGeneratesIdsWithCorrectPrefixTestCase(IdType.BLOB_OBJECT_KEY, "obj"),
                 GenerateIdGeneratesIdsWithCorrectPrefixTestCase(IdType.EXTERNAL_BLOB, "blob"),
+                GenerateIdGeneratesIdsWithCorrectPrefixTestCase(IdType.ORGANIZATION, "org"),
                 GenerateIdGeneratesIdsWithCorrectPrefixTestCase(IdType.PENDING_APP_DRAFT_UPLOAD, "adu"),
                 GenerateIdGeneratesIdsWithCorrectPrefixTestCase(
                     IdType.PENDING_APP_DRAFT_LISTING_ICON_UPLOAD,
