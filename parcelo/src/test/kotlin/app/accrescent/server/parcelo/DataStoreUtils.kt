@@ -4,7 +4,7 @@
 
 package app.accrescent.server.parcelo
 
-import app.accrescent.server.parcelo.adapters.driven.timestampsource.ConstantTimestampSource
+import app.accrescent.server.parcelo.adapters.driven.timestampsource.FixedTimestampSource
 import app.accrescent.server.parcelo.core.Bytes
 import app.accrescent.server.parcelo.core.unwrap
 import app.accrescent.server.parcelo.domain.android.ApplicationId
@@ -30,7 +30,7 @@ import arrow.core.Option
 import arrow.core.raise.either
 import java.time.OffsetDateTime
 
-val UNIX_EPOCH = ConstantTimestampSource().now()
+val UNIX_EPOCH = FixedTimestampSource().now()
 
 fun appDraftListing(
     id: String = "appDraftListing1",

@@ -8,15 +8,23 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import java.time.OffsetDateTime
 
-class ConstantTimestampSourceTest {
+class FixedTimestampSourceTest {
     private companion object {
         private val UNIX_EPOCH_TIMESTAMP = OffsetDateTime.parse("1970-01-01T00:00:00Z")
     }
 
     @Test
-    fun `now returns Unix epoch timestamp`() {
-        val timestamp = ConstantTimestampSource().now()
+    fun `now returns Unix epoch timestamp if nothing passed to constructor`() {
+        val timestamp = FixedTimestampSource().now()
 
         assertEquals(UNIX_EPOCH_TIMESTAMP, timestamp)
+    }
+
+    @Test
+    fun `now returns timestamp passed to constructor`() {
+        val timestamp = OffsetDateTime.parse("2000-01-01T00:00:00Z")
+        val timestampSource = FixedTimestampSource(timestamp)
+
+        assertEquals(timestamp, timestampSource.now())
     }
 }

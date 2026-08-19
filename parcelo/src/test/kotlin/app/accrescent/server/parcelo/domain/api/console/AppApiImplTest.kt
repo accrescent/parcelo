@@ -6,7 +6,7 @@ package app.accrescent.server.parcelo.domain.api.console
 
 import app.accrescent.server.parcelo.adapters.driven.datastore.jdbc.InMemoryDataStore
 import app.accrescent.server.parcelo.adapters.driven.randomsource.DeterministicRandomSource
-import app.accrescent.server.parcelo.adapters.driven.timestampsource.ConstantTimestampSource
+import app.accrescent.server.parcelo.adapters.driven.timestampsource.FixedTimestampSource
 import app.accrescent.server.parcelo.core.unwrap
 import app.accrescent.server.parcelo.core.unwrap2
 import app.accrescent.server.parcelo.core.unwrapErr
@@ -159,7 +159,7 @@ class AppApiImplTest {
 
     private fun makeAppApi(
         dataStore: DataStore,
-        timestampSource: TimestampSource = ConstantTimestampSource(),
+        timestampSource: TimestampSource = FixedTimestampSource(),
     ): AppApi {
         return AppApiImpl(dataStore, timestampSource)
     }

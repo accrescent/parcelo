@@ -9,7 +9,7 @@ import app.accrescent.server.parcelo.adapters.driven.blobstorage.LocalBlobStorag
 import app.accrescent.server.parcelo.adapters.driven.blobstorage.LocalOnlyBlobStorage
 import app.accrescent.server.parcelo.adapters.driven.datastore.jdbc.InMemoryDataStore
 import app.accrescent.server.parcelo.adapters.driven.randomsource.DeterministicRandomSource
-import app.accrescent.server.parcelo.adapters.driven.timestampsource.ConstantTimestampSource
+import app.accrescent.server.parcelo.adapters.driven.timestampsource.FixedTimestampSource
 import app.accrescent.server.parcelo.appDraftListing
 import app.accrescent.server.parcelo.appPackage
 import app.accrescent.server.parcelo.core.unwrap
@@ -293,7 +293,7 @@ class AppDraftApiImplTest {
     fun `listAppDrafts returns app drafts from only requested organization`() {
         InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
-            val timestampSource = ConstantTimestampSource()
+            val timestampSource = FixedTimestampSource()
             dataStore.runTxWithRetry { tx ->
                 signInNewUser(tx, "user1", "org1", ExternalUserId.Github(1), "session1").bind()
                 signInNewUser(tx, "user2", "org2", ExternalUserId.Github(2), "session2").bind()
@@ -1333,7 +1333,7 @@ class AppDraftApiImplTest {
                 saveAppPackageFromNewUpload(tx).bind()
                 tx.appDrafts.saveListing(appDraftListing()).bind()
                 tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
-                tx.appDrafts.updateSubmitTime("appDraft1", ConstantTimestampSource().now()).bind()
+                tx.appDrafts.updateSubmitTime("appDraft1", FixedTimestampSource().now()).bind()
             }
                 .unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
@@ -1437,7 +1437,7 @@ class AppDraftApiImplTest {
         dataStore: DataStore,
         randomSource: RandomSource = DeterministicRandomSource(),
         blobStorage: LocalBlobStorage = LocalBlobStorage(randomSource),
-        timestampSource: TimestampSource = ConstantTimestampSource(),
+        timestampSource: TimestampSource = FixedTimestampSource(),
         appDraftUploadBucketName: String = "app-draft-uploads",
         appDraftListingIconUploadBucketName: String = "app-draft-listing-icon-uploads",
     ): AppDraftApi {
