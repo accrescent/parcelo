@@ -153,7 +153,7 @@ ALTER TABLE external_blobs
     FOREIGN KEY (app_package_id, id) REFERENCES app_packages(id, external_blob_id);
 
 CREATE TABLE app_package_permissions (
-    id id_text PRIMARY KEY,
+    id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     app_package_id canon_text NOT NULL REFERENCES app_packages(id) ON DELETE CASCADE,
     name canon_text NOT NULL CHECK (char_length(name) <= 1024),
     max_sdk_version integer CHECK (max_sdk_version > 0),

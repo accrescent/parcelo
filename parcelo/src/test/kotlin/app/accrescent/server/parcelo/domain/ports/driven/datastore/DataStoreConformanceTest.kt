@@ -7,7 +7,6 @@ package app.accrescent.server.parcelo.domain.ports.driven.datastore
 import app.accrescent.server.parcelo.UNIX_EPOCH
 import app.accrescent.server.parcelo.appDraftListing
 import app.accrescent.server.parcelo.appPackage
-import app.accrescent.server.parcelo.appPackagePermission
 import app.accrescent.server.parcelo.core.NonNegativeInt
 import app.accrescent.server.parcelo.core.unwrap
 import app.accrescent.server.parcelo.core.unwrap2
@@ -17,7 +16,6 @@ import app.accrescent.server.parcelo.domain.android.ApkParseError
 import app.accrescent.server.parcelo.domain.android.ApkSetParseError
 import app.accrescent.server.parcelo.domain.android.ApplicationId
 import app.accrescent.server.parcelo.domain.android.NameAttribute
-import app.accrescent.server.parcelo.domain.android.SdkVersion
 import app.accrescent.server.parcelo.domain.android.VersionName
 import app.accrescent.server.parcelo.domain.authn.ExternalUserId
 import app.accrescent.server.parcelo.domain.crypto.Sha256Hash
@@ -26,7 +24,6 @@ import app.accrescent.server.parcelo.incompletePendingAppDraftUpload
 import app.accrescent.server.parcelo.pendingExternalBlob
 import app.accrescent.server.parcelo.saveAppPackageFromNewUpload
 import app.accrescent.server.parcelo.unsubmittedAppDraftApiView
-import arrow.core.Either
 import arrow.core.None
 import arrow.core.Some
 import arrow.core.left
@@ -300,31 +297,6 @@ abstract class DataStoreConformanceTest {
                 .unwrap2()
 
             assertTrue(pendingUpload.isNone())
-        }
-    }
-
-    @Test
-    fun `appDrafts deleteById deletes the package's permissions`() {
-        withMigratedDataStore { dataStore ->
-            dataStore
-                .runTxWithRetry { tx ->
-                    tx.organizations.saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH).bind()
-                    tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
-                    saveAppPackageFromNewUpload(tx).bind()
-                    tx.appPackages.savePermission(appPackagePermission()).bind()
-                }
-                .unwrap2()
-
-            dataStore
-                .runTxWithRetry { tx -> tx.appDrafts.deleteById("appDraft1", UNIX_EPOCH).bind() }
-                .unwrap2()
-            val permissions = dataStore
-                .runTxWithRetry { tx ->
-                    tx.appPackages.findPermissionsForAppPackage("appPackage1").bind()
-                }
-                .unwrap2()
-
-            assertTrue(permissions.isEmpty())
         }
     }
 
@@ -1769,69 +1741,6 @@ abstract class DataStoreConformanceTest {
     }
 
     @Test
-    fun `appPackages findPermissionsForAppPackage returns permission for only requested app package`() {
-        withMigratedDataStore { dataStore ->
-            val appPackage2Permissions = listOf(
-                appPackagePermission(
-                    id = "perm3",
-                    appPackageId = "appPackage2",
-                    name = NameAttribute.fromString("android.permission.BLUETOOTH").unwrap(),
-                    maxSdkVersion = Some(SdkVersion.fromInt(30).unwrap()),
-                ),
-                appPackagePermission(
-                    id = "perm4",
-                    appPackageId = "appPackage2",
-                    name = NameAttribute.fromString("android.permission.CAMERA").unwrap()
-                ),
-            )
-            dataStore.runTxWithRetry { tx ->
-                tx.organizations.saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH).bind()
-                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
-                tx.appDrafts.create("org1", "appDraft2", UNIX_EPOCH).bind()
-                saveAppPackageFromNewUpload(tx).bind()
-                saveAppPackageFromNewUpload(
-                    tx,
-                    appPackage = appPackage(
-                        id = "appPackage2",
-                        appDraftId = "appDraft2",
-                        externalBlobId = "blob2",
-                    ),
-                    pendingUploadId = "appDraftUpload2",
-                    objectKey = "object2",
-                )
-                    .bind()
-                tx.appPackages.savePermission(
-                    appPackagePermission(
-                        id = "perm1",
-                        appPackageId = "appPackage1",
-                        name = NameAttribute.fromString("android.permission.INTERNET").unwrap(),
-                    )
-                ).bind()
-                tx.appPackages.savePermission(
-                    appPackagePermission(
-                        id = "perm2",
-                        appPackageId = "appPackage1",
-                        name = NameAttribute
-                            .fromString("android.permission.READ_EXTERNAL_STORAGE").unwrap(),
-                        maxSdkVersion = Some(SdkVersion.fromInt(32).unwrap()),
-                    )
-                ).bind()
-                for (permission in appPackage2Permissions) {
-                    tx.appPackages.savePermission(permission).bind()
-                }
-            }
-                .unwrap2()
-
-            val result = dataStore.runTxWithRetry { tx ->
-                tx.appPackages.findPermissionsForAppPackage("appPackage2").bind()
-            }
-                .unwrap2()
-
-            assertEquals(appPackage2Permissions, result)
-        }
-    }
-
-    @Test
     fun `appPackages saveFromPendingUpload returns ConsistencyViolation for duplicate ID`() {
         withMigratedDataStore { dataStore ->
             dataStore
@@ -1874,6 +1783,7 @@ abstract class DataStoreConformanceTest {
                     tx.appPackages.saveFromPendingUpload(
                         pendingUploadId = "appDraftUpload1",
                         appPackage = appPackage(),
+                        permissions = emptyMap(),
                         blobVersion = ExternalBlob.LocalBlobVersion(1),
                         replacedBlobDeleteTime = UNIX_EPOCH,
                     )
@@ -1911,6 +1821,7 @@ abstract class DataStoreConformanceTest {
                     tx.appPackages.saveFromPendingUpload(
                         pendingUploadId = "appDraftUpload1",
                         appPackage = appPackage(),
+                        permissions = emptyMap(),
                         blobVersion = ExternalBlob.LocalBlobVersion(1),
                         replacedBlobDeleteTime = UNIX_EPOCH,
                     )
@@ -2014,82 +1925,6 @@ abstract class DataStoreConformanceTest {
                 .unwrap2()
 
             assertEquals(Some(originalAppPackage), foundAppPackage)
-        }
-    }
-
-    @Test
-    fun `appPackages savePermission returns ConsistencyViolationError for permission with duplicate ID`() {
-        withMigratedDataStore { dataStore ->
-            dataStore.runTxWithRetry { tx ->
-                tx.organizations.saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH).bind()
-                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
-                saveAppPackageFromNewUpload(tx).bind()
-                tx.appPackages.savePermission(appPackagePermission()).bind()
-            }
-                .unwrap2()
-
-            val perm2 = appPackagePermission(
-                name = NameAttribute.fromString("android.permission.RECEIVE_BOOT_COMPLETED").unwrap(),
-            )
-            val error = dataStore
-                .runTxWithRetry { tx -> tx.appPackages.savePermission(perm2).bind() }
-                .unwrap()
-                .unwrapErr()
-
-            assertEquals(DataStoreError.ConsistencyViolation, error)
-        }
-    }
-
-    @Test
-    fun `appPackages savePermission returns ConsistencyViolationError for duplicate (appPackageId, name) pair`() {
-        withMigratedDataStore { dataStore ->
-            dataStore.runTxWithRetry { tx ->
-                tx.organizations.saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH).bind()
-                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
-                saveAppPackageFromNewUpload(tx).bind()
-                tx.appPackages.savePermission(appPackagePermission()).bind()
-            }
-                .unwrap2()
-
-            val error = dataStore.runTxWithRetry { tx ->
-                tx.appPackages.savePermission(appPackagePermission(id = "perm2")).bind()
-            }
-                .unwrap()
-                .unwrapErr()
-
-            assertEquals(DataStoreError.ConsistencyViolation, error)
-        }
-    }
-
-    @Test
-    fun `appPackages savePermission returns ConsistencyViolationError when app package does not exist`() {
-        withMigratedDataStore { dataStore ->
-            val error = dataStore
-                .runTxWithRetry { tx -> tx.appPackages.savePermission(appPackagePermission()).bind() }
-                .unwrap()
-                .unwrapErr()
-
-            assertEquals(DataStoreError.ConsistencyViolation, error)
-        }
-    }
-
-    @Test
-    fun `appPackages savePermission succeeds when maxSdkVersion is present`() {
-        withMigratedDataStore { dataStore ->
-            dataStore.runTxWithRetry { tx ->
-                tx.organizations.saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH).bind()
-                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
-                saveAppPackageFromNewUpload(tx).bind()
-            }
-                .unwrap2()
-
-            val permission =
-                appPackagePermission(maxSdkVersion = Some(SdkVersion.fromInt(28).unwrap()))
-            val result = dataStore
-                .runTxWithRetry { tx -> tx.appPackages.savePermission(permission).bind() }
-                .unwrap()
-
-            assertInstanceOf<Either.Right<Unit>>(result)
         }
     }
 
@@ -2328,6 +2163,7 @@ abstract class DataStoreConformanceTest {
                     tx.appPackages.saveFromPendingUpload(
                         pendingUploadId = "appDraftUpload1",
                         appPackage = appPackage(),
+                        permissions = emptyMap(),
                         blobVersion = ExternalBlob.GcsBlobVersion(1, 1),
                         replacedBlobDeleteTime = UNIX_EPOCH,
                     )
@@ -3161,14 +2997,6 @@ abstract class DataStoreConformanceTest {
                     saveAppPackageFromNewUpload(tx, appPackage(id = invalid)).bind()
                 }
             },
-            TextColumnConstraintTestCase("appPackagePermissions.id") { tx, invalid ->
-                either {
-                    tx.organizations.saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH).bind()
-                    tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
-                    saveAppPackageFromNewUpload(tx).bind()
-                    tx.appPackages.savePermission(appPackagePermission(id = invalid)).bind()
-                }
-            },
             TextColumnConstraintTestCase("organizations.id") { tx, invalid ->
                 either {
                     tx.organizations.saveWithOwner(invalid, "user1", ExternalUserId.Github(1), UNIX_EPOCH).bind()
@@ -3267,11 +3095,10 @@ abstract class DataStoreConformanceTest {
                     either {
                         tx.organizations.saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH).bind()
                         tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
-                        saveAppPackageFromNewUpload(tx).bind()
-                        tx.appPackages
-                            .savePermission(
-                                appPackagePermission(name = NameAttribute.fromString(invalid).unwrap()),
-                            )
+                        saveAppPackageFromNewUpload(
+                            tx,
+                            permissions = mapOf(NameAttribute.fromString(invalid).unwrap() to None),
+                        )
                             .bind()
                     }
                 },

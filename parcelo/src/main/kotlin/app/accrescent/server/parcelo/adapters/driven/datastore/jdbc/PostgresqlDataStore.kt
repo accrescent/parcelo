@@ -25,7 +25,6 @@ import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppDraftUploa
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppListing
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppPackage
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppPackageApiView
-import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppPackagePermission
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStore
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStoreError
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStoreResult
@@ -865,47 +864,14 @@ private class PostgresqlAppPackageRepository(
         }
     }
 
-    override fun findPermissionsForAppPackage(
-        appPackageId: String,
-    ): DataStoreResult<List<AppPackagePermission>> = runCatchingSql {
-        val sql = """
-            SELECT id, app_package_id, name, max_sdk_version
-            FROM app_package_permissions
-            WHERE app_package_id = ?
-        """.trimIndent()
-        connection.prepareStatement(sql).use { stmt ->
-            stmt.setString(1, appPackageId)
-            stmt.executeQuery().use { rs ->
-                val permissions = mutableListOf<AppPackagePermission>()
-                while (rs.next()) {
-                    val permission = AppPackagePermission(
-                        id = rs.requireString("id").bind(),
-                        appPackageId = rs.requireString("app_package_id").bind(),
-                        name = rs.requireString("name")
-                            .bind()
-                            .let(NameAttribute::fromString)
-                            .toEitherBind { DataStoreError.IllegalState },
-                        maxSdkVersion = rs.getSafeInt("max_sdk_version")
-                            .map {
-                                SdkVersion
-                                    .fromInt(it)
-                                    .toEitherBind { DataStoreError.IllegalState }
-                            },
-                    )
-                    permissions.add(permission)
-                }
-                permissions
-            }
-        }
-    }
-
     override fun saveFromPendingUpload(
         pendingUploadId: String,
         appPackage: AppPackage,
+        permissions: Map<NameAttribute, Option<SdkVersion>>,
         blobVersion: ExternalBlob.BlobVersion,
         replacedBlobDeleteTime: OffsetDateTime,
     ): DataStoreResult<Unit> = runCatchingSql {
-        val sql = """
+        val packageSql = """
             WITH
                 completed_upload AS (
                     UPDATE pending_app_draft_uploads
@@ -956,7 +922,7 @@ private class PostgresqlAppPackageRepository(
                 AND processing_result IS NULL
             )
         """.trimIndent()
-        connection.prepareStatement(sql).use { stmt ->
+        connection.prepareStatement(packageSql).use { stmt ->
             stmt.setString(1, pendingUploadId)
             val service = when (blobVersion) {
                 is ExternalBlob.GcsBlobVersion -> {
@@ -992,25 +958,22 @@ private class PostgresqlAppPackageRepository(
             stmt.setString(22, pendingUploadId)
             stmt.executeSingleUpdate().bind()
         }
-    }
 
-    override fun savePermission(
-        permission: AppPackagePermission,
-    ): DataStoreResult<Unit> = runCatchingSql {
-        val sql = """
-            INSERT INTO app_package_permissions (id, app_package_id, name, max_sdk_version)
-            VALUES (?, ?, ?, ?)
+        val permissionSql = """
+            INSERT INTO app_package_permissions (app_package_id, name, max_sdk_version)
+            VALUES (?, ?, ?)
         """.trimIndent()
-        connection.prepareStatement(sql).use { stmt ->
-            stmt.setString(1, permission.id)
-            stmt.setString(2, permission.appPackageId)
-            stmt.setString(3, permission.name.intoInner())
-            stmt.setObject(
-                4,
-                permission.maxSdkVersion.map { it.intoInner() }.getOrNull(),
-                Types.INTEGER,
-            )
-            stmt.executeSingleUpdate().bind()
+        connection.prepareStatement(permissionSql).use { stmt ->
+            for ((name, maxSdkVersion) in permissions) {
+                stmt.setString(1, appPackage.id)
+                stmt.setString(2, name.intoInner())
+                stmt.setObject(
+                    3,
+                    maxSdkVersion.map(SdkVersion::intoInner).getOrNull(),
+                    Types.INTEGER,
+                )
+                stmt.executeSingleUpdate().bind()
+            }
         }
     }
 }

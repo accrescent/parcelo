@@ -9,6 +9,8 @@ import app.accrescent.server.parcelo.core.PositiveLong
 import app.accrescent.server.parcelo.core.bindMapLeft
 import app.accrescent.server.parcelo.core.unwrap
 import app.accrescent.server.parcelo.domain.android.ApplicationId
+import app.accrescent.server.parcelo.domain.android.NameAttribute
+import app.accrescent.server.parcelo.domain.android.SdkVersion
 import app.accrescent.server.parcelo.domain.authn.ExternalUserId
 import app.accrescent.server.parcelo.domain.crypto.Sha256Hash
 import app.accrescent.server.parcelo.domain.ports.driven.randomsource.RandomSource
@@ -515,16 +517,6 @@ abstract class DataStore(private val randomSource: RandomSource) {
         abstract fun findByAppDraftId(appDraftId: String): DataStoreResult<Option<AppPackage>>
 
         /**
-         * Finds an app package's permissions.
-         *
-         * @param appPackageId the ID of the app package to find the permissions of.
-         * @return the permissions the requested app package requests.
-         */
-        abstract fun findPermissionsForAppPackage(
-            appPackageId: String,
-        ): DataStoreResult<List<AppPackagePermission>>
-
-        /**
          * Saves a new app package by completing a pending app draft upload.
          *
          * In the process, commits the upload's pending blob, moves the blob's ownership to the new
@@ -534,6 +526,8 @@ abstract class DataStore(private val randomSource: RandomSource) {
          *
          * @param pendingUploadId the ID of the incomplete pending app draft upload to commit.
          * @param appPackage the app package to save.
+         * @param permissions the permissions the app package requests, each mapped to its max SDK
+         * version.
          * @param blobVersion the version assigned to the blob by the blob storage service.
          * @param replacedBlobDeleteTime the time at which a replaced package's blob is marked as
          * deleted.
@@ -545,19 +539,10 @@ abstract class DataStore(private val randomSource: RandomSource) {
         abstract fun saveFromPendingUpload(
             pendingUploadId: String,
             appPackage: AppPackage,
+            permissions: Map<NameAttribute, Option<SdkVersion>>,
             blobVersion: ExternalBlob.BlobVersion,
             replacedBlobDeleteTime: OffsetDateTime,
         ): DataStoreResult<Unit>
-
-        /**
-         * Saves a new app package permission.
-         *
-         * @param permission the app package permission to save.
-         * @return [DataStoreError.ConsistencyViolation] if a permission with the same ID or
-         * (appPackageId, name) pair already exists, or an app package with the given app package
-         * ID does not exist.
-         */
-        abstract fun savePermission(permission: AppPackagePermission): DataStoreResult<Unit>
     }
 
     abstract class AppRepository {
