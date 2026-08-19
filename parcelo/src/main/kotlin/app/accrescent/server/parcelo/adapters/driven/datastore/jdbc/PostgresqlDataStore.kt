@@ -412,7 +412,7 @@ private class PostgresqlAppDraftRepository(
         organizationId: String,
         userId: String,
         maxResults: NonNegativeInt,
-        afterAppDraftId: String?,
+        afterAppDraftId: Option<String>,
     ): DataStoreResult<List<AppDraftApiView>> = runCatchingSql {
         val sql = """
             SELECT
@@ -438,8 +438,8 @@ private class PostgresqlAppDraftRepository(
         connection.prepareStatement(sql).use { stmt ->
             stmt.setString(1, organizationId)
             stmt.setString(2, userId)
-            stmt.setString(3, afterAppDraftId)
-            stmt.setString(4, afterAppDraftId)
+            stmt.setString(3, afterAppDraftId.getOrNull())
+            stmt.setString(4, afterAppDraftId.getOrNull())
             stmt.setInt(5, maxResults.value)
             stmt.executeQuery().use { rs ->
                 val appDrafts = mutableListOf<AppDraftApiView>()
@@ -473,7 +473,7 @@ private class PostgresqlAppDraftRepository(
         appDraftId: String,
         userId: String,
         maxResults: NonNegativeInt,
-        afterLanguage: ListingLanguage?,
+        afterLanguage: Option<ListingLanguage>,
     ): DataStoreResult<List<AppDraftListing>> = runCatchingSql {
         val sql = """
             SELECT
@@ -496,8 +496,8 @@ private class PostgresqlAppDraftRepository(
         connection.prepareStatement(sql).use { stmt ->
             stmt.setString(1, appDraftId)
             stmt.setString(2, userId)
-            stmt.setString(3, afterLanguage?.toString())
-            stmt.setString(4, afterLanguage?.toString())
+            stmt.setString(3, afterLanguage.map { it.toString() }.getOrNull())
+            stmt.setString(4, afterLanguage.map { it.toString() }.getOrNull())
             stmt.setInt(5, maxResults.value)
             stmt.executeQuery().use { rs ->
                 val listings = mutableListOf<AppDraftListing>()
@@ -786,8 +786,8 @@ private class PostgresqlAppDraftRepository(
 
     override fun updateListing(
         listingId: String,
-        name: String?,
-        shortDescription: String?,
+        name: Option<String>,
+        shortDescription: Option<String>,
     ): DataStoreResult<Unit> = runCatchingSql {
         val sql = """
             UPDATE app_draft_listings
@@ -795,8 +795,8 @@ private class PostgresqlAppDraftRepository(
             WHERE id = ?
         """.trimIndent()
         connection.prepareStatement(sql).use { stmt ->
-            stmt.setObject(1, name, Types.VARCHAR)
-            stmt.setObject(2, shortDescription, Types.VARCHAR)
+            stmt.setObject(1, name.getOrNull(), Types.VARCHAR)
+            stmt.setObject(2, shortDescription.getOrNull(), Types.VARCHAR)
             stmt.setString(3, listingId)
             stmt.executeSingleUpdate().bind()
         }

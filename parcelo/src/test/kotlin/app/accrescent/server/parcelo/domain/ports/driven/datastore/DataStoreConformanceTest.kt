@@ -543,7 +543,7 @@ abstract class DataStoreConformanceTest {
                             "org1",
                             "user1",
                             NonNegativeInt.new(2).unwrap(),
-                            null,
+                            None,
                         )
                         .bind()
                 }
@@ -569,7 +569,7 @@ abstract class DataStoreConformanceTest {
                             "org1",
                             "user2",
                             NonNegativeInt.new(1).unwrap(),
-                            null,
+                            None,
                         )
                         .bind()
                 }
@@ -595,7 +595,7 @@ abstract class DataStoreConformanceTest {
                             "org1",
                             "user1",
                             NonNegativeInt.new(1).unwrap(),
-                            null,
+                            None,
                         )
                         .bind()
                 }
@@ -621,7 +621,7 @@ abstract class DataStoreConformanceTest {
                             "org1",
                             "user1",
                             NonNegativeInt.new(2).unwrap(),
-                            "appDraft1",
+                            Some("appDraft1"),
                         )
                         .bind()
                 }
@@ -690,7 +690,7 @@ abstract class DataStoreConformanceTest {
                             appDraftId = "appDraft1",
                             userId = "user1",
                             maxResults = NonNegativeInt.new(2).unwrap(),
-                            afterLanguage = null,
+                            afterLanguage = None,
                         )
                         .bind()
                 }
@@ -720,7 +720,7 @@ abstract class DataStoreConformanceTest {
                             appDraftId = "appDraft1",
                             userId = "user2",
                             maxResults = NonNegativeInt.new(1).unwrap(),
-                            afterLanguage = null,
+                            afterLanguage = None,
                         )
                         .bind()
                 }
@@ -1500,7 +1500,7 @@ abstract class DataStoreConformanceTest {
     fun `appDrafts updateListing returns EntityNotFound for non-existent app draft listing`() {
         withMigratedDataStore { dataStore ->
             val result = dataStore.runTxWithRetry { tx ->
-                tx.appDrafts.updateListing("appDraftListing1", null, null).bind()
+                tx.appDrafts.updateListing("appDraftListing1", None, None).bind()
             }
                 .unwrap()
 
@@ -1520,7 +1520,7 @@ abstract class DataStoreConformanceTest {
                 .unwrap2()
 
             dataStore.runTxWithRetry { tx ->
-                tx.appDrafts.updateListing("appDraftListing1", null, null).bind()
+                tx.appDrafts.updateListing("appDraftListing1", None, None).bind()
             }
                 .unwrap2()
             val foundListing = dataStore
@@ -1543,7 +1543,11 @@ abstract class DataStoreConformanceTest {
 
             dataStore.runTxWithRetry { tx ->
                 tx.appDrafts
-                    .updateListing("appDraftListing1", "Updated App Name", "Updated App Description")
+                    .updateListing(
+                        listingId = "appDraftListing1",
+                        name = Some("Updated App Name"),
+                        shortDescription = Some("Updated App Description"),
+                    )
                     .bind()
             }
                 .unwrap2()

@@ -4,4 +4,6 @@
 
 package app.accrescent.server.parcelo.domain.ports.driving.console
 
-data class ListAppDraftsResponse(val appDrafts: List<AppDraft>, val nextPageToken: String?)
+import arrow.core.Option
+
+data class ListAppDraftsResponse(val appDrafts: List<AppDraft>, val nextPageToken: Option<String>)

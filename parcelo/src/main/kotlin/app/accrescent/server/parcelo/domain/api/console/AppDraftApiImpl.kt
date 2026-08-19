@@ -180,7 +180,7 @@ class AppDraftApiImpl(
             .toInt()
             .let(NonNegativeInt::new)
             .unwrap()
-        val lastAppDraftId = request.pageToken?.let {
+        val lastAppDraftId = request.pageToken.map {
             try {
                 val bytes = Base64.UrlSafe.decode(it)
                 val token = ListAppDraftsPageToken.parseFrom(bytes)
@@ -213,9 +213,9 @@ class AppDraftApiImpl(
             .map { it.toApiResource() }
         val nextPageToken = if (appDrafts.isNotEmpty()) {
             val token = listAppDraftsPageToken { this.lastAppDraftId = appDrafts.last().id }
-            Base64.UrlSafe.encode(token.toByteArray())
+            Some(Base64.UrlSafe.encode(token.toByteArray()))
         } else {
-            null
+            None
         }
 
         ListAppDraftsResponse(appDrafts, nextPageToken)
@@ -529,7 +529,7 @@ class AppDraftApiImpl(
             .toInt()
             .let(NonNegativeInt::new)
             .unwrap()
-        val lastLanguage = request.nextPageToken?.let {
+        val lastLanguage = request.nextPageToken.map {
             try {
                 val bytes = Base64.UrlSafe.decode(it)
                 val token = ListAppDraftListingsPageToken.parseFrom(bytes)
@@ -571,9 +571,9 @@ class AppDraftApiImpl(
             }
         val nextPageToken = if (listings.isNotEmpty()) {
             val token = listAppDraftListingsPageToken { this.lastLanguage = listings.last().language }
-            Base64.UrlSafe.encode(token.toByteArray())
+            Some(Base64.UrlSafe.encode(token.toByteArray()))
         } else {
-            null
+            None
         }
 
         ListAppDraftListingsResponse(listings, nextPageToken)
