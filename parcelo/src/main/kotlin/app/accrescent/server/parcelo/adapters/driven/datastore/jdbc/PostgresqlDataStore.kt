@@ -1258,6 +1258,18 @@ private class PostgresqlExternalBlobRepository(
 private class PostgresqlOrganizationRepository(
     private val connection: Connection,
 ) : DataStore.OrganizationRepository() {
+    override fun findIdByOwnerUserId(userId: String): DataStoreResult<Option<String>> = runCatchingSql {
+        val sql = "SELECT id FROM organizations WHERE owner_user_id = ?"
+        connection.prepareStatement(sql).use { stmt ->
+            stmt.setString(1, userId)
+            stmt.executeQuery().use { rs ->
+                if (!rs.next()) return@use None
+
+                Some(rs.requireString("id").bind())
+            }
+        }
+    }
+
     override fun saveWithOwner(
         organizationId: String,
         userId: String,

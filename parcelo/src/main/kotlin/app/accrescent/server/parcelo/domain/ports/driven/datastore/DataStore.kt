@@ -698,6 +698,15 @@ abstract class DataStore(private val randomSource: RandomSource) {
 
     abstract class OrganizationRepository {
         /**
+         * Finds the ID of the organization a given user owns.
+         *
+         * @param userId the ID of the user to find the organization of.
+         * @return the ID of the organization the user owns, or [None] if no user with the given ID
+         * exists.
+         */
+        abstract fun findIdByOwnerUserId(userId: String): DataStoreResult<Option<String>>
+
+        /**
          * Saves a new organization along with its owning user.
          *
          * @param organizationId the ID of the organization to save.
