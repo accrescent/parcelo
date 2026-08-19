@@ -234,4 +234,18 @@ class DataStoreTest {
             assertEquals(originalBlob, foundBlob)
         }
     }
+
+    @Test
+    fun `organizations requireIdByOwnerUserId returns EntityNotFound if user does not exist`() {
+        InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
+            dataStore.migrateToHead().unwrap()
+
+            val error = dataStore
+                .runTxWithRetry { tx -> tx.organizations.requireIdByOwnerUserId("user1").bind() }
+                .unwrap()
+                .unwrapErr()
+
+            assertEquals(DataStoreError.EntityNotFound, error)
+        }
+    }
 }

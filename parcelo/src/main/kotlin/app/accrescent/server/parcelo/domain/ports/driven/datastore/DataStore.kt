@@ -707,6 +707,17 @@ abstract class DataStore(private val randomSource: RandomSource) {
         abstract fun findIdByOwnerUserId(userId: String): DataStoreResult<Option<String>>
 
         /**
+         * Finds the ID of the organization a given user owns.
+         *
+         * @param userId the ID of the user to find the organization of.
+         * @return the ID of the organization the user owns, or [DataStoreError.EntityNotFound] if
+         * no user with the given ID exists.
+         */
+        fun requireIdByOwnerUserId(userId: String): DataStoreResult<String> {
+            return findIdByOwnerUserId(userId).flatMap { it.toEither { DataStoreError.EntityNotFound } }
+        }
+
+        /**
          * Saves a new organization along with its owning user.
          *
          * @param organizationId the ID of the organization to save.
