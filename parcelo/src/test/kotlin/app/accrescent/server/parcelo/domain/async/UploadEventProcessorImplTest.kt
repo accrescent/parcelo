@@ -11,7 +11,7 @@ import app.accrescent.server.parcelo.adapters.driven.blobstorage.LocalOnlyBlobSt
 import app.accrescent.server.parcelo.adapters.driven.datastore.jdbc.InMemoryDataStore
 import app.accrescent.server.parcelo.adapters.driven.file.LocalTempFile
 import app.accrescent.server.parcelo.adapters.driven.randomsource.DeterministicRandomSource
-import app.accrescent.server.parcelo.adapters.driven.timestampsource.ConstantTimestampSource
+import app.accrescent.server.parcelo.adapters.driven.timestampsource.FixedTimestampSource
 import app.accrescent.server.parcelo.appDraftListing
 import app.accrescent.server.parcelo.appPackage
 import app.accrescent.server.parcelo.core.Bytes
@@ -54,10 +54,6 @@ import java.time.OffsetDateTime
 import java.time.ZoneOffset
 import kotlin.io.encoding.Base64
 
-private class FixedTimestampSource(private val time: OffsetDateTime) : TimestampSource {
-    override fun now(): OffsetDateTime = time
-}
-
 private fun BlobId.Local.toUploadEvent(eventTime: OffsetDateTime = UNIX_EPOCH): UploadEvent.Local {
     return UploadEvent.Local(location.bucketName, location.objectKey, eventTime, version.generation)
 }
@@ -75,7 +71,7 @@ private fun uploadEventProcessor(
     blobStorage: LocalBlobStorage,
     randomSource: RandomSource,
     downloadDir: Path,
-    timestampSource: TimestampSource = ConstantTimestampSource(),
+    timestampSource: TimestampSource = FixedTimestampSource(),
 ): UploadEventProcessorImpl {
     return UploadEventProcessorImpl(
         dataStore,

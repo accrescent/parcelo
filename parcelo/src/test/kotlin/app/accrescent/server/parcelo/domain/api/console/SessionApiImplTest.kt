@@ -6,7 +6,7 @@ package app.accrescent.server.parcelo.domain.api.console
 
 import app.accrescent.server.parcelo.adapters.driven.datastore.jdbc.InMemoryDataStore
 import app.accrescent.server.parcelo.adapters.driven.randomsource.DeterministicRandomSource
-import app.accrescent.server.parcelo.adapters.driven.timestampsource.ConstantTimestampSource
+import app.accrescent.server.parcelo.adapters.driven.timestampsource.FixedTimestampSource
 import app.accrescent.server.parcelo.core.unwrap
 import app.accrescent.server.parcelo.domain.IdGenerator
 import app.accrescent.server.parcelo.domain.authn.ExternalUserId
@@ -21,7 +21,7 @@ class SessionApiImplTest {
         InMemoryDataStore(randomSource).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             val idGenerator = IdGenerator(randomSource)
-            val timestampSource = ConstantTimestampSource()
+            val timestampSource = FixedTimestampSource()
             val sessionApi = SessionApiImpl(dataStore, idGenerator, 1.days, timestampSource)
 
             val externalUserId = ExternalUserId.Github(1)

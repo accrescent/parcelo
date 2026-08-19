@@ -6,7 +6,7 @@ package app.accrescent.server.parcelo.domain.api.console
 
 import app.accrescent.server.parcelo.adapters.driven.datastore.jdbc.InMemoryDataStore
 import app.accrescent.server.parcelo.adapters.driven.randomsource.DeterministicRandomSource
-import app.accrescent.server.parcelo.adapters.driven.timestampsource.ConstantTimestampSource
+import app.accrescent.server.parcelo.adapters.driven.timestampsource.FixedTimestampSource
 import app.accrescent.server.parcelo.core.unwrap
 import app.accrescent.server.parcelo.core.unwrapErr
 import app.accrescent.server.parcelo.domain.IdGenerator
@@ -23,12 +23,7 @@ import arrow.core.Some
 import arrow.core.right
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import java.time.OffsetDateTime
 import kotlin.time.Duration.Companion.days
-
-private class FixedTimestampSource(private val time: OffsetDateTime) : TimestampSource {
-    override fun now(): OffsetDateTime = time
-}
 
 class OrganizationApiImplTest {
     @Test
@@ -59,7 +54,7 @@ class OrganizationApiImplTest {
     fun `getMyOrganization returns Unauthenticated when session is expired`() {
         InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
-            val signInTime = ConstantTimestampSource().now()
+            val signInTime = FixedTimestampSource().now()
             val context = signIn(dataStore, timestampSource = FixedTimestampSource(signInTime))
             val organizationApi = makeOrganizationApi(
                 dataStore = dataStore,
@@ -95,7 +90,7 @@ class OrganizationApiImplTest {
     private fun signIn(
         dataStore: DataStore,
         externalUserId: ExternalUserId = ExternalUserId.Github(1),
-        timestampSource: TimestampSource = ConstantTimestampSource(),
+        timestampSource: TimestampSource = FixedTimestampSource(),
     ): CallContext {
         val sessionApi = SessionApiImpl(
             dataStore = dataStore,
@@ -110,7 +105,7 @@ class OrganizationApiImplTest {
 
     private fun makeOrganizationApi(
         dataStore: DataStore,
-        timestampSource: TimestampSource = ConstantTimestampSource(),
+        timestampSource: TimestampSource = FixedTimestampSource(),
     ): OrganizationApi {
         return OrganizationApiImpl(dataStore, timestampSource)
     }
