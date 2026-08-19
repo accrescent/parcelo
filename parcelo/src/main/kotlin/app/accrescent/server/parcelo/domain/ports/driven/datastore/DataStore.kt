@@ -256,14 +256,15 @@ abstract class DataStore(private val randomSource: RandomSource) {
          *
          * @param organizationId the organization to list app drafts from.
          * @param userId the user ID to use for authorization.
-         * @param afterAppDraftId the app draft ID to start listing after.
+         * @param afterAppDraftId the app draft ID to start listing after, or [None] to start from
+         * the beginning.
          * @return the list of app draft API views matching the query.
          */
         abstract fun findApiViewsForOrganizationAndUserByQuery(
             organizationId: String,
             userId: String,
             maxResults: NonNegativeInt,
-            afterAppDraftId: String?,
+            afterAppDraftId: Option<String>,
         ): DataStoreResult<List<AppDraftApiView>>
 
         /**
@@ -283,14 +284,15 @@ abstract class DataStore(private val randomSource: RandomSource) {
          * @param appDraftId the app draft to list listings for.
          * @param userId the user ID to use for authorization.
          * @param maxResults the maximum number of app draft listings to retrieve.
-         * @param afterLanguage the listing language to start listing after.
+         * @param afterLanguage the listing language to start listing after, or [None] to start
+         * from the beginning.
          * @return the list of app draft listings matching the query.
          */
         abstract fun findListingsForAppDraftAndUserByQuery(
             appDraftId: String,
             userId: String,
             maxResults: NonNegativeInt,
-            afterLanguage: ListingLanguage?,
+            afterLanguage: Option<ListingLanguage>,
         ): DataStoreResult<List<AppDraftListing>>
 
         /**
@@ -469,15 +471,15 @@ abstract class DataStore(private val randomSource: RandomSource) {
          * Updates the fields of an app draft listing.
          *
          * @param listingId the ID of the app draft listing to update.
-         * @param name the new name for the listing, or null to leave unchanged.
-         * @param shortDescription the new short description for the listing, or null to leave
+         * @param name the new name for the listing, or [None] to leave unchanged.
+         * @param shortDescription the new short description for the listing, or [None] to leave
          * unchanged.
          * @return [DataStoreError.EntityNotFound] if the listing does not exist.
          */
         abstract fun updateListing(
             listingId: String,
-            name: String?,
-            shortDescription: String?,
+            name: Option<String>,
+            shortDescription: Option<String>,
         ): DataStoreResult<Unit>
 
         /**

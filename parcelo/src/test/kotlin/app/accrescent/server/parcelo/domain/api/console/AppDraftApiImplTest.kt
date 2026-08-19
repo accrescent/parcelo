@@ -63,10 +63,11 @@ import app.accrescent.server.parcelo.saveAppPackageFromNewUpload
 import app.accrescent.server.parcelo.signInNewUser
 import arrow.core.Either
 import arrow.core.None
+import arrow.core.Option
 import arrow.core.Some
 import arrow.core.right
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertInstanceOf
 import org.junit.jupiter.params.ParameterizedTest
@@ -264,7 +265,7 @@ class AppDraftApiImplTest {
             createAppDraft(dataStore, appDraftApi, context2)
 
             val response = appDraftApi
-                .listAppDrafts(context1, ListAppDraftsRequest(organizationId1, 2u, null))
+                .listAppDrafts(context1, ListAppDraftsRequest(organizationId1, 2u, None))
                 .map { it.appDrafts }
 
             assertEquals(
@@ -297,7 +298,7 @@ class AppDraftApiImplTest {
             val appDraftApi = makeAppDraftApi(dataStore)
 
             val response = appDraftApi
-                .listAppDrafts(CallContext(Some("session1")), ListAppDraftsRequest("org1", 1u, null))
+                .listAppDrafts(CallContext(Some("session1")), ListAppDraftsRequest("org1", 1u, None))
                 .map { it.appDrafts }
 
             assertEquals(
@@ -332,7 +333,7 @@ class AppDraftApiImplTest {
             createAppDraft(dataStore, appDraftApi, context1)
 
             val response = appDraftApi
-                .listAppDrafts(context2, ListAppDraftsRequest(organizationId1, 1u, null))
+                .listAppDrafts(context2, ListAppDraftsRequest(organizationId1, 1u, None))
                 .map { it.appDrafts }
 
             assertEquals(emptyList<ApiAppDraft>().right(), response)
@@ -349,7 +350,7 @@ class AppDraftApiImplTest {
             repeat(2) { createAppDraft(dataStore, appDraftApi, context) }
 
             val response = appDraftApi
-                .listAppDrafts(context, ListAppDraftsRequest(organizationId, 1u, null))
+                .listAppDrafts(context, ListAppDraftsRequest(organizationId, 1u, None))
 
             assertInstanceOf<Either.Right<ListAppDraftsResponse>>(response)
             assertEquals(1, response.value.appDrafts.size)
@@ -366,14 +367,14 @@ class AppDraftApiImplTest {
             val appDraftIds = List(2) { createAppDraft(dataStore, appDraftApi, context) }
 
             val allDrafts = mutableListOf<ApiAppDraft>()
-            var pageToken: String? = null
+            var pageToken: Option<String> = None
             do {
                 val response = appDraftApi
                     .listAppDrafts(context, ListAppDraftsRequest(organizationId, 1u, pageToken))
                     .unwrap()
                 allDrafts.addAll(response.appDrafts)
                 pageToken = response.nextPageToken
-            } while (pageToken != null)
+            } while (pageToken.isSome())
 
             assertEquals(appDraftIds.toSet(), allDrafts.map { it.id }.toSet())
         }
@@ -389,10 +390,10 @@ class AppDraftApiImplTest {
             repeat(2) { createAppDraft(dataStore, appDraftApi, context) }
 
             val response = appDraftApi
-                .listAppDrafts(context, ListAppDraftsRequest(organizationId, 1u, null))
+                .listAppDrafts(context, ListAppDraftsRequest(organizationId, 1u, None))
 
             assertInstanceOf<Either.Right<ListAppDraftsResponse>>(response)
-            assertNotNull(response.value.nextPageToken)
+            assertTrue(response.value.nextPageToken.isSome())
         }
     }
 
@@ -884,7 +885,7 @@ class AppDraftApiImplTest {
 
             val response = appDraftApi.listAppDraftListings(
                 context,
-                ListAppDraftListingsRequest(appDraftId1, 2u, null),
+                ListAppDraftListingsRequest(appDraftId1, 2u, None),
             )
                 .map { it.appDraftListings }
 
@@ -916,7 +917,7 @@ class AppDraftApiImplTest {
 
             val response = appDraftApi.listAppDraftListings(
                 context2,
-                ListAppDraftListingsRequest(appDraftId1, 1u, null),
+                ListAppDraftListingsRequest(appDraftId1, 1u, None),
             )
                 .map { it.appDraftListings }
 
@@ -931,7 +932,7 @@ class AppDraftApiImplTest {
             val context = signIn(dataStore)
             val appDraftApi = makeAppDraftApi(dataStore)
 
-            val request = UpdateAppDraftListingRequest("appDraftListing1", null, null)
+            val request = UpdateAppDraftListingRequest("appDraftListing1", None, None)
             val response = appDraftApi.updateAppDraftListing(context, request)
 
             assertEquals(InsufficientPermissionError, response.unwrapErr())
@@ -953,7 +954,7 @@ class AppDraftApiImplTest {
                 .unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
 
-            val request = UpdateAppDraftListingRequest("appDraftListing1", null, null)
+            val request = UpdateAppDraftListingRequest("appDraftListing1", None, None)
             val response = appDraftApi.updateAppDraftListing(CallContext(Some("session1")), request)
 
             assertEquals(AppDraftSubmittedError("appDraft1"), response.unwrapErr())
@@ -971,8 +972,8 @@ class AppDraftApiImplTest {
 
             val request = UpdateAppDraftListingRequest(
                 appDraftListingId = appDraftListingId,
-                name = "App Name",
-                shortDescription = "App Short Description",
+                name = Some("App Name"),
+                shortDescription = Some("App Short Description"),
             )
             appDraftApi.updateAppDraftListing(context, request).unwrap()
             val getResponse = appDraftApi
@@ -1269,7 +1270,7 @@ class AppDraftApiImplTest {
                     api.getAppDraft(context, GetAppDraftRequest("appDraft1"))
                 },
                 "listAppDrafts" to { api, context ->
-                    api.listAppDrafts(context, ListAppDraftsRequest("org1", 1u, null))
+                    api.listAppDrafts(context, ListAppDraftsRequest("org1", 1u, None))
                 },
                 "uploadAppDraft" to { api, context ->
                     api.uploadAppDraft(context, UploadAppDraftRequest("appDraft1"))
@@ -1301,12 +1302,12 @@ class AppDraftApiImplTest {
                     api.getAppDraftListing(context, GetAppDraftListingRequest("appDraftListing1"))
                 },
                 "listAppDraftListings" to { api, context ->
-                    api.listAppDraftListings(context, ListAppDraftListingsRequest("appDraft1", 1u, null))
+                    api.listAppDraftListings(context, ListAppDraftListingsRequest("appDraft1", 1u, None))
                 },
                 "updateAppDraftListing" to { api, context ->
                     api.updateAppDraftListing(
                         context,
-                        UpdateAppDraftListingRequest("appDraftListing1", null, null),
+                        UpdateAppDraftListingRequest("appDraftListing1", None, None),
                     )
                 },
                 "uploadAppDraftListingIcon" to { api, context ->

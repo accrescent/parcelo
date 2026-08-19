@@ -4,8 +4,10 @@
 
 package app.accrescent.server.parcelo.domain.ports.driving.console
 
+import arrow.core.Option
+
 data class UpdateAppDraftListingRequest(
     val appDraftListingId: String,
-    val name: String?,
-    val shortDescription: String?,
+    val name: Option<String>,
+    val shortDescription: Option<String>,
 )
