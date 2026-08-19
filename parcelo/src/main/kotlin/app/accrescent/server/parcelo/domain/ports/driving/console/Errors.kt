@@ -18,6 +18,7 @@ sealed interface DownloadAppDraftListingIconError
 sealed interface GetAppDraftError
 sealed interface GetAppDraftListingError
 sealed interface GetAppError
+sealed interface GetMyOrganizationError
 sealed interface ListAppDraftListingsError
 sealed interface ListAppDraftsError
 sealed interface PublishAppDraftError
@@ -96,6 +97,7 @@ data object UnauthenticatedError :
     GetAppDraftError,
     GetAppDraftListingError,
     GetAppError,
+    GetMyOrganizationError,
     ListAppDraftListingsError,
     ListAppDraftsError,
     PublishAppDraftError,
@@ -117,6 +119,7 @@ sealed interface ServerError :
     GetAppDraftError,
     GetAppDraftListingError,
     GetAppError,
+    GetMyOrganizationError,
     ListAppDraftListingsError,
     ListAppDraftsError,
     PublishAppDraftError,
