@@ -15,7 +15,7 @@ import app.accrescent.server.parcelo.domain.android.VersionName
 import app.accrescent.server.parcelo.domain.authn.ExternalUserId
 import app.accrescent.server.parcelo.domain.crypto.Sha256Hash
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppDraftApiView
-import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppDraftListing
+import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppDraftListingApiView
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppPackage
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppPackageApiView
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStore
@@ -31,14 +31,31 @@ import java.time.OffsetDateTime
 
 val UNIX_EPOCH = FixedTimestampSource().now()
 
-fun appDraftListing(
+fun appDraftListingApiView(
     id: String = "appDraftListing1",
     appDraftId: String = "appDraft1",
     language: ListingLanguage = ListingLanguage.EN_US,
     name: String = "Example App",
     shortDescription: String = "Example Short Description",
-): AppDraftListing {
-    return AppDraftListing(
+): AppDraftListingApiView {
+    return AppDraftListingApiView(
+        id = id,
+        appDraftId = appDraftId,
+        language = language,
+        name = name,
+        shortDescription = shortDescription,
+    )
+}
+
+fun createAppDraftListing(
+    tx: DataStore.Transaction,
+    id: String = "appDraftListing1",
+    appDraftId: String = "appDraft1",
+    language: ListingLanguage = ListingLanguage.EN_US,
+    name: String = "Example App",
+    shortDescription: String = "Example Short Description",
+): DataStoreResult<Unit> {
+    return tx.appDrafts.createListing(
         id = id,
         appDraftId = appDraftId,
         language = language,

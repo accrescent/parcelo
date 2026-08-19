@@ -91,7 +91,6 @@ import arrow.core.raise.either
 import arrow.core.raise.ensure
 import com.google.protobuf.InvalidProtocolBufferException
 import kotlin.io.encoding.Base64
-import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppDraftListing as DataAppDraftListing
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.ListingLanguage as DataListingLanguage
 import app.accrescent.server.parcelo.domain.ports.driving.console.AppDraft as ApiAppDraft
 import app.accrescent.server.parcelo.domain.ports.driving.console.AppDraftListing as ApiAppDraftListing
@@ -467,14 +466,12 @@ class AppDraftApiImpl(
                 .generateId(IdType.APP_DRAFT_LISTING)
                 .bindMapLeft(::toServerError)
             tx.appDrafts
-                .saveListing(
-                    DataAppDraftListing(
-                        id = listingId,
-                        appDraftId = request.appDraftId,
-                        language = dataStoreLanguage,
-                        name = request.name,
-                        shortDescription = request.shortDescription,
-                    )
+                .createListing(
+                    id = listingId,
+                    appDraftId = request.appDraftId,
+                    language = dataStoreLanguage,
+                    name = request.name,
+                    shortDescription = request.shortDescription,
                 )
                 .bindMapLeft(::toServerError)
 
@@ -501,7 +498,9 @@ class AppDraftApiImpl(
             ensure(hasPermission) { InsufficientPermissionError }
 
             // App draft listing is guaranteed to exist since permission is granted
-            tx.appDrafts.requireListingById(request.appDraftListingId).bindMapLeft(::toServerError)
+            tx.appDrafts
+                .requireListingApiViewById(request.appDraftListingId)
+                .bindMapLeft(::toServerError)
         }
             .bindMapLeft(::toServerError)
             .bind()
@@ -550,7 +549,7 @@ class AppDraftApiImpl(
             val userId = authenticateCaller(tx, context.sessionId, timestampSource.now()).bind()
 
             tx.appDrafts
-                .findListingsForAppDraftAndUserByQuery(
+                .findListingApiViewsForAppDraftAndUserByQuery(
                     appDraftId = request.appDraftId,
                     userId = userId,
                     maxResults = maxResults,
@@ -595,7 +594,7 @@ class AppDraftApiImpl(
 
             // App draft listing is guaranteed to exist since permission is granted
             val listing = tx.appDrafts
-                .requireListingById(request.appDraftListingId)
+                .requireListingApiViewById(request.appDraftListingId)
                 .bindMapLeft(::toServerError)
 
             // App draft is guaranteed to exist since permission is granted
@@ -634,7 +633,7 @@ class AppDraftApiImpl(
 
             // App draft listing is guaranteed to exist since permission is granted
             val listing = tx.appDrafts
-                .requireListingById(request.appDraftListingId)
+                .requireListingApiViewById(request.appDraftListingId)
                 .bindMapLeft(::toServerError)
 
             // App draft is guaranteed to exist since permission is granted
@@ -723,7 +722,7 @@ class AppDraftApiImpl(
 
             // App draft listing is guaranteed to exist since permission is granted
             val listing = tx.appDrafts
-                .requireListingById(request.appDraftListingId)
+                .requireListingApiViewById(request.appDraftListingId)
                 .bindMapLeft(::toServerError)
 
             // App draft is guaranteed to exist since permission is granted

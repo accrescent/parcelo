@@ -10,8 +10,8 @@ import app.accrescent.server.parcelo.adapters.driven.blobstorage.LocalOnlyBlobSt
 import app.accrescent.server.parcelo.adapters.driven.datastore.jdbc.InMemoryDataStore
 import app.accrescent.server.parcelo.adapters.driven.randomsource.DeterministicRandomSource
 import app.accrescent.server.parcelo.adapters.driven.timestampsource.FixedTimestampSource
-import app.accrescent.server.parcelo.appDraftListing
 import app.accrescent.server.parcelo.appPackage
+import app.accrescent.server.parcelo.createAppDraftListing
 import app.accrescent.server.parcelo.core.unwrap
 import app.accrescent.server.parcelo.core.unwrap2
 import app.accrescent.server.parcelo.core.unwrapErr
@@ -221,7 +221,7 @@ class AppDraftApiImplTest {
                 signInNewUser(tx).bind()
                 tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
                 saveAppPackageFromNewUpload(tx).bind()
-                tx.appDrafts.saveListing(appDraftListing()).bind()
+                createAppDraftListing(tx).bind()
                 tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
                 tx.appDrafts.updateSubmitTime("appDraft1", UNIX_EPOCH).bind()
             }
@@ -290,7 +290,7 @@ class AppDraftApiImplTest {
                 signInNewUser(tx).bind()
                 tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
                 saveAppPackageFromNewUpload(tx).bind()
-                tx.appDrafts.saveListing(appDraftListing()).bind()
+                createAppDraftListing(tx).bind()
                 tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
                 tx.appDrafts.updateSubmitTime("appDraft1", UNIX_EPOCH).bind()
             }
@@ -418,7 +418,7 @@ class AppDraftApiImplTest {
                 signInNewUser(tx).bind()
                 tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
                 saveAppPackageFromNewUpload(tx).bind()
-                tx.appDrafts.saveListing(appDraftListing()).bind()
+                createAppDraftListing(tx).bind()
                 tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
                 tx.appDrafts.updateSubmitTime("appDraft1", UNIX_EPOCH).bind()
             }.unwrap2()
@@ -481,7 +481,7 @@ class AppDraftApiImplTest {
                     objectKey = "object1",
                 )
                     .bind()
-                tx.appDrafts.saveListing(appDraftListing("appDraftListing2", "appDraft2")).bind()
+                createAppDraftListing(tx, "appDraftListing2", "appDraft2").bind()
                 tx.appDrafts.updateDefaultListing("appDraft2", Some("appDraftListing2")).bind()
                 tx.appDrafts.updateSubmitTime("appDraft2", UNIX_EPOCH).bind()
                 tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
@@ -496,7 +496,7 @@ class AppDraftApiImplTest {
                     objectKey = "object2",
                 )
                     .bind()
-                tx.appDrafts.saveListing(appDraftListing("appDraftListing1", "appDraft1")).bind()
+                createAppDraftListing(tx, "appDraftListing1", "appDraft1").bind()
                 tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
             }.unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
@@ -516,7 +516,7 @@ class AppDraftApiImplTest {
                 signInNewUser(tx).bind()
                 tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
                 saveAppPackageFromNewUpload(tx).bind()
-                tx.appDrafts.saveListing(appDraftListing()).bind()
+                createAppDraftListing(tx).bind()
                 tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
                 tx.apps.saveWithDefaultListing(
                     App("app1", "org1", "appListing1", false),
@@ -540,7 +540,7 @@ class AppDraftApiImplTest {
                 signInNewUser(tx).bind()
                 tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
                 saveAppPackageFromNewUpload(tx).bind()
-                tx.appDrafts.saveListing(appDraftListing()).bind()
+                createAppDraftListing(tx).bind()
                 tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
             }
                 .unwrap2()
@@ -580,7 +580,7 @@ class AppDraftApiImplTest {
                 signInNewUser(tx).bind()
                 tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
                 saveAppPackageFromNewUpload(tx).bind()
-                tx.appDrafts.saveListing(appDraftListing()).bind()
+                createAppDraftListing(tx).bind()
                 tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
                 tx.appDrafts.updateSubmitTime("appDraft1", UNIX_EPOCH).bind()
             }
@@ -647,7 +647,7 @@ class AppDraftApiImplTest {
                 signInNewUser(tx).bind()
                 tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
                 saveAppPackageFromNewUpload(tx).bind()
-                tx.appDrafts.saveListing(appDraftListing()).bind()
+                createAppDraftListing(tx).bind()
                 tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
                 tx.appDrafts.updateSubmitTime("appDraft1", UNIX_EPOCH).bind()
             }
@@ -724,7 +724,7 @@ class AppDraftApiImplTest {
                 signInNewUser(tx).bind()
                 tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
                 saveAppPackageFromNewUpload(tx).bind()
-                tx.appDrafts.saveListing(appDraftListing()).bind()
+                createAppDraftListing(tx).bind()
                 tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
                 tx.appDrafts.updateSubmitTime("appDraft1", UNIX_EPOCH).bind()
             }
@@ -804,7 +804,7 @@ class AppDraftApiImplTest {
                 signInNewUser(tx).bind()
                 tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
                 saveAppPackageFromNewUpload(tx).bind()
-                tx.appDrafts.saveListing(appDraftListing()).bind()
+                createAppDraftListing(tx).bind()
                 tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
                 tx.appDrafts.updateSubmitTime("appDraft1", UNIX_EPOCH).bind()
             }
@@ -947,7 +947,7 @@ class AppDraftApiImplTest {
                 signInNewUser(tx).bind()
                 tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
                 saveAppPackageFromNewUpload(tx).bind()
-                tx.appDrafts.saveListing(appDraftListing()).bind()
+                createAppDraftListing(tx).bind()
                 tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
                 tx.appDrafts.updateSubmitTime("appDraft1", UNIX_EPOCH).bind()
             }
@@ -1019,7 +1019,7 @@ class AppDraftApiImplTest {
                 signInNewUser(tx).bind()
                 tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
                 saveAppPackageFromNewUpload(tx).bind()
-                tx.appDrafts.saveListing(appDraftListing()).bind()
+                createAppDraftListing(tx).bind()
                 tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
                 tx.appDrafts.updateSubmitTime("appDraft1", UNIX_EPOCH).bind()
             }
@@ -1104,7 +1104,7 @@ class AppDraftApiImplTest {
                 signInNewUser(tx).bind()
                 tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
                 saveAppPackageFromNewUpload(tx).bind()
-                tx.appDrafts.saveListing(appDraftListing()).bind()
+                createAppDraftListing(tx).bind()
                 tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
                 tx.appDrafts.updateSubmitTime("appDraft1", FixedTimestampSource().now()).bind()
             }
