@@ -472,7 +472,7 @@ private class PostgresqlAppDraftRepository(
     override fun findListingsForAppDraftAndUserByQuery(
         appDraftId: String,
         userId: String,
-        maxResults: UInt,
+        maxResults: NonNegativeInt,
         afterLanguage: ListingLanguage?,
     ): DataStoreResult<List<AppDraftListing>> = runCatchingSql {
         val sql = """
@@ -498,7 +498,7 @@ private class PostgresqlAppDraftRepository(
             stmt.setString(2, userId)
             stmt.setString(3, afterLanguage?.toString())
             stmt.setString(4, afterLanguage?.toString())
-            stmt.setLong(5, maxResults.toLong())
+            stmt.setInt(5, maxResults.value)
             stmt.executeQuery().use { rs ->
                 val listings = mutableListOf<AppDraftListing>()
                 while (rs.next()) {
