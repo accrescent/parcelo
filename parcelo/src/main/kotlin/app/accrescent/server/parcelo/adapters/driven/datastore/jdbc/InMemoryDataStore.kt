@@ -25,7 +25,6 @@ import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppDraftUploa
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppListing
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppPackage
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppPackageApiView
-import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppPackagePermission
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStore
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStore.AppDraftRepository
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStore.AppPackageRepository
@@ -913,43 +912,10 @@ private class InMemoryAppPackageRepository(
         }
     }
 
-    override fun findPermissionsForAppPackage(
-        appPackageId: String,
-    ): DataStoreResult<List<AppPackagePermission>> = runCatchingSql {
-        val sql = """
-            SELECT id, app_package_id, name, max_sdk_version
-            FROM app_package_permissions
-            WHERE app_package_id = ?
-        """.trimIndent()
-        connection.prepareStatement(sql).use { stmt ->
-            stmt.setString(1, appPackageId)
-            stmt.executeQuery().use { rs ->
-                val permissions = mutableListOf<AppPackagePermission>()
-                while (rs.next()) {
-                    val permission = AppPackagePermission(
-                        id = rs.requireString("id").bind(),
-                        appPackageId = rs.requireString("app_package_id").bind(),
-                        name = rs.requireString("name")
-                            .bind()
-                            .let(NameAttribute::fromString)
-                            .toEitherBind { DataStoreError.IllegalState },
-                        maxSdkVersion = rs.getSafeInt("max_sdk_version")
-                            .map {
-                                SdkVersion
-                                    .fromInt(it)
-                                    .toEitherBind { DataStoreError.IllegalState }
-                            },
-                    )
-                    permissions.add(permission)
-                }
-                permissions
-            }
-        }
-    }
-
     override fun saveFromPendingUpload(
         pendingUploadId: String,
         appPackage: AppPackage,
+        permissions: Map<NameAttribute, Option<SdkVersion>>,
         blobVersion: ExternalBlob.BlobVersion,
         replacedBlobDeleteTime: OffsetDateTime,
     ): DataStoreResult<Unit> = runCatchingSql {
@@ -1002,6 +968,19 @@ private class InMemoryAppPackageRepository(
             stmt.executeSingleUpdate().bind()
         }
 
+        val insertPermissionSql = """
+            INSERT INTO app_package_permissions (app_package_id, name, max_sdk_version)
+            VALUES (?, ?, ?)
+        """.trimIndent()
+        connection.prepareStatement(insertPermissionSql).use { stmt ->
+            for ((name, maxSdkVersion) in permissions) {
+                stmt.setString(1, appPackage.id)
+                stmt.setString(2, name.intoInner())
+                stmt.setObject(3, maxSdkVersion.map(SdkVersion::intoInner).getOrNull(), Types.INTEGER)
+                stmt.executeSingleUpdate().bind()
+            }
+        }
+
         // Hand the blob from the pending upload to the new package
         val commitSql = """
             UPDATE external_blobs
@@ -1051,25 +1030,6 @@ private class InMemoryAppPackageRepository(
         }
     }
 
-    override fun savePermission(
-        permission: AppPackagePermission,
-    ): DataStoreResult<Unit> = runCatchingSql {
-        val sql = """
-            INSERT INTO app_package_permissions (id, app_package_id, name, max_sdk_version)
-            VALUES (?, ?, ?, ?)
-        """.trimIndent()
-        connection.prepareStatement(sql).use { stmt ->
-            stmt.setString(1, permission.id)
-            stmt.setString(2, permission.appPackageId)
-            stmt.setString(3, permission.name.intoInner())
-            stmt.setObject(
-                4,
-                permission.maxSdkVersion.map(SdkVersion::intoInner).getOrNull(),
-                Types.INTEGER,
-            )
-            stmt.executeSingleUpdate().bind()
-        }
-    }
 }
 
 private class InMemoryAppRepository(private val connection: Connection) : AppRepository() {

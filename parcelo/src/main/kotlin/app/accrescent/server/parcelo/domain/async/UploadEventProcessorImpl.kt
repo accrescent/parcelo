@@ -18,7 +18,6 @@ import app.accrescent.server.parcelo.domain.ports.driven.blobstorage.BlobStorage
 import app.accrescent.server.parcelo.domain.ports.driven.blobstorage.BlobStorageError
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppDraftUploadProcessingError
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppPackage
-import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppPackagePermission
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStore
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStoreError
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.ExternalBlob
@@ -145,24 +144,11 @@ class UploadEventProcessorImpl(
                     signerCertificate = Bytes(apkSet.signerCertificate.encoded),
                     buildApksResult = Bytes(apkSet.buildApksResult.toByteArray()),
                 ),
+                permissions = apkSet.permissions,
                 blobVersion = version,
                 replacedBlobDeleteTime = now,
             )
                 .bindMapLeft(::toProcessingError)
-            for ((permissionName, maxSdkVersion) in apkSet.permissions) {
-                tx.appPackages
-                    .savePermission(
-                        AppPackagePermission(
-                            id = idGenerator
-                                .generateId(IdType.APP_PACKAGE_PERMISSION)
-                                .bindMapLeft(::toProcessingError),
-                            appPackageId = appPackageId,
-                            name = permissionName,
-                            maxSdkVersion = maxSdkVersion,
-                        )
-                    )
-                    .bindMapLeft(::toProcessingError)
-            }
         }
 
         // Always acknowledge the upload event to prevent clogging the event queue. Errors will show

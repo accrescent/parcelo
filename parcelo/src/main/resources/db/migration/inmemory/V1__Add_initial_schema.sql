@@ -146,7 +146,7 @@ ALTER TABLE external_blobs
     FOREIGN KEY (app_package_id, id) REFERENCES app_packages(id, external_blob_id);
 
 CREATE TABLE app_package_permissions (
-    id id_text PRIMARY KEY,
+    id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     app_package_id varchar NOT NULL
         REFERENCES app_packages(id) ON DELETE CASCADE,
     name nonempty_can_text NOT NULL,

@@ -37,7 +37,6 @@ class IdGenerator(private val randomSource: RandomSource) {
             IdType.APP_DRAFT -> "ad"
             IdType.APP_DRAFT_LISTING -> "adl"
             IdType.APP_PACKAGE -> "pkg"
-            IdType.APP_PACKAGE_PERMISSION -> "perm"
             IdType.BLOB_OBJECT_KEY -> "obj"
             IdType.EXTERNAL_BLOB -> "blob"
             IdType.ORGANIZATION -> "org"

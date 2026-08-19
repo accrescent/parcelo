@@ -18,7 +18,6 @@ import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppDraftApiVi
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppDraftListing
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppPackage
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppPackageApiView
-import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppPackagePermission
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStore
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStoreResult
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.ExternalBlob
@@ -96,6 +95,7 @@ fun appPackage(
  *
  * @param tx the transaction to save the app package within.
  * @param appPackage the app package to save.
+ * @param permissions the permissions to save as part of the app package.
  * @param pendingUploadId the ID to give the pending upload the package is committed from.
  * @param bucketName the bucket to place the package's blob in.
  * @param objectKey the object key to give both the pending upload and the package's blob.
@@ -103,6 +103,7 @@ fun appPackage(
 fun saveAppPackageFromNewUpload(
     tx: DataStore.Transaction,
     appPackage: AppPackage = appPackage(),
+    permissions: Map<NameAttribute, Option<SdkVersion>> = emptyMap(),
     pendingUploadId: String = "appDraftUpload1",
     bucketName: String = "bucket1",
     objectKey: String = "object1",
@@ -128,24 +129,11 @@ fun saveAppPackageFromNewUpload(
         .saveFromPendingUpload(
             pendingUploadId = pendingUploadId,
             appPackage = appPackage,
+            permissions = permissions,
             blobVersion = ExternalBlob.LocalBlobVersion(1),
             replacedBlobDeleteTime = UNIX_EPOCH,
         )
         .bind()
-}
-
-fun appPackagePermission(
-    id: String = "perm1",
-    appPackageId: String = "appPackage1",
-    name: NameAttribute = NameAttribute.fromString("android.permission.INTERNET").unwrap(),
-    maxSdkVersion: Option<SdkVersion> = None,
-): AppPackagePermission {
-    return AppPackagePermission(
-        id = id,
-        appPackageId = appPackageId,
-        name = name,
-        maxSdkVersion = maxSdkVersion,
-    )
 }
 
 fun committedExternalBlob(

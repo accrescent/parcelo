@@ -35,7 +35,6 @@ class IdGeneratorTest {
                 GenerateIdGeneratesIdsWithCorrectPrefixTestCase(IdType.APP_DRAFT, "ad"),
                 GenerateIdGeneratesIdsWithCorrectPrefixTestCase(IdType.APP_DRAFT_LISTING, "adl"),
                 GenerateIdGeneratesIdsWithCorrectPrefixTestCase(IdType.APP_PACKAGE, "pkg"),
-                GenerateIdGeneratesIdsWithCorrectPrefixTestCase(IdType.APP_PACKAGE_PERMISSION, "perm"),
                 GenerateIdGeneratesIdsWithCorrectPrefixTestCase(IdType.BLOB_OBJECT_KEY, "obj"),
                 GenerateIdGeneratesIdsWithCorrectPrefixTestCase(IdType.EXTERNAL_BLOB, "blob"),
                 GenerateIdGeneratesIdsWithCorrectPrefixTestCase(IdType.ORGANIZATION, "org"),
