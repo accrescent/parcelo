@@ -521,6 +521,14 @@ class AppDraftApiImpl(
         context: CallContext,
         request: ListAppDraftListingsRequest,
     ): Either<ListAppDraftListingsError, ListAppDraftListingsResponse> = either {
+        // We never need a page size beyond Int.MAX_VALUE since we limit the number of app draft
+        // listings per app draft well below that, so we can safely coerce the page size down for
+        // our DataStore query without changing behavior
+        val maxResults = request.pageSize
+            .coerceAtMost(Int.MAX_VALUE.toUInt())
+            .toInt()
+            .let(NonNegativeInt::new)
+            .unwrap()
         val lastLanguage = request.nextPageToken?.let {
             try {
                 val bytes = Base64.UrlSafe.decode(it)
@@ -545,7 +553,7 @@ class AppDraftApiImpl(
                 .findListingsForAppDraftAndUserByQuery(
                     appDraftId = request.appDraftId,
                     userId = userId,
-                    maxResults = request.pageSize,
+                    maxResults = maxResults,
                     afterLanguage = lastLanguage,
                 )
                 .bindMapLeft(::toServerError)

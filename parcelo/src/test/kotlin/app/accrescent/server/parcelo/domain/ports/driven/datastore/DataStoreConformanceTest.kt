@@ -686,7 +686,12 @@ abstract class DataStoreConformanceTest {
             val listings = dataStore
                 .runTxWithRetry { tx ->
                     tx.appDrafts
-                        .findListingsForAppDraftAndUserByQuery("appDraft1", "user1", 2u, null)
+                        .findListingsForAppDraftAndUserByQuery(
+                            appDraftId = "appDraft1",
+                            userId = "user1",
+                            maxResults = NonNegativeInt.new(2).unwrap(),
+                            afterLanguage = null,
+                        )
                         .bind()
                 }
                 .unwrap2()
@@ -711,7 +716,12 @@ abstract class DataStoreConformanceTest {
             val listings = dataStore
                 .runTxWithRetry { tx ->
                     tx.appDrafts
-                        .findListingsForAppDraftAndUserByQuery("appDraft1", "user2", 1u, null)
+                        .findListingsForAppDraftAndUserByQuery(
+                            appDraftId = "appDraft1",
+                            userId = "user2",
+                            maxResults = NonNegativeInt.new(1).unwrap(),
+                            afterLanguage = null,
+                        )
                         .bind()
                 }
                 .unwrap2()

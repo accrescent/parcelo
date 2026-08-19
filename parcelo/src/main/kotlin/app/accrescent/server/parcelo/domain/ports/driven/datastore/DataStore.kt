@@ -289,7 +289,7 @@ abstract class DataStore(private val randomSource: RandomSource) {
         abstract fun findListingsForAppDraftAndUserByQuery(
             appDraftId: String,
             userId: String,
-            maxResults: UInt,
+            maxResults: NonNegativeInt,
             afterLanguage: ListingLanguage?,
         ): DataStoreResult<List<AppDraftListing>>
 
