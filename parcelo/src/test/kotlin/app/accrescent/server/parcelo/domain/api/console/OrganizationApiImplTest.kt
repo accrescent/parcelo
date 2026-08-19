@@ -9,8 +9,6 @@ import app.accrescent.server.parcelo.adapters.driven.randomsource.DeterministicR
 import app.accrescent.server.parcelo.adapters.driven.timestampsource.FixedTimestampSource
 import app.accrescent.server.parcelo.core.unwrap
 import app.accrescent.server.parcelo.core.unwrapErr
-import app.accrescent.server.parcelo.domain.IdGenerator
-import app.accrescent.server.parcelo.domain.authn.ExternalUserId
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStore
 import app.accrescent.server.parcelo.domain.ports.driven.timestampsource.TimestampSource
 import app.accrescent.server.parcelo.domain.ports.driving.console.CallContext
@@ -23,7 +21,6 @@ import arrow.core.Some
 import arrow.core.right
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import kotlin.time.Duration.Companion.days
 
 class OrganizationApiImplTest {
     @Test
@@ -81,26 +78,6 @@ class OrganizationApiImplTest {
                 response,
             )
         }
-    }
-
-    /**
-     * Signs a new user up, creates a login session, and returns the necessary context to make calls
-     * as the new user.
-     */
-    private fun signIn(
-        dataStore: DataStore,
-        externalUserId: ExternalUserId = ExternalUserId.Github(1),
-        timestampSource: TimestampSource = FixedTimestampSource(),
-    ): CallContext {
-        val sessionApi = SessionApiImpl(
-            dataStore = dataStore,
-            idGenerator = IdGenerator(DeterministicRandomSource()),
-            sessionLifetime = 1.days,
-            timestampSource = timestampSource,
-        )
-        val sessionId = sessionApi.createSession(externalUserId).unwrap().sessionId
-
-        return CallContext(Some(sessionId))
     }
 
     private fun makeOrganizationApi(
