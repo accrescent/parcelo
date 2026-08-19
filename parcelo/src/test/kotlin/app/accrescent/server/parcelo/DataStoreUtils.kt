@@ -61,16 +61,6 @@ fun signInNewUser(
         .bind()
 }
 
-fun saveExpiredSession(
-    tx: DataStore.Transaction,
-    userId: String = "user1",
-    sessionId: String = "expiredSession1",
-): DataStoreResult<Unit> {
-    val idHash = Sha256Hash.hash(sessionId.toByteArray())
-
-    return tx.sessions.create(idHash, userId, UNIX_EPOCH.minusDays(1), UNIX_EPOCH)
-}
-
 fun appPackage(
     id: String = "appPackage1",
     appDraftId: String = "appDraft1",
