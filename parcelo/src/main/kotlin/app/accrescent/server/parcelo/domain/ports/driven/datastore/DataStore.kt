@@ -175,6 +175,25 @@ abstract class DataStore(private val randomSource: RandomSource) {
         ): DataStoreResult<Unit>
 
         /**
+         * Creates a new app draft listing.
+         *
+         * @param id the ID of the app draft listing to create.
+         * @param appDraftId the ID of the app draft to create this listing for.
+         * @param language the language the new listing's contents are written in.
+         * @param name the name to set for the new listing.
+         * @param shortDescription the short description to set for the new listing.
+         * @return [DataStoreError.ConsistencyViolation] if a listing with the same ID or
+         * (appDraftId, language) pair already exists or the referenced app draft does not exist.
+         */
+        abstract fun createListing(
+            id: String,
+            appDraftId: String,
+            language: ListingLanguage,
+            name: String,
+            shortDescription: String,
+        ): DataStoreResult<Unit>
+
+        /**
          * Deletes an app draft along with its associated data.
          *
          * Because they are part of the app draft, this draft's listings, package, and pending
@@ -268,16 +287,19 @@ abstract class DataStore(private val randomSource: RandomSource) {
         ): DataStoreResult<List<AppDraftApiView>>
 
         /**
-         * Finds an existing app draft listing.
+         * Finds the API view of an existing app draft listing.
          *
          * @param id the ID of the app draft listing to find.
-         * @return the app draft listing with the given ID, or [None] if it doesn't exist.
+         * @return the API view of the app draft listing with the given ID, or [None] if it doesn't
+         * exist.
          */
-        abstract fun findListingById(id: String): DataStoreResult<Option<AppDraftListing>>
+        abstract fun findListingApiViewById(
+            id: String,
+        ): DataStoreResult<Option<AppDraftListingApiView>>
 
         /**
-         * Finds a list of app draft listings for a given app draft which a given user is authorized
-         * to view.
+         * Finds the API views for a list of app draft listings for a given app draft which a given
+         * user is authorized to view.
          *
          * Results are ordered alphabetically by the listing language's BCP-47 code.
          *
@@ -286,14 +308,14 @@ abstract class DataStore(private val randomSource: RandomSource) {
          * @param maxResults the maximum number of app draft listings to retrieve.
          * @param afterLanguage the listing language to start listing after, or [None] to start
          * from the beginning.
-         * @return the list of app draft listings matching the query.
+         * @return the list of app draft listing API views matching the query.
          */
-        abstract fun findListingsForAppDraftAndUserByQuery(
+        abstract fun findListingApiViewsForAppDraftAndUserByQuery(
             appDraftId: String,
             userId: String,
             maxResults: NonNegativeInt,
             afterLanguage: Option<ListingLanguage>,
-        ): DataStoreResult<List<AppDraftListing>>
+        ): DataStoreResult<List<AppDraftListingApiView>>
 
         /**
          * Finds a pending app draft listing icon upload by its target blob's object key.
@@ -402,24 +424,16 @@ abstract class DataStore(private val randomSource: RandomSource) {
         }
 
         /**
-         * Finds an existing app draft listing.
+         * Finds the API view of an existing app draft listing.
          *
          * @param id the ID of the app draft listing to find.
-         * @return the app draft listing with the given ID, or [DataStoreError.EntityNotFound] if it
-         * doesn't exist.
+         * @return the API view of the app draft listing with the given ID, or
+         * [DataStoreError.EntityNotFound] if it doesn't exist.
          */
-        fun requireListingById(id: String): DataStoreResult<AppDraftListing> {
-            return findListingById(id).flatMap { it.toEither { DataStoreError.EntityNotFound } }
+        fun requireListingApiViewById(id: String): DataStoreResult<AppDraftListingApiView> {
+            return findListingApiViewById(id)
+                .flatMap { it.toEither { DataStoreError.EntityNotFound } }
         }
-
-        /**
-         * Saves a new app draft listing.
-         *
-         * @param listing the app draft listing to save.
-         * @return [DataStoreError.ConsistencyViolation] if a listing with the same ID or
-         * (appDraftId, language) pair already exists or the referenced app draft does not exist.
-         */
-        abstract fun saveListing(listing: AppDraftListing): DataStoreResult<Unit>
 
         /**
          * Saves a new pending app draft listing icon upload along with the blob it owns.

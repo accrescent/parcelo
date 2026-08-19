@@ -7,8 +7,9 @@ package app.accrescent.server.parcelo.domain.ports.driven.datastore
 import app.accrescent.server.parcelo.UNIX_EPOCH
 import app.accrescent.server.parcelo.adapters.driven.datastore.jdbc.InMemoryDataStore
 import app.accrescent.server.parcelo.adapters.driven.randomsource.DeterministicRandomSource
-import app.accrescent.server.parcelo.appDraftListing
+import app.accrescent.server.parcelo.appDraftListingApiView
 import app.accrescent.server.parcelo.committedExternalBlob
+import app.accrescent.server.parcelo.createAppDraftListing
 import app.accrescent.server.parcelo.core.unwrap
 import app.accrescent.server.parcelo.core.unwrap2
 import app.accrescent.server.parcelo.core.unwrapErr
@@ -75,12 +76,12 @@ class DataStoreTest {
     }
 
     @Test
-    fun `appDrafts requireListingById returns EntityNotFound if listing does not exist`() {
+    fun `appDrafts requireListingApiViewById returns EntityNotFound if listing does not exist`() {
         InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
 
             val error = dataStore
-                .runTxWithRetry { tx -> tx.appDrafts.requireListingById("appDraftListing1").bind() }
+                .runTxWithRetry { tx -> tx.appDrafts.requireListingApiViewById("appDraftListing1").bind() }
                 .unwrap()
                 .unwrapErr()
 
@@ -89,7 +90,7 @@ class DataStoreTest {
     }
 
     @Test
-    fun `appDrafts requireListingById returns app draft listing persisted with save`() {
+    fun `appDrafts requireListingApiViewById returns app draft listing persisted with createListing`() {
         InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
             dataStore
@@ -98,14 +99,13 @@ class DataStoreTest {
                     tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
                 }
                 .unwrap2()
-            val originalListing = appDraftListing()
 
-            dataStore.runTxWithRetry { tx -> tx.appDrafts.saveListing(originalListing).bind() }.unwrap2()
+            dataStore.runTxWithRetry { tx -> createAppDraftListing(tx).bind() }.unwrap2()
             val foundListing = dataStore
-                .runTxWithRetry { tx -> tx.appDrafts.requireListingById("appDraftListing1").bind() }
+                .runTxWithRetry { tx -> tx.appDrafts.requireListingApiViewById("appDraftListing1").bind() }
                 .unwrap2()
 
-            assertEquals(originalListing, foundListing)
+            assertEquals(appDraftListingApiView(), foundListing)
         }
     }
 

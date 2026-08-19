@@ -5,7 +5,7 @@
 package app.accrescent.server.parcelo.domain.ports.driven.datastore
 
 /**
- * An app store listing for an app in draft stage.
+ * The API view of an app store listing for an app in draft stage.
  *
  * @property id the unique ID of this app draft listing.
  * @property appDraftId the ID of the app draft this listing belongs to.
@@ -13,7 +13,7 @@ package app.accrescent.server.parcelo.domain.ports.driven.datastore
  * @property name the name of the app, limited to 30 characters.
  * @property shortDescription a short description of the app, limited to 80 characters.
  */
-data class AppDraftListing(
+data class AppDraftListingApiView(
     val id: String,
     val appDraftId: String,
     val language: ListingLanguage,

@@ -5,8 +5,9 @@
 package app.accrescent.server.parcelo.domain.ports.driven.datastore
 
 import app.accrescent.server.parcelo.UNIX_EPOCH
-import app.accrescent.server.parcelo.appDraftListing
+import app.accrescent.server.parcelo.appDraftListingApiView
 import app.accrescent.server.parcelo.appPackage
+import app.accrescent.server.parcelo.createAppDraftListing
 import app.accrescent.server.parcelo.core.NonNegativeInt
 import app.accrescent.server.parcelo.core.unwrap
 import app.accrescent.server.parcelo.core.unwrap2
@@ -222,6 +223,56 @@ abstract class DataStoreConformanceTest {
     }
 
     @Test
+    fun `appDrafts createListing returns ConsistencyViolationError for duplicate ID`() {
+        withMigratedDataStore { dataStore ->
+            dataStore.runTxWithRetry { tx ->
+                tx.organizations.saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH).bind()
+                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
+                createAppDraftListing(tx).bind()
+            }
+                .unwrap2()
+
+            val result = dataStore
+                .runTxWithRetry { tx -> createAppDraftListing(tx).bind() }
+                .unwrap()
+
+            assertEquals(DataStoreError.ConsistencyViolation, result.unwrapErr())
+        }
+    }
+
+    @Test
+    fun `appDrafts createListing returns ConsistencyViolationError for duplicate (appDraftId, language) pair`() {
+        withMigratedDataStore { dataStore ->
+            dataStore.runTxWithRetry { tx ->
+                tx.organizations.saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH).bind()
+                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
+                createAppDraftListing(tx, "appDraftListing1", "appDraft1", ListingLanguage.EN_US).bind()
+            }
+                .unwrap2()
+
+            val result = dataStore
+                .runTxWithRetry { tx ->
+                    createAppDraftListing(tx, "appDraftListing2", "appDraft1", ListingLanguage.EN_US)
+                        .bind()
+                }
+                .unwrap()
+
+            assertEquals(DataStoreError.ConsistencyViolation, result.unwrapErr())
+        }
+    }
+
+    @Test
+    fun `appDrafts createListing returns ConsistencyViolationError when app draft does not exist`() {
+        withMigratedDataStore { dataStore ->
+            val result = dataStore
+                .runTxWithRetry { tx -> createAppDraftListing(tx).bind() }
+                .unwrap()
+
+            assertEquals(DataStoreError.ConsistencyViolation, result.unwrapErr())
+        }
+    }
+
+    @Test
     fun `appDrafts deleteById returns EntityNotFound for non-existent app draft`() {
         withMigratedDataStore { dataStore ->
             val result = dataStore
@@ -258,7 +309,7 @@ abstract class DataStoreConformanceTest {
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH).bind()
                 tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
-                tx.appDrafts.saveListing(appDraftListing()).bind()
+                createAppDraftListing(tx).bind()
             }
                 .unwrap2()
 
@@ -312,12 +363,12 @@ abstract class DataStoreConformanceTest {
     }
 
     @Test
-    fun `appDrafts deleteListingById makes findListingById return None`() {
+    fun `appDrafts deleteListingById makes findListingApiViewById return None`() {
         withMigratedDataStore { dataStore ->
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH).bind()
                 tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
-                tx.appDrafts.saveListing(appDraftListing()).bind()
+                createAppDraftListing(tx).bind()
             }
                 .unwrap2()
 
@@ -325,7 +376,7 @@ abstract class DataStoreConformanceTest {
                 .runTxWithRetry { tx -> tx.appDrafts.deleteListingById("appDraftListing1", UNIX_EPOCH).bind() }
                 .unwrap2()
             val listing = dataStore
-                .runTxWithRetry { tx -> tx.appDrafts.findListingById("appDraftListing1").bind() }
+                .runTxWithRetry { tx -> tx.appDrafts.findListingApiViewById("appDraftListing1").bind() }
                 .unwrap2()
 
             assertTrue(listing.isNone())
@@ -352,7 +403,7 @@ abstract class DataStoreConformanceTest {
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH).bind()
                 tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
-                tx.appDrafts.saveListing(appDraftListing()).bind()
+                createAppDraftListing(tx).bind()
                 tx.appDrafts.saveListingIconUpload(
                     incompletePendingAppDraftListingIconUpload(),
                     pendingExternalBlob(),
@@ -435,7 +486,7 @@ abstract class DataStoreConformanceTest {
                 tx.organizations.saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH).bind()
                 tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
                 saveAppPackageFromNewUpload(tx, originalAppPackage).bind()
-                tx.appDrafts.saveListing(appDraftListing()).bind()
+                createAppDraftListing(tx).bind()
                 tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
                 tx.appDrafts.updateSubmitTime("appDraft1", UNIX_EPOCH).bind()
             }
@@ -497,7 +548,7 @@ abstract class DataStoreConformanceTest {
                 tx.organizations.saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH).bind()
                 tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
                 saveAppPackageFromNewUpload(tx, originalAppPackage).bind()
-                tx.appDrafts.saveListing(appDraftListing()).bind()
+                createAppDraftListing(tx).bind()
                 tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
                 tx.appDrafts.updateSubmitTime("appDraft1", UNIX_EPOCH).bind()
             }.unwrap2()
@@ -632,10 +683,10 @@ abstract class DataStoreConformanceTest {
     }
 
     @Test
-    fun `appDrafts findListingById returns None when no listing with the given ID exists`() {
+    fun `appDrafts findListingApiViewById returns None when no listing with the given ID exists`() {
         withMigratedDataStore { dataStore ->
             val result = dataStore
-                .runTxWithRetry { tx -> tx.appDrafts.findListingById("appDraftListing1").bind() }
+                .runTxWithRetry { tx -> tx.appDrafts.findListingApiViewById("appDraftListing1").bind() }
                 .unwrap2()
 
             assertTrue(result.isNone())
@@ -669,24 +720,20 @@ abstract class DataStoreConformanceTest {
     }
 
     @Test
-    fun `appDrafts findListingsForAppDraftAndUserByQuery returns listings for only requested app draft`() {
+    fun `appDrafts findListingApiViewsForAppDraftAndUserByQuery returns listings for only requested app draft`() {
         withMigratedDataStore { dataStore ->
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH).bind()
                 tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
                 tx.appDrafts.create("org1", "appDraft2", UNIX_EPOCH).bind()
-                tx.appDrafts
-                    .saveListing(appDraftListing(id = "appDraftListing1", appDraftId = "appDraft1"))
-                    .bind()
-                tx.appDrafts
-                    .saveListing(appDraftListing(id = "appDraftListing2", appDraftId = "appDraft2"))
-                    .bind()
+                createAppDraftListing(tx, "appDraftListing1", "appDraft1").bind()
+                createAppDraftListing(tx, "appDraftListing2", "appDraft2").bind()
             }.unwrap2()
 
             val listings = dataStore
                 .runTxWithRetry { tx ->
                     tx.appDrafts
-                        .findListingsForAppDraftAndUserByQuery(
+                        .findListingApiViewsForAppDraftAndUserByQuery(
                             appDraftId = "appDraft1",
                             userId = "user1",
                             maxResults = NonNegativeInt.new(2).unwrap(),
@@ -697,26 +744,26 @@ abstract class DataStoreConformanceTest {
                 .unwrap2()
 
             assertEquals(
-                listOf(appDraftListing(id = "appDraftListing1", appDraftId = "appDraft1")),
+                listOf(appDraftListingApiView(id = "appDraftListing1", appDraftId = "appDraft1")),
                 listings,
             )
         }
     }
 
     @Test
-    fun `appDrafts findListingsForAppDraftAndUserByQuery returns only authorized listings`() {
+    fun `appDrafts findListingApiViewsForAppDraftAndUserByQuery returns only authorized listings`() {
         withMigratedDataStore { dataStore ->
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH).bind()
                 tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
-                tx.appDrafts.saveListing(appDraftListing()).bind()
+                createAppDraftListing(tx).bind()
                 tx.organizations.saveWithOwner("org2", "user2", ExternalUserId.Github(2), UNIX_EPOCH).bind()
             }.unwrap2()
 
             val listings = dataStore
                 .runTxWithRetry { tx ->
                     tx.appDrafts
-                        .findListingsForAppDraftAndUserByQuery(
+                        .findListingApiViewsForAppDraftAndUserByQuery(
                             appDraftId = "appDraft1",
                             userId = "user2",
                             maxResults = NonNegativeInt.new(1).unwrap(),
@@ -726,7 +773,7 @@ abstract class DataStoreConformanceTest {
                 }
                 .unwrap2()
 
-            assertEquals(emptyList<AppDraftListing>(), listings)
+            assertEquals(emptyList<AppDraftListingApiView>(), listings)
         }
     }
 
@@ -764,7 +811,7 @@ abstract class DataStoreConformanceTest {
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH).bind()
                 tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
-                tx.appDrafts.saveListing(appDraftListing()).bind()
+                createAppDraftListing(tx).bind()
                 tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
             }.unwrap2()
 
@@ -811,7 +858,7 @@ abstract class DataStoreConformanceTest {
                 tx.organizations.saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH).bind()
                 tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
                 saveAppPackageFromNewUpload(tx, appPackage()).bind()
-                tx.appDrafts.saveListing(appDraftListing()).bind()
+                createAppDraftListing(tx).bind()
                 tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
                 tx.appDrafts.updateSubmitTime("appDraft1", UNIX_EPOCH).bind()
             }.unwrap2()
@@ -844,7 +891,7 @@ abstract class DataStoreConformanceTest {
                 tx.organizations.saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH).bind()
                 tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
                 tx.appDrafts.create("org1", "appDraft2", UNIX_EPOCH).bind()
-                tx.appDrafts.saveListing(appDraftListing("appDraftListing1", "appDraft1")).bind()
+                createAppDraftListing(tx, "appDraftListing1", "appDraft1").bind()
             }.unwrap2()
 
             val exists = dataStore
@@ -863,7 +910,7 @@ abstract class DataStoreConformanceTest {
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH).bind()
                 tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
-                tx.appDrafts.saveListing(appDraftListing()).bind()
+                createAppDraftListing(tx).bind()
             }.unwrap2()
 
             val exists = dataStore
@@ -882,7 +929,7 @@ abstract class DataStoreConformanceTest {
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH).bind()
                 tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
-                tx.appDrafts.saveListing(appDraftListing()).bind()
+                createAppDraftListing(tx).bind()
             }.unwrap2()
 
             val exists = dataStore
@@ -915,7 +962,7 @@ abstract class DataStoreConformanceTest {
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH).bind()
                 tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
-                tx.appDrafts.saveListing(appDraftListing()).bind()
+                createAppDraftListing(tx).bind()
             }
                 .unwrap2()
 
@@ -947,7 +994,7 @@ abstract class DataStoreConformanceTest {
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH).bind()
                 tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
-                tx.appDrafts.saveListing(appDraftListing()).bind()
+                createAppDraftListing(tx).bind()
             }.unwrap2()
 
             val isDefault = dataStore
@@ -964,7 +1011,7 @@ abstract class DataStoreConformanceTest {
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH).bind()
                 tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
-                tx.appDrafts.saveListing(appDraftListing()).bind()
+                createAppDraftListing(tx).bind()
                 tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
             }.unwrap2()
 
@@ -995,7 +1042,7 @@ abstract class DataStoreConformanceTest {
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH).bind()
                 tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
-                tx.appDrafts.saveListing(appDraftListing()).bind()
+                createAppDraftListing(tx).bind()
                 tx.appDrafts.saveListingIconUpload(
                     incompletePendingAppDraftListingIconUpload(),
                     pendingExternalBlob(),
@@ -1042,92 +1089,14 @@ abstract class DataStoreConformanceTest {
     }
 
     @Test
-    fun `appDrafts saveListing returns ConsistencyViolationError for duplicate ID`() {
-        withMigratedDataStore { dataStore ->
-            dataStore.runTxWithRetry { tx ->
-                tx.organizations.saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH).bind()
-                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
-                tx.appDrafts.saveListing(appDraftListing()).bind()
-            }
-                .unwrap2()
-
-            val result = dataStore
-                .runTxWithRetry { tx -> tx.appDrafts.saveListing(appDraftListing()).bind() }
-                .unwrap()
-
-            assertEquals(DataStoreError.ConsistencyViolation, result.unwrapErr())
-        }
-    }
-
-    @Test
-    fun `appDrafts saveListing returns ConsistencyViolationError for duplicate (appDraftId, language) pair`() {
-        withMigratedDataStore { dataStore ->
-            dataStore.runTxWithRetry { tx ->
-                tx.organizations.saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH).bind()
-                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
-                tx.appDrafts
-                    .saveListing(appDraftListing("appDraftListing1", "appDraft1", ListingLanguage.EN_US))
-                    .bind()
-            }
-                .unwrap2()
-
-            val result = dataStore.runTxWithRetry { tx ->
-                tx.appDrafts
-                    .saveListing(appDraftListing("appDraftListing2", "appDraft1", ListingLanguage.EN_US))
-                    .bind()
-            }
-                .unwrap()
-
-            assertEquals(DataStoreError.ConsistencyViolation, result.unwrapErr())
-        }
-    }
-
-    @Test
-    fun `appDrafts saveListing returns ConsistencyViolationError when app draft does not exist`() {
-        withMigratedDataStore { dataStore ->
-
-            val result = dataStore
-                .runTxWithRetry { tx -> tx.appDrafts.saveListing(appDraftListing()).bind() }
-                .unwrap()
-
-            assertEquals(DataStoreError.ConsistencyViolation, result.unwrapErr())
-        }
-    }
-
-    @Test
-    fun `appDrafts saveListing and findListingById round-trip data`() {
-        withMigratedDataStore { dataStore ->
-            val originalListing = appDraftListing()
-            dataStore.runTxWithRetry { tx ->
-                tx.organizations.saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH).bind()
-                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
-            }
-                .unwrap2()
-
-            dataStore
-                .runTxWithRetry { tx -> tx.appDrafts.saveListing(originalListing).bind() }
-                .unwrap2()
-            val foundListing = dataStore
-                .runTxWithRetry { tx -> tx.appDrafts.findListingById(originalListing.id).bind() }
-                .unwrap2()
-
-            assertEquals(Some(originalListing), foundListing)
-        }
-    }
-
-    @Test
     fun `appDrafts saveListingIconUpload returns ConsistencyViolationError for duplicate ID`() {
         withMigratedDataStore { dataStore ->
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH).bind()
                 tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
                 tx.appDrafts.create("org1", "appDraft2", UNIX_EPOCH).bind()
-                tx.appDrafts
-                    .saveListing(appDraftListing(id = "appDraftListing1", appDraftId = "appDraft1"))
-                    .bind()
-                tx.appDrafts
-                    .saveListing(appDraftListing(id = "appDraftListing2", appDraftId = "appDraft2"))
-                    .bind()
+                createAppDraftListing(tx, "appDraftListing1", "appDraft1").bind()
+                createAppDraftListing(tx, "appDraftListing2", "appDraft2").bind()
                 tx.appDrafts.saveListingIconUpload(
                     incompletePendingAppDraftListingIconUpload(
                         appDraftListingId = "appDraftListing1",
@@ -1160,7 +1129,7 @@ abstract class DataStoreConformanceTest {
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH).bind()
                 tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
-                tx.appDrafts.saveListing(appDraftListing()).bind()
+                createAppDraftListing(tx).bind()
                 tx.appDrafts.saveListingIconUpload(
                     incompletePendingAppDraftListingIconUpload(),
                     pendingExternalBlob(),
@@ -1192,12 +1161,8 @@ abstract class DataStoreConformanceTest {
                 tx.organizations.saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH).bind()
                 tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
                 tx.appDrafts.create("org1", "appDraft2", UNIX_EPOCH).bind()
-                tx.appDrafts
-                    .saveListing(appDraftListing(id = "appDraftListing1", appDraftId = "appDraft1"))
-                    .bind()
-                tx.appDrafts
-                    .saveListing(appDraftListing(id = "appDraftListing2", appDraftId = "appDraft2"))
-                    .bind()
+                createAppDraftListing(tx, "appDraftListing1", "appDraft1").bind()
+                createAppDraftListing(tx, "appDraftListing2", "appDraft2").bind()
                 tx.appDrafts
                     .saveListingIconUpload(
                         incompletePendingAppDraftListingIconUpload(objectKey = "object1"),
@@ -1249,7 +1214,7 @@ abstract class DataStoreConformanceTest {
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH).bind()
                 tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
-                tx.appDrafts.saveListing(appDraftListing()).bind()
+                createAppDraftListing(tx).bind()
                 tx.appDrafts.saveListingIconUpload(originalUpload, pendingExternalBlob()).bind()
             }.unwrap2()
             val foundUpload = dataStore
@@ -1419,7 +1384,7 @@ abstract class DataStoreConformanceTest {
                 tx.organizations.saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH).bind()
                 tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
                 tx.appDrafts.create("org1", "appDraft2", UNIX_EPOCH).bind()
-                tx.appDrafts.saveListing(appDraftListing()).bind()
+                createAppDraftListing(tx).bind()
             }
                 .unwrap2()
 
@@ -1451,7 +1416,7 @@ abstract class DataStoreConformanceTest {
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH).bind()
                 tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
-                tx.appDrafts.saveListing(appDraftListing()).bind()
+                createAppDraftListing(tx).bind()
             }
                 .unwrap2()
 
@@ -1476,7 +1441,7 @@ abstract class DataStoreConformanceTest {
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH).bind()
                 tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
-                tx.appDrafts.saveListing(appDraftListing()).bind()
+                createAppDraftListing(tx).bind()
                 tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
             }
                 .unwrap2()
@@ -1511,11 +1476,10 @@ abstract class DataStoreConformanceTest {
     @Test
     fun `appDrafts updateListing leaves null fields unchanged`() {
         withMigratedDataStore { dataStore ->
-            val originalListing = appDraftListing()
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH).bind()
                 tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
-                tx.appDrafts.saveListing(originalListing).bind()
+                createAppDraftListing(tx).bind()
             }
                 .unwrap2()
 
@@ -1524,10 +1488,10 @@ abstract class DataStoreConformanceTest {
             }
                 .unwrap2()
             val foundListing = dataStore
-                .runTxWithRetry { tx -> tx.appDrafts.findListingById(originalListing.id).bind() }
+                .runTxWithRetry { tx -> tx.appDrafts.findListingApiViewById("appDraftListing1").bind() }
                 .unwrap2()
 
-            assertEquals(Some(originalListing), foundListing)
+            assertEquals(Some(appDraftListingApiView()), foundListing)
         }
     }
 
@@ -1537,7 +1501,7 @@ abstract class DataStoreConformanceTest {
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH).bind()
                 tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
-                tx.appDrafts.saveListing(appDraftListing()).bind()
+                createAppDraftListing(tx).bind()
             }
                 .unwrap2()
 
@@ -1552,7 +1516,7 @@ abstract class DataStoreConformanceTest {
             }
                 .unwrap2()
             val foundListing = dataStore
-                .runTxWithRetry { tx -> tx.appDrafts.findListingById("appDraftListing1").bind() }
+                .runTxWithRetry { tx -> tx.appDrafts.findListingApiViewById("appDraftListing1").bind() }
                 .unwrap2()
                 .unwrap()
 
@@ -1654,7 +1618,7 @@ abstract class DataStoreConformanceTest {
                 tx.organizations.saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH).bind()
                 tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
                 saveAppPackageFromNewUpload(tx).bind()
-                tx.appDrafts.saveListing(appDraftListing()).bind()
+                createAppDraftListing(tx).bind()
                 tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
             }
                 .unwrap2()
@@ -1678,7 +1642,7 @@ abstract class DataStoreConformanceTest {
             dataStore.runTxWithRetry { tx ->
                 tx.organizations.saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH).bind()
                 tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
-                tx.appDrafts.saveListing(appDraftListing()).bind()
+                createAppDraftListing(tx).bind()
                 tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
             }
                 .unwrap2()
@@ -2340,7 +2304,7 @@ abstract class DataStoreConformanceTest {
                 .runTxWithRetry { tx ->
                     tx.organizations.saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH).bind()
                     tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
-                    tx.appDrafts.saveListing(appDraftListing()).bind()
+                    createAppDraftListing(tx).bind()
                     tx.appDrafts
                         .saveListingIconUpload(
                             incompletePendingAppDraftListingIconUpload(),
@@ -2368,7 +2332,7 @@ abstract class DataStoreConformanceTest {
                 .runTxWithRetry { tx ->
                     tx.organizations.saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH).bind()
                     tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
-                    tx.appDrafts.saveListing(appDraftListing()).bind()
+                    createAppDraftListing(tx).bind()
                     tx.appDrafts
                         .saveListingIconUpload(
                             incompletePendingAppDraftListingIconUpload(),
@@ -2400,7 +2364,7 @@ abstract class DataStoreConformanceTest {
                 .runTxWithRetry { tx ->
                     tx.organizations.saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH).bind()
                     tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
-                    tx.appDrafts.saveListing(appDraftListing()).bind()
+                    createAppDraftListing(tx).bind()
                     tx.appDrafts
                         .saveListingIconUpload(
                             incompletePendingAppDraftListingIconUpload(),
@@ -2992,7 +2956,7 @@ abstract class DataStoreConformanceTest {
                 either {
                     tx.organizations.saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH).bind()
                     tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
-                    tx.appDrafts.saveListing(appDraftListing(id = invalid)).bind()
+                    createAppDraftListing(tx, id = invalid).bind()
                 }
             },
             TextColumnConstraintTestCase("appListings.id") { tx, invalid ->
@@ -3032,7 +2996,7 @@ abstract class DataStoreConformanceTest {
                 either {
                     tx.organizations.saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH).bind()
                     tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
-                    tx.appDrafts.saveListing(appDraftListing()).bind()
+                    createAppDraftListing(tx).bind()
                     tx.appDrafts
                         .saveListingIconUpload(
                             incompletePendingAppDraftListingIconUpload(id = invalid),
@@ -3054,7 +3018,7 @@ abstract class DataStoreConformanceTest {
                 either {
                     tx.organizations.saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH).bind()
                     tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
-                    tx.appDrafts.saveListing(appDraftListing(name = tooLong)).bind()
+                    createAppDraftListing(tx, name = tooLong).bind()
                 }
             },
             TextLengthConstraintTestCase(
@@ -3064,7 +3028,7 @@ abstract class DataStoreConformanceTest {
                 either {
                     tx.organizations.saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH).bind()
                     tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
-                    tx.appDrafts.saveListing(appDraftListing(shortDescription = tooLong)).bind()
+                    createAppDraftListing(tx, shortDescription = tooLong).bind()
                 }
             },
         )
@@ -3084,14 +3048,14 @@ abstract class DataStoreConformanceTest {
                     either {
                         tx.organizations.saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH).bind()
                         tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
-                        tx.appDrafts.saveListing(appDraftListing(name = invalid)).bind()
+                        createAppDraftListing(tx, name = invalid).bind()
                     }
                 },
                 TextColumnConstraintTestCase("appDraftListings.shortDescription") { tx, invalid ->
                     either {
                         tx.organizations.saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH).bind()
                         tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
-                        tx.appDrafts.saveListing(appDraftListing(shortDescription = invalid)).bind()
+                        createAppDraftListing(tx, shortDescription = invalid).bind()
                     }
                 },
                 TextColumnConstraintTestCase("appPackages.versionName") { tx, invalid ->
@@ -3294,7 +3258,7 @@ abstract class DataStoreConformanceTest {
                 either {
                     tx.organizations.saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH).bind()
                     tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
-                    tx.appDrafts.saveListing(appDraftListing()).bind()
+                    createAppDraftListing(tx).bind()
                 }
             },
             AuthzHasPermissionReturnsTrueWithMinimalRelationships(
@@ -3346,7 +3310,7 @@ abstract class DataStoreConformanceTest {
                 either {
                     tx.organizations.saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH).bind()
                     tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
-                    tx.appDrafts.saveListing(appDraftListing()).bind()
+                    createAppDraftListing(tx).bind()
                 }
             },
             AuthzHasPermissionReturnsTrueWithMinimalRelationships(
@@ -3355,7 +3319,7 @@ abstract class DataStoreConformanceTest {
                 either {
                     tx.organizations.saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH).bind()
                     tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
-                    tx.appDrafts.saveListing(appDraftListing()).bind()
+                    createAppDraftListing(tx).bind()
                 }
             },
             AuthzHasPermissionReturnsTrueWithMinimalRelationships(
@@ -3383,7 +3347,7 @@ abstract class DataStoreConformanceTest {
                 either {
                     tx.organizations.saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH).bind()
                     tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
-                    tx.appDrafts.saveListing(appDraftListing()).bind()
+                    createAppDraftListing(tx).bind()
                 }
             },
         )

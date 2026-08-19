@@ -19,7 +19,7 @@ import app.accrescent.server.parcelo.domain.authn.ExternalUserId
 import app.accrescent.server.parcelo.domain.crypto.Sha256Hash
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.App
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppDraftApiView
-import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppDraftListing
+import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppDraftListingApiView
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppDraftListingIconUploadProcessingResult
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppDraftUploadProcessingError
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppListing
@@ -297,6 +297,27 @@ private class InMemoryAppDraftRepository(
         }
     }
 
+    override fun createListing(
+        id: String,
+        appDraftId: String,
+        language: ListingLanguage,
+        name: String,
+        shortDescription: String,
+    ): DataStoreResult<Unit> = runCatchingSql {
+        val sql = """
+            INSERT INTO app_draft_listings (id, app_draft_id, language, name, short_description)
+            VALUES (?, ?, ?, ?, ?)
+        """.trimIndent()
+        connection.prepareStatement(sql).use { stmt ->
+            stmt.setString(1, id)
+            stmt.setString(2, appDraftId)
+            stmt.setString(3, language.toString())
+            stmt.setString(4, name)
+            stmt.setString(5, shortDescription)
+            stmt.executeSingleUpdate().bind()
+        }
+    }
+
     override fun deleteById(
         id: String,
         blobDeleteTime: OffsetDateTime,
@@ -513,9 +534,9 @@ private class InMemoryAppDraftRepository(
         }
     }
 
-    override fun findListingById(
+    override fun findListingApiViewById(
         id: String,
-    ): DataStoreResult<Option<AppDraftListing>> = runCatchingSql {
+    ): DataStoreResult<Option<AppDraftListingApiView>> = runCatchingSql {
         val sql = """
             SELECT id, app_draft_id, language, name, short_description
             FROM app_draft_listings
@@ -526,17 +547,17 @@ private class InMemoryAppDraftRepository(
             stmt.executeQuery().use { rs ->
                 if (!rs.next()) return@use None
 
-                Some(rs.readAppDraftListing().bind())
+                Some(rs.readAppDraftListingApiView().bind())
             }
         }
     }
 
-    override fun findListingsForAppDraftAndUserByQuery(
+    override fun findListingApiViewsForAppDraftAndUserByQuery(
         appDraftId: String,
         userId: String,
         maxResults: NonNegativeInt,
         afterLanguage: Option<ListingLanguage>,
-    ): DataStoreResult<List<AppDraftListing>> = runCatchingSql {
+    ): DataStoreResult<List<AppDraftListingApiView>> = runCatchingSql {
         val sql = """
             SELECT
                 app_draft_listings.id,
@@ -562,9 +583,9 @@ private class InMemoryAppDraftRepository(
             stmt.setString(4, afterLanguage.map { it.toString() }.getOrNull())
             stmt.setInt(5, maxResults.value)
             stmt.executeQuery().use { rs ->
-                val listings = mutableListOf<AppDraftListing>()
+                val listings = mutableListOf<AppDraftListingApiView>()
                 while (rs.next()) {
-                    listings.add(rs.readAppDraftListing().bind())
+                    listings.add(rs.readAppDraftListingApiView().bind())
                 }
                 listings
             }
@@ -742,21 +763,6 @@ private class InMemoryAppDraftRepository(
         connection.prepareStatement(sql).use { stmt ->
             stmt.setString(1, appDraftId)
             stmt.executeQuery().use { rs -> rs.getSelectExistsResult().bind() }
-        }
-    }
-
-    override fun saveListing(listing: AppDraftListing): DataStoreResult<Unit> = runCatchingSql {
-        val sql = """
-            INSERT INTO app_draft_listings (id, app_draft_id, language, name, short_description)
-            VALUES (?, ?, ?, ?, ?)
-        """.trimIndent()
-        connection.prepareStatement(sql).use { stmt ->
-            stmt.setString(1, listing.id)
-            stmt.setString(2, listing.appDraftId)
-            stmt.setString(3, listing.language.toString())
-            stmt.setString(4, listing.name)
-            stmt.setString(5, listing.shortDescription)
-            stmt.executeSingleUpdate().bind()
         }
     }
 
@@ -1495,11 +1501,11 @@ private fun ResultSet.readAppDraftApiView(): DataStoreResult<AppDraftApiView> = 
 }
 
 /**
- * Reads an [AppDraftListing] from the current row, which must expose every `app_draft_listings`
- * column selected by this repository.
+ * Reads an [AppDraftListingApiView] from the current row, which must expose every
+ * `app_draft_listings` column selected by this repository.
  */
-private fun ResultSet.readAppDraftListing(): DataStoreResult<AppDraftListing> = either {
-    AppDraftListing(
+private fun ResultSet.readAppDraftListingApiView(): DataStoreResult<AppDraftListingApiView> = either {
+    AppDraftListingApiView(
         id = requireString("id").bind(),
         appDraftId = requireString("app_draft_id").bind(),
         language = ListingLanguage.fromString(requireString("language").bind())

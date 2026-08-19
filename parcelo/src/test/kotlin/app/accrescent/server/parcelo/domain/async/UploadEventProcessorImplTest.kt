@@ -12,8 +12,8 @@ import app.accrescent.server.parcelo.adapters.driven.datastore.jdbc.InMemoryData
 import app.accrescent.server.parcelo.adapters.driven.file.LocalTempFile
 import app.accrescent.server.parcelo.adapters.driven.randomsource.DeterministicRandomSource
 import app.accrescent.server.parcelo.adapters.driven.timestampsource.FixedTimestampSource
-import app.accrescent.server.parcelo.appDraftListing
 import app.accrescent.server.parcelo.appPackage
+import app.accrescent.server.parcelo.createAppDraftListing
 import app.accrescent.server.parcelo.core.Bytes
 import app.accrescent.server.parcelo.core.unwrap
 import app.accrescent.server.parcelo.core.unwrap2
@@ -211,7 +211,7 @@ class UploadEventProcessorImplTest {
                     tx.organizations.saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH).bind()
                     tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
                     saveAppPackageFromNewUpload(tx).bind()
-                    tx.appDrafts.saveListing(appDraftListing()).bind()
+                    createAppDraftListing(tx).bind()
                     tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
                     tx.appDrafts.updateSubmitTime("appDraft1", UNIX_EPOCH).bind()
                     tx.appDrafts.deletePendingUploadByAppDraftId("appDraft1", UNIX_EPOCH).bind()
