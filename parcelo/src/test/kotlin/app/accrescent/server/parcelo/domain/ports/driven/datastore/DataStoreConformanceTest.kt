@@ -2679,6 +2679,38 @@ abstract class DataStoreConformanceTest {
     }
 
     @Test
+    fun `organizations findIdByOwnerUserId returns ID of organization the user owns`() {
+        withMigratedDataStore { dataStore ->
+            dataStore.runTxWithRetry { tx ->
+                tx.organizations
+                    .saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH)
+                    .bind()
+                tx.organizations
+                    .saveWithOwner("org2", "user2", ExternalUserId.Github(2), UNIX_EPOCH)
+                    .bind()
+            }
+                .unwrap2()
+
+            val organizationId = dataStore
+                .runTxWithRetry { tx -> tx.organizations.findIdByOwnerUserId("user1").bind() }
+                .unwrap2()
+
+            assertEquals(Some("org1"), organizationId)
+        }
+    }
+
+    @Test
+    fun `organizations findIdByOwnerUserId returns None for non-existent user`() {
+        withMigratedDataStore { dataStore ->
+            val organizationId = dataStore
+                .runTxWithRetry { tx -> tx.organizations.findIdByOwnerUserId("user1").bind() }
+                .unwrap2()
+
+            assertEquals(None, organizationId)
+        }
+    }
+
+    @Test
     fun `organizations saveWithOwner returns ConsistencyViolationError for duplicate organization ID`() {
         withMigratedDataStore { dataStore ->
             dataStore
