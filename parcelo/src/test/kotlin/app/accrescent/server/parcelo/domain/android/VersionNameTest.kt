@@ -44,11 +44,11 @@ class VersionNameTest {
     }
 
     @Test
-    fun `intoInner returns original string`() {
+    fun `value returns original string`() {
         val rawName = "1.0.0"
         val versionName = VersionName.fromString(rawName).unwrap()
 
-        assertEquals(rawName, versionName.intoInner())
+        assertEquals(rawName, versionName.value)
     }
 
     @Test

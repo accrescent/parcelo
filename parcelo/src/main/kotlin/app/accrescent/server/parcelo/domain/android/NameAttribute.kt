@@ -16,9 +16,11 @@ import arrow.core.Some
  * [limited to 1024 characters](https://developer.android.com/guide/topics/manifest/manifest-intro#limits),
  * which this class interprets to mean Unicode code points in accordance with
  * [AIP 210](https://google.aip.dev/210#character-definition).
+ *
+ * @property value the string representation of this name attribute.
  */
 @JvmInline
-value class NameAttribute private constructor(private val value: String) {
+value class NameAttribute private constructor(val value: String) {
     companion object {
         private const val MAX_LENGTH = 1024
 
@@ -36,14 +38,5 @@ value class NameAttribute private constructor(private val value: String) {
                 None
             }
         }
-    }
-
-    /**
-     * Retrieves this name attribute's underlying string representation.
-     *
-     * @return the string representation of this name attribute.
-     */
-    fun intoInner(): String {
-        return value
     }
 }

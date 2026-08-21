@@ -32,11 +32,11 @@ class SdkVersionTest {
     }
 
     @Test
-    fun `fromInt and intoInner round-trip data`() {
+    fun `fromInt and value round-trip data`() {
         val rawValue = 24
         val sdkVersion = SdkVersion.fromInt(rawValue).unwrap()
 
-        assertEquals(rawValue, sdkVersion.intoInner())
+        assertEquals(rawValue, sdkVersion.value)
     }
 
     @Test

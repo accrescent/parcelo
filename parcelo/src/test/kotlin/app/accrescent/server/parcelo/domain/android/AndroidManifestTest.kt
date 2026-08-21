@@ -256,7 +256,7 @@ class AndroidManifestTest {
 
         val manifest = AndroidManifest.fromXmlDocument(document).unwrap()
 
-        assertEquals(1, manifest.minSdkVersion.intoInner())
+        assertEquals(1, manifest.minSdkVersion.value)
     }
 
     @Test
@@ -283,7 +283,7 @@ class AndroidManifestTest {
 
         val manifest = AndroidManifest.fromXmlDocument(document).unwrap()
 
-        assertEquals(1, manifest.minSdkVersion.intoInner())
+        assertEquals(1, manifest.minSdkVersion.value)
     }
 
     @Test
@@ -310,7 +310,7 @@ class AndroidManifestTest {
 
         val manifest = AndroidManifest.fromXmlDocument(document).unwrap()
 
-        assertEquals(manifest.minSdkVersion.intoInner(), manifest.targetSdkVersion.intoInner())
+        assertEquals(manifest.minSdkVersion.value, manifest.targetSdkVersion.value)
     }
 
     @Test

@@ -10,9 +10,11 @@ import arrow.core.Some
 
 /**
  * A character string containing at least one character.
+ *
+ * @property value the string representation of this non-empty string.
  */
 @JvmInline
-value class NonEmptyString private constructor(private val value: String) {
+value class NonEmptyString private constructor(val value: String) {
     companion object {
         /**
          * Creates a non-empty string from a string.
@@ -27,14 +29,5 @@ value class NonEmptyString private constructor(private val value: String) {
                 None
             }
         }
-    }
-
-    /**
-     * Retrieves this non-empty string's underlying string representation.
-     *
-     * @return the string representation of this non-empty string.
-     */
-    fun intoInner(): String {
-        return value
     }
 }

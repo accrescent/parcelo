@@ -53,11 +53,11 @@ class ApplicationIdTest {
     }
 
     @Test
-    fun `intoInner returns original string`() {
+    fun `value returns original string`() {
         val rawId = "com.example.myapp"
         val appId = ApplicationId.fromString(rawId).unwrap()
 
-        assertEquals(rawId, appId.intoInner())
+        assertEquals(rawId, appId.value)
     }
 
     @Test

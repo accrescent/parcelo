@@ -392,7 +392,7 @@ class AppDraftApiImpl(
                 .existsSubmittedForAppId(appId)
                 .bindMapLeft(::toServerError)
             ensure(!appDraftSubmittedForAppId) {
-                AppDraftSubmittedForAppIdError(appId.intoInner())
+                AppDraftSubmittedForAppIdError(appId.value)
             }
 
             val publishedAppCount = tx.apps

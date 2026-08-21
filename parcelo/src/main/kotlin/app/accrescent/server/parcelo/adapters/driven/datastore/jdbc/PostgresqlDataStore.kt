@@ -396,7 +396,7 @@ private class PostgresqlAppDraftRepository(
                 )
             """.trimIndent()
             connection.prepareStatement(sql).use { stmt ->
-                stmt.setString(1, appId.intoInner())
+                stmt.setString(1, appId.value)
                 stmt.executeQuery().use { rs -> rs.getSelectExistsResult().bind() }
             }
         }
@@ -953,10 +953,10 @@ private class PostgresqlAppPackageRepository(
             stmt.setString(11, appPackage.appDraftId)
             stmt.setString(12, appPackage.externalBlobId)
             stmt.setObject(13, appPackage.uploadEventTime)
-            stmt.setString(14, appPackage.appId.intoInner())
-            stmt.setInt(15, appPackage.versionCode.intoInner())
-            stmt.setString(16, appPackage.versionName.intoInner())
-            stmt.setInt(17, appPackage.targetSdk.intoInner())
+            stmt.setString(14, appPackage.appId.value)
+            stmt.setInt(15, appPackage.versionCode.value)
+            stmt.setString(16, appPackage.versionName.value)
+            stmt.setInt(17, appPackage.targetSdk.value)
             stmt.setBytes(18, appPackage.signerCertificate.value)
             stmt.setBytes(19, appPackage.buildApksResult.value)
             stmt.setString(20, appPackage.id)
@@ -972,10 +972,10 @@ private class PostgresqlAppPackageRepository(
         connection.prepareStatement(permissionSql).use { stmt ->
             for ((name, maxSdkVersion) in permissions) {
                 stmt.setString(1, appPackage.id)
-                stmt.setString(2, name.intoInner())
+                stmt.setString(2, name.value)
                 stmt.setObject(
                     3,
-                    maxSdkVersion.map(SdkVersion::intoInner).getOrNull(),
+                    maxSdkVersion.map(SdkVersion::value).getOrNull(),
                     Types.INTEGER,
                 )
                 stmt.executeSingleUpdate().bind()

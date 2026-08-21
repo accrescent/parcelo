@@ -11,9 +11,11 @@ import arrow.core.Some
 /**
  * An XML [NCName](https://www.w3.org/TR/2009/REC-xml-names-20091208/#NT-NCName) restricted to ASCII
  * characters.
+ *
+ * @property value the string representation of this ASCII NCName.
  */
 @JvmInline
-value class AsciiNcName private constructor(private val value: String) {
+value class AsciiNcName private constructor(val value: String) {
     companion object {
         private val REGEX = Regex("""[A-Za-z_][A-Za-z0-9_.-]*""")
 
@@ -31,14 +33,5 @@ value class AsciiNcName private constructor(private val value: String) {
                 None
             }
         }
-    }
-
-    /**
-     * Retrieves this ASCII NCName's underlying string representation.
-     *
-     * @return the string representation of this ASCII NCName.
-     */
-    fun intoInner(): String {
-        return value
     }
 }

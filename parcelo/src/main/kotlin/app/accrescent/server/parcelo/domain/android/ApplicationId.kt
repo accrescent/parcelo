@@ -20,9 +20,11 @@ import arrow.core.Some
  *
  * In addition to Android's rules, this class also verifies that the application ID is 128
  * characters long or less to ensure an app with that ID is installable.
+ *
+ * @property value the string representation of this application ID.
  */
 @JvmInline
-value class ApplicationId private constructor(private val value: String) {
+value class ApplicationId private constructor(val value: String) {
     companion object {
         private val REGEX = Regex("""[a-zA-Z][a-zA-Z0-9_]*(\.[a-zA-Z][a-zA-Z0-9_]*)+""")
 
@@ -42,14 +44,5 @@ value class ApplicationId private constructor(private val value: String) {
                 None
             }
         }
-    }
-
-    /**
-     * Retrieves this application ID's underlying string representation.
-     *
-     * @return the string representation of this application ID.
-     */
-    fun intoInner(): String {
-        return value
     }
 }

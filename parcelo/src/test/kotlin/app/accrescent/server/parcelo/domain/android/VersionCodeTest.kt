@@ -39,11 +39,11 @@ class VersionCodeTest {
     }
 
     @Test
-    fun `fromInt and intoInner round-trip data`() {
+    fun `fromInt and value round-trip data`() {
         val rawCode = 1478417331 // randomly generated
         val versionCode = VersionCode.fromInt(rawCode).unwrap()
 
-        assertEquals(rawCode, versionCode.intoInner())
+        assertEquals(rawCode, versionCode.value)
     }
 
     @Test

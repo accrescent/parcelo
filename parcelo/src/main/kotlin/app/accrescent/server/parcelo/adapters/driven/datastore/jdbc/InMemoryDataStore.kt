@@ -458,7 +458,7 @@ private class InMemoryAppDraftRepository(
                 )
             """.trimIndent()
             connection.prepareStatement(sql).use { stmt ->
-                stmt.setString(1, appId.intoInner())
+                stmt.setString(1, appId.value)
                 stmt.executeQuery().use { rs -> rs.getSelectExistsResult().bind() }
             }
         }
@@ -965,10 +965,10 @@ private class InMemoryAppPackageRepository(
             stmt.setString(2, appPackage.appDraftId)
             stmt.setString(3, appPackage.externalBlobId)
             stmt.setObject(4, appPackage.uploadEventTime)
-            stmt.setString(5, appPackage.appId.intoInner())
-            stmt.setInt(6, appPackage.versionCode.intoInner())
-            stmt.setString(7, appPackage.versionName.intoInner())
-            stmt.setInt(8, appPackage.targetSdk.intoInner())
+            stmt.setString(5, appPackage.appId.value)
+            stmt.setInt(6, appPackage.versionCode.value)
+            stmt.setString(7, appPackage.versionName.value)
+            stmt.setInt(8, appPackage.targetSdk.value)
             stmt.setBytes(9, appPackage.signerCertificate.value)
             stmt.setBytes(10, appPackage.buildApksResult.value)
             stmt.executeSingleUpdate().bind()
@@ -981,8 +981,8 @@ private class InMemoryAppPackageRepository(
         connection.prepareStatement(insertPermissionSql).use { stmt ->
             for ((name, maxSdkVersion) in permissions) {
                 stmt.setString(1, appPackage.id)
-                stmt.setString(2, name.intoInner())
-                stmt.setObject(3, maxSdkVersion.map(SdkVersion::intoInner).getOrNull(), Types.INTEGER)
+                stmt.setString(2, name.value)
+                stmt.setObject(3, maxSdkVersion.map(SdkVersion::value).getOrNull(), Types.INTEGER)
                 stmt.executeSingleUpdate().bind()
             }
         }
