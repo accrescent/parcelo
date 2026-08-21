@@ -24,11 +24,11 @@ class NonEmptyStringTest {
     }
 
     @Test
-    fun `intoInner returns original string`() {
+    fun `value returns original string`() {
         val rawString = "Hello, world!"
         val nonEmptyString = NonEmptyString.fromString(rawString).unwrap()
 
-        assertEquals(rawString, nonEmptyString.intoInner())
+        assertEquals(rawString, nonEmptyString.value)
     }
 
     @Test

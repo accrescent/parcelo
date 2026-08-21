@@ -198,10 +198,10 @@ data class XmlDocument(val root: XmlElement) {
         ): Either<FromBytesError, XmlExpandedName> = either {
             XmlExpandedName(
                 namespaceName = namespace.map {
-                    Uri.fromString(it.intoInner()).toEitherBind { FromBytesError }
+                    Uri.fromString(it.value).toEitherBind { FromBytesError }
                 },
                 localName = AsciiNcName
-                    .fromString(localName.intoInner())
+                    .fromString(localName.value)
                     .toEitherBind { FromBytesError },
             )
         }

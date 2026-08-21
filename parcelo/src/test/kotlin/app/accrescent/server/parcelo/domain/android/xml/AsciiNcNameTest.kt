@@ -33,11 +33,11 @@ class AsciiNcNameTest {
     }
 
     @Test
-    fun `intoInner returns original string`() {
+    fun `value returns original string`() {
         val rawName = "example-name"
         val name = AsciiNcName.fromString(rawName).unwrap()
 
-        assertEquals(rawName, name.intoInner())
+        assertEquals(rawName, name.value)
     }
 
     @Test

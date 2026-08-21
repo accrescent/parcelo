@@ -35,9 +35,11 @@ import arrow.core.Some
  * different versioning strategy per-store to work around this limitation, but it's much simpler to
  * limit app versions to the same range as Play for now for maximum compatibility with minimal
  * developer friction.
+ *
+ * @property value the integer representation of this version code.
  */
 @JvmInline
-value class VersionCode private constructor(private val value: Int) {
+value class VersionCode private constructor(val value: Int) {
     companion object {
         /**
          * Creates a version code from an integer.
@@ -53,14 +55,5 @@ value class VersionCode private constructor(private val value: Int) {
                 None
             }
         }
-    }
-
-    /**
-     * Retrieves this version code's underlying integer representation.
-     *
-     * @return the integer representation of this version code.
-     */
-    fun intoInner(): Int {
-        return value
     }
 }

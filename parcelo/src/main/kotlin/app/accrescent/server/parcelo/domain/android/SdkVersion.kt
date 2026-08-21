@@ -12,9 +12,11 @@ import arrow.core.Some
  * An Android
  * [SDK version](https://developer.android.com/guide/topics/manifest/uses-sdk-element#ApiLevels),
  * also known as an API level.
+ *
+ * @property value the integer representation of this SDK version.
  */
 @JvmInline
-value class SdkVersion private constructor(private val value: Int) : Comparable<SdkVersion> {
+value class SdkVersion private constructor(val value: Int) : Comparable<SdkVersion> {
     companion object {
         val MINIMUM = SdkVersion(1)
 
@@ -32,15 +34,6 @@ value class SdkVersion private constructor(private val value: Int) : Comparable<
                 None
             }
         }
-    }
-
-    /**
-     * Retrieves this SDK version's underlying integer representation.
-     *
-     * @return the integer representation of this SDK version.
-     */
-    fun intoInner(): Int {
-        return value
     }
 
     override fun compareTo(other: SdkVersion): Int {

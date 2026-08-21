@@ -249,7 +249,7 @@ class AppEditUploadedProcessor @Inject constructor(
             appId = apkSet.applicationId,
             versionCode = apkSet.versionCode,
             versionName = apkSet.versionName,
-            targetSdk = apkSet.targetSdk.intoInner(),
+            targetSdk = apkSet.targetSdk.value,
             signingCertificate = apkSet.signingCert.encoded,
             buildApksResult = apkSet.buildApksResult.toByteArray(),
         )

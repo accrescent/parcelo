@@ -44,11 +44,11 @@ class NameAttributeTest {
     }
 
     @Test
-    fun `intoInner returns original string`() {
+    fun `value returns original string`() {
         val rawName = "android.permission.INTERNET"
         val versionName = NameAttribute.fromString(rawName).unwrap()
 
-        assertEquals(rawName, versionName.intoInner())
+        assertEquals(rawName, versionName.value)
     }
 
     @Test
