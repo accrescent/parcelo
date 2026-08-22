@@ -12,6 +12,7 @@ import app.accrescent.server.parcelo.domain.android.NameAttribute
 import app.accrescent.server.parcelo.domain.android.SdkVersion
 import app.accrescent.server.parcelo.domain.android.VersionCode
 import app.accrescent.server.parcelo.domain.android.VersionName
+import app.accrescent.server.parcelo.domain.appstore.ListingLanguage
 import app.accrescent.server.parcelo.domain.authn.ExternalUserId
 import app.accrescent.server.parcelo.domain.crypto.Sha256Hash
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppDraftApiView
@@ -21,7 +22,6 @@ import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppPackageApi
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStore
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStoreResult
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.ExternalBlob
-import app.accrescent.server.parcelo.domain.ports.driven.datastore.ListingLanguage
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.PendingAppDraftListingIconUpload
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.PendingAppDraftUpload
 import arrow.core.None
