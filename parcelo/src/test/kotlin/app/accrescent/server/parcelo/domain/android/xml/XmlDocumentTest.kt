@@ -21,7 +21,7 @@ class XmlDocumentTest {
     @ParameterizedTest
     @MethodSource("fromBinaryXmlTestCases")
     fun `fromBinaryXml returns expected document`(testCase: FromBinaryXmlTestCase) {
-        val result = XmlDocument.fromBinaryXml(ByteBuffer.wrap(testCase.binaryXml.value)).unwrap()
+        val result = XmlDocument.fromBinaryXml(ByteBuffer.wrap(testCase.binaryXml.copyToByteArray())).unwrap()
 
         assertEquals(testCase.expectedDocument, result)
     }
@@ -37,7 +37,7 @@ class XmlDocumentTest {
         // `A: package="com.example.decoy" (Raw: "com.example.real")`.
         val binaryXml = binaryXmlTestData("mismatched-string-attribute-manifest.axml.gz")
 
-        val result = XmlDocument.fromBinaryXml(ByteBuffer.wrap(binaryXml.value))
+        val result = XmlDocument.fromBinaryXml(ByteBuffer.wrap(binaryXml.copyToByteArray()))
 
         assertTrue(result.isLeft())
     }

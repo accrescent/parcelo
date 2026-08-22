@@ -957,8 +957,8 @@ private class PostgresqlAppPackageRepository(
             stmt.setInt(15, appPackage.versionCode.value)
             stmt.setString(16, appPackage.versionName.value)
             stmt.setInt(17, appPackage.targetSdk.value)
-            stmt.setBytes(18, appPackage.signerCertificate.value)
-            stmt.setBytes(19, appPackage.buildApksResult.value)
+            stmt.setBytes(18, appPackage.signerCertificate.copyToByteArray())
+            stmt.setBytes(19, appPackage.buildApksResult.copyToByteArray())
             stmt.setString(20, appPackage.id)
             stmt.setString(21, appPackage.appDraftId)
             stmt.setString(22, pendingUploadId)
@@ -1281,7 +1281,7 @@ private class PostgresqlSessionRepository(
             INSERT INTO sessions (id_hash, user_id, create_time, expire_time) VALUES (?, ?, ?, ?)
         """.trimIndent()
         connection.prepareStatement(sql).use { stmt ->
-            stmt.setBytes(1, idHash.digest().value)
+            stmt.setBytes(1, idHash.digest().copyToByteArray())
             stmt.setString(2, userId)
             stmt.setObject(3, createTime)
             stmt.setObject(4, expireTime)
@@ -1317,7 +1317,7 @@ private class PostgresqlUserRepository(
     ): DataStoreResult<Option<String>> = runCatchingSql {
         val sql = "SELECT user_id FROM sessions WHERE id_hash = ? AND expire_time > ?"
         connection.prepareStatement(sql).use { stmt ->
-            stmt.setBytes(1, sessionIdHash.digest().value)
+            stmt.setBytes(1, sessionIdHash.digest().copyToByteArray())
             stmt.setObject(2, currentTime)
             stmt.executeQuery().use { rs ->
                 if (!rs.next()) return@use None

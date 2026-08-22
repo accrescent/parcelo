@@ -969,8 +969,8 @@ private class InMemoryAppPackageRepository(
             stmt.setInt(6, appPackage.versionCode.value)
             stmt.setString(7, appPackage.versionName.value)
             stmt.setInt(8, appPackage.targetSdk.value)
-            stmt.setBytes(9, appPackage.signerCertificate.value)
-            stmt.setBytes(10, appPackage.buildApksResult.value)
+            stmt.setBytes(9, appPackage.signerCertificate.copyToByteArray())
+            stmt.setBytes(10, appPackage.buildApksResult.copyToByteArray())
             stmt.executeSingleUpdate().bind()
         }
 
@@ -1413,7 +1413,7 @@ private class InMemorySessionRepository(
             INSERT INTO sessions (id_hash, user_id, create_time, expire_time) VALUES (?, ?, ?, ?)
         """.trimIndent()
         connection.prepareStatement(sql).use { stmt ->
-            stmt.setBytes(1, idHash.digest().value)
+            stmt.setBytes(1, idHash.digest().copyToByteArray())
             stmt.setString(2, userId)
             stmt.setObject(3, createTime)
             stmt.setObject(4, expireTime)
@@ -1449,7 +1449,7 @@ private class InMemoryUserRepository(
     ): DataStoreResult<Option<String>> = runCatchingSql {
         val sql = "SELECT user_id FROM sessions WHERE id_hash = ? AND expire_time > ?"
         connection.prepareStatement(sql).use { stmt ->
-            stmt.setBytes(1, sessionIdHash.digest().value)
+            stmt.setBytes(1, sessionIdHash.digest().copyToByteArray())
             stmt.setObject(2, currentTime)
             stmt.executeQuery().use { rs ->
                 if (!rs.next()) return@use None
