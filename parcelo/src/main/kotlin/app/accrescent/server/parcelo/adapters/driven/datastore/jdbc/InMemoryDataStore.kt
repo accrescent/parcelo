@@ -15,6 +15,7 @@ import app.accrescent.server.parcelo.domain.android.NameAttribute
 import app.accrescent.server.parcelo.domain.android.SdkVersion
 import app.accrescent.server.parcelo.domain.android.VersionCode
 import app.accrescent.server.parcelo.domain.android.VersionName
+import app.accrescent.server.parcelo.domain.appstore.ListingLanguage
 import app.accrescent.server.parcelo.domain.authn.ExternalUserId
 import app.accrescent.server.parcelo.domain.crypto.Sha256Hash
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.App
@@ -39,7 +40,6 @@ import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStoreErro
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStoreResult
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.ExternalBlob
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.HasPermissionRequest
-import app.accrescent.server.parcelo.domain.ports.driven.datastore.ListingLanguage
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.PendingAppDraftListingIconUpload
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.PendingAppDraftUpload
 import app.accrescent.server.parcelo.domain.ports.driven.randomsource.RandomSource
@@ -311,7 +311,7 @@ private class InMemoryAppDraftRepository(
         connection.prepareStatement(sql).use { stmt ->
             stmt.setString(1, id)
             stmt.setString(2, appDraftId)
-            stmt.setString(3, language.toString())
+            stmt.setString(3, language.languageTag())
             stmt.setString(4, name)
             stmt.setString(5, shortDescription)
             stmt.executeSingleUpdate().bind()
@@ -579,8 +579,8 @@ private class InMemoryAppDraftRepository(
         connection.prepareStatement(sql).use { stmt ->
             stmt.setString(1, appDraftId)
             stmt.setString(2, userId)
-            stmt.setString(3, afterLanguage.map { it.toString() }.getOrNull())
-            stmt.setString(4, afterLanguage.map { it.toString() }.getOrNull())
+            stmt.setString(3, afterLanguage.map { it.languageTag() }.getOrNull())
+            stmt.setString(4, afterLanguage.map { it.languageTag() }.getOrNull())
             stmt.setInt(5, maxResults.value)
             stmt.executeQuery().use { rs ->
                 val listings = mutableListOf<AppDraftListingApiView>()
@@ -717,7 +717,7 @@ private class InMemoryAppDraftRepository(
         """.trimIndent()
         connection.prepareStatement(sql).use { stmt ->
             stmt.setString(1, appDraftId)
-            stmt.setString(2, language.toString())
+            stmt.setString(2, language.languageTag())
             stmt.executeQuery().use { rs -> rs.getSelectExistsResult().bind() }
         }
     }
@@ -1100,7 +1100,7 @@ private class InMemoryAppRepository(private val connection: Connection) : AppRep
         connection.prepareStatement(listingInsertSql).use { stmt ->
             stmt.setString(1, defaultListing.id)
             stmt.setString(2, defaultListing.appId)
-            stmt.setString(3, defaultListing.language.toString())
+            stmt.setString(3, defaultListing.language.languageTag())
             stmt.executeSingleUpdate().bind()
         }
         connection.prepareStatement(appUpdateSql).use { stmt ->
@@ -1508,7 +1508,7 @@ private fun ResultSet.readAppDraftListingApiView(): DataStoreResult<AppDraftList
     AppDraftListingApiView(
         id = requireString("id").bind(),
         appDraftId = requireString("app_draft_id").bind(),
-        language = ListingLanguage.fromString(requireString("language").bind())
+        language = ListingLanguage.fromLanguageTag(requireString("language").bind())
             .toEitherBind { DataStoreError.IllegalState },
         name = requireString("name").bind(),
         shortDescription = requireString("short_description").bind(),

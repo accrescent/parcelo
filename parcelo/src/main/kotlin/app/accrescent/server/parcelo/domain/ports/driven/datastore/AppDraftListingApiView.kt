@@ -4,6 +4,8 @@
 
 package app.accrescent.server.parcelo.domain.ports.driven.datastore
 
+import app.accrescent.server.parcelo.domain.appstore.ListingLanguage
+
 /**
  * The API view of an app store listing for an app in draft stage.
  *

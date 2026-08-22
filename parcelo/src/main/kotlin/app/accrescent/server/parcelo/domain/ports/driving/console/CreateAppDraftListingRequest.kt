@@ -4,6 +4,8 @@
 
 package app.accrescent.server.parcelo.domain.ports.driving.console
 
+import app.accrescent.server.parcelo.domain.appstore.ListingLanguage
+
 data class CreateAppDraftListingRequest(
     val appDraftId: String,
     val language: ListingLanguage,

@@ -14,6 +14,7 @@ import app.accrescent.server.parcelo.core.toEitherBind
 import app.accrescent.server.parcelo.core.unwrap
 import app.accrescent.server.parcelo.domain.IdGenerator
 import app.accrescent.server.parcelo.domain.IdType
+import app.accrescent.server.parcelo.domain.appstore.ListingLanguage
 import app.accrescent.server.parcelo.domain.ports.driven.blobstorage.BlobId
 import app.accrescent.server.parcelo.domain.ports.driven.blobstorage.BlobStorage
 import app.accrescent.server.parcelo.domain.ports.driven.blobstorage.BlobStorageBackend
@@ -91,11 +92,9 @@ import arrow.core.raise.either
 import arrow.core.raise.ensure
 import com.google.protobuf.InvalidProtocolBufferException
 import kotlin.io.encoding.Base64
-import app.accrescent.server.parcelo.domain.ports.driven.datastore.ListingLanguage as DataListingLanguage
 import app.accrescent.server.parcelo.domain.ports.driving.console.AppDraft as ApiAppDraft
 import app.accrescent.server.parcelo.domain.ports.driving.console.AppDraftListing as ApiAppDraftListing
 import app.accrescent.server.parcelo.domain.ports.driving.console.AppPackage as ApiAppPackage
-import app.accrescent.server.parcelo.domain.ports.driving.console.ListingLanguage as ApiListingLanguage
 
 private val ACTIVE_APP_DRAFT_LIMIT = 3uL
 private val PUBLISHED_APP_LIMIT = 1uL
@@ -454,12 +453,14 @@ class AppDraftApiImpl(
                 tx.appDrafts.isSubmitted(request.appDraftId).bindMapLeft(::toServerError)
             ensure(!isSubmitted) { AppDraftSubmittedError(request.appDraftId) }
 
-            val dataStoreLanguage = request.language.toDataStoreRepresentation()
             val listingExists = tx.appDrafts
-                .listingExistsByLanguageForAppDraft(request.appDraftId, dataStoreLanguage)
+                .listingExistsByLanguageForAppDraft(request.appDraftId, request.language)
                 .bindMapLeft(::toServerError)
             ensure(!listingExists) {
-                AppDraftListingAlreadyExistsError(request.appDraftId, request.language.toString())
+                AppDraftListingAlreadyExistsError(
+                    request.appDraftId,
+                    request.language.languageTag(),
+                )
             }
 
             val listingId = idGenerator
@@ -469,7 +470,7 @@ class AppDraftApiImpl(
                 .createListing(
                     id = listingId,
                     appDraftId = request.appDraftId,
-                    language = dataStoreLanguage,
+                    language = request.language,
                     name = request.name,
                     shortDescription = request.shortDescription,
                 )
@@ -509,7 +510,7 @@ class AppDraftApiImpl(
             ApiAppDraftListing(
                 id = listing.id,
                 appDraftId = listing.appDraftId,
-                language = listing.language.toString(),
+                language = listing.language.languageTag(),
                 name = listing.name,
                 shortDescription = listing.shortDescription,
             )
@@ -536,7 +537,7 @@ class AppDraftApiImpl(
                     raise(InvalidPageTokenError)
                 }
 
-                DataListingLanguage.fromString(token.lastLanguage)
+                ListingLanguage.fromLanguageTag(token.lastLanguage)
                     .toEitherBind { InvalidPageTokenError }
             } catch (_: IllegalArgumentException) {
                 raise(InvalidPageTokenError)
@@ -563,7 +564,7 @@ class AppDraftApiImpl(
                 ApiAppDraftListing(
                     id = listing.id,
                     appDraftId = listing.appDraftId,
-                    language = listing.language.toString(),
+                    language = listing.language.languageTag(),
                     name = listing.name,
                     shortDescription = listing.shortDescription,
                 )
@@ -780,12 +781,6 @@ class AppDraftApiImpl(
             versionName = versionName,
             targetSdk = targetSdk,
         )
-    }
-
-    private fun ApiListingLanguage.toDataStoreRepresentation(): DataListingLanguage {
-        return when (this) {
-            ApiListingLanguage.EN_US -> DataListingLanguage.EN_US
-        }
     }
 
     private fun ExternalBlob<ExternalBlob.Status.Committed<*>>.toBlobId(): BlobId {

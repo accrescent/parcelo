@@ -19,6 +19,7 @@ import app.accrescent.server.parcelo.domain.android.ApplicationId
 import app.accrescent.server.parcelo.domain.android.SdkVersion
 import app.accrescent.server.parcelo.domain.android.VersionCode
 import app.accrescent.server.parcelo.domain.android.VersionName
+import app.accrescent.server.parcelo.domain.appstore.ListingLanguage
 import app.accrescent.server.parcelo.domain.authn.ExternalUserId
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.App
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.AppListing
@@ -73,11 +74,9 @@ import org.junit.jupiter.api.assertInstanceOf
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
 import kotlin.time.Duration.Companion.days
-import app.accrescent.server.parcelo.domain.ports.driven.datastore.ListingLanguage as DataListingLanguage
 import app.accrescent.server.parcelo.domain.ports.driving.console.AppDraft as ApiAppDraft
 import app.accrescent.server.parcelo.domain.ports.driving.console.AppDraftListing as ApiAppDraftListing
 import app.accrescent.server.parcelo.domain.ports.driving.console.AppPackage as ApiAppPackage
-import app.accrescent.server.parcelo.domain.ports.driving.console.ListingLanguage as ApiListingLanguage
 
 class AppDraftApiImplTest {
     @Test
@@ -520,7 +519,7 @@ class AppDraftApiImplTest {
                 tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
                 tx.apps.saveWithDefaultListing(
                     App("app1", "org1", "appListing1", false),
-                    AppListing("appListing1", "app1", DataListingLanguage.EN_US),
+                    AppListing("appListing1", "app1", ListingLanguage.EN_US),
                 ).bind()
             }.unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
@@ -762,7 +761,7 @@ class AppDraftApiImplTest {
 
             val request = CreateAppDraftListingRequest(
                 appDraftId = "appDraft1",
-                language = ApiListingLanguage.EN_US,
+                language = ListingLanguage.EN_US,
                 name = "App Name",
                 shortDescription = "App Short Description",
             )
@@ -783,7 +782,7 @@ class AppDraftApiImplTest {
 
             val request = CreateAppDraftListingRequest(
                 appDraftId = appDraftId,
-                language = ApiListingLanguage.EN_US,
+                language = ListingLanguage.EN_US,
                 name = "App Name",
                 shortDescription = "App Short Description",
             )
@@ -813,7 +812,7 @@ class AppDraftApiImplTest {
 
             val request = CreateAppDraftListingRequest(
                 appDraftId = "appDraft1",
-                language = ApiListingLanguage.EN_US,
+                language = ListingLanguage.EN_US,
                 name = "App Name",
                 shortDescription = "App Short Description",
             )
@@ -848,7 +847,7 @@ class AppDraftApiImplTest {
             val appDraftId = createAppDraft(dataStore, appDraftApi, context)
 
             val createRequest =
-                CreateAppDraftListingRequest(appDraftId, ApiListingLanguage.EN_US, "name", "desc")
+                CreateAppDraftListingRequest(appDraftId, ListingLanguage.EN_US, "name", "desc")
             val createResponse =
                 appDraftApi.createAppDraftListing(context, createRequest).unwrap()
             val getResponse = appDraftApi.getAppDraftListing(
@@ -1223,7 +1222,7 @@ class AppDraftApiImplTest {
     ): String {
         val request = CreateAppDraftListingRequest(
             appDraftId = appDraftId,
-            language = ApiListingLanguage.EN_US,
+            language = ListingLanguage.EN_US,
             name = name,
             shortDescription = shortDescription,
         )
@@ -1292,7 +1291,7 @@ class AppDraftApiImplTest {
                         context,
                         CreateAppDraftListingRequest(
                             appDraftId = "appDraft1",
-                            language = ApiListingLanguage.EN_US,
+                            language = ListingLanguage.EN_US,
                             name = "App Name",
                             shortDescription = "App Short Description",
                         ),
