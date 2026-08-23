@@ -22,7 +22,7 @@ junit = "6.1.1"
 kotlin = "2.4.10"
 minio = "8.6.0"
 protovalidate = "1.1.1"
-quarkus = "3.32.3"
+quarkus = "3.39.0"
 
 [libraries]
 apkanalyzer = { module = "com.android.tools.apkparser:apkanalyzer", version.ref = "apkanalyzer" }
