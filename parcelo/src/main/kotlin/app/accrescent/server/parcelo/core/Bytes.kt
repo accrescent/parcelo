@@ -17,9 +17,13 @@ package app.accrescent.server.parcelo.core
  *
  * [ByteArray]s are also normally mutable. This class performs defensive copies on construction and
  * [copyToByteArray] conversion to prevent internal mutation.
+ *
+ * @property size the number of bytes in this array.
  */
 class Bytes(value: ByteArray) {
     private val value: ByteArray = value.copyOf()
+
+    val size: NonNegativeInt = NonNegativeInt.new(value.size).unwrap()
 
     /**
      * Copies this object's bytes into a new byte array.

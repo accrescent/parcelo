@@ -29,6 +29,13 @@ class BytesTest {
     }
 
     @Test
+    fun `size reflects the number of bytes in the array`() {
+        val bytes = Bytes("deadbeef".hexToByteArray())
+
+        assertEquals(NonNegativeInt.new(4).unwrap(), bytes.size)
+    }
+
+    @Test
     fun `instances with same contents are equal`() {
         val instance1 = Bytes("deadbeef".hexToByteArray())
         val instance2 = Bytes("deadbeef".hexToByteArray())
