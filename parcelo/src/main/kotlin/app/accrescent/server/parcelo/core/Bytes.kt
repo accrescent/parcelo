@@ -34,6 +34,15 @@ class Bytes(value: ByteArray) {
         return value.copyOf()
     }
 
+    /**
+     * Yields bytes based on a predicate.
+     *
+     * @return the list of bytes which meet the predicate until the first element which does not.
+     */
+    fun takeWhile(predicate: (Byte) -> Boolean): List<Byte> {
+        return value.takeWhile(predicate)
+    }
+
     override fun equals(other: Any?): Boolean {
         return other is Bytes && value.contentEquals(other.value)
     }

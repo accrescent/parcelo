@@ -36,6 +36,14 @@ class BytesTest {
     }
 
     @Test
+    fun `takeWhile returns only the first elements which meet the predicate`() {
+        val bytes = Bytes("04080c0a04".hexToByteArray())
+        val filteredElements = bytes.takeWhile { it % 4 == 0 }
+
+        assertEquals("04080c".hexToByteArray().toList(), filteredElements)
+    }
+
+    @Test
     fun `instances with same contents are equal`() {
         val instance1 = Bytes("deadbeef".hexToByteArray())
         val instance2 = Bytes("deadbeef".hexToByteArray())
