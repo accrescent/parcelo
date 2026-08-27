@@ -6,6 +6,7 @@ package app.accrescent.server.parcelo
 
 import app.accrescent.server.parcelo.adapters.driven.timestampsource.FixedTimestampSource
 import app.accrescent.server.parcelo.core.Bytes
+import app.accrescent.server.parcelo.core.encodeToBytes
 import app.accrescent.server.parcelo.core.unwrap
 import app.accrescent.server.parcelo.domain.android.ApplicationId
 import app.accrescent.server.parcelo.domain.android.NameAttribute
@@ -73,7 +74,7 @@ fun signInNewUser(
 ): DataStoreResult<Unit> = either {
     tx.organizations.saveWithOwner(organizationId, userId, externalUserId, UNIX_EPOCH).bind()
     tx.sessions
-        .create(Sha256Hash.hash(sessionId.toByteArray()), userId, UNIX_EPOCH, UNIX_EPOCH.plusDays(1))
+        .create(Sha256Hash.hash(sessionId.encodeToBytes()), userId, UNIX_EPOCH, UNIX_EPOCH.plusDays(1))
         .bind()
 }
 

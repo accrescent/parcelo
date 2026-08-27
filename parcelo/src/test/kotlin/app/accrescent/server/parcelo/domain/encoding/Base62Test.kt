@@ -4,13 +4,14 @@
 
 package app.accrescent.server.parcelo.domain.encoding
 
+import app.accrescent.server.parcelo.core.Bytes
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
 class Base62Test {
     @Test
     fun `encodes leading zeroes`() {
-        val bytes = "00deadbeef".hexToByteArray()
+        val bytes = Bytes("00deadbeef".hexToByteArray())
 
         val encoded = Base62.encode(bytes)
 

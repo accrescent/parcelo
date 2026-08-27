@@ -5,6 +5,7 @@
 package app.accrescent.server.parcelo.domain.crypto
 
 import app.accrescent.server.parcelo.core.Bytes
+import app.accrescent.server.parcelo.core.encodeToBytes
 import app.accrescent.server.parcelo.core.unwrap
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -16,7 +17,7 @@ class Sha256HashTest {
     @Test
     fun `fromDigest accepts 32-byte digest`() {
         val result = Sha256Hash.fromDigest(
-            "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef".hexToByteArray()
+            "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef".hexToBytes()
         )
 
         assertTrue(result.isSome())
@@ -24,7 +25,7 @@ class Sha256HashTest {
 
     @Test
     fun `fromDigest rejects digest which is not 32 bytes long`() {
-        val result = Sha256Hash.fromDigest(byteArrayOf(0))
+        val result = Sha256Hash.fromDigest(Bytes(byteArrayOf(0)))
 
         assertTrue(result.isNone())
     }
@@ -34,17 +35,17 @@ class Sha256HashTest {
     fun `hash produces the expected digest`(testVector: TestVector) {
         val hash = Sha256Hash.hash(testVector.data)
 
-        assertEquals(Bytes(testVector.expectedDigest), hash.digest())
+        assertEquals(testVector.expectedDigest, hash.digest())
     }
 
     @Test
     fun `instances with same digest are equal`() {
         val instance1 = Sha256Hash.fromDigest(
-            "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef".hexToByteArray()
+            "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef".hexToBytes()
         )
             .unwrap()
         val instance2 = Sha256Hash.fromDigest(
-            "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef".hexToByteArray()
+            "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef".hexToBytes()
         )
             .unwrap()
 
@@ -54,36 +55,40 @@ class Sha256HashTest {
     @Test
     fun `instances with same digest have the same hash code`() {
         val instance1 = Sha256Hash.fromDigest(
-            "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef".hexToByteArray()
+            "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef".hexToBytes()
         )
             .unwrap()
         val instance2 = Sha256Hash.fromDigest(
-            "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef".hexToByteArray()
+            "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef".hexToBytes()
         )
             .unwrap()
 
         assertEquals(instance1.hashCode(), instance2.hashCode())
     }
 
-    class TestVector(val data: ByteArray, val expectedDigest: ByteArray)
+    class TestVector(val data: Bytes, val expectedDigest: Bytes)
 
     companion object {
         @JvmStatic
         fun sampleTestVectors(): List<TestVector> {
             return listOf(
                 TestVector(
-                    "".toByteArray(),
-                    "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855".hexToByteArray()
+                    "".encodeToBytes(),
+                    "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855".hexToBytes(),
                 ),
                 TestVector(
-                    "abc".toByteArray(),
-                    "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad".hexToByteArray(),
+                    "abc".encodeToBytes(),
+                    "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad".hexToBytes(),
                 ),
                 TestVector(
-                    "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq".toByteArray(),
-                    "248d6a61d20638b8e5c026930c3e6039a33ce45964ff2167f6ecedd419db06c1".hexToByteArray(),
+                    "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq".encodeToBytes(),
+                    "248d6a61d20638b8e5c026930c3e6039a33ce45964ff2167f6ecedd419db06c1".hexToBytes(),
                 ),
             )
+        }
+
+        private fun String.hexToBytes(): Bytes {
+            return Bytes(hexToByteArray())
         }
     }
 }

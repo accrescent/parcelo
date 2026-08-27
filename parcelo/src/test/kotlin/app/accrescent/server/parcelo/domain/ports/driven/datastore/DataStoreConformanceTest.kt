@@ -8,6 +8,7 @@ import app.accrescent.server.parcelo.UNIX_EPOCH
 import app.accrescent.server.parcelo.appDraftListingApiView
 import app.accrescent.server.parcelo.appPackage
 import app.accrescent.server.parcelo.core.NonNegativeInt
+import app.accrescent.server.parcelo.core.encodeToBytes
 import app.accrescent.server.parcelo.core.unwrap
 import app.accrescent.server.parcelo.core.unwrap2
 import app.accrescent.server.parcelo.core.unwrapErr
@@ -2597,7 +2598,7 @@ abstract class DataStoreConformanceTest {
     @Test
     fun `sessions create returns ConsistencyViolation if session with same ID hash already exists`() {
         withMigratedDataStore { dataStore ->
-            val idHash = Sha256Hash.hash("session1".toByteArray())
+            val idHash = Sha256Hash.hash("session1".encodeToBytes())
 
             dataStore
                 .runTxWithRetry { tx ->
@@ -2626,7 +2627,7 @@ abstract class DataStoreConformanceTest {
                 .runTxWithRetry { tx ->
                     tx.sessions
                         .create(
-                            Sha256Hash.hash("session1".toByteArray()),
+                            Sha256Hash.hash("session1".encodeToBytes()),
                             "user1",
                             UNIX_EPOCH,
                             UNIX_EPOCH.plusDays(1),
@@ -2654,7 +2655,7 @@ abstract class DataStoreConformanceTest {
             val error = dataStore
                 .runTxWithRetry { tx ->
                     tx.sessions
-                        .create(Sha256Hash.hash("session1".toByteArray()), "user1", UNIX_EPOCH, UNIX_EPOCH)
+                        .create(Sha256Hash.hash("session1".encodeToBytes()), "user1", UNIX_EPOCH, UNIX_EPOCH)
                         .bind()
                 }
                 .unwrap()
@@ -2698,7 +2699,7 @@ abstract class DataStoreConformanceTest {
     @Test
     fun `users findIdBySessionIdHash returns ID of user associated with given session ID hash`() {
         withMigratedDataStore { dataStore ->
-            val idHash = Sha256Hash.hash("session1".toByteArray())
+            val idHash = Sha256Hash.hash("session1".encodeToBytes())
 
             dataStore
                 .runTxWithRetry { tx ->
@@ -2726,7 +2727,7 @@ abstract class DataStoreConformanceTest {
             val userId = dataStore
                 .runTxWithRetry { tx ->
                     tx.users
-                        .findIdBySessionIdHash(Sha256Hash.hash("session1".toByteArray()), UNIX_EPOCH)
+                        .findIdBySessionIdHash(Sha256Hash.hash("session1".encodeToBytes()), UNIX_EPOCH)
                         .bind()
                 }
                 .unwrap2()
@@ -2738,7 +2739,7 @@ abstract class DataStoreConformanceTest {
     @Test
     fun `users findIdBySessionIdHash returns None for expired session`() {
         withMigratedDataStore { dataStore ->
-            val idHash = Sha256Hash.hash("session1".toByteArray())
+            val idHash = Sha256Hash.hash("session1".encodeToBytes())
 
             dataStore
                 .runTxWithRetry { tx ->

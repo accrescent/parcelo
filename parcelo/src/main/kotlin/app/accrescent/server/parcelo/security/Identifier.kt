@@ -4,6 +4,7 @@
 
 package app.accrescent.server.parcelo.security
 
+import app.accrescent.server.parcelo.core.Bytes
 import app.accrescent.server.parcelo.domain.encoding.Base62
 import java.security.SecureRandom
 
@@ -14,7 +15,7 @@ object Identifier {
 
     fun generateNew(type: IdType): String {
         val randomBytes = ByteArray(RAND_BYTE_COUNT).also { secureRandom.nextBytes(it) }
-        val encodedBytes = Base62.encode(randomBytes)
+        val encodedBytes = Base62.encode(Bytes(randomBytes))
         val prefix = when (type) {
             IdType.APP_DRAFT -> "ad"
             IdType.APP_DRAFT_LISTING -> "adl"

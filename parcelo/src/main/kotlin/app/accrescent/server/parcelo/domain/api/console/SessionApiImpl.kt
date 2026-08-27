@@ -5,6 +5,7 @@
 package app.accrescent.server.parcelo.domain.api.console
 
 import app.accrescent.server.parcelo.core.bindMapLeft
+import app.accrescent.server.parcelo.core.encodeToBytes
 import app.accrescent.server.parcelo.domain.IdGenerator
 import app.accrescent.server.parcelo.domain.IdType
 import app.accrescent.server.parcelo.domain.authn.ExternalUserId
@@ -54,7 +55,7 @@ class SessionApiImpl(
                 is Some -> existingUserId.value
             }
             tx.sessions
-                .create(Sha256Hash.hash(sessionId.toByteArray()), userId, createTime, expireTime)
+                .create(Sha256Hash.hash(sessionId.encodeToBytes()), userId, createTime, expireTime)
                 .bindMapLeft(::toServerError)
         }
             .bindMapLeft(::toServerError)

@@ -4,6 +4,7 @@
 
 package app.accrescent.server.parcelo.adapters.driven.blobstorage
 
+import app.accrescent.server.parcelo.core.Bytes
 import app.accrescent.server.parcelo.domain.ports.driven.blobstorage.BlobId
 import app.accrescent.server.parcelo.domain.ports.driven.blobstorage.BlobStorage
 import app.accrescent.server.parcelo.domain.ports.driven.blobstorage.BlobStorageBackend
@@ -48,7 +49,7 @@ class LocalOnlyBlobStorage(
     }
 
     override fun create(
-        contents: ByteArray,
+        contents: Bytes,
         destination: BlobId.Location,
     ): BlobStorageResult<BlobId> {
         return delegate.create(contents, destination)

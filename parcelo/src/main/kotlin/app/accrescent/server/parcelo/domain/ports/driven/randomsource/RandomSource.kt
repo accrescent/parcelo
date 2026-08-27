@@ -4,6 +4,8 @@
 
 package app.accrescent.server.parcelo.domain.ports.driven.randomsource
 
+import app.accrescent.server.parcelo.core.Bytes
+import app.accrescent.server.parcelo.core.NonNegativeInt
 import app.accrescent.server.parcelo.core.NonNegativeLong
 import app.accrescent.server.parcelo.core.PositiveLong
 import arrow.core.Either
@@ -13,7 +15,13 @@ typealias RandomSourceResult<T> = Either<RandomSourceError, T>
 data object RandomSourceError
 
 abstract class RandomSource {
-    abstract fun fillRandomBytes(bytes: ByteArray): RandomSourceResult<Unit>
+    /**
+     * Generates random bytes.
+     *
+     * @param n the number of random bytes to generate.
+     * @return an array of random bytes of length [n].
+     */
+    abstract fun randomBytes(n: NonNegativeInt): RandomSourceResult<Bytes>
     abstract fun randomLong(): RandomSourceResult<Long>
 
     /**

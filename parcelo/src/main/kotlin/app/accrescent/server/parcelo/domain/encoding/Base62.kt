@@ -4,6 +4,7 @@
 
 package app.accrescent.server.parcelo.domain.encoding
 
+import app.accrescent.server.parcelo.core.Bytes
 import java.math.BigInteger
 
 object Base62 {
@@ -11,10 +12,10 @@ object Base62 {
     private val BASE = ALPHABET.length.toBigInteger()
     private const val ZERO: Byte = 0
 
-    fun encode(bytes: ByteArray): String {
+    fun encode(bytes: Bytes): String {
         // Encode byte array to base 62
         val stringBuilder = StringBuilder()
-        var number = BigInteger(1, bytes)
+        var number = BigInteger(1, bytes.copyToByteArray())
         while (number > BigInteger.ZERO) {
             val (quotient, remainder) = number.divideAndRemainder(BASE)
             stringBuilder.append(ALPHABET[remainder.toInt()])

@@ -4,12 +4,15 @@
 
 package app.accrescent.server.parcelo.adapters.driven.randomsource
 
+import app.accrescent.server.parcelo.core.Bytes
+import app.accrescent.server.parcelo.core.NonNegativeInt
 import app.accrescent.server.parcelo.core.NonNegativeLong
 import app.accrescent.server.parcelo.core.PositiveLong
 import app.accrescent.server.parcelo.domain.ports.driven.randomsource.RandomSource
 import app.accrescent.server.parcelo.domain.ports.driven.randomsource.RandomSourceError
 import app.accrescent.server.parcelo.domain.ports.driven.randomsource.RandomSourceResult
 import arrow.core.Either
+import arrow.core.right
 import java.util.Random
 
 private const val RNG_SEED = 0L
@@ -17,8 +20,8 @@ private const val RNG_SEED = 0L
 class DeterministicRandomSource : RandomSource() {
     private val rng = Random(RNG_SEED)
 
-    override fun fillRandomBytes(bytes: ByteArray): RandomSourceResult<Unit> {
-        return Either.Right(rng.nextBytes(bytes))
+    override fun randomBytes(n: NonNegativeInt): RandomSourceResult<Bytes> {
+        return ByteArray(n.value).also(rng::nextBytes).let(::Bytes).right()
     }
 
     override fun randomLong(): RandomSourceResult<Long> {

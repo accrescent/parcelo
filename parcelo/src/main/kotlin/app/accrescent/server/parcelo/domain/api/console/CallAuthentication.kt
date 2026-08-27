@@ -5,6 +5,7 @@
 package app.accrescent.server.parcelo.domain.api.console
 
 import app.accrescent.server.parcelo.core.bindMapLeft
+import app.accrescent.server.parcelo.core.encodeToBytes
 import app.accrescent.server.parcelo.domain.crypto.Sha256Hash
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStore
 import app.accrescent.server.parcelo.domain.ports.driving.console.ServerError
@@ -36,7 +37,7 @@ fun authenticateCaller(
         None -> Either.Left(UnauthenticatedError)
 
         is Some -> tx.users
-            .findIdBySessionIdHash(Sha256Hash.hash(sessionId.value.toByteArray()), currentTime)
+            .findIdBySessionIdHash(Sha256Hash.hash(sessionId.value.encodeToBytes()), currentTime)
             .bindMapLeft(::toServerError)
             .toEither { UnauthenticatedError }
     }

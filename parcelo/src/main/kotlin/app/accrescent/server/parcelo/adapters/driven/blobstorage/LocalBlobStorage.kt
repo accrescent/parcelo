@@ -4,6 +4,7 @@
 
 package app.accrescent.server.parcelo.adapters.driven.blobstorage
 
+import app.accrescent.server.parcelo.core.Bytes
 import app.accrescent.server.parcelo.core.bindMapLeft
 import app.accrescent.server.parcelo.core.unwrap
 import app.accrescent.server.parcelo.domain.ports.driven.blobstorage.BlobId
@@ -182,12 +183,12 @@ class LocalBlobStorage(
     }
 
     override fun create(
-        contents: ByteArray,
+        contents: Bytes,
         destination: BlobId.Location,
     ): BlobStorageResult<BlobId.Local> {
         val generation = newGeneration() ?: return BlobStorageError.Other.left()
         Files.createDirectories(bucketDir(destination))
-        Files.write(pathFor(destination), contents)
+        Files.write(pathFor(destination), contents.copyToByteArray())
         objects[destination] = ObjectRecord(generation)
         return BlobId.Local(destination, BlobId.Version.Local(generation)).right()
     }

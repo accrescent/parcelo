@@ -4,6 +4,7 @@
 
 package app.accrescent.server.parcelo.domain.ports.driven.blobstorage
 
+import app.accrescent.server.parcelo.core.Bytes
 import app.accrescent.server.parcelo.domain.uri.HttpUri
 import arrow.core.Either
 import java.nio.file.Path
@@ -30,7 +31,7 @@ interface BlobStorage<B : BlobId> {
 
     fun copy(source: B, destination: BlobId.Location): BlobStorageResult<B>
 
-    fun create(contents: ByteArray, destination: BlobId.Location): BlobStorageResult<B>
+    fun create(contents: Bytes, destination: BlobId.Location): BlobStorageResult<B>
 
     fun upload(source: Path, destination: BlobId.Location): BlobStorageResult<B>
 

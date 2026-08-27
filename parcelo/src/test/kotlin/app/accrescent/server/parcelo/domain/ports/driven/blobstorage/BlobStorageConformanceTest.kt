@@ -4,6 +4,7 @@
 
 package app.accrescent.server.parcelo.domain.ports.driven.blobstorage
 
+import app.accrescent.server.parcelo.core.Bytes
 import app.accrescent.server.parcelo.core.intoInt
 import app.accrescent.server.parcelo.core.unwrap
 import app.accrescent.server.parcelo.core.unwrapErr
@@ -129,7 +130,7 @@ abstract class BlobStorageConformanceTest<B : BlobId> {
         withBlobStorage { storage ->
             // Upload the initial object
             val blobId = storage
-                .create("deadbeef".hexToByteArray(), testLocation(testInfo))
+                .create(Bytes("deadbeef".hexToByteArray()), testLocation(testInfo))
                 .unwrap()
 
             // Generate a download URI
@@ -150,7 +151,7 @@ abstract class BlobStorageConformanceTest<B : BlobId> {
         withBlobStorage { storage ->
             // Upload the initial object
             val blobId = storage
-                .create("deadbeef".hexToByteArray(), testLocation(testInfo))
+                .create(Bytes("deadbeef".hexToByteArray()), testLocation(testInfo))
                 .unwrap()
 
             // Attempt to download the uploaded object
@@ -170,7 +171,7 @@ abstract class BlobStorageConformanceTest<B : BlobId> {
         withBlobStorage { storage ->
             // Upload the initial object
             val blobId = storage
-                .create("deadbeef".hexToByteArray(), testLocation(testInfo))
+                .create(Bytes("deadbeef".hexToByteArray()), testLocation(testInfo))
                 .unwrap()
 
             // Download the object to a local destination
@@ -204,7 +205,7 @@ abstract class BlobStorageConformanceTest<B : BlobId> {
     ) {
         withBlobStorage { storage ->
             val blobId = storage
-                .create("deadbeef".hexToByteArray(), testLocation(testInfo))
+                .create(Bytes("deadbeef".hexToByteArray()), testLocation(testInfo))
                 .unwrap()
 
             val wrongVersionId = withDifferentVersion(blobId)

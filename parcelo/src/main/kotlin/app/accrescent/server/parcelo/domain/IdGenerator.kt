@@ -4,13 +4,13 @@
 
 package app.accrescent.server.parcelo.domain
 
+import app.accrescent.server.parcelo.core.NonNegativeInt
 import app.accrescent.server.parcelo.core.bindMapLeft
+import app.accrescent.server.parcelo.core.unwrap
 import app.accrescent.server.parcelo.domain.encoding.Base62
 import app.accrescent.server.parcelo.domain.ports.driven.randomsource.RandomSource
 import arrow.core.Either
 import arrow.core.raise.either
-
-private const val ID_BYTE_LENGTH = 16
 
 data object IdGenerationError
 
@@ -18,6 +18,10 @@ data object IdGenerationError
  * Generator for resource identifiers.
  */
 class IdGenerator(private val randomSource: RandomSource) {
+    private companion object {
+        private val ID_BYTE_LENGTH = NonNegativeInt.new(16).unwrap()
+    }
+
     /**
      * Generates a new resource ID.
      *
@@ -29,8 +33,7 @@ class IdGenerator(private val randomSource: RandomSource) {
      * @return the generated resource ID.
      */
     fun generateId(type: IdType): Either<IdGenerationError, String> = either {
-        val randomBytes = ByteArray(ID_BYTE_LENGTH)
-            .also { randomSource.fillRandomBytes(it).bindMapLeft { IdGenerationError } }
+        val randomBytes = randomSource.randomBytes(ID_BYTE_LENGTH).bindMapLeft { IdGenerationError }
         val encodedBytes = Base62.encode(randomBytes)
         val prefix = when (type) {
             IdType.APP -> "app"
