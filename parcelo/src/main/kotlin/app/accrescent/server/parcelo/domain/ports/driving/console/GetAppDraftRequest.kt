@@ -4,4 +4,6 @@
 
 package app.accrescent.server.parcelo.domain.ports.driving.console
 
-data class GetAppDraftRequest(val appDraftId: String)
+import app.accrescent.server.parcelo.core.text.UString
+
+data class GetAppDraftRequest(val appDraftId: UString)

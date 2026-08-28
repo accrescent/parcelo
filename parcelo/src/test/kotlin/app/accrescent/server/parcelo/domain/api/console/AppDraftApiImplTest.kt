@@ -11,6 +11,8 @@ import app.accrescent.server.parcelo.adapters.driven.datastore.jdbc.InMemoryData
 import app.accrescent.server.parcelo.adapters.driven.randomsource.DeterministicRandomSource
 import app.accrescent.server.parcelo.adapters.driven.timestampsource.FixedTimestampSource
 import app.accrescent.server.parcelo.appPackage
+import app.accrescent.server.parcelo.core.text.UString
+import app.accrescent.server.parcelo.core.text.u
 import app.accrescent.server.parcelo.core.unwrap
 import app.accrescent.server.parcelo.core.unwrap2
 import app.accrescent.server.parcelo.core.unwrapErr
@@ -86,7 +88,7 @@ class AppDraftApiImplTest {
             val context = signIn(dataStore)
             val appDraftApi = makeAppDraftApi(dataStore)
 
-            val response = appDraftApi.createAppDraft(context, CreateAppDraftRequest("org2"))
+            val response = appDraftApi.createAppDraft(context, CreateAppDraftRequest("org2".u))
 
             assertEquals(InsufficientPermissionError, response.unwrapErr())
         }
@@ -118,7 +120,7 @@ class AppDraftApiImplTest {
             val appDraftApi = makeAppDraftApi(dataStore)
 
             val response =
-                appDraftApi.downloadAppDraft(context, DownloadAppDraftRequest("appDraft1"))
+                appDraftApi.downloadAppDraft(context, DownloadAppDraftRequest("appDraft1".u))
 
             assertEquals(InsufficientPermissionError, response.unwrapErr())
         }
@@ -146,7 +148,7 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 signInNewUser(tx).bind()
-                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
+                tx.appDrafts.create("org1".u, "appDraft1".u, UNIX_EPOCH).bind()
                 saveAppPackageFromNewUpload(tx).bind()
             }
                 .unwrap2()
@@ -154,7 +156,7 @@ class AppDraftApiImplTest {
             val appDraftApi = makeAppDraftApi(dataStore, blobStorage = blobStorage)
 
             val response = appDraftApi
-                .downloadAppDraft(CallContext(Some("session1")), DownloadAppDraftRequest("appDraft1"))
+                .downloadAppDraft(CallContext(Some("session1".u)), DownloadAppDraftRequest("appDraft1".u))
 
             assertEquals(
                 DownloadAppDraftResponse(
@@ -178,7 +180,7 @@ class AppDraftApiImplTest {
             val context = signIn(dataStore)
             val appDraftApi = makeAppDraftApi(dataStore)
 
-            val response = appDraftApi.getAppDraft(context, GetAppDraftRequest("appDraft1"))
+            val response = appDraftApi.getAppDraft(context, GetAppDraftRequest("appDraft1".u))
 
             assertEquals(InsufficientPermissionError, response.unwrapErr())
         }
@@ -201,7 +203,7 @@ class AppDraftApiImplTest {
             assertEquals(
                 GetAppDraftResponse(
                     ApiAppDraft.Unsubmitted(
-                        id = "ad_2wTa5P82Lwqd50UvNyQRad",
+                        id = "ad_2wTa5P82Lwqd50UvNyQRad".u,
                         createTime = UNIX_EPOCH,
                         defaultAppDraftListingId = None,
                         appPackage = None,
@@ -218,24 +220,24 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 signInNewUser(tx).bind()
-                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
+                tx.appDrafts.create("org1".u, "appDraft1".u, UNIX_EPOCH).bind()
                 saveAppPackageFromNewUpload(tx).bind()
                 createAppDraftListing(tx).bind()
-                tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
-                tx.appDrafts.updateSubmitTime("appDraft1", UNIX_EPOCH).bind()
+                tx.appDrafts.updateDefaultListing("appDraft1".u, Some("appDraftListing1".u)).bind()
+                tx.appDrafts.updateSubmitTime("appDraft1".u, UNIX_EPOCH).bind()
             }
                 .unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
 
             val response = appDraftApi
-                .getAppDraft(CallContext(Some("session1")), GetAppDraftRequest("appDraft1"))
+                .getAppDraft(CallContext(Some("session1".u)), GetAppDraftRequest("appDraft1".u))
 
             assertEquals(
                 GetAppDraftResponse(
                     ApiAppDraft.Submitted(
-                        id = "appDraft1",
+                        id = "appDraft1".u,
                         createTime = UNIX_EPOCH,
-                        defaultAppDraftListingId = "appDraftListing1",
+                        defaultAppDraftListingId = "appDraftListing1".u,
                         appPackage = ApiAppPackage(
                             androidApplicationId = ApplicationId.fromString("com.example.app").unwrap(),
                             versionCode = VersionCode.fromInt(1).unwrap(),
@@ -287,25 +289,25 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 signInNewUser(tx).bind()
-                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
+                tx.appDrafts.create("org1".u, "appDraft1".u, UNIX_EPOCH).bind()
                 saveAppPackageFromNewUpload(tx).bind()
                 createAppDraftListing(tx).bind()
-                tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
-                tx.appDrafts.updateSubmitTime("appDraft1", UNIX_EPOCH).bind()
+                tx.appDrafts.updateDefaultListing("appDraft1".u, Some("appDraftListing1".u)).bind()
+                tx.appDrafts.updateSubmitTime("appDraft1".u, UNIX_EPOCH).bind()
             }
                 .unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
 
             val response = appDraftApi
-                .listAppDrafts(CallContext(Some("session1")), ListAppDraftsRequest("org1", 1u, None))
+                .listAppDrafts(CallContext(Some("session1".u)), ListAppDraftsRequest("org1".u, 1u, None))
                 .map { it.appDrafts }
 
             assertEquals(
                 listOf(
                     ApiAppDraft.Submitted(
-                        id = "appDraft1",
+                        id = "appDraft1".u,
                         createTime = UNIX_EPOCH,
-                        defaultAppDraftListingId = "appDraftListing1",
+                        defaultAppDraftListingId = "appDraftListing1".u,
                         appPackage = ApiAppPackage(
                             androidApplicationId = ApplicationId.fromString("com.example.app").unwrap(),
                             versionCode = VersionCode.fromInt(1).unwrap(),
@@ -403,7 +405,7 @@ class AppDraftApiImplTest {
             val context = signIn(dataStore)
             val appDraftApi = makeAppDraftApi(dataStore)
 
-            val response = appDraftApi.submitAppDraft(context, SubmitAppDraftRequest("appDraft1"))
+            val response = appDraftApi.submitAppDraft(context, SubmitAppDraftRequest("appDraft1".u))
 
             assertEquals(InsufficientPermissionError, response.unwrapErr())
         }
@@ -415,18 +417,18 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 signInNewUser(tx).bind()
-                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
+                tx.appDrafts.create("org1".u, "appDraft1".u, UNIX_EPOCH).bind()
                 saveAppPackageFromNewUpload(tx).bind()
                 createAppDraftListing(tx).bind()
-                tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
-                tx.appDrafts.updateSubmitTime("appDraft1", UNIX_EPOCH).bind()
+                tx.appDrafts.updateDefaultListing("appDraft1".u, Some("appDraftListing1".u)).bind()
+                tx.appDrafts.updateSubmitTime("appDraft1".u, UNIX_EPOCH).bind()
             }.unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
 
             val response = appDraftApi
-                .submitAppDraft(CallContext(Some("session1")), SubmitAppDraftRequest("appDraft1"))
+                .submitAppDraft(CallContext(Some("session1".u)), SubmitAppDraftRequest("appDraft1".u))
 
-            assertEquals(AppDraftSubmittedError("appDraft1"), response.unwrapErr())
+            assertEquals(AppDraftSubmittedError("appDraft1".u), response.unwrapErr())
         }
     }
 
@@ -450,15 +452,15 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 signInNewUser(tx).bind()
-                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
+                tx.appDrafts.create("org1".u, "appDraft1".u, UNIX_EPOCH).bind()
                 saveAppPackageFromNewUpload(tx).bind()
             }.unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
 
             val response = appDraftApi
-                .submitAppDraft(CallContext(Some("session1")), SubmitAppDraftRequest("appDraft1"))
+                .submitAppDraft(CallContext(Some("session1".u)), SubmitAppDraftRequest("appDraft1".u))
 
-            assertEquals(AppDraftHasNoDefaultListingError("appDraft1"), response.unwrapErr())
+            assertEquals(AppDraftHasNoDefaultListingError("appDraft1".u), response.unwrapErr())
         }
     }
 
@@ -473,37 +475,37 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 signInNewUser(tx).bind()
-                tx.appDrafts.create("org1", "appDraft2", UNIX_EPOCH).bind()
+                tx.appDrafts.create("org1".u, "appDraft2".u, UNIX_EPOCH).bind()
                 saveAppPackageFromNewUpload(
                     tx,
-                    appPackage = appPackage("appPackage1", appDraftId = "appDraft2"),
-                    objectKey = "object1",
+                    appPackage = appPackage("appPackage1".u, appDraftId = "appDraft2".u),
+                    objectKey = "object1".u,
                 )
                     .bind()
-                createAppDraftListing(tx, "appDraftListing2", "appDraft2").bind()
-                tx.appDrafts.updateDefaultListing("appDraft2", Some("appDraftListing2")).bind()
-                tx.appDrafts.updateSubmitTime("appDraft2", UNIX_EPOCH).bind()
-                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
+                createAppDraftListing(tx, "appDraftListing2".u, "appDraft2".u).bind()
+                tx.appDrafts.updateDefaultListing("appDraft2".u, Some("appDraftListing2".u)).bind()
+                tx.appDrafts.updateSubmitTime("appDraft2".u, UNIX_EPOCH).bind()
+                tx.appDrafts.create("org1".u, "appDraft1".u, UNIX_EPOCH).bind()
                 saveAppPackageFromNewUpload(
                     tx,
                     appPackage = appPackage(
-                        "appPackage2",
-                        appDraftId = "appDraft1",
-                        externalBlobId = "blob2",
+                        "appPackage2".u,
+                        appDraftId = "appDraft1".u,
+                        externalBlobId = "blob2".u,
                     ),
-                    pendingUploadId = "appDraftUpload2",
-                    objectKey = "object2",
+                    pendingUploadId = "appDraftUpload2".u,
+                    objectKey = "object2".u,
                 )
                     .bind()
-                createAppDraftListing(tx, "appDraftListing1", "appDraft1").bind()
-                tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
+                createAppDraftListing(tx, "appDraftListing1".u, "appDraft1".u).bind()
+                tx.appDrafts.updateDefaultListing("appDraft1".u, Some("appDraftListing1".u)).bind()
             }.unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
 
             val response = appDraftApi
-                .submitAppDraft(CallContext(Some("session1")), SubmitAppDraftRequest("appDraft1"))
+                .submitAppDraft(CallContext(Some("session1".u)), SubmitAppDraftRequest("appDraft1".u))
 
-            assertEquals(AppDraftSubmittedForAppIdError("com.example.app"), response.unwrapErr())
+            assertEquals(AppDraftSubmittedForAppIdError("com.example.app".u), response.unwrapErr())
         }
     }
 
@@ -513,19 +515,19 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 signInNewUser(tx).bind()
-                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
+                tx.appDrafts.create("org1".u, "appDraft1".u, UNIX_EPOCH).bind()
                 saveAppPackageFromNewUpload(tx).bind()
                 createAppDraftListing(tx).bind()
-                tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
+                tx.appDrafts.updateDefaultListing("appDraft1".u, Some("appDraftListing1".u)).bind()
                 tx.apps.saveWithDefaultListing(
-                    App("app1", "org1", "appListing1", false),
-                    AppListing("appListing1", "app1", ListingLanguage.EN_US),
+                    App("app1".u, "org1".u, "appListing1".u, false),
+                    AppListing("appListing1".u, "app1".u, ListingLanguage.EN_US),
                 ).bind()
             }.unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
 
             val response = appDraftApi
-                .submitAppDraft(CallContext(Some("session1")), SubmitAppDraftRequest("appDraft1"))
+                .submitAppDraft(CallContext(Some("session1".u)), SubmitAppDraftRequest("appDraft1".u))
 
             assertEquals(PublishedAppLimitExceededError(1uL), response.unwrapErr())
         }
@@ -537,20 +539,20 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 signInNewUser(tx).bind()
-                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
+                tx.appDrafts.create("org1".u, "appDraft1".u, UNIX_EPOCH).bind()
                 saveAppPackageFromNewUpload(tx).bind()
                 createAppDraftListing(tx).bind()
-                tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
+                tx.appDrafts.updateDefaultListing("appDraft1".u, Some("appDraftListing1".u)).bind()
             }
                 .unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
 
-            val context = CallContext(Some("session1"))
+            val context = CallContext(Some("session1".u))
             appDraftApi
-                .submitAppDraft(context, SubmitAppDraftRequest("appDraft1"))
+                .submitAppDraft(context, SubmitAppDraftRequest("appDraft1".u))
                 .unwrap()
             val appDraft = appDraftApi
-                .getAppDraft(context, GetAppDraftRequest("appDraft1"))
+                .getAppDraft(context, GetAppDraftRequest("appDraft1".u))
                 .unwrap()
                 .appDraft
 
@@ -565,7 +567,7 @@ class AppDraftApiImplTest {
             val context = signIn(dataStore)
             val appDraftApi = makeAppDraftApi(dataStore)
 
-            val response = appDraftApi.uploadAppDraft(context, UploadAppDraftRequest("appDraft1"))
+            val response = appDraftApi.uploadAppDraft(context, UploadAppDraftRequest("appDraft1".u))
 
             assertEquals(InsufficientPermissionError, response.unwrapErr())
         }
@@ -577,19 +579,19 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 signInNewUser(tx).bind()
-                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
+                tx.appDrafts.create("org1".u, "appDraft1".u, UNIX_EPOCH).bind()
                 saveAppPackageFromNewUpload(tx).bind()
                 createAppDraftListing(tx).bind()
-                tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
-                tx.appDrafts.updateSubmitTime("appDraft1", UNIX_EPOCH).bind()
+                tx.appDrafts.updateDefaultListing("appDraft1".u, Some("appDraftListing1".u)).bind()
+                tx.appDrafts.updateSubmitTime("appDraft1".u, UNIX_EPOCH).bind()
             }
                 .unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
 
             val response = appDraftApi
-                .uploadAppDraft(CallContext(Some("session1")), UploadAppDraftRequest("appDraft1"))
+                .uploadAppDraft(CallContext(Some("session1".u)), UploadAppDraftRequest("appDraft1".u))
 
-            assertEquals(AppDraftSubmittedError("appDraft1"), response.unwrapErr())
+            assertEquals(AppDraftSubmittedError("appDraft1".u), response.unwrapErr())
         }
     }
 
@@ -631,7 +633,7 @@ class AppDraftApiImplTest {
 
             val response = appDraftApi.updateAppDraft(
                 context,
-                UpdateAppDraftRequest("appDraft1", "appDraftListing1"),
+                UpdateAppDraftRequest("appDraft1".u, "appDraftListing1".u),
             )
 
             assertEquals(InsufficientPermissionError, response.unwrapErr())
@@ -644,21 +646,21 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 signInNewUser(tx).bind()
-                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
+                tx.appDrafts.create("org1".u, "appDraft1".u, UNIX_EPOCH).bind()
                 saveAppPackageFromNewUpload(tx).bind()
                 createAppDraftListing(tx).bind()
-                tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
-                tx.appDrafts.updateSubmitTime("appDraft1", UNIX_EPOCH).bind()
+                tx.appDrafts.updateDefaultListing("appDraft1".u, Some("appDraftListing1".u)).bind()
+                tx.appDrafts.updateSubmitTime("appDraft1".u, UNIX_EPOCH).bind()
             }
                 .unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
 
             val response = appDraftApi.updateAppDraft(
-                CallContext(Some("session1")),
-                UpdateAppDraftRequest("appDraft1", "appDraftListing1"),
+                CallContext(Some("session1".u)),
+                UpdateAppDraftRequest("appDraft1".u, "appDraftListing1".u),
             )
 
-            assertEquals(AppDraftSubmittedError("appDraft1"), response.unwrapErr())
+            assertEquals(AppDraftSubmittedError("appDraft1".u), response.unwrapErr())
         }
     }
 
@@ -672,10 +674,10 @@ class AppDraftApiImplTest {
 
             val response = appDraftApi.updateAppDraft(
                 context,
-                UpdateAppDraftRequest(appDraftId, "appDraftListing1"),
+                UpdateAppDraftRequest(appDraftId, "appDraftListing1".u),
             )
 
-            assertEquals(AppDraftListingNotFoundError("appDraftListing1"), response.unwrapErr())
+            assertEquals(AppDraftListingNotFoundError("appDraftListing1".u), response.unwrapErr())
         }
     }
 
@@ -709,7 +711,7 @@ class AppDraftApiImplTest {
             val context = signIn(dataStore)
             val appDraftApi = makeAppDraftApi(dataStore)
 
-            val response = appDraftApi.deleteAppDraft(context, DeleteAppDraftRequest("appDraft1"))
+            val response = appDraftApi.deleteAppDraft(context, DeleteAppDraftRequest("appDraft1".u))
 
             assertEquals(InsufficientPermissionError, response.unwrapErr())
         }
@@ -721,19 +723,19 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 signInNewUser(tx).bind()
-                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
+                tx.appDrafts.create("org1".u, "appDraft1".u, UNIX_EPOCH).bind()
                 saveAppPackageFromNewUpload(tx).bind()
                 createAppDraftListing(tx).bind()
-                tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
-                tx.appDrafts.updateSubmitTime("appDraft1", UNIX_EPOCH).bind()
+                tx.appDrafts.updateDefaultListing("appDraft1".u, Some("appDraftListing1".u)).bind()
+                tx.appDrafts.updateSubmitTime("appDraft1".u, UNIX_EPOCH).bind()
             }
                 .unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
 
             val response = appDraftApi
-                .deleteAppDraft(CallContext(Some("session1")), DeleteAppDraftRequest("appDraft1"))
+                .deleteAppDraft(CallContext(Some("session1".u)), DeleteAppDraftRequest("appDraft1".u))
 
-            assertEquals(AppDraftSubmittedError("appDraft1"), response.unwrapErr())
+            assertEquals(AppDraftSubmittedError("appDraft1".u), response.unwrapErr())
         }
     }
 
@@ -760,10 +762,10 @@ class AppDraftApiImplTest {
             val appDraftApi = makeAppDraftApi(dataStore)
 
             val request = CreateAppDraftListingRequest(
-                appDraftId = "appDraft1",
+                appDraftId = "appDraft1".u,
                 language = ListingLanguage.EN_US,
-                name = "App Name",
-                shortDescription = "App Short Description",
+                name = "App Name".u,
+                shortDescription = "App Short Description".u,
             )
             val response = appDraftApi.createAppDraftListing(context, request)
 
@@ -783,8 +785,8 @@ class AppDraftApiImplTest {
             val request = CreateAppDraftListingRequest(
                 appDraftId = appDraftId,
                 language = ListingLanguage.EN_US,
-                name = "App Name",
-                shortDescription = "App Short Description",
+                name = "App Name".u,
+                shortDescription = "App Short Description".u,
             )
             val response = appDraftApi.createAppDraftListing(context, request)
 
@@ -801,24 +803,24 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 signInNewUser(tx).bind()
-                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
+                tx.appDrafts.create("org1".u, "appDraft1".u, UNIX_EPOCH).bind()
                 saveAppPackageFromNewUpload(tx).bind()
                 createAppDraftListing(tx).bind()
-                tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
-                tx.appDrafts.updateSubmitTime("appDraft1", UNIX_EPOCH).bind()
+                tx.appDrafts.updateDefaultListing("appDraft1".u, Some("appDraftListing1".u)).bind()
+                tx.appDrafts.updateSubmitTime("appDraft1".u, UNIX_EPOCH).bind()
             }
                 .unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
 
             val request = CreateAppDraftListingRequest(
-                appDraftId = "appDraft1",
+                appDraftId = "appDraft1".u,
                 language = ListingLanguage.EN_US,
-                name = "App Name",
-                shortDescription = "App Short Description",
+                name = "App Name".u,
+                shortDescription = "App Short Description".u,
             )
-            val response = appDraftApi.createAppDraftListing(CallContext(Some("session1")), request)
+            val response = appDraftApi.createAppDraftListing(CallContext(Some("session1".u)), request)
 
-            assertEquals(AppDraftSubmittedError("appDraft1"), response.unwrapErr())
+            assertEquals(AppDraftSubmittedError("appDraft1".u), response.unwrapErr())
         }
     }
 
@@ -831,7 +833,7 @@ class AppDraftApiImplTest {
 
             val response = appDraftApi.getAppDraftListing(
                 context,
-                GetAppDraftListingRequest("appDraftListing1"),
+                GetAppDraftListingRequest("appDraftListing1".u),
             )
 
             assertEquals(InsufficientPermissionError, response.unwrapErr())
@@ -847,7 +849,7 @@ class AppDraftApiImplTest {
             val appDraftId = createAppDraft(dataStore, appDraftApi, context)
 
             val createRequest =
-                CreateAppDraftListingRequest(appDraftId, ListingLanguage.EN_US, "name", "desc")
+                CreateAppDraftListingRequest(appDraftId, ListingLanguage.EN_US, "name".u, "desc".u)
             val createResponse =
                 appDraftApi.createAppDraftListing(context, createRequest).unwrap()
             val getResponse = appDraftApi.getAppDraftListing(
@@ -862,8 +864,8 @@ class AppDraftApiImplTest {
                         id = createResponse.appDraftListingId,
                         appDraftId = appDraftId,
                         language = "en-US",
-                        name = "name",
-                        shortDescription = "desc",
+                        name = "name".u,
+                        shortDescription = "desc".u,
                     )
                 ),
                 getResponse,
@@ -894,8 +896,8 @@ class AppDraftApiImplTest {
                         id = appDraftListingId,
                         appDraftId = appDraftId1,
                         language = "en-US",
-                        name = "Example App",
-                        shortDescription = "Example Short Description",
+                        name = "Example App".u,
+                        shortDescription = "Example Short Description".u,
                     )
                 ).right(),
                 response,
@@ -931,7 +933,7 @@ class AppDraftApiImplTest {
             val context = signIn(dataStore)
             val appDraftApi = makeAppDraftApi(dataStore)
 
-            val request = UpdateAppDraftListingRequest("appDraftListing1", None, None)
+            val request = UpdateAppDraftListingRequest("appDraftListing1".u, None, None)
             val response = appDraftApi.updateAppDraftListing(context, request)
 
             assertEquals(InsufficientPermissionError, response.unwrapErr())
@@ -944,19 +946,19 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 signInNewUser(tx).bind()
-                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
+                tx.appDrafts.create("org1".u, "appDraft1".u, UNIX_EPOCH).bind()
                 saveAppPackageFromNewUpload(tx).bind()
                 createAppDraftListing(tx).bind()
-                tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
-                tx.appDrafts.updateSubmitTime("appDraft1", UNIX_EPOCH).bind()
+                tx.appDrafts.updateDefaultListing("appDraft1".u, Some("appDraftListing1".u)).bind()
+                tx.appDrafts.updateSubmitTime("appDraft1".u, UNIX_EPOCH).bind()
             }
                 .unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
 
-            val request = UpdateAppDraftListingRequest("appDraftListing1", None, None)
-            val response = appDraftApi.updateAppDraftListing(CallContext(Some("session1")), request)
+            val request = UpdateAppDraftListingRequest("appDraftListing1".u, None, None)
+            val response = appDraftApi.updateAppDraftListing(CallContext(Some("session1".u)), request)
 
-            assertEquals(AppDraftSubmittedError("appDraft1"), response.unwrapErr())
+            assertEquals(AppDraftSubmittedError("appDraft1".u), response.unwrapErr())
         }
     }
 
@@ -971,8 +973,8 @@ class AppDraftApiImplTest {
 
             val request = UpdateAppDraftListingRequest(
                 appDraftListingId = appDraftListingId,
-                name = Some("App Name"),
-                shortDescription = Some("App Short Description"),
+                name = Some("App Name".u),
+                shortDescription = Some("App Short Description".u),
             )
             appDraftApi.updateAppDraftListing(context, request).unwrap()
             val getResponse = appDraftApi
@@ -985,8 +987,8 @@ class AppDraftApiImplTest {
                         id = appDraftListingId,
                         appDraftId = appDraftId,
                         language = "en-US",
-                        name = "App Name",
-                        shortDescription = "App Short Description",
+                        name = "App Name".u,
+                        shortDescription = "App Short Description".u,
                     )
                 ),
                 getResponse,
@@ -1003,7 +1005,7 @@ class AppDraftApiImplTest {
 
             val response = appDraftApi.uploadAppDraftListingIcon(
                 context,
-                UploadAppDraftListingIconRequest("appDraftListing1"),
+                UploadAppDraftListingIconRequest("appDraftListing1".u),
             )
 
             assertEquals(InsufficientPermissionError, response.unwrapErr())
@@ -1016,21 +1018,21 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 signInNewUser(tx).bind()
-                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
+                tx.appDrafts.create("org1".u, "appDraft1".u, UNIX_EPOCH).bind()
                 saveAppPackageFromNewUpload(tx).bind()
                 createAppDraftListing(tx).bind()
-                tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
-                tx.appDrafts.updateSubmitTime("appDraft1", UNIX_EPOCH).bind()
+                tx.appDrafts.updateDefaultListing("appDraft1".u, Some("appDraftListing1".u)).bind()
+                tx.appDrafts.updateSubmitTime("appDraft1".u, UNIX_EPOCH).bind()
             }
                 .unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
 
             val response = appDraftApi.uploadAppDraftListingIcon(
-                CallContext(Some("session1")),
-                UploadAppDraftListingIconRequest("appDraftListing1"),
+                CallContext(Some("session1".u)),
+                UploadAppDraftListingIconRequest("appDraftListing1".u),
             )
 
-            assertEquals(AppDraftSubmittedError("appDraft1"), response.unwrapErr())
+            assertEquals(AppDraftSubmittedError("appDraft1".u), response.unwrapErr())
         }
     }
 
@@ -1088,7 +1090,7 @@ class AppDraftApiImplTest {
             val context = signIn(dataStore)
             val appDraftApi = makeAppDraftApi(dataStore)
 
-            val request = DeleteAppDraftListingRequest("appDraftListing1")
+            val request = DeleteAppDraftListingRequest("appDraftListing1".u)
             val response = appDraftApi.deleteAppDraftListing(context, request)
 
             assertEquals(InsufficientPermissionError, response.unwrapErr())
@@ -1101,19 +1103,19 @@ class AppDraftApiImplTest {
             dataStore.migrateToHead().unwrap()
             dataStore.runTxWithRetry { tx ->
                 signInNewUser(tx).bind()
-                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
+                tx.appDrafts.create("org1".u, "appDraft1".u, UNIX_EPOCH).bind()
                 saveAppPackageFromNewUpload(tx).bind()
                 createAppDraftListing(tx).bind()
-                tx.appDrafts.updateDefaultListing("appDraft1", Some("appDraftListing1")).bind()
-                tx.appDrafts.updateSubmitTime("appDraft1", FixedTimestampSource().now()).bind()
+                tx.appDrafts.updateDefaultListing("appDraft1".u, Some("appDraftListing1".u)).bind()
+                tx.appDrafts.updateSubmitTime("appDraft1".u, FixedTimestampSource().now()).bind()
             }
                 .unwrap2()
             val appDraftApi = makeAppDraftApi(dataStore)
 
-            val request = DeleteAppDraftListingRequest("appDraftListing1")
-            val response = appDraftApi.deleteAppDraftListing(CallContext(Some("session1")), request)
+            val request = DeleteAppDraftListingRequest("appDraftListing1".u)
+            val response = appDraftApi.deleteAppDraftListing(CallContext(Some("session1".u)), request)
 
-            assertEquals(AppDraftSubmittedError("appDraft1"), response.unwrapErr())
+            assertEquals(AppDraftSubmittedError("appDraft1".u), response.unwrapErr())
         }
     }
 
@@ -1206,7 +1208,7 @@ class AppDraftApiImplTest {
         dataStore: DataStore,
         appDraftApi: AppDraftApi,
         context: CallContext,
-    ): String {
+    ): UString {
         return appDraftApi
             .createAppDraft(context, CreateAppDraftRequest(getMyOrganizationId(dataStore, context)))
             .unwrap()
@@ -1216,10 +1218,10 @@ class AppDraftApiImplTest {
     private fun createAppDraftListing(
         appDraftApi: AppDraftApi,
         context: CallContext,
-        appDraftId: String,
-        name: String = "Example App",
-        shortDescription: String = "Example Short Description",
-    ): String {
+        appDraftId: UString,
+        name: UString = "Example App".u,
+        shortDescription: UString = "Example Short Description".u,
+    ): UString {
         val request = CreateAppDraftListingRequest(
             appDraftId = appDraftId,
             language = ListingLanguage.EN_US,
@@ -1243,8 +1245,8 @@ class AppDraftApiImplTest {
             LocalOnlyBlobStorage(blobStorage),
             randomSource,
             timestampSource,
-            appDraftUploadBucketName,
-            appDraftListingIconUploadBucketName,
+            appDraftUploadBucketName.u,
+            appDraftListingIconUploadBucketName.u,
         )
     }
 
@@ -1263,62 +1265,62 @@ class AppDraftApiImplTest {
         private fun unauthenticatedCallTestCases(): List<UnauthenticatedCallTestCase> {
             val calls: List<Pair<String, (AppDraftApi, CallContext) -> Either<*, *>>> = listOf(
                 "createAppDraft" to { api, context ->
-                    api.createAppDraft(context, CreateAppDraftRequest("org1"))
+                    api.createAppDraft(context, CreateAppDraftRequest("org1".u))
                 },
                 "getAppDraft" to { api, context ->
-                    api.getAppDraft(context, GetAppDraftRequest("appDraft1"))
+                    api.getAppDraft(context, GetAppDraftRequest("appDraft1".u))
                 },
                 "listAppDrafts" to { api, context ->
-                    api.listAppDrafts(context, ListAppDraftsRequest("org1", 1u, None))
+                    api.listAppDrafts(context, ListAppDraftsRequest("org1".u, 1u, None))
                 },
                 "uploadAppDraft" to { api, context ->
-                    api.uploadAppDraft(context, UploadAppDraftRequest("appDraft1"))
+                    api.uploadAppDraft(context, UploadAppDraftRequest("appDraft1".u))
                 },
                 "downloadAppDraft" to { api, context ->
-                    api.downloadAppDraft(context, DownloadAppDraftRequest("appDraft1"))
+                    api.downloadAppDraft(context, DownloadAppDraftRequest("appDraft1".u))
                 },
                 "updateAppDraft" to { api, context ->
-                    api.updateAppDraft(context, UpdateAppDraftRequest("appDraft1", "appDraftListing1"))
+                    api.updateAppDraft(context, UpdateAppDraftRequest("appDraft1".u, "appDraftListing1".u))
                 },
                 "submitAppDraft" to { api, context ->
-                    api.submitAppDraft(context, SubmitAppDraftRequest("appDraft1"))
+                    api.submitAppDraft(context, SubmitAppDraftRequest("appDraft1".u))
                 },
                 "deleteAppDraft" to { api, context ->
-                    api.deleteAppDraft(context, DeleteAppDraftRequest("appDraft1"))
+                    api.deleteAppDraft(context, DeleteAppDraftRequest("appDraft1".u))
                 },
                 "createAppDraftListing" to { api, context ->
                     api.createAppDraftListing(
                         context,
                         CreateAppDraftListingRequest(
-                            appDraftId = "appDraft1",
+                            appDraftId = "appDraft1".u,
                             language = ListingLanguage.EN_US,
-                            name = "App Name",
-                            shortDescription = "App Short Description",
+                            name = "App Name".u,
+                            shortDescription = "App Short Description".u,
                         ),
                     )
                 },
                 "getAppDraftListing" to { api, context ->
-                    api.getAppDraftListing(context, GetAppDraftListingRequest("appDraftListing1"))
+                    api.getAppDraftListing(context, GetAppDraftListingRequest("appDraftListing1".u))
                 },
                 "listAppDraftListings" to { api, context ->
-                    api.listAppDraftListings(context, ListAppDraftListingsRequest("appDraft1", 1u, None))
+                    api.listAppDraftListings(context, ListAppDraftListingsRequest("appDraft1".u, 1u, None))
                 },
                 "updateAppDraftListing" to { api, context ->
                     api.updateAppDraftListing(
                         context,
-                        UpdateAppDraftListingRequest("appDraftListing1", None, None),
+                        UpdateAppDraftListingRequest("appDraftListing1".u, None, None),
                     )
                 },
                 "uploadAppDraftListingIcon" to { api, context ->
                     api.uploadAppDraftListingIcon(
                         context,
-                        UploadAppDraftListingIconRequest("appDraftListing1"),
+                        UploadAppDraftListingIconRequest("appDraftListing1".u),
                     )
                 },
                 "deleteAppDraftListing" to { api, context ->
                     api.deleteAppDraftListing(
                         context,
-                        DeleteAppDraftListingRequest("appDraftListing1"),
+                        DeleteAppDraftListingRequest("appDraftListing1".u),
                     )
                 },
             )

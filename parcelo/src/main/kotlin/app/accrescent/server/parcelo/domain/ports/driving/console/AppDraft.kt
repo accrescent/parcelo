@@ -4,40 +4,41 @@
 
 package app.accrescent.server.parcelo.domain.ports.driving.console
 
+import app.accrescent.server.parcelo.core.text.UString
 import arrow.core.None
 import arrow.core.Option
 import arrow.core.Some
 import java.time.OffsetDateTime
 
 sealed class AppDraft {
-    abstract val id: String
+    abstract val id: UString
     abstract val createTime: OffsetDateTime
 
     data class Unsubmitted(
-        override val id: String,
+        override val id: UString,
         override val createTime: OffsetDateTime,
-        val defaultAppDraftListingId: Option<String>,
+        val defaultAppDraftListingId: Option<UString>,
         val appPackage: Option<AppPackage>,
     ) : AppDraft()
 
     data class Submitted(
-        override val id: String,
+        override val id: UString,
         override val createTime: OffsetDateTime,
-        val defaultAppDraftListingId: String,
+        val defaultAppDraftListingId: UString,
         val appPackage: AppPackage,
         val submitTime: OffsetDateTime,
     ) : AppDraft()
 
     data class Published(
-        override val id: String,
+        override val id: UString,
         override val createTime: OffsetDateTime,
-        val defaultAppDraftListingId: String,
+        val defaultAppDraftListingId: UString,
         val appPackage: AppPackage,
         val submitTime: OffsetDateTime,
         val publishTime: OffsetDateTime,
     ) : AppDraft()
 
-    val optionalDefaultAppDraftListingId: Option<String>
+    val optionalDefaultAppDraftListingId: Option<UString>
         get() = when (this) {
             is Unsubmitted -> this.defaultAppDraftListingId
             is Submitted -> Some(this.defaultAppDraftListingId)

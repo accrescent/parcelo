@@ -7,6 +7,7 @@ package app.accrescent.server.parcelo.domain.api.console
 import app.accrescent.server.parcelo.adapters.driven.datastore.jdbc.InMemoryDataStore
 import app.accrescent.server.parcelo.adapters.driven.randomsource.DeterministicRandomSource
 import app.accrescent.server.parcelo.adapters.driven.timestampsource.FixedTimestampSource
+import app.accrescent.server.parcelo.core.text.u
 import app.accrescent.server.parcelo.core.unwrap
 import app.accrescent.server.parcelo.core.unwrapErr
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStore
@@ -41,7 +42,7 @@ class OrganizationApiImplTest {
             dataStore.migrateToHead().unwrap()
             val organizationApi = makeOrganizationApi(dataStore)
 
-            val response = organizationApi.getMyOrganization(CallContext(Some("session1")))
+            val response = organizationApi.getMyOrganization(CallContext(Some("session1".u)))
 
             assertEquals(UnauthenticatedError, response.unwrapErr())
         }
@@ -74,7 +75,7 @@ class OrganizationApiImplTest {
             val response = organizationApi.getMyOrganization(context)
 
             assertEquals(
-                GetMyOrganizationResponse(Organization("org_1uMy9o9BqyoxomLjIEbctU")).right(),
+                GetMyOrganizationResponse(Organization("org_1uMy9o9BqyoxomLjIEbctU".u)).right(),
                 response,
             )
         }

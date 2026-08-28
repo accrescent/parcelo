@@ -4,6 +4,7 @@
 
 package app.accrescent.server.parcelo.domain.ports.driven.datastore
 
+import app.accrescent.server.parcelo.core.text.UString
 import app.accrescent.server.parcelo.domain.appstore.ListingLanguage
 
 /**
@@ -16,9 +17,9 @@ import app.accrescent.server.parcelo.domain.appstore.ListingLanguage
  * @property shortDescription a short description of the app, limited to 80 characters.
  */
 data class AppDraftListingApiView(
-    val id: String,
-    val appDraftId: String,
+    val id: UString,
+    val appDraftId: UString,
     val language: ListingLanguage,
-    val name: String,
-    val shortDescription: String,
+    val name: UString,
+    val shortDescription: UString,
 )

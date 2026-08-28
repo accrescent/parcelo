@@ -5,7 +5,7 @@
 package app.accrescent.server.parcelo.domain.api.console
 
 import app.accrescent.server.parcelo.core.bindMapLeft
-import app.accrescent.server.parcelo.core.encodeToBytes
+import app.accrescent.server.parcelo.core.text.UString
 import app.accrescent.server.parcelo.domain.crypto.Sha256Hash
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStore
 import app.accrescent.server.parcelo.domain.ports.driving.console.ServerError
@@ -30,9 +30,9 @@ import java.time.OffsetDateTime
 context(_: Raise<ServerError>)
 fun authenticateCaller(
     tx: DataStore.Transaction,
-    sessionId: Option<String>,
+    sessionId: Option<UString>,
     currentTime: OffsetDateTime,
-): Either<UnauthenticatedError, String> {
+): Either<UnauthenticatedError, UString> {
     return when (sessionId) {
         None -> Either.Left(UnauthenticatedError)
 

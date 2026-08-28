@@ -18,7 +18,7 @@ class IdGeneratorTest {
     ) {
         val id = newIdGenerator().generateId(testCase.idType).unwrap()
 
-        assertTrue(id.startsWith(testCase.expectedPrefix))
+        assertTrue(id.value.startsWith(testCase.expectedPrefix))
     }
 
     companion object {

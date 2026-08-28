@@ -4,4 +4,6 @@
 
 package app.accrescent.server.parcelo.domain.ports.driving.console
 
-data class DeleteAppDraftListingRequest(val appDraftListingId: String)
+import app.accrescent.server.parcelo.core.text.UString
+
+data class DeleteAppDraftListingRequest(val appDraftListingId: UString)

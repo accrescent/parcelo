@@ -5,6 +5,7 @@
 package app.accrescent.server.parcelo.domain.ports.driven.datastore
 
 import app.accrescent.server.parcelo.core.Bytes
+import app.accrescent.server.parcelo.core.text.UString
 import app.accrescent.server.parcelo.domain.android.ApplicationId
 import app.accrescent.server.parcelo.domain.android.SdkVersion
 import app.accrescent.server.parcelo.domain.android.VersionCode
@@ -12,9 +13,9 @@ import app.accrescent.server.parcelo.domain.android.VersionName
 import java.time.OffsetDateTime
 
 data class AppPackage(
-    val id: String,
-    val appDraftId: String,
-    val externalBlobId: String,
+    val id: UString,
+    val appDraftId: UString,
+    val externalBlobId: UString,
     val uploadEventTime: OffsetDateTime,
     val appId: ApplicationId,
     val versionCode: VersionCode,

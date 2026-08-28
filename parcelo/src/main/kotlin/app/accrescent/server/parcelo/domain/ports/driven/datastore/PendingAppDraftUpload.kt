@@ -4,6 +4,7 @@
 
 package app.accrescent.server.parcelo.domain.ports.driven.datastore
 
+import app.accrescent.server.parcelo.core.text.UString
 import app.accrescent.server.parcelo.domain.android.ApkSetParseError
 import arrow.core.Either
 import arrow.core.None
@@ -26,23 +27,23 @@ sealed class AppDraftUploadProcessingError {
 }
 
 sealed class PendingAppDraftUpload {
-    abstract val id: String
-    abstract val appDraftId: String
-    abstract val objectKey: String
+    abstract val id: UString
+    abstract val appDraftId: UString
+    abstract val objectKey: UString
     abstract val createTime: OffsetDateTime
 
     data class Incomplete(
-        override val id: String,
-        override val appDraftId: String,
-        override val objectKey: String,
+        override val id: UString,
+        override val appDraftId: UString,
+        override val objectKey: UString,
         override val createTime: OffsetDateTime,
-        val externalBlobId: String,
+        val externalBlobId: UString,
     ) : PendingAppDraftUpload()
 
     data class Completed(
-        override val id: String,
-        override val appDraftId: String,
-        override val objectKey: String,
+        override val id: UString,
+        override val appDraftId: UString,
+        override val objectKey: UString,
         override val createTime: OffsetDateTime,
         val result: Either<AppDraftUploadProcessingError, Unit>,
     ) : PendingAppDraftUpload()

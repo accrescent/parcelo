@@ -4,9 +4,11 @@
 
 package app.accrescent.server.parcelo.domain.ports.driven.datastore
 
+import app.accrescent.server.parcelo.core.text.UString
+
 data class App(
-    val id: String,
-    val organizationId: String,
-    val defaultAppListingId: String,
+    val id: UString,
+    val organizationId: UString,
+    val defaultAppListingId: UString,
     val publiclyListed: Boolean,
 )

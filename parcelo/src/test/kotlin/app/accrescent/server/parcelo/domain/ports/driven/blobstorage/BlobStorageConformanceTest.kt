@@ -6,6 +6,7 @@ package app.accrescent.server.parcelo.domain.ports.driven.blobstorage
 
 import app.accrescent.server.parcelo.core.Bytes
 import app.accrescent.server.parcelo.core.intoInt
+import app.accrescent.server.parcelo.core.text.u
 import app.accrescent.server.parcelo.core.unwrap
 import app.accrescent.server.parcelo.core.unwrapErr
 import io.restassured.RestAssured.given
@@ -217,6 +218,6 @@ abstract class BlobStorageConformanceTest<B : BlobId> {
     }
 
     private fun testLocation(testInfo: TestInfo, suffix: String = "object1"): BlobId.Location {
-        return BlobId.Location(bucketName, "${testInfo.testMethod.get().name}/$suffix")
+        return BlobId.Location(bucketName.u, "${testInfo.testMethod.get().name}/$suffix".u)
     }
 }

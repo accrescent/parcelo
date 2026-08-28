@@ -5,7 +5,6 @@
 package app.accrescent.server.parcelo.domain.api.console
 
 import app.accrescent.server.parcelo.core.bindMapLeft
-import app.accrescent.server.parcelo.core.encodeToBytes
 import app.accrescent.server.parcelo.domain.IdGenerator
 import app.accrescent.server.parcelo.domain.IdType
 import app.accrescent.server.parcelo.domain.authn.ExternalUserId

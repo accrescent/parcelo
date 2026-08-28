@@ -7,6 +7,7 @@ package app.accrescent.server.parcelo.domain.ports.driven.datastore
 import app.accrescent.server.parcelo.core.NonNegativeInt
 import app.accrescent.server.parcelo.core.PositiveLong
 import app.accrescent.server.parcelo.core.bindMapLeft
+import app.accrescent.server.parcelo.core.text.UString
 import app.accrescent.server.parcelo.core.unwrap
 import app.accrescent.server.parcelo.domain.android.ApplicationId
 import app.accrescent.server.parcelo.domain.android.NameAttribute
@@ -145,7 +146,7 @@ abstract class DataStore(private val randomSource: RandomSource) {
          * @return [DataStoreError.EntityNotFound] if no incomplete upload exists with the given ID.
          */
         abstract fun completePendingUpload(
-            pendingUploadId: String,
+            pendingUploadId: UString,
             error: AppDraftUploadProcessingError,
             blobDeleteTime: OffsetDateTime,
         ): DataStoreResult<Unit>
@@ -158,7 +159,7 @@ abstract class DataStore(private val randomSource: RandomSource) {
          * @param organizationId the organization to count active app drafts in.
          * @return the number of active app drafts for the given organization.
          */
-        abstract fun countActiveInOrganization(organizationId: String): DataStoreResult<ULong>
+        abstract fun countActiveInOrganization(organizationId: UString): DataStoreResult<ULong>
 
         /**
          * Creates a new, empty app draft.
@@ -170,8 +171,8 @@ abstract class DataStore(private val randomSource: RandomSource) {
          * app draft with the provided ID already exists.
          */
         abstract fun create(
-            organizationId: String,
-            appDraftId: String,
+            organizationId: UString,
+            appDraftId: UString,
             createTime: OffsetDateTime,
         ): DataStoreResult<Unit>
 
@@ -187,11 +188,11 @@ abstract class DataStore(private val randomSource: RandomSource) {
          * (appDraftId, language) pair already exists or the referenced app draft does not exist.
          */
         abstract fun createListing(
-            id: String,
-            appDraftId: String,
+            id: UString,
+            appDraftId: UString,
             language: ListingLanguage,
-            name: String,
-            shortDescription: String,
+            name: UString,
+            shortDescription: UString,
         ): DataStoreResult<Unit>
 
         /**
@@ -204,7 +205,7 @@ abstract class DataStore(private val randomSource: RandomSource) {
          * @param blobDeleteTime the time at which the released blobs are marked as deleted.
          * @return [DataStoreError.EntityNotFound] if the app draft does not exist.
          */
-        abstract fun deleteById(id: String, blobDeleteTime: OffsetDateTime): DataStoreResult<Unit>
+        abstract fun deleteById(id: UString, blobDeleteTime: OffsetDateTime): DataStoreResult<Unit>
 
         /**
          * Deletes an app draft listing.
@@ -217,7 +218,7 @@ abstract class DataStore(private val randomSource: RandomSource) {
          * @return [DataStoreError.EntityNotFound] if the listing does not exist.
          */
         abstract fun deleteListingById(
-            id: String,
+            id: UString,
             blobDeleteTime: OffsetDateTime,
         ): DataStoreResult<Unit>
 
@@ -233,7 +234,7 @@ abstract class DataStore(private val randomSource: RandomSource) {
          * draft listing, including if no app draft listing exists with the given ID.
          */
         abstract fun deletePendingListingIconUploadByListingId(
-            appDraftListingId: String,
+            appDraftListingId: UString,
             blobDeleteTime: OffsetDateTime,
         ): DataStoreResult<Unit>
 
@@ -248,7 +249,7 @@ abstract class DataStore(private val randomSource: RandomSource) {
          * draft, including if no app draft exists with the given ID.
          */
         abstract fun deletePendingUploadByAppDraftId(
-            appDraftId: String,
+            appDraftId: UString,
             blobDeleteTime: OffsetDateTime,
         ): DataStoreResult<Unit>
 
@@ -268,7 +269,7 @@ abstract class DataStore(private val randomSource: RandomSource) {
          * @param id the ID of the app draft to find.
          * @return the API view of the app draft with the given ID, or [None] if it doesn't exist.
          */
-        abstract fun findApiViewById(id: String): DataStoreResult<Option<AppDraftApiView>>
+        abstract fun findApiViewById(id: UString): DataStoreResult<Option<AppDraftApiView>>
 
         /**
          * Finds the API views for a list of app drafts in a given organization which the given user
@@ -281,10 +282,10 @@ abstract class DataStore(private val randomSource: RandomSource) {
          * @return the list of app draft API views matching the query.
          */
         abstract fun findApiViewsForOrganizationAndUserByQuery(
-            organizationId: String,
-            userId: String,
+            organizationId: UString,
+            userId: UString,
             maxResults: NonNegativeInt,
-            afterAppDraftId: Option<String>,
+            afterAppDraftId: Option<UString>,
         ): DataStoreResult<List<AppDraftApiView>>
 
         /**
@@ -295,7 +296,7 @@ abstract class DataStore(private val randomSource: RandomSource) {
          * exist.
          */
         abstract fun findListingApiViewById(
-            id: String,
+            id: UString,
         ): DataStoreResult<Option<AppDraftListingApiView>>
 
         /**
@@ -312,8 +313,8 @@ abstract class DataStore(private val randomSource: RandomSource) {
          * @return the list of app draft listing API views matching the query.
          */
         abstract fun findListingApiViewsForAppDraftAndUserByQuery(
-            appDraftId: String,
-            userId: String,
+            appDraftId: UString,
+            userId: UString,
             maxResults: NonNegativeInt,
             afterLanguage: Option<ListingLanguage>,
         ): DataStoreResult<List<AppDraftListingApiView>>
@@ -326,7 +327,7 @@ abstract class DataStore(private val randomSource: RandomSource) {
          * it doesn't exist.
          */
         abstract fun findPendingListingIconUploadByObjectKey(
-            objectKey: String,
+            objectKey: UString,
         ): DataStoreResult<Option<PendingAppDraftListingIconUpload>>
 
         /**
@@ -337,7 +338,7 @@ abstract class DataStore(private val randomSource: RandomSource) {
          * exist.
          */
         abstract fun findPendingUploadByObjectKey(
-            objectKey: String,
+            objectKey: UString,
         ): DataStoreResult<Option<PendingAppDraftUpload>>
 
         /**
@@ -347,7 +348,7 @@ abstract class DataStore(private val randomSource: RandomSource) {
          * @return [DataStoreError.EntityNotFound] if the app draft does not exist, otherwise
          * whether the app draft has a default listing assigned.
          */
-        abstract fun hasDefaultListing(id: String): DataStoreResult<Boolean>
+        abstract fun hasDefaultListing(id: UString): DataStoreResult<Boolean>
 
         /**
          * Determines whether an app draft is submitted.
@@ -356,7 +357,7 @@ abstract class DataStore(private val randomSource: RandomSource) {
          * @return [DataStoreError.EntityNotFound] if the app draft does not exist, otherwise
          * whether the app draft is submitted.
          */
-        abstract fun isSubmitted(id: String): DataStoreResult<Boolean>
+        abstract fun isSubmitted(id: UString): DataStoreResult<Boolean>
 
         /**
          * Determines whether an app draft listing exists.
@@ -367,8 +368,8 @@ abstract class DataStore(private val randomSource: RandomSource) {
          * otherwise.
          */
         abstract fun listingExistsByIdForAppDraft(
-            listingId: String,
-            appDraftId: String,
+            listingId: UString,
+            appDraftId: UString,
         ): DataStoreResult<Boolean>
 
         /**
@@ -379,7 +380,7 @@ abstract class DataStore(private val randomSource: RandomSource) {
          * @return whether an app draft listing with the given app draft ID and language exists.
          */
         abstract fun listingExistsByLanguageForAppDraft(
-            appDraftId: String,
+            appDraftId: UString,
             language: ListingLanguage,
         ): DataStoreResult<Boolean>
 
@@ -390,7 +391,7 @@ abstract class DataStore(private val randomSource: RandomSource) {
          * @return true if an app draft listing with the given ID exists and is its app draft's
          * default listing, false otherwise.
          */
-        abstract fun listingIsDefault(listingId: String): DataStoreResult<Boolean>
+        abstract fun listingIsDefault(listingId: UString): DataStoreResult<Boolean>
 
         /**
          * Determines whether a pending app draft listing icon upload exists for a given app draft
@@ -402,7 +403,7 @@ abstract class DataStore(private val randomSource: RandomSource) {
          * exists.
          */
         abstract fun pendingListingIconUploadExistsByListingId(
-            appDraftListingId: String,
+            appDraftListingId: UString,
         ): DataStoreResult<Boolean>
 
         /**
@@ -411,7 +412,7 @@ abstract class DataStore(private val randomSource: RandomSource) {
          * @param appDraftId the app draft ID to check the existence of a pending upload for.
          * @return whether a pending app draft upload for the given app draft ID exists.
          */
-        abstract fun pendingUploadExistsByAppDraftId(appDraftId: String): DataStoreResult<Boolean>
+        abstract fun pendingUploadExistsByAppDraftId(appDraftId: UString): DataStoreResult<Boolean>
 
         /**
          * Finds the API view of an existing app draft.
@@ -420,7 +421,7 @@ abstract class DataStore(private val randomSource: RandomSource) {
          * @return the API view of the app draft with the given ID, or
          * [DataStoreError.EntityNotFound] if it doesn't exist.
          */
-        fun requireApiViewById(id: String): DataStoreResult<AppDraftApiView> {
+        fun requireApiViewById(id: UString): DataStoreResult<AppDraftApiView> {
             return findApiViewById(id).flatMap { it.toEither { DataStoreError.EntityNotFound } }
         }
 
@@ -431,7 +432,7 @@ abstract class DataStore(private val randomSource: RandomSource) {
          * @return the API view of the app draft listing with the given ID, or
          * [DataStoreError.EntityNotFound] if it doesn't exist.
          */
-        fun requireListingApiViewById(id: String): DataStoreResult<AppDraftListingApiView> {
+        fun requireListingApiViewById(id: UString): DataStoreResult<AppDraftListingApiView> {
             return findListingApiViewById(id)
                 .flatMap { it.toEither { DataStoreError.EntityNotFound } }
         }
@@ -478,8 +479,8 @@ abstract class DataStore(private val randomSource: RandomSource) {
          * app draft.
          */
         abstract fun updateDefaultListing(
-            appDraftId: String,
-            defaultAppDraftListingId: Option<String>,
+            appDraftId: UString,
+            defaultAppDraftListingId: Option<UString>,
         ): DataStoreResult<Unit>
 
         /**
@@ -492,9 +493,9 @@ abstract class DataStore(private val randomSource: RandomSource) {
          * @return [DataStoreError.EntityNotFound] if the listing does not exist.
          */
         abstract fun updateListing(
-            listingId: String,
-            name: Option<String>,
-            shortDescription: Option<String>,
+            listingId: UString,
+            name: Option<UString>,
+            shortDescription: Option<UString>,
         ): DataStoreResult<Unit>
 
         /**
@@ -507,7 +508,7 @@ abstract class DataStore(private val randomSource: RandomSource) {
          * app package and default listing.
          */
         abstract fun updateSubmitTime(
-            appDraftId: String,
+            appDraftId: UString,
             submitTime: OffsetDateTime,
         ): DataStoreResult<Unit>
     }
@@ -521,7 +522,7 @@ abstract class DataStore(private val randomSource: RandomSource) {
          * no such package exists.
          */
         abstract fun findAppIdByAppDraftId(
-            appDraftId: String,
+            appDraftId: UString,
         ): DataStoreResult<Option<ApplicationId>>
 
         /**
@@ -531,7 +532,7 @@ abstract class DataStore(private val randomSource: RandomSource) {
          * @return the app package for the app draft with the given ID, or [None] if one does not
          * exist.
          */
-        abstract fun findByAppDraftId(appDraftId: String): DataStoreResult<Option<AppPackage>>
+        abstract fun findByAppDraftId(appDraftId: UString): DataStoreResult<Option<AppPackage>>
 
         /**
          * Saves a new app package by completing a pending app draft upload.
@@ -554,7 +555,7 @@ abstract class DataStore(private val randomSource: RandomSource) {
          * doesn't match the blob's service.
          */
         abstract fun saveFromPendingUpload(
-            pendingUploadId: String,
+            pendingUploadId: UString,
             appPackage: AppPackage,
             permissions: Map<NameAttribute, Option<SdkVersion>>,
             blobVersion: ExternalBlob.BlobVersion,
@@ -569,7 +570,7 @@ abstract class DataStore(private val randomSource: RandomSource) {
          * @param appDraftId the ID of the app draft whose organization apps should be counted in.
          * @return the number of apps for the app draft's organization.
          */
-        abstract fun countInAppDraftOrganization(appDraftId: String): DataStoreResult<ULong>
+        abstract fun countInAppDraftOrganization(appDraftId: UString): DataStoreResult<ULong>
 
         /**
          * Finds an existing app.
@@ -577,7 +578,7 @@ abstract class DataStore(private val randomSource: RandomSource) {
          * @param id the ID of the app to find.
          * @return the app with the given ID, or [None] if it doesn't exist.
          */
-        abstract fun findById(id: String): DataStoreResult<Option<App>>
+        abstract fun findById(id: UString): DataStoreResult<Option<App>>
 
         /**
          * Finds an existing app.
@@ -586,7 +587,7 @@ abstract class DataStore(private val randomSource: RandomSource) {
          * @return the app with the given ID, or [DataStoreError.EntityNotFound] if it doesn't
          * exist.
          */
-        fun requireById(id: String): DataStoreResult<App> {
+        fun requireById(id: UString): DataStoreResult<App> {
             return findById(id).flatMap { it.toEither { DataStoreError.EntityNotFound } }
         }
 
@@ -612,7 +613,7 @@ abstract class DataStore(private val randomSource: RandomSource) {
          * @return [DataStoreError.EntityNotFound] if the app does not exist.
          */
         abstract fun updatePubliclyListed(
-            appId: String,
+            appId: UString,
             publiclyListed: Boolean,
         ): DataStoreResult<Unit>
     }
@@ -645,7 +646,7 @@ abstract class DataStore(private val randomSource: RandomSource) {
          * @param id the ID of the external blob to find.
          * @return the blob with the given ID, or [None] if it doesn't exist.
          */
-        abstract fun findById(id: String): DataStoreResult<Option<ExternalBlob<*>>>
+        abstract fun findById(id: UString): DataStoreResult<Option<ExternalBlob<*>>>
 
         /**
          * Finds an existing external blob.
@@ -654,7 +655,7 @@ abstract class DataStore(private val randomSource: RandomSource) {
          * @return the blob with the given ID, or [DataStoreError.EntityNotFound] if it doesn't
          * exist.
          */
-        fun requireById(id: String): DataStoreResult<ExternalBlob<*>> {
+        fun requireById(id: UString): DataStoreResult<ExternalBlob<*>> {
             return findById(id).flatMap { it.toEither { DataStoreError.EntityNotFound } }
         }
 
@@ -666,7 +667,7 @@ abstract class DataStore(private val randomSource: RandomSource) {
          * doesn't exist or is not committed.
          */
         fun requireCommittedById(
-            id: String,
+            id: UString,
         ): DataStoreResult<ExternalBlob<ExternalBlob.Status.Committed<*>>> = either {
             when (val blob = requireById(id).bind()) {
                 is ExternalBlob.Local -> when (val status = blob.status) {
@@ -706,7 +707,7 @@ abstract class DataStore(private val randomSource: RandomSource) {
          * @return the ID of the organization the user owns, or [None] if no user with the given ID
          * exists.
          */
-        abstract fun findIdByOwnerUserId(userId: String): DataStoreResult<Option<String>>
+        abstract fun findIdByOwnerUserId(userId: UString): DataStoreResult<Option<UString>>
 
         /**
          * Finds the ID of the organization a given user owns.
@@ -715,7 +716,7 @@ abstract class DataStore(private val randomSource: RandomSource) {
          * @return the ID of the organization the user owns, or [DataStoreError.EntityNotFound] if
          * no user with the given ID exists.
          */
-        fun requireIdByOwnerUserId(userId: String): DataStoreResult<String> {
+        fun requireIdByOwnerUserId(userId: UString): DataStoreResult<UString> {
             return findIdByOwnerUserId(userId).flatMap { it.toEither { DataStoreError.EntityNotFound } }
         }
 
@@ -732,8 +733,8 @@ abstract class DataStore(private val randomSource: RandomSource) {
          * respective provided ID already exists or if a user with the external ID already exists.
          */
         abstract fun saveWithOwner(
-            organizationId: String,
-            userId: String,
+            organizationId: UString,
+            userId: UString,
             externalUserId: ExternalUserId,
             createTime: OffsetDateTime,
         ): DataStoreResult<Unit>
@@ -753,7 +754,7 @@ abstract class DataStore(private val randomSource: RandomSource) {
          */
         abstract fun create(
             idHash: Sha256Hash,
-            userId: String,
+            userId: UString,
             createTime: OffsetDateTime,
             expireTime: OffsetDateTime,
         ): DataStoreResult<Unit>
@@ -768,7 +769,7 @@ abstract class DataStore(private val randomSource: RandomSource) {
          */
         abstract fun findIdByExternalUserId(
             externalUserId: ExternalUserId,
-        ): DataStoreResult<Option<String>>
+        ): DataStoreResult<Option<UString>>
 
         /**
          * Finds the ID of a user an active session belongs to.
@@ -781,6 +782,6 @@ abstract class DataStore(private val randomSource: RandomSource) {
         abstract fun findIdBySessionIdHash(
             sessionIdHash: Sha256Hash,
             currentTime: OffsetDateTime,
-        ): DataStoreResult<Option<String>>
+        ): DataStoreResult<Option<UString>>
     }
 }

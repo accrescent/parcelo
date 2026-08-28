@@ -10,6 +10,7 @@ import app.accrescent.parcelo.impl.v1.listAppDraftListingsPageToken
 import app.accrescent.parcelo.impl.v1.listAppDraftsPageToken
 import app.accrescent.server.parcelo.core.NonNegativeInt
 import app.accrescent.server.parcelo.core.bindMapLeft
+import app.accrescent.server.parcelo.core.text.UString
 import app.accrescent.server.parcelo.core.toEitherBind
 import app.accrescent.server.parcelo.core.unwrap
 import app.accrescent.server.parcelo.domain.IdGenerator
@@ -104,8 +105,8 @@ class AppDraftApiImpl(
     private val objectStorage: BlobStorage<BlobId>,
     randomSource: RandomSource,
     private val timestampSource: TimestampSource,
-    private val appDraftUploadBucketName: String,
-    private val appDraftListingIconUploadBucketName: String,
+    private val appDraftUploadBucketName: UString,
+    private val appDraftListingIconUploadBucketName: UString,
 ) : AppDraftApi {
     private val idGenerator = IdGenerator(randomSource)
 
@@ -186,7 +187,8 @@ class AppDraftApiImpl(
                     raise(InvalidPageTokenError)
                 }
 
-                token.lastAppDraftId
+                // protobuf string fields are always valid Unicode, so this should never throw
+                UString.fromString(token.lastAppDraftId).unwrap()
             } catch (_: IllegalArgumentException) {
                 raise(InvalidPageTokenError)
             } catch (_: InvalidProtocolBufferException) {
@@ -210,7 +212,7 @@ class AppDraftApiImpl(
             .bind()
             .map { it.toApiResource() }
         val nextPageToken = if (appDrafts.isNotEmpty()) {
-            val token = listAppDraftsPageToken { this.lastAppDraftId = appDrafts.last().id }
+            val token = listAppDraftsPageToken { this.lastAppDraftId = appDrafts.last().id.value }
             Some(Base64.UrlSafe.encode(token.toByteArray()))
         } else {
             None
@@ -391,7 +393,8 @@ class AppDraftApiImpl(
                 .existsSubmittedForAppId(appId)
                 .bindMapLeft(::toServerError)
             ensure(!appDraftSubmittedForAppId) {
-                AppDraftSubmittedForAppIdError(appId.value)
+                // Application IDs are ASCII, so they're always valid Unicode
+                AppDraftSubmittedForAppIdError(UString.fromString(appId.value).unwrap())
             }
 
             val publishedAppCount = tx.apps

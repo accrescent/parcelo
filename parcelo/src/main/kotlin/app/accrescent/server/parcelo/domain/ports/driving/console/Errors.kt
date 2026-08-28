@@ -4,6 +4,7 @@
 
 package app.accrescent.server.parcelo.domain.ports.driving.console
 
+import app.accrescent.server.parcelo.core.text.UString
 import app.accrescent.server.parcelo.domain.IdGenerationError
 import app.accrescent.server.parcelo.domain.ports.driven.blobstorage.BlobStorageError
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStoreError
@@ -31,27 +32,27 @@ sealed interface UploadAppDraftListingIconError
 
 data class ActiveAppDraftLimitExceededError(val limit: ULong) : CreateAppDraftError
 
-data class AppDraftAlreadyPublishedError(val id: String) : PublishAppDraftError
+data class AppDraftAlreadyPublishedError(val id: UString) : PublishAppDraftError
 
-data class AppDraftHasNoDefaultListingError(val id: String) : SubmitAppDraftError
+data class AppDraftHasNoDefaultListingError(val id: UString) : SubmitAppDraftError
 
-data class AppDraftHasNoPackageError(val id: String) : SubmitAppDraftError
+data class AppDraftHasNoPackageError(val id: UString) : SubmitAppDraftError
 
 data class AppDraftListingAlreadyExistsError(
-    val appDraftId: String,
+    val appDraftId: UString,
     val language: String,
 ) : CreateAppDraftListingError
 
-data class AppDraftListingIconNotFoundError(val appDraftListingId: String) :
+data class AppDraftListingIconNotFoundError(val appDraftListingId: UString) :
     DownloadAppDraftListingIconError
 
-data class AppDraftListingNotFoundError(val id: String) : UpdateAppDraftError
+data class AppDraftListingNotFoundError(val id: UString) : UpdateAppDraftError
 
-data class AppDraftPackageNotFoundError(val appDraftId: String) : DownloadAppDraftError
+data class AppDraftPackageNotFoundError(val appDraftId: UString) : DownloadAppDraftError
 
-data class AppDraftPublishingError(val id: String) : PublishAppDraftError
+data class AppDraftPublishingError(val id: UString) : PublishAppDraftError
 
-data class AppDraftSubmittedError(val id: String) :
+data class AppDraftSubmittedError(val id: UString) :
     CreateAppDraftListingError,
     DeleteAppDraftError,
     DeleteAppDraftListingError,
@@ -61,7 +62,7 @@ data class AppDraftSubmittedError(val id: String) :
     UploadAppDraftError,
     UploadAppDraftListingIconError
 
-data class AppDraftSubmittedForAppIdError(val appId: String) : SubmitAppDraftError
+data class AppDraftSubmittedForAppIdError(val appId: UString) : SubmitAppDraftError
 
 data object AppWithSameIdAlreadyExists : PublishAppDraftError
 

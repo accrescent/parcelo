@@ -4,4 +4,6 @@
 
 package app.accrescent.server.parcelo.domain.ports.driving.console
 
-data class Organization(val id: String)
+import app.accrescent.server.parcelo.core.text.UString
+
+data class Organization(val id: UString)

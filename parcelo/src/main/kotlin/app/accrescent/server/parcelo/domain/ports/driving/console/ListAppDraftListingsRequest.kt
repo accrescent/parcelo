@@ -4,6 +4,7 @@
 
 package app.accrescent.server.parcelo.domain.ports.driving.console
 
+import app.accrescent.server.parcelo.core.text.UString
 import arrow.core.None
 import arrow.core.Option
 
@@ -17,7 +18,7 @@ import arrow.core.Option
  * [ListAppDraftListingsResponse]. If [None], the first page is returned.
  */
 data class ListAppDraftListingsRequest(
-    val appDraftId: String,
+    val appDraftId: UString,
     val pageSize: UInt,
     val nextPageToken: Option<String>,
 )

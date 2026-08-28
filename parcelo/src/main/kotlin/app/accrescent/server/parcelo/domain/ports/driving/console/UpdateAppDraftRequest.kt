@@ -4,7 +4,9 @@
 
 package app.accrescent.server.parcelo.domain.ports.driving.console
 
+import app.accrescent.server.parcelo.core.text.UString
+
 data class UpdateAppDraftRequest(
-    val appDraftId: String,
-    val defaultAppDraftListingId: String,
+    val appDraftId: UString,
+    val defaultAppDraftListingId: UString,
 )

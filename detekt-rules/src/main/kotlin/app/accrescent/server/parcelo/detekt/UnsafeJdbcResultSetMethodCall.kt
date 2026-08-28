@@ -21,8 +21,8 @@ import org.jetbrains.kotlin.psi.KtCallExpression
  * Methods such as [java.sql.ResultSet.getString] and [java.sql.ResultSet.getInt] are declared in
  * Java without nullability information, so Kotlin sees them as platform types. The compiler will
  * happily assign their result to a non-null type and only throw a `NullPointerException` at runtime
- * if the column was actually `NULL`. The null-safe wrappers in `ResultSetExt.kt` (e.g.
- * `getSafeString`) return honest nullable types instead, so all production code must use those.
+ * if the column was actually `NULL`. The null-safe wrappers in `ResultSetExt.kt` return honest
+ * nullable types instead, so all production code must use those.
  *
  * The wrapper implementations themselves are the only place these raw methods may legitimately be
  * called; suppress the rule there with `@Suppress("UnsafeJdbcResultSetMethodCall")`.

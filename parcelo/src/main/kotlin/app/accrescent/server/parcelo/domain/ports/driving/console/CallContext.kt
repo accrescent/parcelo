@@ -4,6 +4,7 @@
 
 package app.accrescent.server.parcelo.domain.ports.driving.console
 
+import app.accrescent.server.parcelo.core.text.UString
 import arrow.core.None
 import arrow.core.Option
 
@@ -13,4 +14,4 @@ import arrow.core.Option
  * @property sessionId the ID of the session the API call is made with, or [None] if the call is
  * made without one.
  */
-data class CallContext(val sessionId: Option<String>)
+data class CallContext(val sessionId: Option<UString>)

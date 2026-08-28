@@ -4,10 +4,11 @@
 
 package app.accrescent.server.parcelo.domain.ports.driving.console
 
+import app.accrescent.server.parcelo.core.text.UString
 import arrow.core.Option
 
 data class ListAppDraftsRequest(
-    val organizationId: String,
+    val organizationId: UString,
     val pageSize: UInt,
     val pageToken: Option<String>,
 )

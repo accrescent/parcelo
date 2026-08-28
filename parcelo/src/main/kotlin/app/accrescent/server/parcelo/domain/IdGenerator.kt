@@ -6,6 +6,7 @@ package app.accrescent.server.parcelo.domain
 
 import app.accrescent.server.parcelo.core.NonNegativeInt
 import app.accrescent.server.parcelo.core.bindMapLeft
+import app.accrescent.server.parcelo.core.text.UString
 import app.accrescent.server.parcelo.core.unwrap
 import app.accrescent.server.parcelo.domain.encoding.Base62
 import app.accrescent.server.parcelo.domain.ports.driven.randomsource.RandomSource
@@ -32,7 +33,7 @@ class IdGenerator(private val randomSource: RandomSource) {
      * @param type the type of resource ID to generate
      * @return the generated resource ID.
      */
-    fun generateId(type: IdType): Either<IdGenerationError, String> = either {
+    fun generateId(type: IdType): Either<IdGenerationError, UString> = either {
         val randomBytes = randomSource.randomBytes(ID_BYTE_LENGTH).bindMapLeft { IdGenerationError }
         val encodedBytes = Base62.encode(randomBytes)
         val prefix = when (type) {
@@ -49,6 +50,7 @@ class IdGenerator(private val randomSource: RandomSource) {
             IdType.USER -> "u"
         }
 
-        return Either.Right("${prefix}_$encodedBytes")
+        // The ID is ASCII, so it is always valid Unicode
+        return Either.Right(UString.fromString("${prefix}_$encodedBytes").unwrap())
     }
 }

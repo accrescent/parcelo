@@ -4,10 +4,12 @@
 
 package app.accrescent.server.parcelo.domain.ports.driving.console
 
+import app.accrescent.server.parcelo.core.text.UString
+
 data class AppDraftListing(
-    val id: String,
-    val appDraftId: String,
+    val id: UString,
+    val appDraftId: UString,
     val language: String,
-    val name: String,
-    val shortDescription: String,
+    val name: UString,
+    val shortDescription: UString,
 )

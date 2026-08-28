@@ -8,6 +8,8 @@ import app.accrescent.server.parcelo.UNIX_EPOCH
 import app.accrescent.server.parcelo.adapters.driven.datastore.jdbc.InMemoryDataStore
 import app.accrescent.server.parcelo.adapters.driven.randomsource.DeterministicRandomSource
 import app.accrescent.server.parcelo.adapters.driven.timestampsource.FixedTimestampSource
+import app.accrescent.server.parcelo.core.text.UString
+import app.accrescent.server.parcelo.core.text.u
 import app.accrescent.server.parcelo.core.unwrap
 import app.accrescent.server.parcelo.core.unwrap2
 import app.accrescent.server.parcelo.core.unwrapErr
@@ -42,7 +44,7 @@ class AppApiImplTest {
             val context = signIn(dataStore)
             val appApi = makeAppApi(dataStore)
 
-            val response = appApi.getApp(context, GetAppRequest("app1"))
+            val response = appApi.getApp(context, GetAppRequest("app1".u))
 
             assertEquals(InsufficientPermissionError, response.unwrapErr())
         }
@@ -57,12 +59,12 @@ class AppApiImplTest {
             dataStore.runTxWithRetry { tx ->
                 tx.apps.saveWithDefaultListing(
                     originalApp,
-                    AppListing("appListing1", "app1", ListingLanguage.EN_US)
+                    AppListing("appListing1".u, "app1".u, ListingLanguage.EN_US)
                 ).bind()
             }.unwrap2()
             val appApi = makeAppApi(dataStore)
 
-            val response = appApi.getApp(context, GetAppRequest("app1"))
+            val response = appApi.getApp(context, GetAppRequest("app1".u))
 
             assertEquals(
                 GetAppResponse(
@@ -85,7 +87,7 @@ class AppApiImplTest {
             val context = signIn(dataStore)
             val appApi = makeAppApi(dataStore)
 
-            val response = appApi.updateApp(context, UpdateAppRequest("app1", false))
+            val response = appApi.updateApp(context, UpdateAppRequest("app1".u, false))
 
             assertEquals(InsufficientPermissionError, response.unwrapErr())
         }
@@ -99,12 +101,12 @@ class AppApiImplTest {
             dataStore.runTxWithRetry { tx ->
                 tx.apps.saveWithDefaultListing(
                     makeApp(organizationId = getMyOrganizationId(dataStore, context)),
-                    AppListing("appListing1", "app1", ListingLanguage.EN_US)
+                    AppListing("appListing1".u, "app1".u, ListingLanguage.EN_US)
                 ).bind()
             }.unwrap2()
             val appApi = makeAppApi(dataStore)
 
-            val response = appApi.updateApp(context, UpdateAppRequest("app1", false))
+            val response = appApi.updateApp(context, UpdateAppRequest("app1".u, false))
 
             assertEquals(Unit.right(), response)
         }
@@ -118,15 +120,15 @@ class AppApiImplTest {
             dataStore.runTxWithRetry { tx ->
                 tx.apps.saveWithDefaultListing(
                     makeApp(organizationId = getMyOrganizationId(dataStore, context)),
-                    AppListing("appListing1", "app1", ListingLanguage.EN_US)
+                    AppListing("appListing1".u, "app1".u, ListingLanguage.EN_US)
                 ).bind()
             }.unwrap2()
             val appApi = makeAppApi(dataStore)
 
             appApi
-                .updateApp(context, UpdateAppRequest(appId = "app1", publiclyListed = true))
+                .updateApp(context, UpdateAppRequest(appId = "app1".u, publiclyListed = true))
                 .unwrap()
-            val response = appApi.getApp(context, GetAppRequest("app1")).unwrap()
+            val response = appApi.getApp(context, GetAppRequest("app1".u)).unwrap()
 
             assertTrue(response.app.publiclyListed)
         }
@@ -165,9 +167,9 @@ class AppApiImplTest {
     }
 
     private fun makeApp(
-        organizationId: String,
-        id: String = "app1",
-        defaultAppListingId: String = "appListing1",
+        organizationId: UString,
+        id: UString = "app1".u,
+        defaultAppListingId: UString = "appListing1".u,
         publiclyListed: Boolean = false,
     ) = DataApp(id, organizationId, defaultAppListingId, publiclyListed)
 
@@ -185,9 +187,9 @@ class AppApiImplTest {
         @JvmStatic
         private fun unauthenticatedCallTestCases(): List<UnauthenticatedCallTestCase> {
             val calls: List<Pair<String, (AppApi, CallContext) -> Either<*, *>>> = listOf(
-                "getApp" to { api, context -> api.getApp(context, GetAppRequest("app1")) },
+                "getApp" to { api, context -> api.getApp(context, GetAppRequest("app1".u)) },
                 "updateApp" to { api, context ->
-                    api.updateApp(context, UpdateAppRequest("app1", false))
+                    api.updateApp(context, UpdateAppRequest("app1".u, false))
                 },
             )
 

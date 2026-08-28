@@ -7,6 +7,7 @@ package app.accrescent.server.parcelo.adapters.driven.datastore.jdbc
 import app.accrescent.server.parcelo.core.bindMapLeft
 import app.accrescent.server.parcelo.core.intoULong
 import app.accrescent.server.parcelo.core.okOrElse
+import app.accrescent.server.parcelo.core.text.UString
 import app.accrescent.server.parcelo.core.toEitherBind
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStoreError
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.DataStoreResult
@@ -85,9 +86,11 @@ inline fun <reified T : Any> ResultSet.getSafeObject(columnLabel: String): Optio
     }
 }
 
-fun ResultSet.getSafeString(columnLabel: String): Option<String> {
+fun ResultSet.getSafeUString(columnLabel: String): DataStoreResult<Option<UString>> = either {
     @Suppress("UnsafeJdbcResultSetMethodCall")
-    return getString(columnLabel).toOption()
+    getString(columnLabel)
+        .toOption()
+        .map { UString.fromString(it).toEitherBind { DataStoreError.IllegalState } }
 }
 
 fun ResultSet.requireBoolean(columnIndex: Int): DataStoreResult<Boolean> {
@@ -114,8 +117,8 @@ inline fun <reified T : Any> ResultSet.requireObject(columnLabel: String): DataS
     return getSafeObject<T>(columnLabel).toEither { DataStoreError.IllegalState }
 }
 
-fun ResultSet.requireString(columnLabel: String): DataStoreResult<String> {
-    return getSafeString(columnLabel).toEither { DataStoreError.IllegalState }
+fun ResultSet.requireUString(columnLabel: String): DataStoreResult<UString> = either {
+    getSafeUString(columnLabel).bind().toEitherBind { DataStoreError.IllegalState }
 }
 
 fun ResultSet.getSelectExistsResult(): DataStoreResult<Boolean> = either {

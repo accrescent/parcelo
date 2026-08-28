@@ -4,6 +4,7 @@
 
 package app.accrescent.server.parcelo.domain.ports.driven.blobstorage
 
+import app.accrescent.server.parcelo.core.text.UString
 import app.accrescent.server.parcelo.domain.ports.driven.datastore.ExternalBlob
 
 /**
@@ -27,7 +28,7 @@ sealed interface BlobId {
      * @property bucketName the name of the blob's containing bucket.
      * @property objectKey the blob's unique key within its bucket.
      */
-    data class Location(val bucketName: String, val objectKey: String)
+    data class Location(val bucketName: UString, val objectKey: UString)
 
     /**
      * An object stored on the local filesystem.

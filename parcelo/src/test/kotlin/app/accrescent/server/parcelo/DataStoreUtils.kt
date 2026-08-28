@@ -6,7 +6,8 @@ package app.accrescent.server.parcelo
 
 import app.accrescent.server.parcelo.adapters.driven.timestampsource.FixedTimestampSource
 import app.accrescent.server.parcelo.core.Bytes
-import app.accrescent.server.parcelo.core.encodeToBytes
+import app.accrescent.server.parcelo.core.text.UString
+import app.accrescent.server.parcelo.core.text.u
 import app.accrescent.server.parcelo.core.unwrap
 import app.accrescent.server.parcelo.domain.android.ApplicationId
 import app.accrescent.server.parcelo.domain.android.NameAttribute
@@ -33,11 +34,11 @@ import java.time.OffsetDateTime
 val UNIX_EPOCH = FixedTimestampSource().now()
 
 fun appDraftListingApiView(
-    id: String = "appDraftListing1",
-    appDraftId: String = "appDraft1",
+    id: UString = "appDraftListing1".u,
+    appDraftId: UString = "appDraft1".u,
     language: ListingLanguage = ListingLanguage.EN_US,
-    name: String = "Example App",
-    shortDescription: String = "Example Short Description",
+    name: UString = "Example App".u,
+    shortDescription: UString = "Example Short Description".u,
 ): AppDraftListingApiView {
     return AppDraftListingApiView(
         id = id,
@@ -50,11 +51,11 @@ fun appDraftListingApiView(
 
 fun createAppDraftListing(
     tx: DataStore.Transaction,
-    id: String = "appDraftListing1",
-    appDraftId: String = "appDraft1",
+    id: UString = "appDraftListing1".u,
+    appDraftId: UString = "appDraft1".u,
     language: ListingLanguage = ListingLanguage.EN_US,
-    name: String = "Example App",
-    shortDescription: String = "Example Short Description",
+    name: UString = "Example App".u,
+    shortDescription: UString = "Example Short Description".u,
 ): DataStoreResult<Unit> {
     return tx.appDrafts.createListing(
         id = id,
@@ -67,10 +68,10 @@ fun createAppDraftListing(
 
 fun signInNewUser(
     tx: DataStore.Transaction,
-    userId: String = "user1",
-    organizationId: String = "org1",
+    userId: UString = "user1".u,
+    organizationId: UString = "org1".u,
     externalUserId: ExternalUserId = ExternalUserId.Github(1),
-    sessionId: String = "session1",
+    sessionId: UString = "session1".u,
 ): DataStoreResult<Unit> = either {
     tx.organizations.saveWithOwner(organizationId, userId, externalUserId, UNIX_EPOCH).bind()
     tx.sessions
@@ -79,9 +80,9 @@ fun signInNewUser(
 }
 
 fun appPackage(
-    id: String = "appPackage1",
-    appDraftId: String = "appDraft1",
-    externalBlobId: String = "blob1",
+    id: UString = "appPackage1".u,
+    appDraftId: UString = "appDraft1".u,
+    externalBlobId: UString = "blob1".u,
     uploadEventTime: OffsetDateTime = UNIX_EPOCH,
     appId: ApplicationId = ApplicationId.fromString("com.example.app").unwrap(),
     versionCode: VersionCode = VersionCode.fromInt(1).unwrap(),
@@ -122,9 +123,9 @@ fun saveAppPackageFromNewUpload(
     tx: DataStore.Transaction,
     appPackage: AppPackage = appPackage(),
     permissions: Map<NameAttribute, Option<SdkVersion>> = emptyMap(),
-    pendingUploadId: String = "appDraftUpload1",
-    bucketName: String = "bucket1",
-    objectKey: String = "object1",
+    pendingUploadId: UString = "appDraftUpload1".u,
+    bucketName: UString = "bucket1".u,
+    objectKey: UString = "object1".u,
 ): DataStoreResult<Unit> = either {
     tx.appDrafts
         .saveUpload(
@@ -155,9 +156,9 @@ fun saveAppPackageFromNewUpload(
 }
 
 fun committedExternalBlob(
-    id: String = "blob1",
-    bucketName: String = "bucket1",
-    objectKey: String = "object1",
+    id: UString = "blob1".u,
+    bucketName: UString = "bucket1".u,
+    objectKey: UString = "object1".u,
     createTime: OffsetDateTime = UNIX_EPOCH,
     generation: Long = 1,
 ): ExternalBlob<ExternalBlob.Status.Committed<*>> {
@@ -171,9 +172,9 @@ fun committedExternalBlob(
 }
 
 fun pendingExternalBlob(
-    id: String = "blob1",
-    bucketName: String = "bucket1",
-    objectKey: String = "object1",
+    id: UString = "blob1".u,
+    bucketName: UString = "bucket1".u,
+    objectKey: UString = "object1".u,
     createTime: OffsetDateTime = UNIX_EPOCH,
 ): ExternalBlob<ExternalBlob.Status.Pending> {
     return ExternalBlob.Local(
@@ -186,10 +187,10 @@ fun pendingExternalBlob(
 }
 
 fun incompletePendingAppDraftUpload(
-    id: String = "appDraftUpload1",
-    appDraftId: String = "appDraft1",
-    externalBlobId: String = "blob1",
-    objectKey: String = "object1",
+    id: UString = "appDraftUpload1".u,
+    appDraftId: UString = "appDraft1".u,
+    externalBlobId: UString = "blob1".u,
+    objectKey: UString = "object1".u,
     createTime: OffsetDateTime = UNIX_EPOCH,
 ): PendingAppDraftUpload.Incomplete {
     return PendingAppDraftUpload.Incomplete(
@@ -202,10 +203,10 @@ fun incompletePendingAppDraftUpload(
 }
 
 fun incompletePendingAppDraftListingIconUpload(
-    id: String = "adliu1",
-    appDraftListingId: String = "appDraftListing1",
-    externalBlobId: String = "blob1",
-    objectKey: String = "object1",
+    id: UString = "adliu1".u,
+    appDraftListingId: UString = "appDraftListing1".u,
+    externalBlobId: UString = "blob1".u,
+    objectKey: UString = "object1".u,
     createTime: OffsetDateTime = UNIX_EPOCH,
 ): PendingAppDraftListingIconUpload.Incomplete {
     return PendingAppDraftListingIconUpload.Incomplete(
@@ -218,8 +219,8 @@ fun incompletePendingAppDraftListingIconUpload(
 }
 
 fun unsubmittedAppDraftApiView(
-    id: String = "appDraft1",
-    defaultAppDraftListingId: Option<String> = None,
+    id: UString = "appDraft1".u,
+    defaultAppDraftListingId: Option<UString> = None,
     appPackage: Option<AppPackageApiView> = None,
 ): AppDraftApiView.Unsubmitted {
     return AppDraftApiView.Unsubmitted(

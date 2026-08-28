@@ -224,10 +224,10 @@ class LocalBlobStorage(
     private fun encode(s: String) = Base64.UrlSafe.encode(s.toByteArray())
 
     private fun bucketDir(location: BlobId.Location): Path =
-        tempDir.resolve(encode(location.bucketName))
+        tempDir.resolve(encode(location.bucketName.value))
 
     private fun pathFor(location: BlobId.Location): Path =
-        bucketDir(location).resolve(encode(location.objectKey))
+        bucketDir(location).resolve(encode(location.objectKey.value))
 
     private fun generateToken(): RandomSourceResult<String> = either {
         UUID(randomSource.randomLong().bind(), randomSource.randomLong().bind()).toString()

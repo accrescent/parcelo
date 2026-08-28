@@ -9,6 +9,7 @@ import app.accrescent.server.parcelo.adapters.driven.datastore.jdbc.InMemoryData
 import app.accrescent.server.parcelo.adapters.driven.randomsource.DeterministicRandomSource
 import app.accrescent.server.parcelo.appDraftListingApiView
 import app.accrescent.server.parcelo.committedExternalBlob
+import app.accrescent.server.parcelo.core.text.u
 import app.accrescent.server.parcelo.core.unwrap
 import app.accrescent.server.parcelo.core.unwrap2
 import app.accrescent.server.parcelo.core.unwrapErr
@@ -68,7 +69,7 @@ class DataStoreTest {
             dataStore.migrateToHead().unwrap()
 
             val error = dataStore
-                .runTxWithRetry { tx -> tx.appDrafts.requireApiViewById("appDraft1").bind() }
+                .runTxWithRetry { tx -> tx.appDrafts.requireApiViewById("appDraft1".u).bind() }
                 .unwrap()
                 .unwrapErr()
 
@@ -82,7 +83,7 @@ class DataStoreTest {
             dataStore.migrateToHead().unwrap()
 
             val error = dataStore
-                .runTxWithRetry { tx -> tx.appDrafts.requireListingApiViewById("appDraftListing1").bind() }
+                .runTxWithRetry { tx -> tx.appDrafts.requireListingApiViewById("appDraftListing1".u).bind() }
                 .unwrap()
                 .unwrapErr()
 
@@ -96,14 +97,14 @@ class DataStoreTest {
             dataStore.migrateToHead().unwrap()
             dataStore
                 .runTxWithRetry { tx ->
-                    tx.organizations.saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH).bind()
-                    tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
+                    tx.organizations.saveWithOwner("org1".u, "user1".u, ExternalUserId.Github(1), UNIX_EPOCH).bind()
+                    tx.appDrafts.create("org1".u, "appDraft1".u, UNIX_EPOCH).bind()
                 }
                 .unwrap2()
 
             dataStore.runTxWithRetry { tx -> createAppDraftListing(tx).bind() }.unwrap2()
             val foundListing = dataStore
-                .runTxWithRetry { tx -> tx.appDrafts.requireListingApiViewById("appDraftListing1").bind() }
+                .runTxWithRetry { tx -> tx.appDrafts.requireListingApiViewById("appDraftListing1".u).bind() }
                 .unwrap2()
 
             assertEquals(appDraftListingApiView(), foundListing)
@@ -116,7 +117,7 @@ class DataStoreTest {
             dataStore.migrateToHead().unwrap()
 
             val error = dataStore
-                .runTxWithRetry { tx -> tx.apps.requireById("app1").bind() }
+                .runTxWithRetry { tx -> tx.apps.requireById("app1".u).bind() }
                 .unwrap()
                 .unwrapErr()
 
@@ -128,22 +129,22 @@ class DataStoreTest {
     fun `apps requireById returns app persisted with save`() {
         InMemoryDataStore(DeterministicRandomSource()).use { dataStore ->
             dataStore.migrateToHead().unwrap()
-            val originalApp = App("app1", "org1", "appListing1", false)
+            val originalApp = App("app1".u, "org1".u, "appListing1".u, false)
             dataStore
                 .runTxWithRetry { tx ->
                     tx.organizations
-                        .saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH)
+                        .saveWithOwner("org1".u, "user1".u, ExternalUserId.Github(1), UNIX_EPOCH)
                         .bind()
                 }
                 .unwrap2()
 
-            val defaultListing = AppListing("appListing1", "app1", ListingLanguage.EN_US)
+            val defaultListing = AppListing("appListing1".u, "app1".u, ListingLanguage.EN_US)
             dataStore.runTxWithRetry { tx ->
                 tx.apps.saveWithDefaultListing(originalApp, defaultListing).bind()
             }
                 .unwrap2()
             val foundApp = dataStore
-                .runTxWithRetry { tx -> tx.apps.requireById("app1").bind() }
+                .runTxWithRetry { tx -> tx.apps.requireById("app1".u).bind() }
                 .unwrap2()
 
             assertEquals(originalApp, foundApp)
@@ -156,7 +157,7 @@ class DataStoreTest {
             dataStore.migrateToHead().unwrap()
 
             val error = dataStore
-                .runTxWithRetry { tx -> tx.externalBlobs.requireById("blob1").bind() }
+                .runTxWithRetry { tx -> tx.externalBlobs.requireById("blob1".u).bind() }
                 .unwrap()
                 .unwrapErr()
 
@@ -171,8 +172,8 @@ class DataStoreTest {
             val originalBlob = pendingExternalBlob()
 
             dataStore.runTxWithRetry { tx ->
-                tx.organizations.saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH).bind()
-                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
+                tx.organizations.saveWithOwner("org1".u, "user1".u, ExternalUserId.Github(1), UNIX_EPOCH).bind()
+                tx.appDrafts.create("org1".u, "appDraft1".u, UNIX_EPOCH).bind()
                 tx.appDrafts.saveUpload(incompletePendingAppDraftUpload(), originalBlob).bind()
             }.unwrap2()
             val foundBlob = dataStore
@@ -189,7 +190,7 @@ class DataStoreTest {
             dataStore.migrateToHead().unwrap()
 
             val error = dataStore
-                .runTxWithRetry { tx -> tx.externalBlobs.requireCommittedById("blob1").bind() }
+                .runTxWithRetry { tx -> tx.externalBlobs.requireCommittedById("blob1".u).bind() }
                 .unwrap()
                 .unwrapErr()
 
@@ -204,8 +205,8 @@ class DataStoreTest {
             val pendingBlob = pendingExternalBlob()
 
             dataStore.runTxWithRetry { tx ->
-                tx.organizations.saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH).bind()
-                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
+                tx.organizations.saveWithOwner("org1".u, "user1".u, ExternalUserId.Github(1), UNIX_EPOCH).bind()
+                tx.appDrafts.create("org1".u, "appDraft1".u, UNIX_EPOCH).bind()
                 tx.appDrafts.saveUpload(incompletePendingAppDraftUpload(), pendingBlob).bind()
             }.unwrap2()
             val error = dataStore
@@ -224,8 +225,8 @@ class DataStoreTest {
             val originalBlob = committedExternalBlob()
 
             dataStore.runTxWithRetry { tx ->
-                tx.organizations.saveWithOwner("org1", "user1", ExternalUserId.Github(1), UNIX_EPOCH).bind()
-                tx.appDrafts.create("org1", "appDraft1", UNIX_EPOCH).bind()
+                tx.organizations.saveWithOwner("org1".u, "user1".u, ExternalUserId.Github(1), UNIX_EPOCH).bind()
+                tx.appDrafts.create("org1".u, "appDraft1".u, UNIX_EPOCH).bind()
                 saveAppPackageFromNewUpload(tx).bind()
             }.unwrap2()
             val foundBlob = dataStore
@@ -242,7 +243,7 @@ class DataStoreTest {
             dataStore.migrateToHead().unwrap()
 
             val error = dataStore
-                .runTxWithRetry { tx -> tx.organizations.requireIdByOwnerUserId("user1").bind() }
+                .runTxWithRetry { tx -> tx.organizations.requireIdByOwnerUserId("user1".u).bind() }
                 .unwrap()
                 .unwrapErr()
 

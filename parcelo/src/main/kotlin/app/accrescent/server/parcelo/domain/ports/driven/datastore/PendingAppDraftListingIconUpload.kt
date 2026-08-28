@@ -4,6 +4,7 @@
 
 package app.accrescent.server.parcelo.domain.ports.driven.datastore
 
+import app.accrescent.server.parcelo.core.text.UString
 import java.time.OffsetDateTime
 
 sealed class AppDraftListingIconUploadProcessingResult {
@@ -28,23 +29,23 @@ sealed class AppDraftListingIconUploadProcessingResult {
 }
 
 sealed class PendingAppDraftListingIconUpload {
-    abstract val id: String
-    abstract val appDraftListingId: String
-    abstract val objectKey: String
+    abstract val id: UString
+    abstract val appDraftListingId: UString
+    abstract val objectKey: UString
     abstract val createTime: OffsetDateTime
 
     data class Incomplete(
-        override val id: String,
-        override val appDraftListingId: String,
-        override val objectKey: String,
+        override val id: UString,
+        override val appDraftListingId: UString,
+        override val objectKey: UString,
         override val createTime: OffsetDateTime,
-        val externalBlobId: String,
+        val externalBlobId: UString,
     ) : PendingAppDraftListingIconUpload()
 
     data class Completed(
-        override val id: String,
-        override val appDraftListingId: String,
-        override val objectKey: String,
+        override val id: UString,
+        override val appDraftListingId: UString,
+        override val objectKey: UString,
         override val createTime: OffsetDateTime,
         val result: AppDraftListingIconUploadProcessingResult,
     ) : PendingAppDraftListingIconUpload()

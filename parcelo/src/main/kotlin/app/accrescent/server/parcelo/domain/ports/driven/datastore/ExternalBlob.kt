@@ -4,6 +4,7 @@
 
 package app.accrescent.server.parcelo.domain.ports.driven.datastore
 
+import app.accrescent.server.parcelo.core.text.UString
 import arrow.core.None
 import arrow.core.Option
 import arrow.core.Some
@@ -28,10 +29,10 @@ import java.time.OffsetDateTime
  * @property status the current state of the blob.
  */
 sealed interface ExternalBlob<out S : ExternalBlob.Status<*>> {
-    val id: String
+    val id: UString
     val createTime: OffsetDateTime
-    val bucketName: String
-    val objectKey: String
+    val bucketName: UString
+    val objectKey: UString
     val status: S
 
     /**
@@ -40,10 +41,10 @@ sealed interface ExternalBlob<out S : ExternalBlob.Status<*>> {
      * Only one blob can exist at a time for each ([bucketName], [objectKey]) pair.
      */
     data class Local<out S : Status<LocalBlobVersion>>(
-        override val id: String,
+        override val id: UString,
         override val createTime: OffsetDateTime,
-        override val bucketName: String,
-        override val objectKey: String,
+        override val bucketName: UString,
+        override val objectKey: UString,
         override val status: S,
     ) : ExternalBlob<S>
 
@@ -53,10 +54,10 @@ sealed interface ExternalBlob<out S : ExternalBlob.Status<*>> {
      * Only one blob can exist at a time for each ([bucketName], [objectKey]) pair.
      */
     data class Gcs<out S : Status<GcsBlobVersion>>(
-        override val id: String,
+        override val id: UString,
         override val createTime: OffsetDateTime,
-        override val bucketName: String,
-        override val objectKey: String,
+        override val bucketName: UString,
+        override val objectKey: UString,
         override val status: S,
     ) : ExternalBlob<S>
 

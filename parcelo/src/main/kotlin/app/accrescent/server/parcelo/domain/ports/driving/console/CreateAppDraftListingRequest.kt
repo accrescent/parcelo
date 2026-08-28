@@ -4,11 +4,12 @@
 
 package app.accrescent.server.parcelo.domain.ports.driving.console
 
+import app.accrescent.server.parcelo.core.text.UString
 import app.accrescent.server.parcelo.domain.appstore.ListingLanguage
 
 data class CreateAppDraftListingRequest(
-    val appDraftId: String,
+    val appDraftId: UString,
     val language: ListingLanguage,
-    val name: String,
-    val shortDescription: String,
+    val name: UString,
+    val shortDescription: UString,
 )

@@ -6,6 +6,7 @@ package app.accrescent.server.parcelo.domain.api.console
 
 import app.accrescent.server.parcelo.adapters.driven.randomsource.DeterministicRandomSource
 import app.accrescent.server.parcelo.adapters.driven.timestampsource.FixedTimestampSource
+import app.accrescent.server.parcelo.core.text.UString
 import app.accrescent.server.parcelo.core.unwrap
 import app.accrescent.server.parcelo.domain.IdGenerator
 import app.accrescent.server.parcelo.domain.authn.ExternalUserId
@@ -46,7 +47,7 @@ fun getMyOrganizationId(
     dataStore: DataStore,
     context: CallContext,
     timestampSource: TimestampSource = FixedTimestampSource(),
-): String {
+): UString {
     return OrganizationApiImpl(dataStore, timestampSource)
         .getMyOrganization(context)
         .unwrap()

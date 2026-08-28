@@ -4,49 +4,51 @@
 
 package app.accrescent.server.parcelo.domain.ports.driven.datastore
 
-sealed class HasPermissionRequest(val resourceId: String, val subjectId: String) {
-    data class CreateAppDraft(private val organizationId: String, private val userId: String) :
+import app.accrescent.server.parcelo.core.text.UString
+
+sealed class HasPermissionRequest(val resourceId: UString, val subjectId: UString) {
+    data class CreateAppDraft(private val organizationId: UString, private val userId: UString) :
         HasPermissionRequest(organizationId, userId)
 
-    data class CreateAppDraftListing(private val appDraftId: String, private val userId: String) :
+    data class CreateAppDraftListing(private val appDraftId: UString, private val userId: UString) :
         HasPermissionRequest(appDraftId, userId)
 
-    data class DeleteAppDraft(private val appDraftId: String, private val userId: String) :
+    data class DeleteAppDraft(private val appDraftId: UString, private val userId: UString) :
         HasPermissionRequest(appDraftId, userId)
 
-    data class DeleteAppDraftListing(private val appDraftListingId: String, private val userId: String) :
+    data class DeleteAppDraftListing(private val appDraftListingId: UString, private val userId: UString) :
         HasPermissionRequest(appDraftListingId, userId)
 
-    data class DownloadAppDraft(private val appDraftId: String, private val userId: String) :
+    data class DownloadAppDraft(private val appDraftId: UString, private val userId: UString) :
         HasPermissionRequest(appDraftId, userId)
 
-    data class DownloadAppDraftListingIcon(private val listingId: String, private val userId: String) :
+    data class DownloadAppDraftListingIcon(private val listingId: UString, private val userId: UString) :
         HasPermissionRequest(listingId, userId)
 
-    data class ReplaceAppDraftPackage(private val appDraftId: String, private val userId: String) :
+    data class ReplaceAppDraftPackage(private val appDraftId: UString, private val userId: UString) :
         HasPermissionRequest(appDraftId, userId)
 
-    data class SubmitAppDraft(private val appDraftId: String, private val userId: String) :
+    data class SubmitAppDraft(private val appDraftId: UString, private val userId: UString) :
         HasPermissionRequest(appDraftId, userId)
 
-    data class UpdateApp(private val appId: String, private val userId: String) :
+    data class UpdateApp(private val appId: UString, private val userId: UString) :
         HasPermissionRequest(appId, userId)
 
-    data class UpdateAppDraft(private val appDraftId: String, private val userId: String) :
+    data class UpdateAppDraft(private val appDraftId: UString, private val userId: UString) :
         HasPermissionRequest(appDraftId, userId)
 
-    data class UpdateAppDraftListing(private val listingId: String, private val userId: String) :
+    data class UpdateAppDraftListing(private val listingId: UString, private val userId: UString) :
         HasPermissionRequest(listingId, userId)
 
-    data class UploadAppDraftListingIcon(private val listingId: String, private val userId: String) :
+    data class UploadAppDraftListingIcon(private val listingId: UString, private val userId: UString) :
         HasPermissionRequest(listingId, userId)
 
-    data class ViewApp(private val appId: String, private val userId: String) :
+    data class ViewApp(private val appId: UString, private val userId: UString) :
         HasPermissionRequest(appId, userId)
 
-    data class ViewAppDraft(private val appDraftId: String, private val userId: String) :
+    data class ViewAppDraft(private val appDraftId: UString, private val userId: UString) :
         HasPermissionRequest(appDraftId, userId)
 
-    data class ViewAppDraftListing(private val listingId: String, private val userId: String) :
+    data class ViewAppDraftListing(private val listingId: UString, private val userId: UString) :
         HasPermissionRequest(listingId, userId)
 }
