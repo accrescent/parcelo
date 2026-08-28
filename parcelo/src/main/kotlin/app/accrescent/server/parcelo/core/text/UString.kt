@@ -4,6 +4,8 @@
 
 package app.accrescent.server.parcelo.core.text
 
+import app.accrescent.server.parcelo.core.Bytes
+import app.accrescent.server.parcelo.core.encodeToBytes
 import arrow.core.None
 import arrow.core.Option
 import arrow.core.Some
@@ -37,5 +39,14 @@ value class UString private constructor(val value: String) {
                 None
             }
         }
+    }
+
+    /**
+     * Encodes this string into UTF-8 bytes.
+     *
+     * @return the UTF-8 byte encoding of this string.
+     */
+    fun encodeToBytes(): Bytes {
+        return value.encodeToBytes()
     }
 }

@@ -4,6 +4,7 @@
 
 package app.accrescent.server.parcelo.core.text
 
+import app.accrescent.server.parcelo.core.Bytes
 import app.accrescent.server.parcelo.core.unwrap
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -22,6 +23,13 @@ class UStringTest {
         val result = UString.fromString("Hello, world!")
 
         assertTrue(result.isSome())
+    }
+
+    @Test
+    fun `encodeToBytes returns UTF-8 encoding of string`() {
+        val string = UString.fromString("\u0061\u00e4\u20ac\ud834\udd1e").unwrap()
+
+        assertEquals(Bytes("61c3a4e282acf09d849e".hexToByteArray()), string.encodeToBytes())
     }
 
     @Test
