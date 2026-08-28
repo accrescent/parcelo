@@ -4,6 +4,7 @@
 
 package app.accrescent.server.parcelo.domain.android
 
+import app.accrescent.server.parcelo.core.text.u
 import app.accrescent.server.parcelo.core.unwrap
 import app.accrescent.server.parcelo.core.unwrapErr
 import app.accrescent.server.parcelo.domain.android.xml.AsciiNcName
@@ -28,15 +29,15 @@ class AndroidManifestTest {
 
         assertEquals(
             AndroidManifest(
-                applicationId = ApplicationId.fromString("com.example.app").unwrap(),
+                applicationId = ApplicationId.fromUString("com.example.app".u).unwrap(),
                 splitId = None,
                 versionCode = VersionCode.fromInt(1).unwrap(),
-                versionName = Some(VersionName.fromString("1.0").unwrap()),
+                versionName = Some(VersionName.fromUString("1.0".u).unwrap()),
                 minSdkVersion = SdkVersion.fromInt(29).unwrap(),
                 targetSdkVersion = SdkVersion.fromInt(37).unwrap(),
                 permissions = mapOf(
-                    NameAttribute.fromString("android.permission.INTERNET").unwrap() to None,
-                    NameAttribute.fromString("android.permission.READ_EXTERNAL_STORAGE").unwrap()
+                    NameAttribute.fromUString("android.permission.INTERNET".u).unwrap() to None,
+                    NameAttribute.fromUString("android.permission.READ_EXTERNAL_STORAGE".u).unwrap()
                             to Some(SdkVersion.fromInt(32).unwrap()),
                 ),
             ),
@@ -78,7 +79,7 @@ class AndroidManifestTest {
 
         assertEquals(
             None,
-            manifest.permissions[NameAttribute.fromString("android.permission.CAMERA").unwrap()],
+            manifest.permissions[NameAttribute.fromUString("android.permission.CAMERA".u).unwrap()],
         )
     }
 
@@ -87,7 +88,7 @@ class AndroidManifestTest {
         val document = withApplicationAttribute(
             XmlAttribute(
                 XmlAttributeId(
-                    XmlExpandedName(Some(ANDROID_NAMESPACE_URI), AsciiNcName.fromString("debuggable").unwrap()),
+                    XmlExpandedName(Some(ANDROID_NAMESPACE_URI), AsciiNcName.fromUString("debuggable".u).unwrap()),
                     Some(DEBUGGABLE_RESOURCE_ID),
                 ),
                 ResourceValue.Bool(true),
@@ -104,10 +105,10 @@ class AndroidManifestTest {
         val document = withApplicationAttribute(
             XmlAttribute(
                 XmlAttributeId(
-                    XmlExpandedName(Some(ANDROID_NAMESPACE_URI), AsciiNcName.fromString("debuggable").unwrap()),
+                    XmlExpandedName(Some(ANDROID_NAMESPACE_URI), AsciiNcName.fromUString("debuggable".u).unwrap()),
                     Some(DEBUGGABLE_RESOURCE_ID),
                 ),
-                ResourceValue.String("notaboolean"),
+                ResourceValue.String("notaboolean".u),
             ),
         )
 
@@ -121,7 +122,7 @@ class AndroidManifestTest {
         val document = withApplicationAttribute(
             XmlAttribute(
                 XmlAttributeId(
-                    XmlExpandedName(Some(ANDROID_NAMESPACE_URI), AsciiNcName.fromString("debuggable").unwrap()),
+                    XmlExpandedName(Some(ANDROID_NAMESPACE_URI), AsciiNcName.fromUString("debuggable".u).unwrap()),
                     Some(DEBUGGABLE_RESOURCE_ID),
                 ),
                 ResourceValue.Bool(false),
@@ -136,7 +137,7 @@ class AndroidManifestTest {
         val document = withApplicationAttribute(
             XmlAttribute(
                 XmlAttributeId(
-                    XmlExpandedName(Some(ANDROID_NAMESPACE_URI), AsciiNcName.fromString("testOnly").unwrap()),
+                    XmlExpandedName(Some(ANDROID_NAMESPACE_URI), AsciiNcName.fromUString("testOnly".u).unwrap()),
                     Some(TEST_ONLY_RESOURCE_ID),
                 ),
                 ResourceValue.Bool(true),
@@ -153,10 +154,10 @@ class AndroidManifestTest {
         val document = withApplicationAttribute(
             XmlAttribute(
                 XmlAttributeId(
-                    XmlExpandedName(Some(ANDROID_NAMESPACE_URI), AsciiNcName.fromString("testOnly").unwrap()),
+                    XmlExpandedName(Some(ANDROID_NAMESPACE_URI), AsciiNcName.fromUString("testOnly".u).unwrap()),
                     Some(TEST_ONLY_RESOURCE_ID),
                 ),
-                ResourceValue.String("notaboolean"),
+                ResourceValue.String("notaboolean".u),
             ),
         )
 
@@ -170,7 +171,7 @@ class AndroidManifestTest {
         val document = withApplicationAttribute(
             XmlAttribute(
                 XmlAttributeId(
-                    XmlExpandedName(Some(ANDROID_NAMESPACE_URI), AsciiNcName.fromString("testOnly").unwrap()),
+                    XmlExpandedName(Some(ANDROID_NAMESPACE_URI), AsciiNcName.fromUString("testOnly".u).unwrap()),
                     Some(TEST_ONLY_RESOURCE_ID),
                 ),
                 ResourceValue.Bool(false),
@@ -187,10 +188,10 @@ class AndroidManifestTest {
                 attributes = FULL_VALID_DOCUMENT.root.attributes.with(
                     XmlAttribute(
                         XmlAttributeId(
-                            XmlExpandedName(None, AsciiNcName.fromString("package").unwrap()),
+                            XmlExpandedName(None, AsciiNcName.fromUString("package".u).unwrap()),
                             None,
                         ),
-                        ResourceValue.String(""),
+                        ResourceValue.String("".u),
                     ),
                 ),
             ),
@@ -208,10 +209,10 @@ class AndroidManifestTest {
                 attributes = FULL_VALID_DOCUMENT.root.attributes.with(
                     XmlAttribute(
                         XmlAttributeId(
-                            XmlExpandedName(None, AsciiNcName.fromString("split").unwrap()),
+                            XmlExpandedName(None, AsciiNcName.fromUString("split".u).unwrap()),
                             None,
                         ),
-                        ResourceValue.String("config.xxhdpi"),
+                        ResourceValue.String("config.xxhdpi".u),
                     ),
                 ),
             ),
@@ -219,7 +220,7 @@ class AndroidManifestTest {
 
         val manifest = AndroidManifest.fromXmlDocument(document).unwrap()
 
-        assertEquals(Some("config.xxhdpi"), manifest.splitId)
+        assertEquals(Some("config.xxhdpi".u), manifest.splitId)
     }
 
     @Test
@@ -229,7 +230,7 @@ class AndroidManifestTest {
                 attributes = FULL_VALID_DOCUMENT.root.attributes.with(
                     XmlAttribute(
                         XmlAttributeId(
-                            XmlExpandedName(None, AsciiNcName.fromString("split").unwrap()),
+                            XmlExpandedName(None, AsciiNcName.fromUString("split".u).unwrap()),
                             None,
                         ),
                         ResourceValue.IntDec(0),
@@ -249,7 +250,7 @@ class AndroidManifestTest {
             root = FULL_VALID_DOCUMENT.root.copy(
                 children = FULL_VALID_DOCUMENT.root.children
                     .filterNot {
-                        it.name == XmlExpandedName(None, AsciiNcName.fromString("uses-sdk").unwrap())
+                        it.name == XmlExpandedName(None, AsciiNcName.fromUString("uses-sdk".u).unwrap())
                     },
             ),
         )
@@ -264,13 +265,13 @@ class AndroidManifestTest {
         val document = FULL_VALID_DOCUMENT.copy(
             root = FULL_VALID_DOCUMENT.root.copy(
                 children = FULL_VALID_DOCUMENT.root.children.map {
-                    if (it.name == XmlExpandedName(None, AsciiNcName.fromString("uses-sdk").unwrap())) {
+                    if (it.name == XmlExpandedName(None, AsciiNcName.fromUString("uses-sdk".u).unwrap())) {
                         it.copy(
                             attributes = it.attributes
                                 .without(
                                     XmlExpandedName(
                                         Some(ANDROID_NAMESPACE_URI),
-                                        AsciiNcName.fromString("minSdkVersion").unwrap(),
+                                        AsciiNcName.fromUString("minSdkVersion".u).unwrap(),
                                     ),
                                 ),
                         )
@@ -291,13 +292,13 @@ class AndroidManifestTest {
         val document = FULL_VALID_DOCUMENT.copy(
             root = FULL_VALID_DOCUMENT.root.copy(
                 children = FULL_VALID_DOCUMENT.root.children.map {
-                    if (it.name == XmlExpandedName(None, AsciiNcName.fromString("uses-sdk").unwrap())) {
+                    if (it.name == XmlExpandedName(None, AsciiNcName.fromUString("uses-sdk".u).unwrap())) {
                         it.copy(
                             attributes = it.attributes
                                 .without(
                                     XmlExpandedName(
                                         Some(ANDROID_NAMESPACE_URI),
-                                        AsciiNcName.fromString("targetSdkVersion").unwrap(),
+                                        AsciiNcName.fromUString("targetSdkVersion".u).unwrap(),
                                     ),
                                 ),
                         )
@@ -318,10 +319,10 @@ class AndroidManifestTest {
         val document = withUsesSdkAttribute(
             XmlAttribute(
                 XmlAttributeId(
-                    XmlExpandedName(Some(ANDROID_NAMESPACE_URI), AsciiNcName.fromString("minSdkVersion").unwrap()),
+                    XmlExpandedName(Some(ANDROID_NAMESPACE_URI), AsciiNcName.fromUString("minSdkVersion".u).unwrap()),
                     Some(MIN_SDK_VERSION_RESOURCE_ID),
                 ),
-                ResourceValue.String("notaninteger"),
+                ResourceValue.String("notaninteger".u),
             ),
         )
 
@@ -335,7 +336,7 @@ class AndroidManifestTest {
         val document = withUsesSdkAttribute(
             XmlAttribute(
                 XmlAttributeId(
-                    XmlExpandedName(Some(ANDROID_NAMESPACE_URI), AsciiNcName.fromString("minSdkVersion").unwrap()),
+                    XmlExpandedName(Some(ANDROID_NAMESPACE_URI), AsciiNcName.fromUString("minSdkVersion".u).unwrap()),
                     Some(MIN_SDK_VERSION_RESOURCE_ID),
                 ),
                 ResourceValue.IntDec(0),
@@ -351,24 +352,24 @@ class AndroidManifestTest {
     fun `fromXmlDocument returns InvalidManifest for non-integer permission maxSdkVersion`() {
         val document = withManifestChildren(
             XmlElement(
-                name = XmlExpandedName(None, AsciiNcName.fromString("uses-permission").unwrap()),
+                name = XmlExpandedName(None, AsciiNcName.fromUString("uses-permission".u).unwrap()),
                 attributes = attributes(
                     XmlAttribute(
                         XmlAttributeId(
-                            XmlExpandedName(Some(ANDROID_NAMESPACE_URI), AsciiNcName.fromString("name").unwrap()),
+                            XmlExpandedName(Some(ANDROID_NAMESPACE_URI), AsciiNcName.fromUString("name".u).unwrap()),
                             Some(NAME_RESOURCE_ID),
                         ),
-                        ResourceValue.String("android.permission.INTERNET"),
+                        ResourceValue.String("android.permission.INTERNET".u),
                     ),
                     XmlAttribute(
                         XmlAttributeId(
                             XmlExpandedName(
                                 Some(ANDROID_NAMESPACE_URI),
-                                AsciiNcName.fromString("maxSdkVersion").unwrap(),
+                                AsciiNcName.fromUString("maxSdkVersion".u).unwrap(),
                             ),
                             Some(MAX_SDK_VERSION_RESOURCE_ID),
                         ),
-                        ResourceValue.String("notaninteger"),
+                        ResourceValue.String("notaninteger".u),
                     ),
                 ),
                 children = emptyList(),
@@ -395,11 +396,11 @@ class AndroidManifestTest {
     fun `fromXmlDocument returns InvalidManifest when a permission's name attribute is not a string`() {
         val document = withManifestChildren(
             XmlElement(
-                name = XmlExpandedName(None, AsciiNcName.fromString("uses-permission").unwrap()),
+                name = XmlExpandedName(None, AsciiNcName.fromUString("uses-permission".u).unwrap()),
                 attributes = attributes(
                     XmlAttribute(
                         XmlAttributeId(
-                            XmlExpandedName(Some(ANDROID_NAMESPACE_URI), AsciiNcName.fromString("name").unwrap()),
+                            XmlExpandedName(Some(ANDROID_NAMESPACE_URI), AsciiNcName.fromUString("name".u).unwrap()),
                             Some(NAME_RESOURCE_ID),
                         ),
                         ResourceValue.IntDec(0),
@@ -432,11 +433,11 @@ class AndroidManifestTest {
                 XmlAttributeId(
                     XmlExpandedName(
                         Some(ANDROID_NAMESPACE_URI),
-                        AsciiNcName.fromString("targetSdkVersion").unwrap(),
+                        AsciiNcName.fromUString("targetSdkVersion".u).unwrap(),
                     ),
                     Some(TARGET_SDK_VERSION_RESOURCE_ID),
                 ),
-                ResourceValue.String("notaninteger"),
+                ResourceValue.String("notaninteger".u),
             ),
         )
 
@@ -452,7 +453,7 @@ class AndroidManifestTest {
                 XmlAttributeId(
                     XmlExpandedName(
                         Some(ANDROID_NAMESPACE_URI),
-                        AsciiNcName.fromString("targetSdkVersion").unwrap(),
+                        AsciiNcName.fromUString("targetSdkVersion".u).unwrap(),
                     ),
                     Some(TARGET_SDK_VERSION_RESOURCE_ID),
                 ),
@@ -474,11 +475,11 @@ class AndroidManifestTest {
                         XmlAttributeId(
                             XmlExpandedName(
                                 Some(ANDROID_NAMESPACE_URI),
-                                AsciiNcName.fromString("versionCode").unwrap(),
+                                AsciiNcName.fromUString("versionCode".u).unwrap(),
                             ),
                             Some(VERSION_CODE_RESOURCE_ID),
                         ),
-                        ResourceValue.String("notaninteger"),
+                        ResourceValue.String("notaninteger".u),
                     ),
                 ),
             ),
@@ -498,7 +499,7 @@ class AndroidManifestTest {
                         XmlAttributeId(
                             XmlExpandedName(
                                 Some(ANDROID_NAMESPACE_URI),
-                                AsciiNcName.fromString("versionCode").unwrap(),
+                                AsciiNcName.fromUString("versionCode".u).unwrap(),
                             ),
                             Some(VERSION_CODE_RESOURCE_ID),
                         ),
@@ -522,7 +523,7 @@ class AndroidManifestTest {
                         XmlAttributeId(
                             XmlExpandedName(
                                 Some(ANDROID_NAMESPACE_URI),
-                                AsciiNcName.fromString("versionCodeMajor").unwrap(),
+                                AsciiNcName.fromUString("versionCodeMajor".u).unwrap(),
                             ),
                             Some(VERSION_CODE_MAJOR_RESOURCE_ID),
                         ),
@@ -546,11 +547,11 @@ class AndroidManifestTest {
                         XmlAttributeId(
                             XmlExpandedName(
                                 Some(ANDROID_NAMESPACE_URI),
-                                AsciiNcName.fromString("versionCodeMajor").unwrap(),
+                                AsciiNcName.fromUString("versionCodeMajor".u).unwrap(),
                             ),
                             Some(VERSION_CODE_MAJOR_RESOURCE_ID),
                         ),
-                        ResourceValue.String("notaninteger"),
+                        ResourceValue.String("notaninteger".u),
                     ),
                 ),
             ),
@@ -570,11 +571,11 @@ class AndroidManifestTest {
                         XmlAttributeId(
                             XmlExpandedName(
                                 Some(ANDROID_NAMESPACE_URI),
-                                AsciiNcName.fromString("versionName").unwrap(),
+                                AsciiNcName.fromUString("versionName".u).unwrap(),
                             ),
                             Some(VERSION_NAME_RESOURCE_ID),
                         ),
-                        ResourceValue.String("a".repeat(1025)),
+                        ResourceValue.String("a".repeat(1025).u),
                     ),
                 ),
             ),
@@ -594,7 +595,7 @@ class AndroidManifestTest {
                         XmlAttributeId(
                             XmlExpandedName(
                                 Some(ANDROID_NAMESPACE_URI),
-                                AsciiNcName.fromString("versionCode").unwrap(),
+                                AsciiNcName.fromUString("versionCode".u).unwrap(),
                             ),
                             None,
                         ),
@@ -617,7 +618,7 @@ class AndroidManifestTest {
                     .without(
                         XmlExpandedName(
                             Some(ANDROID_NAMESPACE_URI),
-                            AsciiNcName.fromString("versionCode").unwrap(),
+                            AsciiNcName.fromUString("versionCode".u).unwrap(),
                         ),
                     )
                     .with(
@@ -625,7 +626,7 @@ class AndroidManifestTest {
                             XmlAttributeId(
                                 XmlExpandedName(
                                     Some(ANDROID_NAMESPACE_URI),
-                                    AsciiNcName.fromString("notVersionCode").unwrap(),
+                                    AsciiNcName.fromUString("notVersionCode".u).unwrap(),
                                 ),
                                 Some(VERSION_CODE_RESOURCE_ID),
                             ),
@@ -647,10 +648,10 @@ class AndroidManifestTest {
                 attributes = FULL_VALID_DOCUMENT.root.attributes.with(
                     XmlAttribute(
                         XmlAttributeId(
-                            XmlExpandedName(None, AsciiNcName.fromString("package").unwrap()),
+                            XmlExpandedName(None, AsciiNcName.fromUString("package".u).unwrap()),
                             Some(ResourceId(0x7F000000u)),
                         ),
-                        ResourceValue.String("com.example.app"),
+                        ResourceValue.String("com.example.app".u),
                     ),
                 ),
             ),
@@ -667,7 +668,7 @@ class AndroidManifestTest {
             root = FULL_VALID_DOCUMENT.root.copy(
                 children = FULL_VALID_DOCUMENT.root.children.plus(
                     XmlElement(
-                        name = XmlExpandedName(None, AsciiNcName.fromString("application").unwrap()),
+                        name = XmlExpandedName(None, AsciiNcName.fromUString("application".u).unwrap()),
                         attributes = XmlAttributes.fromList(emptyList()).unwrap(),
                         children = emptyList(),
                     ),
@@ -686,7 +687,7 @@ class AndroidManifestTest {
             root = FULL_VALID_DOCUMENT.root.copy(
                 children = FULL_VALID_DOCUMENT.root.children.plus(
                     XmlElement(
-                        name = XmlExpandedName(None, AsciiNcName.fromString("uses-sdk").unwrap()),
+                        name = XmlExpandedName(None, AsciiNcName.fromUString("uses-sdk".u).unwrap()),
                         attributes = XmlAttributes.fromList(emptyList()).unwrap(),
                         children = emptyList(),
                     )
@@ -705,7 +706,7 @@ class AndroidManifestTest {
             root = FULL_VALID_DOCUMENT.root.copy(
                 children = FULL_VALID_DOCUMENT.root.children
                     .filterNot {
-                        it.name == XmlExpandedName(None, AsciiNcName.fromString("application").unwrap())
+                        it.name == XmlExpandedName(None, AsciiNcName.fromUString("application".u).unwrap())
                     },
             ),
         )
@@ -720,7 +721,7 @@ class AndroidManifestTest {
         val document = FULL_VALID_DOCUMENT.copy(
             root = FULL_VALID_DOCUMENT.root.copy(
                 attributes = FULL_VALID_DOCUMENT.root.attributes
-                    .without(XmlExpandedName(None, AsciiNcName.fromString("package").unwrap())),
+                    .without(XmlExpandedName(None, AsciiNcName.fromUString("package".u).unwrap())),
             ),
         )
 
@@ -733,7 +734,7 @@ class AndroidManifestTest {
     fun `fromXmlDocument returns InvalidManifest when a permission has no name attribute`() {
         val document = withManifestChildren(
             XmlElement(
-                name = XmlExpandedName(None, AsciiNcName.fromString("uses-permission").unwrap()),
+                name = XmlExpandedName(None, AsciiNcName.fromUString("uses-permission".u).unwrap()),
                 attributes = XmlAttributes.fromList(emptyList()).unwrap(),
                 children = emptyList(),
             ),
@@ -750,7 +751,7 @@ class AndroidManifestTest {
             root = FULL_VALID_DOCUMENT.root.copy(
                 attributes = FULL_VALID_DOCUMENT.root.attributes
                     .without(
-                        XmlExpandedName(Some(ANDROID_NAMESPACE_URI), AsciiNcName.fromString("versionCode").unwrap()),
+                        XmlExpandedName(Some(ANDROID_NAMESPACE_URI), AsciiNcName.fromUString("versionCode".u).unwrap()),
                     ),
             ),
         )
@@ -777,7 +778,7 @@ class AndroidManifestTest {
     fun `fromXmlDocument returns InvalidManifest when root element is not 'manifest'`() {
         val document = FULL_VALID_DOCUMENT.copy(
             root = FULL_VALID_DOCUMENT.root.copy(
-                name = XmlExpandedName(None, AsciiNcName.fromString("notmanifest").unwrap()),
+                name = XmlExpandedName(None, AsciiNcName.fromUString("notmanifest".u).unwrap()),
             ),
         )
 
@@ -788,7 +789,7 @@ class AndroidManifestTest {
 
     private companion object {
         private val ANDROID_NAMESPACE_URI =
-            Uri.fromString("http://schemas.android.com/apk/res/android").unwrap()
+            Uri.fromUString("http://schemas.android.com/apk/res/android".u).unwrap()
 
         // Attribute resource IDs from android.R.attr
         private val DEBUGGABLE_RESOURCE_ID = ResourceId(0x0101000fu)
@@ -803,23 +804,23 @@ class AndroidManifestTest {
 
         private val FULL_VALID_DOCUMENT = XmlDocument(
             root = XmlElement(
-                name = XmlExpandedName(None, AsciiNcName.fromString("manifest").unwrap()),
+                name = XmlExpandedName(None, AsciiNcName.fromUString("manifest".u).unwrap()),
                 attributes = attributes(
                     XmlAttribute(
                         XmlAttributeId(
                             XmlExpandedName(
                                 namespaceName = None,
-                                localName = AsciiNcName.fromString("package").unwrap(),
+                                localName = AsciiNcName.fromUString("package".u).unwrap(),
                             ),
                             None,
                         ),
-                        ResourceValue.String("com.example.app"),
+                        ResourceValue.String("com.example.app".u),
                     ),
                     XmlAttribute(
                         XmlAttributeId(
                             XmlExpandedName(
                                 namespaceName = Some(ANDROID_NAMESPACE_URI),
-                                localName = AsciiNcName.fromString("versionCode").unwrap(),
+                                localName = AsciiNcName.fromUString("versionCode".u).unwrap(),
                             ),
                             Some(VERSION_CODE_RESOURCE_ID),
                         ),
@@ -829,7 +830,7 @@ class AndroidManifestTest {
                         XmlAttributeId(
                             XmlExpandedName(
                                 namespaceName = Some(ANDROID_NAMESPACE_URI),
-                                localName = AsciiNcName.fromString("versionCodeMajor").unwrap(),
+                                localName = AsciiNcName.fromUString("versionCodeMajor".u).unwrap(),
                             ),
                             Some(VERSION_CODE_MAJOR_RESOURCE_ID),
                         ),
@@ -839,53 +840,53 @@ class AndroidManifestTest {
                         XmlAttributeId(
                             XmlExpandedName(
                                 namespaceName = Some(ANDROID_NAMESPACE_URI),
-                                localName = AsciiNcName.fromString("versionName").unwrap(),
+                                localName = AsciiNcName.fromUString("versionName".u).unwrap(),
                             ),
                             Some(VERSION_NAME_RESOURCE_ID),
                         ),
-                        ResourceValue.String("1.0"),
+                        ResourceValue.String("1.0".u),
                     ),
                 ),
                 children = listOf(
                     XmlElement(
-                        name = XmlExpandedName(None, AsciiNcName.fromString("application").unwrap()),
+                        name = XmlExpandedName(None, AsciiNcName.fromUString("application".u).unwrap()),
                         attributes = XmlAttributes.fromList(emptyList()).unwrap(),
                         children = emptyList(),
                     ),
                     XmlElement(
-                        name = XmlExpandedName(None, AsciiNcName.fromString("uses-permission").unwrap()),
+                        name = XmlExpandedName(None, AsciiNcName.fromUString("uses-permission".u).unwrap()),
                         attributes = attributes(
                             XmlAttribute(
                                 XmlAttributeId(
                                     XmlExpandedName(
                                         namespaceName = Some(ANDROID_NAMESPACE_URI),
-                                        localName = AsciiNcName.fromString("name").unwrap(),
+                                        localName = AsciiNcName.fromUString("name".u).unwrap(),
                                     ),
                                     Some(NAME_RESOURCE_ID),
                                 ),
-                                ResourceValue.String("android.permission.INTERNET"),
+                                ResourceValue.String("android.permission.INTERNET".u),
                             ),
                         ),
                         children = emptyList(),
                     ),
                     XmlElement(
-                        name = XmlExpandedName(None, AsciiNcName.fromString("uses-permission-sdk-23").unwrap()),
+                        name = XmlExpandedName(None, AsciiNcName.fromUString("uses-permission-sdk-23".u).unwrap()),
                         attributes = attributes(
                             XmlAttribute(
                                 XmlAttributeId(
                                     XmlExpandedName(
                                         namespaceName = Some(ANDROID_NAMESPACE_URI),
-                                        localName = AsciiNcName.fromString("name").unwrap(),
+                                        localName = AsciiNcName.fromUString("name".u).unwrap(),
                                     ),
                                     Some(NAME_RESOURCE_ID),
                                 ),
-                                ResourceValue.String("android.permission.READ_EXTERNAL_STORAGE"),
+                                ResourceValue.String("android.permission.READ_EXTERNAL_STORAGE".u),
                             ),
                             XmlAttribute(
                                 XmlAttributeId(
                                     XmlExpandedName(
                                         namespaceName = Some(ANDROID_NAMESPACE_URI),
-                                        localName = AsciiNcName.fromString("maxSdkVersion").unwrap(),
+                                        localName = AsciiNcName.fromUString("maxSdkVersion".u).unwrap(),
                                     ),
                                     Some(MAX_SDK_VERSION_RESOURCE_ID),
                                 ),
@@ -895,13 +896,13 @@ class AndroidManifestTest {
                         children = emptyList(),
                     ),
                     XmlElement(
-                        name = XmlExpandedName(None, AsciiNcName.fromString("uses-sdk").unwrap()),
+                        name = XmlExpandedName(None, AsciiNcName.fromUString("uses-sdk".u).unwrap()),
                         attributes = attributes(
                             XmlAttribute(
                                 XmlAttributeId(
                                     XmlExpandedName(
                                         namespaceName = Some(ANDROID_NAMESPACE_URI),
-                                        localName = AsciiNcName.fromString("minSdkVersion").unwrap(),
+                                        localName = AsciiNcName.fromUString("minSdkVersion".u).unwrap(),
                                     ),
                                     Some(MIN_SDK_VERSION_RESOURCE_ID),
                                 ),
@@ -911,7 +912,7 @@ class AndroidManifestTest {
                                 XmlAttributeId(
                                     XmlExpandedName(
                                         namespaceName = Some(ANDROID_NAMESPACE_URI),
-                                        localName = AsciiNcName.fromString("targetSdkVersion").unwrap(),
+                                        localName = AsciiNcName.fromUString("targetSdkVersion".u).unwrap(),
                                     ),
                                     Some(TARGET_SDK_VERSION_RESOURCE_ID),
                                 ),
@@ -932,7 +933,7 @@ class AndroidManifestTest {
             FULL_VALID_DOCUMENT.copy(
                 root = FULL_VALID_DOCUMENT.root.copy(
                     children = FULL_VALID_DOCUMENT.root.children.map {
-                        if (it.name == XmlExpandedName(None, AsciiNcName.fromString("application").unwrap())) {
+                        if (it.name == XmlExpandedName(None, AsciiNcName.fromUString("application".u).unwrap())) {
                             it.copy(attributes = it.attributes.with(attribute))
                         } else {
                             it
@@ -945,7 +946,7 @@ class AndroidManifestTest {
             FULL_VALID_DOCUMENT.copy(
                 root = FULL_VALID_DOCUMENT.root.copy(
                     children = FULL_VALID_DOCUMENT.root.children.map {
-                        if (it.name == XmlExpandedName(None, AsciiNcName.fromString("uses-sdk").unwrap())) {
+                        if (it.name == XmlExpandedName(None, AsciiNcName.fromUString("uses-sdk".u).unwrap())) {
                             it.copy(attributes = it.attributes.with(attribute))
                         } else {
                             it
@@ -968,7 +969,7 @@ class AndroidManifestTest {
             maxSdkVersion: Int? = null,
         ): XmlElement {
             return XmlElement(
-                name = XmlExpandedName(None, AsciiNcName.fromString(elementName).unwrap()),
+                name = XmlExpandedName(None, AsciiNcName.fromUString(elementName.u).unwrap()),
                 attributes = XmlAttributes.fromList(
                     buildList {
                         add(
@@ -976,11 +977,11 @@ class AndroidManifestTest {
                                 XmlAttributeId(
                                     XmlExpandedName(
                                         namespaceName = Some(ANDROID_NAMESPACE_URI),
-                                        localName = AsciiNcName.fromString("name").unwrap(),
+                                        localName = AsciiNcName.fromUString("name".u).unwrap(),
                                     ),
                                     Some(NAME_RESOURCE_ID),
                                 ),
-                                ResourceValue.String(name),
+                                ResourceValue.String(name.u),
                             ),
                         )
                         if (maxSdkVersion != null) {
@@ -989,7 +990,7 @@ class AndroidManifestTest {
                                     XmlAttributeId(
                                         XmlExpandedName(
                                             Some(ANDROID_NAMESPACE_URI),
-                                            AsciiNcName.fromString("maxSdkVersion").unwrap(),
+                                            AsciiNcName.fromUString("maxSdkVersion".u).unwrap(),
                                         ),
                                         Some(MAX_SDK_VERSION_RESOURCE_ID),
                                     ),

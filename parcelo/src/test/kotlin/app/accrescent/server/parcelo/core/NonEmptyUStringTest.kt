@@ -4,21 +4,22 @@
 
 package app.accrescent.server.parcelo.core
 
+import app.accrescent.server.parcelo.core.text.u
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
-class NonEmptyStringTest {
+class NonEmptyUStringTest {
     @Test
     fun `fromString returns None for empty string`() {
-        val result = NonEmptyString.fromString("")
+        val result = NonEmptyUString.fromUString("".u)
 
         assertTrue(result.isNone())
     }
 
     @Test
     fun `fromString returns successfully for non-empty string`() {
-        val result = NonEmptyString.fromString("a")
+        val result = NonEmptyUString.fromUString("a".u)
 
         assertTrue(result.isSome())
     }
@@ -26,15 +27,15 @@ class NonEmptyStringTest {
     @Test
     fun `value returns original string`() {
         val rawString = "Hello, world!"
-        val nonEmptyString = NonEmptyString.fromString(rawString).unwrap()
+        val nonEmptyString = NonEmptyUString.fromUString(rawString.u).unwrap()
 
-        assertEquals(rawString, nonEmptyString.value)
+        assertEquals(rawString.u, nonEmptyString.value)
     }
 
     @Test
     fun `instances with same value are equal`() {
-        val instance1 = NonEmptyString.fromString("Hello, world!").unwrap()
-        val instance2 = NonEmptyString.fromString("Hello, world!").unwrap()
+        val instance1 = NonEmptyUString.fromUString("Hello, world!".u).unwrap()
+        val instance2 = NonEmptyUString.fromUString("Hello, world!".u).unwrap()
 
         assertEquals(instance1, instance2)
     }

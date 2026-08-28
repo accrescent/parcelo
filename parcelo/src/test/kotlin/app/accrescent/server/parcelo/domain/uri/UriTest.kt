@@ -4,6 +4,7 @@
 
 package app.accrescent.server.parcelo.domain.uri
 
+import app.accrescent.server.parcelo.core.text.u
 import app.accrescent.server.parcelo.core.unwrap
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -14,7 +15,7 @@ import org.junit.jupiter.params.provider.MethodSource
 class UriTest {
     @Test
     fun `fromString accepts Android namespace URI`() {
-        val result = Uri.fromString("http://schemas.android.com/apk/res/android")
+        val result = Uri.fromUString("http://schemas.android.com/apk/res/android".u)
 
         assertTrue(result.isSome())
     }
@@ -22,25 +23,25 @@ class UriTest {
     @ParameterizedTest
     @MethodSource("uriRfcExamples")
     fun `fromString accepts RFC examples`(example: String) {
-        val result = Uri.fromString(example)
+        val result = Uri.fromUString(example.u)
 
         assertTrue(result.isSome())
     }
 
     @Test
     fun `instances with same representation are equal`() {
-        val instance1 = Uri.fromString("https://example.com")
-        val instance2 = Uri.fromString("https://example.com")
+        val instance1 = Uri.fromUString("https://example.com".u)
+        val instance2 = Uri.fromUString("https://example.com".u)
 
         assertEquals(instance1, instance2)
     }
 
     @Test
     fun `fromString and intoString round-trip data`() {
-        val rawUri = "https://example.com?query=value"
-        val uri = Uri.fromString(rawUri).unwrap()
+        val rawUri = "https://example.com?query=value".u
+        val uri = Uri.fromUString(rawUri).unwrap()
 
-        val result = uri.intoString()
+        val result = uri.intoUString()
 
         assertEquals(rawUri, result)
     }

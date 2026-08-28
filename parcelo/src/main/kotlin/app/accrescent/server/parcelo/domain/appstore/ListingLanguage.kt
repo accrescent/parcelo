@@ -4,6 +4,8 @@
 
 package app.accrescent.server.parcelo.domain.appstore
 
+import app.accrescent.server.parcelo.core.text.UString
+import app.accrescent.server.parcelo.core.unwrap
 import arrow.core.None
 import arrow.core.Option
 import arrow.core.Some
@@ -25,8 +27,8 @@ enum class ListingLanguage {
          * @return the listing language associated with the provided BCP-47 language tag, or [None]
          * if the language tag doesn't represent a valid listing language.
          */
-        fun fromLanguageTag(tag: String): Option<ListingLanguage> {
-            return when (tag) {
+        fun fromLanguageTag(tag: UString): Option<ListingLanguage> {
+            return when (tag.value) {
                 "en-US" -> Some(EN_US)
                 else -> None
             }
@@ -39,9 +41,11 @@ enum class ListingLanguage {
      *
      * @return the BCP-47 language tag of this listing language.
      */
-    fun languageTag(): String {
-        return when (this) {
+    fun languageTag(): UString {
+        val str = when (this) {
             EN_US -> "en-US"
         }
+
+        return UString.fromString(str).unwrap()
     }
 }

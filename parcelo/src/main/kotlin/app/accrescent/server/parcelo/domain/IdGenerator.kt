@@ -51,6 +51,6 @@ class IdGenerator(private val randomSource: RandomSource) {
         }
 
         // The ID is ASCII, so it is always valid Unicode
-        return Either.Right(UString.fromString("${prefix}_$encodedBytes").unwrap())
+        return Either.Right(UString.fromString("${prefix}_${encodedBytes.value}").unwrap())
     }
 }

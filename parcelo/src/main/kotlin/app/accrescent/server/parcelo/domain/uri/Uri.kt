@@ -4,6 +4,7 @@
 
 package app.accrescent.server.parcelo.domain.uri
 
+import app.accrescent.server.parcelo.core.text.UString
 import arrow.core.None
 import arrow.core.Option
 import arrow.core.Some
@@ -14,16 +15,16 @@ import org.apache.jena.rfc3986.RFC3986
  * [RFC 3986](https://datatracker.ietf.org/doc/html/rfc3986).
  */
 @JvmInline
-value class Uri private constructor(private val value: String) {
+value class Uri private constructor(private val value: UString) {
     companion object {
         /**
          * Parses a URI from a string according to RFC 3986 syntax.
          *
          * @return a URI if the string is a valid URI, or [None] otherwise.
          */
-        fun fromString(value: String): Option<Uri> {
+        fun fromUString(value: UString): Option<Uri> {
             return try {
-                when (RFC3986.create(value).isRFC3986) {
+                when (RFC3986.create(value.value).isRFC3986) {
                     true -> Some(Uri(value))
                     false -> None
                 }
@@ -38,7 +39,7 @@ value class Uri private constructor(private val value: String) {
      *
      * @return the string representation of this URI.
      */
-    fun intoString(): String {
+    fun intoUString(): UString {
         return value
     }
 }

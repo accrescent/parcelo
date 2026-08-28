@@ -9,7 +9,7 @@ import app.accrescent.server.parcelo.core.text.UString
 data class AppDraftListing(
     val id: UString,
     val appDraftId: UString,
-    val language: String,
+    val language: UString,
     val name: UString,
     val shortDescription: UString,
 )

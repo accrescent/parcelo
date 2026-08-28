@@ -471,7 +471,7 @@ abstract class DataStoreConformanceTest {
     @Test
     fun `appDrafts existsSubmittedForAppId returns false when no app draft exists for given app ID`() {
         withMigratedDataStore { dataStore ->
-            val appId = ApplicationId.fromString("com.example.app").unwrap()
+            val appId = ApplicationId.fromUString("com.example.app".u).unwrap()
 
             val exists = dataStore
                 .runTxWithRetry { tx -> tx.appDrafts.existsSubmittedForAppId(appId).bind() }
@@ -3068,7 +3068,7 @@ abstract class DataStoreConformanceTest {
                         tx.appDrafts.create("org1".u, "appDraft1".u, UNIX_EPOCH).bind()
                         saveAppPackageFromNewUpload(
                             tx,
-                            appPackage(versionName = VersionName.fromString(invalid.value).unwrap()),
+                            appPackage(versionName = VersionName.fromUString(invalid).unwrap()),
                         )
                             .bind()
                     }
@@ -3079,7 +3079,7 @@ abstract class DataStoreConformanceTest {
                         tx.appDrafts.create("org1".u, "appDraft1".u, UNIX_EPOCH).bind()
                         saveAppPackageFromNewUpload(
                             tx,
-                            permissions = mapOf(NameAttribute.fromString(invalid.value).unwrap() to None),
+                            permissions = mapOf(NameAttribute.fromUString(invalid).unwrap() to None),
                         )
                             .bind()
                     }

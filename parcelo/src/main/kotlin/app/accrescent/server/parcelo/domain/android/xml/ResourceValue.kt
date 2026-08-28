@@ -4,6 +4,8 @@
 
 package app.accrescent.server.parcelo.domain.android.xml
 
+import app.accrescent.server.parcelo.core.text.UString
+
 /**
  * A typed value in an Android binary resource.
  *
@@ -26,7 +28,7 @@ sealed class ResourceValue {
      * Corresponds to [`TYPE_STRING`](https://android.googlesource.com/platform/frameworks/base/+/94b4c163b7dfe5ce3607f7bb8456f9573f7de57d/libs/androidfw/include/androidfw/ResourceTypes.h#311)
      * in AOSP.
      */
-    data class String(val value: kotlin.String) : ResourceValue()
+    data class String(val value: UString) : ResourceValue()
 
     /**
      * A boolean.

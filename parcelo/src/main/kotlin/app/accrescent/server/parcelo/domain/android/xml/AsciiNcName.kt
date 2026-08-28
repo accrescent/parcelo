@@ -4,6 +4,7 @@
 
 package app.accrescent.server.parcelo.domain.android.xml
 
+import app.accrescent.server.parcelo.core.text.UString
 import arrow.core.None
 import arrow.core.Option
 import arrow.core.Some
@@ -15,7 +16,7 @@ import arrow.core.Some
  * @property value the string representation of this ASCII NCName.
  */
 @JvmInline
-value class AsciiNcName private constructor(val value: String) {
+value class AsciiNcName private constructor(val value: UString) {
     companion object {
         private val REGEX = Regex("""[A-Za-z_][A-Za-z0-9_.-]*""")
 
@@ -26,8 +27,8 @@ value class AsciiNcName private constructor(val value: String) {
          * @return an ASCII NCName if [value] represents a valid ASCII NCName, or [None] if [value]
          * is not a valid ASCII NCName.
          */
-        fun fromString(value: String): Option<AsciiNcName> {
-            return if (REGEX.matches(value)) {
+        fun fromUString(value: UString): Option<AsciiNcName> {
+            return if (REGEX.matches(value.value)) {
                 Some(AsciiNcName(value))
             } else {
                 None

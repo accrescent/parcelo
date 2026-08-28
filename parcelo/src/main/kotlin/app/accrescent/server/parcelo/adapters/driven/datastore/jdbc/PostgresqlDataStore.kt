@@ -249,7 +249,7 @@ private class PostgresqlAppDraftRepository(
         connection.prepareStatement(sql).use { stmt ->
             stmt.setString(1, id.value)
             stmt.setString(2, appDraftId.value)
-            stmt.setString(3, language.languageTag())
+            stmt.setString(3, language.languageTag().value)
             stmt.setString(4, name.value)
             stmt.setString(5, shortDescription.value)
             stmt.executeSingleUpdate().bind()
@@ -397,7 +397,7 @@ private class PostgresqlAppDraftRepository(
                 )
             """.trimIndent()
             connection.prepareStatement(sql).use { stmt ->
-                stmt.setString(1, appId.value)
+                stmt.setString(1, appId.value.value)
                 stmt.executeQuery().use { rs -> rs.getSelectExistsResult().bind() }
             }
         }
@@ -518,8 +518,8 @@ private class PostgresqlAppDraftRepository(
         connection.prepareStatement(sql).use { stmt ->
             stmt.setString(1, appDraftId.value)
             stmt.setString(2, userId.value)
-            stmt.setString(3, afterLanguage.map { it.languageTag() }.getOrNull())
-            stmt.setString(4, afterLanguage.map { it.languageTag() }.getOrNull())
+            stmt.setString(3, afterLanguage.map { it.languageTag().value }.getOrNull())
+            stmt.setString(4, afterLanguage.map { it.languageTag().value }.getOrNull())
             stmt.setInt(5, maxResults.value)
             stmt.executeQuery().use { rs ->
                 val listings = mutableListOf<AppDraftListingApiView>()
@@ -668,7 +668,7 @@ private class PostgresqlAppDraftRepository(
         """.trimIndent()
         connection.prepareStatement(sql).use { stmt ->
             stmt.setString(1, appDraftId.value)
-            stmt.setString(2, language.languageTag())
+            stmt.setString(2, language.languageTag().value)
             stmt.executeQuery().use { rs -> rs.getSelectExistsResult().bind() }
         }
     }
@@ -835,7 +835,7 @@ private class PostgresqlAppPackageRepository(
                 if (!rs.next()) return@use None
 
                 val appId = ApplicationId
-                    .fromString(rs.requireUString("app_id").bind().value)
+                    .fromUString(rs.requireUString("app_id").bind())
                     .toEitherBind { DataStoreError.IllegalState }
 
                 Some(appId)
@@ -954,9 +954,9 @@ private class PostgresqlAppPackageRepository(
             stmt.setString(11, appPackage.appDraftId.value)
             stmt.setString(12, appPackage.externalBlobId.value)
             stmt.setObject(13, appPackage.uploadEventTime)
-            stmt.setString(14, appPackage.appId.value)
+            stmt.setString(14, appPackage.appId.value.value)
             stmt.setInt(15, appPackage.versionCode.value)
-            stmt.setString(16, appPackage.versionName.value)
+            stmt.setString(16, appPackage.versionName.value.value)
             stmt.setInt(17, appPackage.targetSdk.value)
             stmt.setBytes(18, appPackage.signerCertificate.copyToByteArray())
             stmt.setBytes(19, appPackage.buildApksResult.copyToByteArray())
@@ -973,7 +973,7 @@ private class PostgresqlAppPackageRepository(
         connection.prepareStatement(permissionSql).use { stmt ->
             for ((name, maxSdkVersion) in permissions) {
                 stmt.setString(1, appPackage.id.value)
-                stmt.setString(2, name.value)
+                stmt.setString(2, name.value.value)
                 stmt.setObject(
                     3,
                     maxSdkVersion.map(SdkVersion::value).getOrNull(),
@@ -1044,7 +1044,7 @@ private class PostgresqlAppRepository(
             stmt.setString(3, app.defaultAppListingId.value)
             stmt.setBoolean(4, app.publiclyListed)
             stmt.setString(5, defaultListing.id.value)
-            stmt.setString(6, defaultListing.language.languageTag())
+            stmt.setString(6, defaultListing.language.languageTag().value)
             stmt.setString(7, defaultListing.appId.value)
             stmt.executeSingleUpdate().bind()
         }
@@ -1338,12 +1338,12 @@ private fun ResultSet.readAppDraftApiView(): DataStoreResult<AppDraftApiView> = 
     val defaultAppDraftListingId = getSafeUString("default_app_draft_listing_id").bind()
     val appPackage = getSafeUString("app_id").bind().map { appId ->
         AppPackageApiView(
-            androidApplicationId = ApplicationId.fromString(appId.value)
+            androidApplicationId = ApplicationId.fromUString(appId)
                 .toEitherBind { DataStoreError.IllegalState },
             versionCode = VersionCode.fromInt(requireInt("version_code").bind())
                 .toEitherBind { DataStoreError.IllegalState },
             versionName = VersionName
-                .fromString(requireUString("version_name").bind().value)
+                .fromUString(requireUString("version_name").bind())
                 .toEitherBind { DataStoreError.IllegalState },
             targetSdk = SdkVersion.fromInt(requireInt("target_sdk").bind())
                 .toEitherBind { DataStoreError.IllegalState },
@@ -1377,7 +1377,7 @@ private fun ResultSet.readAppDraftListingApiView(): DataStoreResult<AppDraftList
     AppDraftListingApiView(
         id = requireUString("id").bind(),
         appDraftId = requireUString("app_draft_id").bind(),
-        language = ListingLanguage.fromLanguageTag(requireUString("language").bind().value)
+        language = ListingLanguage.fromLanguageTag(requireUString("language").bind())
             .toEitherBind { DataStoreError.IllegalState },
         name = requireUString("name").bind(),
         shortDescription = requireUString("short_description").bind(),
@@ -1419,11 +1419,11 @@ private fun ResultSet.readAppPackage(): DataStoreResult<AppPackage> = either {
         appDraftId = requireUString("app_draft_id").bind(),
         externalBlobId = requireUString("external_blob_id").bind(),
         uploadEventTime = requireObject<OffsetDateTime>("upload_event_time").bind(),
-        appId = ApplicationId.fromString(requireUString("app_id").bind().value)
+        appId = ApplicationId.fromUString(requireUString("app_id").bind())
             .toEitherBind { DataStoreError.IllegalState },
         versionCode = VersionCode.fromInt(requireInt("version_code").bind())
             .toEitherBind { DataStoreError.IllegalState },
-        versionName = VersionName.fromString(requireUString("version_name").bind().value)
+        versionName = VersionName.fromUString(requireUString("version_name").bind())
             .toEitherBind { DataStoreError.IllegalState },
         targetSdk = SdkVersion.fromInt(requireInt("target_sdk").bind())
             .toEitherBind { DataStoreError.IllegalState },

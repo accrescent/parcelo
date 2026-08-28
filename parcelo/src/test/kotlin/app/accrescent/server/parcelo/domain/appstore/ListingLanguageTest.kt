@@ -4,6 +4,8 @@
 
 package app.accrescent.server.parcelo.domain.appstore
 
+import app.accrescent.server.parcelo.core.text.UString
+import app.accrescent.server.parcelo.core.text.u
 import arrow.core.Some
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.params.ParameterizedTest
@@ -29,7 +31,7 @@ class ListingLanguageTest {
     }
 
     companion object {
-        private val LANGUAGE_TAG_MAP = mapOf(ListingLanguage.EN_US to "en-US")
+        private val LANGUAGE_TAG_MAP = mapOf(ListingLanguage.EN_US to "en-US".u)
 
         @JvmStatic
         fun fromLanguageTagTestCases(): List<FromLanguageTagTestCase> {
@@ -41,15 +43,15 @@ class ListingLanguageTest {
         @JvmStatic
         fun languageTagTestCases(): List<LanguageTagTestCase> {
             return LANGUAGE_TAG_MAP.map { (lang, tag) ->
-                LanguageTagTestCase(ListingLanguage.EN_US, "en-US")
+                LanguageTagTestCase(ListingLanguage.EN_US, "en-US".u)
             }
         }
     }
 
     data class FromLanguageTagTestCase(
-        val languageTag: String,
+        val languageTag: UString,
         val expectedListingLanguage: ListingLanguage,
     )
 
-    data class LanguageTagTestCase(val language: ListingLanguage, val expectedLanguageTag: String)
+    data class LanguageTagTestCase(val language: ListingLanguage, val expectedLanguageTag: UString)
 }

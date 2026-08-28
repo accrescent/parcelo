@@ -392,10 +392,7 @@ class AppDraftApiImpl(
             val appDraftSubmittedForAppId = tx.appDrafts
                 .existsSubmittedForAppId(appId)
                 .bindMapLeft(::toServerError)
-            ensure(!appDraftSubmittedForAppId) {
-                // Application IDs are ASCII, so they're always valid Unicode
-                AppDraftSubmittedForAppIdError(UString.fromString(appId.value).unwrap())
-            }
+            ensure(!appDraftSubmittedForAppId) { AppDraftSubmittedForAppIdError(appId.value) }
 
             val publishedAppCount = tx.apps
                 .countInAppDraftOrganization(request.appDraftId)
@@ -540,7 +537,10 @@ class AppDraftApiImpl(
                     raise(InvalidPageTokenError)
                 }
 
-                ListingLanguage.fromLanguageTag(token.lastLanguage)
+                // Protobuf strings are always valid Unicode, so this will never throw
+                UString.fromString(token.lastLanguage)
+                    .unwrap()
+                    .let(ListingLanguage::fromLanguageTag)
                     .toEitherBind { InvalidPageTokenError }
             } catch (_: IllegalArgumentException) {
                 raise(InvalidPageTokenError)
@@ -573,7 +573,9 @@ class AppDraftApiImpl(
                 )
             }
         val nextPageToken = if (listings.isNotEmpty()) {
-            val token = listAppDraftListingsPageToken { this.lastLanguage = listings.last().language }
+            val token = listAppDraftListingsPageToken {
+                this.lastLanguage = listings.last().language.value
+            }
             Some(Base64.UrlSafe.encode(token.toByteArray()))
         } else {
             None

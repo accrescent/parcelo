@@ -4,12 +4,13 @@
 
 package app.accrescent.server.parcelo.domain.android.xml
 
+import app.accrescent.server.parcelo.core.text.u
 import app.accrescent.server.parcelo.core.unwrap
 import arrow.core.None
 import arrow.core.Option
 
 fun unqualifiedName(localName: String): XmlExpandedName {
-    return XmlExpandedName(None, AsciiNcName.fromString(localName).unwrap())
+    return XmlExpandedName(None, AsciiNcName.fromUString(localName.u).unwrap())
 }
 
 fun unqualifiedAttribute(

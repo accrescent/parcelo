@@ -4,6 +4,7 @@
 
 package app.accrescent.server.parcelo.domain.uri
 
+import app.accrescent.server.parcelo.core.text.UString
 import arrow.core.None
 import arrow.core.Option
 import arrow.core.Some
@@ -15,7 +16,7 @@ import org.apache.jena.rfc3986.RFC3986
  * [Section 4.2.2](https://datatracker.ietf.org/doc/html/rfc9110#name-https-uri-scheme).
  */
 @JvmInline
-value class HttpUri private constructor(private val value: String) {
+value class HttpUri private constructor(private val value: UString) {
     companion object {
         /**
          * Parses an HTTP(S) URI from a string according to RFC 9110 syntax.
@@ -23,9 +24,9 @@ value class HttpUri private constructor(private val value: String) {
          * @param value the value to parse an HTTP(S) URI from.
          * @return an HTTP(S) URI if the string is a valid HTTP(S) URI, or [None] otherwise.
          */
-        fun fromString(value: String): Option<HttpUri> {
+        fun fromUString(value: UString): Option<HttpUri> {
             val iri = try {
-                RFC3986.create(value)
+                RFC3986.create(value.value)
             } catch (_: RuntimeException) {
                 return None
             }
@@ -36,7 +37,7 @@ value class HttpUri private constructor(private val value: String) {
             // RFC 9110 HTTP(S) URIs always start with "http://" or "https://" according to
             // https://datatracker.ietf.org/doc/html/rfc9110#name-http-uri-scheme and
             // https://datatracker.ietf.org/doc/html/rfc9110#name-https-uri-scheme
-            if (!(value.startsWith("http://") || value.startsWith("https://"))) return None
+            if (!(value.value.startsWith("http://") || value.value.startsWith("https://"))) return None
 
             // Section 4.2.4 says userinfo for http(s) URIs is deprecated and implementations
             // should treat its presence as an error, so we do so here
@@ -60,7 +61,7 @@ value class HttpUri private constructor(private val value: String) {
      *
      * @return the string representation of this URI.
      */
-    fun intoString(): String {
+    fun intoUString(): UString {
         return value
     }
 }

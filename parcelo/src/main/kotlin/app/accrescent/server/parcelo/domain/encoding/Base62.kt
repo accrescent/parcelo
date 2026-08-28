@@ -5,6 +5,8 @@
 package app.accrescent.server.parcelo.domain.encoding
 
 import app.accrescent.server.parcelo.core.Bytes
+import app.accrescent.server.parcelo.core.text.UString
+import app.accrescent.server.parcelo.core.unwrap
 import java.math.BigInteger
 
 object Base62 {
@@ -12,7 +14,7 @@ object Base62 {
     private val BASE = ALPHABET.length.toBigInteger()
     private const val ZERO: Byte = 0
 
-    fun encode(bytes: Bytes): String {
+    fun encode(bytes: Bytes): UString {
         // Encode byte array to base 62
         val stringBuilder = StringBuilder()
         var number = BigInteger(1, bytes.copyToByteArray())
@@ -28,6 +30,7 @@ object Base62 {
             stringBuilder.append(ALPHABET[0])
         }
 
-        return stringBuilder.reverse().toString()
+        // The base62-encoded string is always valid Unicode, so this will never throw
+        return UString.fromString(stringBuilder.reverse().toString()).unwrap()
     }
 }

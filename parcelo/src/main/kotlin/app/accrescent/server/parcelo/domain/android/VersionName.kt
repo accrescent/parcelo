@@ -4,6 +4,7 @@
 
 package app.accrescent.server.parcelo.domain.android
 
+import app.accrescent.server.parcelo.core.text.UString
 import arrow.core.None
 import arrow.core.Option
 import arrow.core.Some
@@ -20,7 +21,7 @@ import arrow.core.Some
  * @property value the string representation of this version name.
  */
 @JvmInline
-value class VersionName private constructor(val value: String) {
+value class VersionName private constructor(val value: UString) {
     companion object {
         private const val MAX_LENGTH = 1024
 
@@ -31,8 +32,8 @@ value class VersionName private constructor(val value: String) {
          * @return a version name with the value of [value], or [None] if [value] is not a valid
          * version name.
          */
-        fun fromString(value: String): Option<VersionName> {
-            return if (value.codePointCount(0, value.length) <= MAX_LENGTH) {
+        fun fromUString(value: UString): Option<VersionName> {
+            return if (value.value.codePointCount(0, value.value.length) <= MAX_LENGTH) {
                 Some(VersionName(value))
             } else {
                 None

@@ -6,6 +6,7 @@ package app.accrescent.server.parcelo.domain.android
 
 import app.accrescent.server.parcelo.core.bindMapLeft
 import app.accrescent.server.parcelo.core.downcast
+import app.accrescent.server.parcelo.core.text.UString
 import app.accrescent.server.parcelo.core.toEitherBind
 import app.accrescent.server.parcelo.core.unwrap
 import app.accrescent.server.parcelo.domain.android.xml.AsciiNcName
@@ -52,7 +53,7 @@ import arrow.core.raise.ensure
  */
 data class AndroidManifest(
     val applicationId: ApplicationId,
-    val splitId: Option<String>,
+    val splitId: Option<UString>,
     val versionCode: VersionCode,
     val versionName: Option<VersionName>,
     val minSdkVersion: SdkVersion,
@@ -70,11 +71,11 @@ data class AndroidManifest(
 
             // Manifest element and its attributes
             val manifestAttributes = document.root.attributes
-            val applicationId = manifestAttributes.findString(Attributes.PACKAGE)
+            val applicationId = manifestAttributes.findUString(Attributes.PACKAGE)
                 .toEitherBind { FromXmlError.InvalidManifest }
-                .let(ApplicationId::fromString)
+                .let(ApplicationId::fromUString)
                 .toEitherBind { FromXmlError.Policy.InvalidApplicationId }
-            val split = manifestAttributes.findString(Attributes.SPLIT)
+            val split = manifestAttributes.findUString(Attributes.SPLIT)
             val versionCode = manifestAttributes.findInt(Attributes.VERSION_CODE)
                 .toEitherBind { FromXmlError.Policy.NoVersionCode }
                 .let(VersionCode::fromInt)
@@ -83,9 +84,9 @@ data class AndroidManifest(
                 .findInt(Attributes.VERSION_CODE_MAJOR)
                 .getOrElse { 0 }
             ensure(versionCodeMajor == 0) { FromXmlError.Policy.VersionCodeMajorNonZero }
-            val versionName = manifestAttributes.findString(Attributes.VERSION_NAME)
+            val versionName = manifestAttributes.findUString(Attributes.VERSION_NAME)
                 .map { name ->
-                    VersionName.fromString(name)
+                    VersionName.fromUString(name)
                         .toEitherBind { FromXmlError.Policy.VersionNameTooLong }
                 }
 
@@ -143,9 +144,9 @@ data class AndroidManifest(
                             || it.name == Elements.USES_PERMISSION_SDK_M
                 }
                 for (element in permissionElements) {
-                    val name = element.attributes.findString(Attributes.PERMISSION_NAME)
+                    val name = element.attributes.findUString(Attributes.PERMISSION_NAME)
                         .toEitherBind { FromXmlError.InvalidManifest }
-                        .let(NameAttribute::fromString)
+                        .let(NameAttribute::fromUString)
                         .toEitherBind { FromXmlError.Policy.PermissionNameTooLong }
                     val maxSdkVersion = element.attributes.findInt(Attributes.MAX_SDK_VERSION)
                         .map {
@@ -370,7 +371,7 @@ private fun XmlAttributes.findInt(attributeId: XmlAttributeId): Option<Int> {
 }
 
 context(_: Raise<AndroidManifest.FromXmlError>)
-private fun XmlAttributes.findString(attributeId: XmlAttributeId): Option<String> {
+private fun XmlAttributes.findUString(attributeId: XmlAttributeId): Option<UString> {
     return findTyped<ResourceValue.String>(attributeId).map { it.value }
 }
 
@@ -395,17 +396,23 @@ private inline fun XmlElement.findUniqueChild(
 }
 
 private fun unqualifiedName(localName: String): XmlExpandedName {
-    return XmlExpandedName(None, AsciiNcName.fromString(localName).unwrap())
+    return XmlExpandedName(
+        namespaceName = None,
+        localName = AsciiNcName.fromUString(UString.fromString(localName).unwrap()).unwrap(),
+    )
 }
 
-private val ANDROID_NAMESPACE_URI =
-    Uri.fromString("http://schemas.android.com/apk/res/android").unwrap()
+private val ANDROID_NAMESPACE_URI = UString
+    .fromString("http://schemas.android.com/apk/res/android")
+    .unwrap()
+    .let(Uri::fromUString)
+    .unwrap()
 
 private fun androidAttribute(localName: String, resourceId: UInt): XmlAttributeId {
     return XmlAttributeId(
         name = XmlExpandedName(
             namespaceName = Some(ANDROID_NAMESPACE_URI),
-            localName = AsciiNcName.fromString(localName).unwrap(),
+            localName = AsciiNcName.fromUString(UString.fromString(localName).unwrap()).unwrap(),
         ),
         resourceId = Some(ResourceId(resourceId)),
     )

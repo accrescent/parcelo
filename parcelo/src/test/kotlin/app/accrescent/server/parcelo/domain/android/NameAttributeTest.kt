@@ -4,6 +4,7 @@
 
 package app.accrescent.server.parcelo.domain.android
 
+import app.accrescent.server.parcelo.core.text.u
 import app.accrescent.server.parcelo.core.unwrap
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -15,7 +16,7 @@ class NameAttributeTest {
         val rawName = "a".repeat(1024)
         assertEquals(1024, rawName.codePointCount(0, rawName.length))
 
-        val versionName = NameAttribute.fromString(rawName)
+        val versionName = NameAttribute.fromUString(rawName.u)
 
         assertTrue(versionName.isSome())
     }
@@ -25,7 +26,7 @@ class NameAttributeTest {
         val rawName = "a".repeat(1025)
         assertEquals(1025, rawName.codePointCount(0, rawName.length))
 
-        val versionName = NameAttribute.fromString(rawName)
+        val versionName = NameAttribute.fromUString(rawName.u)
 
         assertTrue(versionName.isNone())
     }
@@ -38,24 +39,24 @@ class NameAttributeTest {
         assertEquals(2048, rawName.length)
         assertEquals(1024, rawName.codePointCount(0, rawName.length))
 
-        val versionName = NameAttribute.fromString(rawName)
+        val versionName = NameAttribute.fromUString(rawName.u)
 
         assertTrue(versionName.isSome())
     }
 
     @Test
     fun `value returns original string`() {
-        val rawName = "android.permission.INTERNET"
-        val versionName = NameAttribute.fromString(rawName).unwrap()
+        val rawName = "android.permission.INTERNET".u
+        val versionName = NameAttribute.fromUString(rawName).unwrap()
 
         assertEquals(rawName, versionName.value)
     }
 
     @Test
     fun `instances with same value are equal`() {
-        val rawName = "android.permission.QUERY_ALL_PACKAGES"
-        val instance1 = NameAttribute.fromString(rawName).unwrap()
-        val instance2 = NameAttribute.fromString(rawName).unwrap()
+        val rawName = "android.permission.QUERY_ALL_PACKAGES".u
+        val instance1 = NameAttribute.fromUString(rawName).unwrap()
+        val instance2 = NameAttribute.fromUString(rawName).unwrap()
 
         assertEquals(instance1, instance2)
     }

@@ -379,9 +379,9 @@ class UploadEventProcessorImplTest {
                         appDraftId = "appDraft1".u,
                         externalBlobId = "blob1".u,
                         uploadEventTime = UNIX_EPOCH,
-                        appId = ApplicationId.fromString("com.example.app").unwrap(),
+                        appId = ApplicationId.fromUString("com.example.app".u).unwrap(),
                         versionCode = VersionCode.fromInt(1).unwrap(),
-                        versionName = VersionName.fromString("1.0").unwrap(),
+                        versionName = VersionName.fromUString("1.0".u).unwrap(),
                         targetSdk = SdkVersion.fromInt(37).unwrap(),
                         signerCertificate = Bytes(
                             Base64.decode(
@@ -427,10 +427,10 @@ class UploadEventProcessorImplTest {
                     Some(
                         AppPackageApiView(
                             androidApplicationId = ApplicationId
-                                .fromString("com.example.app")
+                                .fromUString("com.example.app".u)
                                 .unwrap(),
                             versionCode = VersionCode.fromInt(1).unwrap(),
-                            versionName = VersionName.fromString("1.0").unwrap(),
+                            versionName = VersionName.fromUString("1.0".u).unwrap(),
                             targetSdk = SdkVersion.fromInt(37).unwrap(),
                         )
                     ),
@@ -517,7 +517,7 @@ class UploadEventProcessorImplTest {
                         appPackage = appPackage(
                             id = "oldPackage".u,
                             externalBlobId = "oldBlob".u,
-                            appId = ApplicationId.fromString("com.example.app2").unwrap(),
+                            appId = ApplicationId.fromUString("com.example.app2".u).unwrap(),
                         ),
                         bucketName = "private".u,
                         objectKey = "old1".u,
@@ -552,7 +552,7 @@ class UploadEventProcessorImplTest {
                     .unwrap2()
 
                 assertEquals(
-                    Some(ApplicationId.fromString("com.example.app").unwrap()),
+                    Some(ApplicationId.fromUString("com.example.app".u).unwrap()),
                     (appDraftView as AppDraftApiView.Unsubmitted).appPackage.map { it.androidApplicationId },
                 )
             }

@@ -5,6 +5,7 @@
 package app.accrescent.server.parcelo.domain.android.xml
 
 import app.accrescent.server.parcelo.core.Bytes
+import app.accrescent.server.parcelo.core.text.u
 import app.accrescent.server.parcelo.core.unwrap
 import app.accrescent.server.parcelo.domain.uri.Uri
 import arrow.core.Some
@@ -63,11 +64,11 @@ class XmlDocumentTest {
         }
 
         private val ANDROID_NAMESPACE_URI =
-            Uri.fromString("http://schemas.android.com/apk/res/android").unwrap()
+            Uri.fromUString("http://schemas.android.com/apk/res/android".u).unwrap()
 
         /** An `android`-namespaced expanded name. */
         private fun androidName(localName: String): XmlExpandedName =
-            XmlExpandedName(Some(ANDROID_NAMESPACE_URI), AsciiNcName.fromString(localName).unwrap())
+            XmlExpandedName(Some(ANDROID_NAMESPACE_URI), AsciiNcName.fromUString(localName.u).unwrap())
 
         /** An `android`-namespaced attribute, whose name carries a resource ID. */
         private fun androidAttribute(
@@ -93,14 +94,14 @@ class XmlDocumentTest {
         /** An element carrying only an `android:name` string attribute. */
         private fun namedElement(elementName: String, name: String): XmlElement = element(
             elementName,
-            listOf(androidAttribute("name", 0x01010003u, ResourceValue.String(name))),
+            listOf(androidAttribute("name", 0x01010003u, ResourceValue.String(name.u))),
         )
 
         /** A `meta-data` element carrying an `android:name` and an `android:value`. */
         private fun metaData(name: String, value: ResourceValue): XmlElement = element(
             "meta-data",
             listOf(
-                androidAttribute("name", 0x01010003u, ResourceValue.String(name)),
+                androidAttribute("name", 0x01010003u, ResourceValue.String(name.u)),
                 androidAttribute("value", 0x01010024u, value),
             ),
         )
@@ -118,20 +119,20 @@ class XmlDocumentTest {
                 "manifest",
                 listOf(
                     androidAttribute("versionCode", 0x0101021Bu, ResourceValue.IntDec(55)),
-                    androidAttribute("versionName", 0x0101021Cu, ResourceValue.String("0.28.1")),
+                    androidAttribute("versionName", 0x0101021Cu, ResourceValue.String("0.28.1".u)),
                     androidAttribute("compileSdkVersion", 0x01010572u, ResourceValue.IntDec(36)),
                     androidAttribute(
                         "compileSdkVersionCodename",
                         0x01010573u,
-                        ResourceValue.String("16"),
+                        ResourceValue.String("16".u),
                     ),
                     androidAttribute(
                         "requiredSplitTypes",
                         0x0101064Eu,
-                        ResourceValue.String("base__abi,base__density"),
+                        ResourceValue.String("base__abi,base__density".u),
                     ),
-                    androidAttribute("splitTypes", 0x0101064Fu, ResourceValue.String("")),
-                    unqualifiedAttribute("package", ResourceValue.String("app.accrescent.client")),
+                    androidAttribute("splitTypes", 0x0101064Fu, ResourceValue.String("".u)),
+                    unqualifiedAttribute("package", ResourceValue.String("app.accrescent.client".u)),
                     unqualifiedAttribute("platformBuildVersionCode", ResourceValue.IntDec(36)),
                     unqualifiedAttribute("platformBuildVersionName", ResourceValue.IntDec(16)),
                 ),
@@ -153,7 +154,7 @@ class XmlDocumentTest {
                             androidAttribute(
                                 "name",
                                 0x01010003u,
-                                ResourceValue.String("android.hardware.touchscreen"),
+                                ResourceValue.String("android.hardware.touchscreen".u),
                             ),
                             androidAttribute("required", 0x0101028Eu, ResourceValue.Bool(false)),
                         ),
@@ -164,7 +165,7 @@ class XmlDocumentTest {
                             androidAttribute(
                                 "name",
                                 0x01010003u,
-                                ResourceValue.String("android.software.leanback"),
+                                ResourceValue.String("android.software.leanback".u),
                             ),
                             androidAttribute("required", 0x0101028Eu, ResourceValue.Bool(false)),
                         ),
@@ -191,7 +192,7 @@ class XmlDocumentTest {
                                 "name",
                                 0x01010003u,
                                 ResourceValue.String(
-                                    "app.accrescent.client.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION",
+                                    "app.accrescent.client.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION".u,
                                 ),
                             ),
                             androidAttribute(
@@ -226,7 +227,7 @@ class XmlDocumentTest {
                             androidAttribute(
                                 "name",
                                 0x01010003u,
-                                ResourceValue.String("app.accrescent.client.Accrescent"),
+                                ResourceValue.String("app.accrescent.client.Accrescent".u),
                             ),
                             androidAttribute("supportsRtl", 0x010103AFu, ResourceValue.Bool(true)),
                             androidAttribute(
@@ -252,7 +253,7 @@ class XmlDocumentTest {
                             androidAttribute(
                                 "appComponentFactory",
                                 0x0101057Au,
-                                ResourceValue.String("androidx.core.app.CoreComponentFactory"),
+                                ResourceValue.String("androidx.core.app.CoreComponentFactory".u),
                             ),
                             androidAttribute("memtagMode", 0x01010624u, ResourceValue.IntDec(1)),
                             androidAttribute(
@@ -278,7 +279,7 @@ class XmlDocumentTest {
                                     androidAttribute(
                                         "name",
                                         0x01010003u,
-                                        ResourceValue.String("app.accrescent.client.ui.MainActivity"),
+                                        ResourceValue.String("app.accrescent.client.ui.MainActivity".u),
                                     ),
                                     androidAttribute("exported", 0x01010010u, ResourceValue.Bool(true)),
                                 ),
@@ -330,7 +331,7 @@ class XmlDocumentTest {
                                                     androidAttribute(
                                                         "scheme",
                                                         0x01010027u,
-                                                        ResourceValue.String("http"),
+                                                        ResourceValue.String("http".u),
                                                     ),
                                                 ),
                                             ),
@@ -340,7 +341,7 @@ class XmlDocumentTest {
                                                     androidAttribute(
                                                         "scheme",
                                                         0x01010027u,
-                                                        ResourceValue.String("https"),
+                                                        ResourceValue.String("https".u),
                                                     ),
                                                 ),
                                             ),
@@ -350,7 +351,7 @@ class XmlDocumentTest {
                                                     androidAttribute(
                                                         "host",
                                                         0x01010028u,
-                                                        ResourceValue.String("accrescent.app"),
+                                                        ResourceValue.String("accrescent.app".u),
                                                     ),
                                                 ),
                                             ),
@@ -360,7 +361,7 @@ class XmlDocumentTest {
                                                     androidAttribute(
                                                         "pathPrefix",
                                                         0x0101002Bu,
-                                                        ResourceValue.String("/app"),
+                                                        ResourceValue.String("/app".u),
                                                     ),
                                                 ),
                                             ),
@@ -387,7 +388,7 @@ class XmlDocumentTest {
                                     androidAttribute(
                                         "name",
                                         0x01010003u,
-                                        ResourceValue.String("androidx.startup.InitializationProvider"),
+                                        ResourceValue.String("androidx.startup.InitializationProvider".u),
                                     ),
                                     androidAttribute(
                                         "exported",
@@ -397,25 +398,25 @@ class XmlDocumentTest {
                                     androidAttribute(
                                         "authorities",
                                         0x01010018u,
-                                        ResourceValue.String("app.accrescent.client.androidx-startup"),
+                                        ResourceValue.String("app.accrescent.client.androidx-startup".u),
                                     ),
                                 ),
                                 listOf(
                                     metaData(
                                         "androidx.emoji2.text.EmojiCompatInitializer",
-                                        ResourceValue.String("androidx.startup"),
+                                        ResourceValue.String("androidx.startup".u),
                                     ),
                                     metaData(
                                         "androidx.lifecycle.ProcessLifecycleInitializer",
-                                        ResourceValue.String("androidx.startup"),
+                                        ResourceValue.String("androidx.startup".u),
                                     ),
                                     metaData(
                                         "okhttp3.internal.platform.PlatformInitializer",
-                                        ResourceValue.String("androidx.startup"),
+                                        ResourceValue.String("androidx.startup".u),
                                     ),
                                     metaData(
                                         "androidx.profileinstaller.ProfileInstallerInitializer",
-                                        ResourceValue.String("androidx.startup"),
+                                        ResourceValue.String("androidx.startup".u),
                                     ),
                                 ),
                             ),
@@ -426,7 +427,7 @@ class XmlDocumentTest {
                                         "name",
                                         0x01010003u,
                                         ResourceValue.String(
-                                            "app.accrescent.client.receivers.AppUninstallBroadcastReceiver",
+                                            "app.accrescent.client.receivers.AppUninstallBroadcastReceiver".u,
                                         ),
                                     ),
                                     androidAttribute(
@@ -443,7 +444,7 @@ class XmlDocumentTest {
                                         "name",
                                         0x01010003u,
                                         ResourceValue.String(
-                                            "app.accrescent.client.receivers.InstallerSessionCommitBroadcastReceiver",
+                                            "app.accrescent.client.receivers.InstallerSessionCommitBroadcastReceiver".u,
                                         ),
                                     ),
                                     androidAttribute(
@@ -460,7 +461,7 @@ class XmlDocumentTest {
                                         "name",
                                         0x01010003u,
                                         ResourceValue.String(
-                                            "androidx.work.impl.foreground.SystemForegroundService",
+                                            "androidx.work.impl.foreground.SystemForegroundService".u,
                                         ),
                                     ),
                                     androidAttribute(
@@ -492,7 +493,7 @@ class XmlDocumentTest {
                                         "name",
                                         0x01010003u,
                                         ResourceValue.String(
-                                            "app.accrescent.client.receivers.UnarchiveRequestBroadcastReceiver",
+                                            "app.accrescent.client.receivers.UnarchiveRequestBroadcastReceiver".u,
                                         ),
                                     ),
                                     androidAttribute(
@@ -520,7 +521,7 @@ class XmlDocumentTest {
                                         "name",
                                         0x01010003u,
                                         ResourceValue.String(
-                                            "app.accrescent.client.receivers.UnarchiveResponseBroadcastReceiver",
+                                            "app.accrescent.client.receivers.UnarchiveResponseBroadcastReceiver".u,
                                         ),
                                     ),
                                     androidAttribute(
@@ -537,13 +538,13 @@ class XmlDocumentTest {
                                         "name",
                                         0x01010003u,
                                         ResourceValue.String(
-                                            "androidx.work.impl.background.systemjob.SystemJobService",
+                                            "androidx.work.impl.background.systemjob.SystemJobService".u,
                                         ),
                                     ),
                                     androidAttribute(
                                         "permission",
                                         0x01010006u,
-                                        ResourceValue.String("android.permission.BIND_JOB_SERVICE"),
+                                        ResourceValue.String("android.permission.BIND_JOB_SERVICE".u),
                                     ),
                                     androidAttribute(
                                         "enabled",
@@ -569,7 +570,7 @@ class XmlDocumentTest {
                                         "name",
                                         0x01010003u,
                                         ResourceValue.String(
-                                            "androidx.work.impl.utils.ForceStopRunnable\$BroadcastReceiver",
+                                            "androidx.work.impl.utils.ForceStopRunnable\$BroadcastReceiver".u,
                                         ),
                                     ),
                                     androidAttribute(
@@ -596,7 +597,7 @@ class XmlDocumentTest {
                                         "name",
                                         0x01010003u,
                                         ResourceValue.String(
-                                            "androidx.work.impl.background.systemalarm.RescheduleReceiver",
+                                            "androidx.work.impl.background.systemalarm.RescheduleReceiver".u,
                                         ),
                                     ),
                                     androidAttribute(
@@ -634,13 +635,13 @@ class XmlDocumentTest {
                                         "name",
                                         0x01010003u,
                                         ResourceValue.String(
-                                            "androidx.work.impl.diagnostics.DiagnosticsReceiver",
+                                            "androidx.work.impl.diagnostics.DiagnosticsReceiver".u,
                                         ),
                                     ),
                                     androidAttribute(
                                         "permission",
                                         0x01010006u,
-                                        ResourceValue.String("android.permission.DUMP"),
+                                        ResourceValue.String("android.permission.DUMP".u),
                                     ),
                                     androidAttribute(
                                         "enabled",
@@ -677,7 +678,7 @@ class XmlDocumentTest {
                                         "name",
                                         0x01010003u,
                                         ResourceValue.String(
-                                            "androidx.compose.ui.tooling.PreviewActivity",
+                                            "androidx.compose.ui.tooling.PreviewActivity".u,
                                         ),
                                     ),
                                     androidAttribute(
@@ -694,7 +695,7 @@ class XmlDocumentTest {
                                         "name",
                                         0x01010003u,
                                         ResourceValue.String(
-                                            "androidx.room.MultiInstanceInvalidationService",
+                                            "androidx.room.MultiInstanceInvalidationService".u,
                                         ),
                                     ),
                                     androidAttribute(
@@ -716,13 +717,13 @@ class XmlDocumentTest {
                                         "name",
                                         0x01010003u,
                                         ResourceValue.String(
-                                            "androidx.profileinstaller.ProfileInstallReceiver",
+                                            "androidx.profileinstaller.ProfileInstallReceiver".u,
                                         ),
                                     ),
                                     androidAttribute(
                                         "permission",
                                         0x01010006u,
-                                        ResourceValue.String("android.permission.DUMP"),
+                                        ResourceValue.String("android.permission.DUMP".u),
                                     ),
                                     androidAttribute(
                                         "enabled",
@@ -789,7 +790,7 @@ class XmlDocumentTest {
                                     androidAttribute(
                                         "name",
                                         0x01010003u,
-                                        ResourceValue.String("com.android.vending.splits"),
+                                        ResourceValue.String("com.android.vending.splits".u),
                                     ),
                                     androidAttribute(
                                         "resource",

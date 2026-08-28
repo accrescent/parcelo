@@ -4,6 +4,7 @@
 
 package app.accrescent.server.parcelo.core
 
+import app.accrescent.server.parcelo.core.text.UString
 import arrow.core.None
 import arrow.core.Option
 import arrow.core.Some
@@ -14,7 +15,7 @@ import arrow.core.Some
  * @property value the string representation of this non-empty string.
  */
 @JvmInline
-value class NonEmptyString private constructor(val value: String) {
+value class NonEmptyUString private constructor(val value: UString) {
     companion object {
         /**
          * Creates a non-empty string from a string.
@@ -22,9 +23,9 @@ value class NonEmptyString private constructor(val value: String) {
          * @param value the string to create a non-empty string from.
          * @return a non-empty string with the value of [value], or [None] if [value] is empty.
          */
-        fun fromString(value: String): Option<NonEmptyString> {
-            return if (value.isNotEmpty()) {
-                Some(NonEmptyString(value))
+        fun fromUString(value: UString): Option<NonEmptyUString> {
+            return if (value.value.isNotEmpty()) {
+                Some(NonEmptyUString(value))
             } else {
                 None
             }

@@ -6,6 +6,7 @@ package app.accrescent.server.parcelo.adapters.driven.blobstorage
 
 import app.accrescent.server.parcelo.core.Bytes
 import app.accrescent.server.parcelo.core.bindMapLeft
+import app.accrescent.server.parcelo.core.text.UString
 import app.accrescent.server.parcelo.core.unwrap
 import app.accrescent.server.parcelo.domain.ports.driven.blobstorage.BlobId
 import app.accrescent.server.parcelo.domain.ports.driven.blobstorage.BlobStorage
@@ -153,7 +154,11 @@ class LocalBlobStorage(
         val token = generateToken().bindMapLeft { BlobStorageError.Other }
         val expiry = Instant.now().plusSeconds(lifetime.seconds.toLong())
         uploadTokens[token] = UploadEntry(location, expiry, maxSizeBytes)
-        val uri = HttpUri.fromString("http://localhost:$port/upload/$token").unwrap()
+        val uri = UString
+            .fromString("http://localhost:$port/upload/$token")
+            .unwrap()
+            .let(HttpUri::fromUString)
+            .unwrap()
         return Either.Right(BlobStorageBackend.LOCAL to uri)
     }
 
@@ -164,7 +169,12 @@ class LocalBlobStorage(
         val token = generateToken().bindMapLeft { BlobStorageError.Other }
         val expiry = Instant.now().plusSeconds(lifetime.seconds.toLong())
         downloadTokens[token] = DownloadEntry(blobId, expiry)
-        return HttpUri.fromString("http://localhost:$port/download/$token").unwrap().right()
+        return UString
+            .fromString("http://localhost:$port/download/$token")
+            .unwrap()
+            .let(HttpUri::fromUString)
+            .unwrap()
+            .right()
     }
 
     override fun copy(

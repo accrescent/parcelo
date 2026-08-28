@@ -5,6 +5,7 @@
 package app.accrescent.server.parcelo.domain.encoding
 
 import app.accrescent.server.parcelo.core.Bytes
+import app.accrescent.server.parcelo.core.text.u
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
@@ -15,6 +16,6 @@ class Base62Test {
 
         val encoded = Base62.encode(bytes)
 
-        assertEquals("044pZgF", encoded)
+        assertEquals("044pZgF".u, encoded)
     }
 }

@@ -27,7 +27,7 @@ object Identifier {
             IdType.USER -> "user"
             IdType.USER_SESSION -> "accu"
         }
-        val encodedKey = "${prefix}_$encodedBytes"
+        val encodedKey = "${prefix}_${encodedBytes.value}"
 
         return encodedKey
     }

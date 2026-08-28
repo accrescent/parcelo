@@ -161,9 +161,9 @@ class AppDraftApiImplTest {
             assertEquals(
                 DownloadAppDraftResponse(
                     HttpUri
-                        .fromString(
-                            "http://localhost:${blobStorage.port}/download/" +
-                                    "bb20b45f-d4d9-5138-3d93-cb799b3970be"
+                        .fromUString(
+                            ("http://localhost:${blobStorage.port}/download/" +
+                                    "bb20b45f-d4d9-5138-3d93-cb799b3970be").u
                         )
                         .unwrap()
                 )
@@ -239,9 +239,9 @@ class AppDraftApiImplTest {
                         createTime = UNIX_EPOCH,
                         defaultAppDraftListingId = "appDraftListing1".u,
                         appPackage = ApiAppPackage(
-                            androidApplicationId = ApplicationId.fromString("com.example.app").unwrap(),
+                            androidApplicationId = ApplicationId.fromUString("com.example.app".u).unwrap(),
                             versionCode = VersionCode.fromInt(1).unwrap(),
-                            versionName = VersionName.fromString("1.0").unwrap(),
+                            versionName = VersionName.fromUString("1.0".u).unwrap(),
                             targetSdk = SdkVersion.fromInt(37).unwrap(),
                         ),
                         submitTime = UNIX_EPOCH,
@@ -309,9 +309,9 @@ class AppDraftApiImplTest {
                         createTime = UNIX_EPOCH,
                         defaultAppDraftListingId = "appDraftListing1".u,
                         appPackage = ApiAppPackage(
-                            androidApplicationId = ApplicationId.fromString("com.example.app").unwrap(),
+                            androidApplicationId = ApplicationId.fromUString("com.example.app".u).unwrap(),
                             versionCode = VersionCode.fromInt(1).unwrap(),
-                            versionName = VersionName.fromString("1.0").unwrap(),
+                            versionName = VersionName.fromUString("1.0".u).unwrap(),
                             targetSdk = SdkVersion.fromInt(37).unwrap(),
                         ),
                         submitTime = UNIX_EPOCH,
@@ -611,9 +611,9 @@ class AppDraftApiImplTest {
                 assertEquals(
                     UploadAppDraftResponse(
                         apkSetUploadUri = HttpUri
-                            .fromString(
-                                "http://localhost:${blobStorage.port}/upload/" +
-                                        "bb20b45f-d4d9-5138-3d93-cb799b3970be"
+                            .fromUString(
+                                ("http://localhost:${blobStorage.port}/upload/" +
+                                        "bb20b45f-d4d9-5138-3d93-cb799b3970be").u
                             )
                             .unwrap(),
                     )
@@ -791,7 +791,7 @@ class AppDraftApiImplTest {
             val response = appDraftApi.createAppDraftListing(context, request)
 
             assertEquals(
-                AppDraftListingAlreadyExistsError(appDraftId, "en-US"),
+                AppDraftListingAlreadyExistsError(appDraftId, "en-US".u),
                 response.unwrapErr(),
             )
         }
@@ -863,7 +863,7 @@ class AppDraftApiImplTest {
                     ApiAppDraftListing(
                         id = createResponse.appDraftListingId,
                         appDraftId = appDraftId,
-                        language = "en-US",
+                        language = "en-US".u,
                         name = "name".u,
                         shortDescription = "desc".u,
                     )
@@ -895,7 +895,7 @@ class AppDraftApiImplTest {
                     ApiAppDraftListing(
                         id = appDraftListingId,
                         appDraftId = appDraftId1,
-                        language = "en-US",
+                        language = "en-US".u,
                         name = "Example App".u,
                         shortDescription = "Example Short Description".u,
                     )
@@ -986,7 +986,7 @@ class AppDraftApiImplTest {
                     ApiAppDraftListing(
                         id = appDraftListingId,
                         appDraftId = appDraftId,
-                        language = "en-US",
+                        language = "en-US".u,
                         name = "App Name".u,
                         shortDescription = "App Short Description".u,
                     )
@@ -1055,9 +1055,9 @@ class AppDraftApiImplTest {
                 assertEquals(
                     UploadAppDraftListingIconResponse(
                         uploadUri = HttpUri
-                            .fromString(
-                                "http://localhost:${blobStorage.port}/upload/" +
-                                        "bb20b45f-d4d9-5138-3d93-cb799b3970be"
+                            .fromUString(
+                                ("http://localhost:${blobStorage.port}/upload/" +
+                                        "bb20b45f-d4d9-5138-3d93-cb799b3970be").u
                             )
                             .unwrap(),
                     )

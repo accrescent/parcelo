@@ -6,7 +6,9 @@ package app.accrescent.server.parcelo.domain.android
 
 import app.accrescent.server.parcelo.core.UseError
 import app.accrescent.server.parcelo.core.bindMapLeft
+import app.accrescent.server.parcelo.core.text.UString
 import app.accrescent.server.parcelo.core.toEitherBind
+import app.accrescent.server.parcelo.core.unwrap
 import app.accrescent.server.parcelo.core.use
 import app.accrescent.server.parcelo.domain.ports.driven.file.TempFile
 import app.accrescent.server.parcelo.domain.ports.driven.file.TempFileCloseError
@@ -79,8 +81,11 @@ data class ApkSet(
                     raise(ApkSetParseError.Io)
                 }
 
-                val applicationId = ApplicationId
+                // Protobuf strings are always valid Unicode, so this will never throw
+                val applicationId = UString
                     .fromString(buildApksResult.packageName)
+                    .unwrap()
+                    .let(ApplicationId::fromUString)
                     .toEitherBind { ApkSetParseError.InvalidFormat }
 
                 // Check compliance with 64-bit requirement

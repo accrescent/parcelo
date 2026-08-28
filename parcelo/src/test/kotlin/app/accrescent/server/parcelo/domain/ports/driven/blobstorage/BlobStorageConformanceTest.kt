@@ -54,7 +54,7 @@ abstract class BlobStorageConformanceTest<B : BlobId> {
 
             val statusCode = given()
                 .body(ByteArray(maxSizeBytes.intoInt().unwrap() + 1))
-                .put(uri.intoString())
+                .put(uri.intoUString().value)
                 .statusCode
 
             assertEquals(400, statusCode)
@@ -75,7 +75,7 @@ abstract class BlobStorageConformanceTest<B : BlobId> {
 
             val statusCode = given()
                 .body(ByteArray(maxSizeBytes.intoInt().unwrap()))
-                .put(uri.intoString())
+                .put(uri.intoUString().value)
                 .statusCode
 
             assertEquals(200, statusCode)
@@ -93,14 +93,14 @@ abstract class BlobStorageConformanceTest<B : BlobId> {
 
             val firstStatus = given()
                 .body(byteArrayOf(0))
-                .put(uri.intoString())
+                .put(uri.intoUString().value)
                 .statusCode
 
             assertEquals(200, firstStatus)
 
             val secondStatus = given()
                 .body(byteArrayOf(0))
-                .put(uri.intoString())
+                .put(uri.intoUString().value)
                 .statusCode
 
             assertEquals(412, secondStatus)
@@ -118,7 +118,7 @@ abstract class BlobStorageConformanceTest<B : BlobId> {
 
             val statusCode = given()
                 .body(byteArrayOf(0))
-                .put(uri.intoString())
+                .put(uri.intoUString().value)
                 .statusCode
 
             assertEquals(403, statusCode)
@@ -141,7 +141,7 @@ abstract class BlobStorageConformanceTest<B : BlobId> {
             Thread.sleep(lifetime.seconds.toLong() * 1000 + 1)
 
             // Attempt to download the object
-            val statusCode = given().get(uri.intoString()).statusCode
+            val statusCode = given().get(uri.intoUString().value).statusCode
 
             assertEquals(403, statusCode)
         }
@@ -157,7 +157,7 @@ abstract class BlobStorageConformanceTest<B : BlobId> {
 
             // Attempt to download the uploaded object
             val uri = storage.signDownloadUri(blobId).unwrap()
-            val response = given().get(uri.intoString())
+            val response = given().get(uri.intoUString().value)
 
             assertEquals(200, response.statusCode)
             assertArrayEquals("deadbeef".hexToByteArray(), response.body.asByteArray())

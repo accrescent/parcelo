@@ -6,6 +6,7 @@ package app.accrescent.server.parcelo.domain.android
 
 import app.accrescent.server.parcelo.VALID_TOC_BASE64
 import app.accrescent.server.parcelo.adapters.driven.file.LocalTempFile
+import app.accrescent.server.parcelo.core.text.u
 import app.accrescent.server.parcelo.core.unwrap
 import app.accrescent.server.parcelo.core.unwrapErr
 import arrow.core.None
@@ -133,12 +134,12 @@ class ApkSetTest {
 
         assertEquals(
             ApkSet(
-                applicationId = ApplicationId.fromString("com.example.app").unwrap(),
+                applicationId = ApplicationId.fromUString("com.example.app".u).unwrap(),
                 versionCode = VersionCode.fromInt(1).unwrap(),
-                versionName = VersionName.fromString("1.0").unwrap(),
+                versionName = VersionName.fromUString("1.0".u).unwrap(),
                 targetSdk = SdkVersion.fromInt(37).unwrap(),
                 permissions = mapOf(
-                    NameAttribute.fromString("android.permission.INTERNET").unwrap() to None,
+                    NameAttribute.fromUString("android.permission.INTERNET".u).unwrap() to None,
                 ),
                 signerCertificate = validSigningCert,
                 buildApksResult = expectedBuildApksResult,

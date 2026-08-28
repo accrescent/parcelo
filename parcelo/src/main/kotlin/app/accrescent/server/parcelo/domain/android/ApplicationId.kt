@@ -4,6 +4,7 @@
 
 package app.accrescent.server.parcelo.domain.android
 
+import app.accrescent.server.parcelo.core.text.UString
 import arrow.core.None
 import arrow.core.Option
 import arrow.core.Some
@@ -24,7 +25,7 @@ import arrow.core.Some
  * @property value the string representation of this application ID.
  */
 @JvmInline
-value class ApplicationId private constructor(val value: String) {
+value class ApplicationId private constructor(val value: UString) {
     companion object {
         private val REGEX = Regex("""[a-zA-Z][a-zA-Z0-9_]*(\.[a-zA-Z][a-zA-Z0-9_]*)+""")
 
@@ -37,8 +38,8 @@ value class ApplicationId private constructor(val value: String) {
          * @return an application ID if [value] represents a valid application ID, or [None] if
          * [value] is not a valid application ID.
          */
-        fun fromString(value: String): Option<ApplicationId> {
-            return if (value.length <= 128 && REGEX.matches(value)) {
+        fun fromUString(value: UString): Option<ApplicationId> {
+            return if (value.value.length <= 128 && REGEX.matches(value.value)) {
                 Some(ApplicationId(value))
             } else {
                 None

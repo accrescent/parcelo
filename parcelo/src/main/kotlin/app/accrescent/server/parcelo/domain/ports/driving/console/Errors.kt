@@ -40,7 +40,7 @@ data class AppDraftHasNoPackageError(val id: UString) : SubmitAppDraftError
 
 data class AppDraftListingAlreadyExistsError(
     val appDraftId: UString,
-    val language: String,
+    val language: UString,
 ) : CreateAppDraftListingError
 
 data class AppDraftListingIconNotFoundError(val appDraftListingId: UString) :

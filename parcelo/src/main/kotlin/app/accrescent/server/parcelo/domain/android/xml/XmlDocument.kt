@@ -4,9 +4,10 @@
 
 package app.accrescent.server.parcelo.domain.android.xml
 
-import app.accrescent.server.parcelo.core.NonEmptyString
+import app.accrescent.server.parcelo.core.NonEmptyUString
 import app.accrescent.server.parcelo.core.bindMapLeft
 import app.accrescent.server.parcelo.core.downcast
+import app.accrescent.server.parcelo.core.text.UString
 import app.accrescent.server.parcelo.core.then
 import app.accrescent.server.parcelo.core.toEitherBind
 import app.accrescent.server.parcelo.domain.uri.Uri
@@ -164,9 +165,9 @@ data class XmlDocument(val root: XmlElement) {
             XmlDocument(root.toEitherBind { FromBytesError })
         }
 
-        private fun readString(read: () -> String): Either<FromBytesError, String> {
+        private fun readUString(read: () -> String): Either<FromBytesError, UString> {
             return try {
-                Either.Right(read())
+                UString.fromString(read()).toEither { FromBytesError }
             } catch (_: RuntimeException) {
                 Either.Left(FromBytesError)
             }
@@ -174,13 +175,13 @@ data class XmlDocument(val root: XmlElement) {
 
         private fun readNonEmptyStringOption(
             read: () -> String,
-        ): Either<FromBytesError, Option<NonEmptyString>> {
-            return readString(read).map(NonEmptyString::fromString)
+        ): Either<FromBytesError, Option<NonEmptyUString>> {
+            return readUString(read).map(NonEmptyUString::fromUString)
         }
 
         private fun readNonEmptyString(
             read: () -> String,
-        ): Either<FromBytesError, NonEmptyString> = either {
+        ): Either<FromBytesError, NonEmptyUString> = either {
             readNonEmptyStringOption(read).map { it.toEitherBind { FromBytesError } }.bind()
         }
 
@@ -193,15 +194,15 @@ data class XmlDocument(val root: XmlElement) {
         }
 
         private fun toExpandedName(
-            namespace: Option<NonEmptyString>,
-            localName: NonEmptyString,
+            namespace: Option<NonEmptyUString>,
+            localName: NonEmptyUString,
         ): Either<FromBytesError, XmlExpandedName> = either {
             XmlExpandedName(
                 namespaceName = namespace.map {
-                    Uri.fromString(it.value).toEitherBind { FromBytesError }
+                    Uri.fromUString(it.value).toEitherBind { FromBytesError }
                 },
                 localName = AsciiNcName
-                    .fromString(localName.value)
+                    .fromUString(localName.value)
                     .toEitherBind { FromBytesError },
             )
         }
@@ -243,7 +244,7 @@ data class XmlDocument(val root: XmlElement) {
 
                         stringPool
                             .toEitherBind { FromBytesError }
-                            .let { sp -> readString { sp.getString(typedValue.data()) } }
+                            .let { sp -> readUString { sp.getString(typedValue.data()) } }
                             .bind()
                             .let(ResourceValue::String)
                     }
@@ -267,11 +268,11 @@ data class XmlDocument(val root: XmlElement) {
             )
         }
 
-        private data class OpenNamespace(val prefix: NonEmptyString, val uri: NonEmptyString)
+        private data class OpenNamespace(val prefix: NonEmptyUString, val uri: NonEmptyUString)
 
         private data class OpenElement(
-            val namespace: Option<NonEmptyString>,
-            val name: NonEmptyString,
+            val namespace: Option<NonEmptyUString>,
+            val name: NonEmptyUString,
             val attributes: XmlAttributes,
             val children: MutableList<XmlElement>
         )
